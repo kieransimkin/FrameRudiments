@@ -22,6 +22,20 @@ async function initialise(config) {
     linkProgram(program);
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) errors.push(gl.getProgramInfoLog(program));
   };
+  if (config.extraImages && Object.keys(config.extraImages).length) {
+    const images = {};
+    await Promise.all(Object.entries(config.extraImages).map(([name, url]) => new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => { images[name] = {data:url, width:image.naturalWidth, height:image.naturalHeight}; resolve(); };
+      image.onerror = () => reject(new Error(`Extra texture failed: ${name}`)); image.src = url;
+    })));
+    viz.loadExtraImages(images);
+    const deadline = performance.now() + 10000;
+    while (Object.keys(images).some(name => !r.image.samplers[name])) {
+      if (performance.now() > deadline) throw new Error('Extra texture GPU upload timeout');
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+  }
   viz.loadPreset(config.preset, 0);
   if (errors.length) throw new Error(errors.join('\n'));
   let clock = 0;
@@ -70,7 +84,7 @@ async function initialise(config) {
     gl.activeTexture(gl.TEXTURE0);
     const oldTexture = gl.getParameter(gl.TEXTURE_BINDING_2D), oldSampler = gl.getParameter(gl.SAMPLER_BINDING);
     gl.bindSampler(0, null); gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, config.width, config.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, decode(message.rgba));
+    if (message.rgba) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, config.width, config.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, decode(message.rgba));
     // target becomes prev on render(): source pixels enter the real warp pass.
     gl.bindFramebuffer(gl.FRAMEBUFFER, r.targetFrameBuffer);
     gl.viewport(0, 0, r.texsizeX, r.texsizeY);
@@ -88,6 +102,7 @@ async function initialise(config) {
     }});
     if (errors.length || gl.isContextLost()) throw new Error(errors.join('\n') || 'WebGL context lost');
     const err = gl.getError(); if (err !== gl.NO_ERROR) throw new Error(`Butterchurn OpenGL error ${err}`);
+    if (message.capture === false) return {time:r.time, fps:r.fps};
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     const raw = new Uint8Array(config.width * config.height * 4), top = new Uint8Array(raw.length);
     gl.readPixels(0, 0, config.width, config.height, gl.RGBA, gl.UNSIGNED_BYTE, raw);

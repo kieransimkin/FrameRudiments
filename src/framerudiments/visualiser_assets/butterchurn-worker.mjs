@@ -1,5 +1,5 @@
 import {createRequire} from 'node:module';
-import {readFile, mkdtemp, rm} from 'node:fs/promises';
+import {readFile, readdir, mkdtemp, rm} from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import readline from 'node:readline';
@@ -16,7 +16,7 @@ try {
       if (require('butterchurn/package.json').version !== '2.6.7' || require('puppeteer-core/package.json').version !== '25.14.0')
         throw new Error('Butterchurn runtime versions differ from the package lock');
       const puppeteer = require('puppeteer-core');
-      profile = await mkdtemp(path.join(message.work, 'owned-headless-'));
+      profile = await mkdtemp(path.join(message.profile_root || message.work, 'owned-headless-'));
       browser = await puppeteer.launch({executablePath: message.browser, headless: true, userDataDir: profile,
         protocolTimeout: 60000, timeout: 60000,
         args: ['--enable-webgl', '--enable-unsafe-swiftshader', '--disable-background-timer-throttling',
@@ -30,7 +30,21 @@ try {
       await page.addScriptTag({content: await readFile(require.resolve('butterchurn'), 'utf8')});
       const host = await readFile(path.join(path.dirname(fileURLToPath(import.meta.url)), 'butterchurn-page.js'), 'utf8');
       await page.addScriptTag({content: host});
+      const textureFiles = [], extraImages = {};
+      if (process.env.FRAMERUDIMENTS_TEXTURES_DIR) {
+        const folder = process.env.FRAMERUDIMENTS_TEXTURES_DIR;
+        for (const name of (await readdir(folder)).sort()) {
+          const extension = path.extname(name).toLowerCase();
+          const mime = {'.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.bmp':'image/bmp'}[extension];
+          if (!mime) continue;
+          const bytes = await readFile(path.join(folder, name));
+          extraImages[path.basename(name, extension)] = `data:${mime};base64,${bytes.toString('base64')}`;
+          textureFiles.push({name, sha256:createHash('sha256').update(bytes).digest('hex')});
+        }
+      }
+      message.extraImages = extraImages;
       send({ok: true, evidence: {...await page.evaluate(config => initialise(config), message),
+        texture_files: textureFiles,
         node: process.version, browser: await browser.version(),
         butterchurn_bundle_sha256: createHash('sha256').update(await readFile(require.resolve('butterchurn'))).digest('hex')}});
     } else if (message.command === 'frame') {

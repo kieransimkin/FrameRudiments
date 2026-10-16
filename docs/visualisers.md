@@ -175,3 +175,15 @@ Playback is user-controlled; no automatic media playback is required.
 
 Generated vector illustration of the processing order. The comparison above
 and linked video are captured renderer output; the diagram is explanatory.
+
+## Expanded libraries and response experiments
+
+The [preset profiling workflow](preset-profiling.md) installs the complete pinned
+upstream catalogue and uses matching-time captures, three static test cards,
+programme/silence controls and released PrismMoves/PixelCue comparisons.
+
+![Generated calibration input cards](media/preset-test-cards.png)
+
+Generated input illustrations. Per-preset rendered captures and statistical
+reports are retained separately by each experiment; catalogue presence does
+not establish GPU compatibility or public-use rights.

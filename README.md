@@ -217,3 +217,25 @@ Playback is user-controlled; no automatic media playback is required.
 
 Generated vector illustration of the processing order. The comparison above
 and linked video are captured renderer output; the diagram is explanatory.
+
+## Explore and profile the preset library
+
+Version 0.3.0 adds a separately installed, checksum-pinned library of **14,680
+distinct upstream presets** (1,738 Butterchurn and 12,942 projectM), with source
+notices, duplicate aliases and 67 shared textures. Real-engine acceptance is
+recorded per preset; available catalogue entries are not claimed as tested.
+
+Use `framerudiments presets-install`, then `framerudiments presets-profile` or
+`scripts/profile_visualisers.py` to feed ordinary cover/lyric/audio projects and
+three static calibration cards through each engine, replay every feedback frame,
+capture chosen intervals and invoke released PrismMoves/PixelCue. Reports keep
+input/output, temporal, tune/silence and same-card/different-tune comparisons
+separate, with measured response ranges and explicit unknowns.
+
+![Generated static input cards for controlled preset experiments](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.3.0/docs/media/preset-test-cards.png)
+
+Generated calibration illustrations; not preset-output evidence. The maintained
+My Songs suite uses Arcadians and The Truth is a Virus with their canonical
+masters, covers and timed lyrics; those private assets are not bundled.
+See [the complete capture, analysis and synthesis workflow](https://github.com/kieransimkin/FrameRudiments/blob/v0.3.0/docs/preset-profiling.md)
+for pinned packs, licences, runtime setup, resume and interpretation limits.

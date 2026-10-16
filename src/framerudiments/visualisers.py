@@ -93,6 +93,8 @@ class ButterchurnBackend:
             raise ValueError("Butterchurn needs its locked Node runtime, FRAMERUDIMENTS_BROWSER and Node.js >=22.12")
         if sha256(runtime / "package-lock.json") != sha256(ASSETS / "package-lock.json"):
             raise ValueError("Butterchurn runtime package lock differs from the tested pin")
+        profile_root = Path(os.environ.get("FRAMERUDIMENTS_BROWSER_PROFILE_ROOT") or work).resolve()
+        profile_root.mkdir(parents=True, exist_ok=True)
         self.size, self.fps, self.process_handle = size, fps, None
         self.log = (Path(work) / f"butterchurn-{seed}-{len(list(Path(work).glob('butterchurn-*.log')))}.log").open("wb")
         try:
@@ -101,7 +103,7 @@ class ButterchurnBackend:
                 text=True, encoding="utf-8", bufsize=1)
             result = self._request(dict(command="init", runtime=str(runtime.resolve()), browser=browser,
                 width=size[0], height=size[1], fps=fps, preset=json.loads(Path(preset).read_text(encoding="utf-8")),
-                mix=mix, seed=seed, work=str(Path(work).resolve())))
+                mix=mix, seed=seed, work=str(Path(work).resolve()), profile_root=str(profile_root)))
             self.evidence = dict(result["evidence"], package_lock_sha256=sha256(ASSETS / "package-lock.json"),
                                  host_bridge_sha256=sha256(ASSETS / "butterchurn-page.js"))
         except BaseException:
@@ -124,17 +126,23 @@ class ButterchurnBackend:
             raise RuntimeError("Butterchurn worker communication failed") from exc
 
     def process(self, image, context, pcm):
+        return self.advance(image, context, pcm, capture=True)
+
+    def advance(self, image, context, pcm, *, capture=False):
         def encode(data):
             return base64.b64encode(data).decode("ascii")
         # Butterchurn's documented offline input uses 8-bit WebAudio-style PCM.
         left = bytes(max(0, min(255, round(128 + value * 128))) for value in pcm[0::2])
         right = bytes(max(0, min(255, round(128 + value * 128))) for value in pcm[1::2])
         mono = bytes(max(0, min(255, round(128 + (lv + rv) * 64))) for lv, rv in zip(pcm[0::2], pcm[1::2]))
-        result = self._request(dict(command="frame", time=context.output_seconds,
-            rgba=encode(image.convert("RGBA").tobytes()), left=encode(left), right=encode(right), mono=encode(mono)))
+        pixels = image.convert("RGBA").tobytes()
+        rgba = None if pixels == getattr(self, "last_pixels", None) else encode(pixels)
+        result = self._request(dict(command="frame", time=context.output_seconds, capture=capture,
+            rgba=rgba, left=encode(left), right=encode(right), mono=encode(mono)))
+        self.last_pixels = pixels
         if abs(result["time"] - context.output_seconds) > 1e-9 or result["fps"] != self.fps:
             raise RuntimeError("Butterchurn did not honour the exact frame clock")
-        return Image.frombytes("RGBA", self.size, base64.b64decode(result["rgba"], validate=True))
+        return Image.frombytes("RGBA", self.size, base64.b64decode(result["rgba"], validate=True)) if capture else None
 
     def close(self):
         proc = self.process_handle

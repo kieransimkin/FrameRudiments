@@ -2,6 +2,8 @@
 import hashlib
 import json
 import math
+import os
+import tempfile
 from pathlib import Path
 
 
@@ -28,8 +30,15 @@ def read_json(path):
 
 
 def write_json(path, value):
-    Path(path).write_text(json.dumps(value, ensure_ascii=False, allow_nan=False, indent=2) + "\n",
-                          encoding="utf-8")
+    path = Path(path)
+    text = json.dumps(value, ensure_ascii=False, allow_nan=False, indent=2) + "\n"
+    fd, temporary = tempfile.mkstemp(prefix="." + path.name + ".", suffix=".tmp", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            stream.write(text)
+        os.replace(temporary, path)
+    finally:
+        Path(temporary).unlink(missing_ok=True)
 
 
 def number(value, name, *, minimum=None, maximum=None):
