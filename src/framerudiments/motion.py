@@ -108,6 +108,16 @@ class Motion:
             raise ValueError(f"Source time {source_seconds} is outside non-looping recording")
         return r.sample(pip)
 
+    @property
+    def value_dimensions(self):
+        return tuple(self.dimensions) if self.recording else ("x", "y", "z")
+
+    def values(self, source_seconds, *, continuous_beat=None):
+        """All native dimensions, without the sprite-specific XYZ projection."""
+        if self.recording:
+            return tuple(self.recording_values(source_seconds))
+        return self.sample(source_seconds, continuous_beat=continuous_beat)
+
     def sample(self, source_seconds, *, continuous_beat=None):
         if self.kind == "composite":
             values = tuple(child.sample(source_seconds, continuous_beat=continuous_beat)[axis]

@@ -18,7 +18,7 @@ the inputs are checked again before and after a render.
 | `background` | `colour`, optional pinned `image` and `fit` (`cover` or `contain`). |
 | `captions` | `box` [left,top,right,bottom], `font_size`, optional `min_font_size`, `colour`, `panel`, `stroke`, `line_spacing`, `mode` (`current` or `neighbours`). |
 | `identity` | List of `{text, style}`; each style uses the same text-block fields as captions. |
-| `layers` | Ordered sprite/bar layers described below. |
+| `layers` | Ordered sprite, legacy bar and modular rudiment layers described below. |
 | `lyric_art` | `{items: [{text, asset}], placement: <sprite fields>, fallback: "text" or "error"}`. Exact text lookup preserves canonical lyric association. `error` requires every visible lyric to have an asset. |
 | `stemlab_loop` | `{file: <pinned loops report>, id: <accepted loop id>}`; imports native bounds/rate, verifies source SHA, rejects conflicting explicit audio values. Does not approve a seam. |
 
@@ -68,3 +68,13 @@ flight physics, fog, backgrounds and choreography. Pure/random-access hooks
 are easiest to test; a stateful simulation must advance by encoded frame in
 a deterministic order and own its collision/occlusion QA. Custom drawing is
 not automatically covered by sprite bounds. All external assets must be pinned.
+
+
+A modular layer uses `type: "rudiment"`, `renderer` (`particles`, `bars`,
+`waveform`, `path`, `spectrum` or an explicitly registered trusted Python renderer),
+`motion`, integer-pixel `bounds`, optional original-dimension `axes`, `style`,
+`history_frames`, `history_stride`, `opacity` and the existing source-time/cue
+visibility gates. See [rudiment-renderers.md](rudiment-renderers.md) for the
+complete style and extension contract. They share the same native sample and
+source/frame clock as sprites; waveform views trace the supplied rudiment
+values and do not compute PCM audio or frequency evidence.

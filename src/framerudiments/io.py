@@ -54,6 +54,15 @@ def fields(data, allowed, label):
         raise ValueError(f"Unknown {label} fields: {sorted(extra)}")
 
 
+def rectangle(value, name, width, height):
+    if not isinstance(value, (list, tuple)) or len(value) != 4:
+        raise ValueError(f"{name} needs [left, top, right, bottom]")
+    value = tuple(number(x, name) for x in value)
+    if not (0 <= value[0] < value[2] <= width and 0 <= value[1] < value[3] <= height):
+        raise ValueError(f"{name} must be an ordered rectangle inside the frame")
+    return value
+
+
 def file_ref(data, base):
     fields(data, {"path", "sha256"}, "file reference")
     path = (Path(base) / data["path"]).resolve()
