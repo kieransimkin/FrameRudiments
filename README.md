@@ -4,6 +4,19 @@ FrameRudiments renders Shorts, Canvas-style clips and full lyric visualisers
 from one traceable timeline. It is the offline Python renderer in the
 [DanceFlow ecosystem](https://kieransimkin.co.uk/danceflow/).
 
+**0.2.0** accepts source-bound StemLab BPM/first-beat readings through
+`clock.beat_alignment`. Procedural motion follows the fractional beat phase
+after excerpt/repeat mapping. Audio, lyric/cue timestamps and captured
+recordings retain their original source clock. See [beat alignment](docs/beat-alignment.md).
+
+![Actual encoded FrameRudiments 0.2.0 synthetic example with original and aligned movement side by side, source-timed captions and recorded bands](docs/media/beat-alignment.png)
+
+[Play the four-second demonstration](docs/media/beat-alignment.mp4): original
+120 BPM clicks start at 0.125 seconds; the right movement uses the -16 pip
+reading. Text and recorded bands keep source time. This synthetic example
+demonstrates clock composition; it does not establish song-analysis accuracy.
+[Encoded-frame verification and hashes](docs/media/beat-alignment-evidence.json).
+
 It consolidates the shared Python/Pillow/FFmpeg mechanisms developed across
 the existing Gilt Trip, Blame Putin, Clay, Paper Dreams, Free Danny Tommo,
 Silly Sausage Britain and Moderate or Good renderers. Release-specific artwork,

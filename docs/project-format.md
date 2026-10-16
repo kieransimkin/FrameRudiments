@@ -11,7 +11,7 @@ the inputs are checked again before and after a render.
 | `purpose` | `short` (120 ms endpoint fades by default), `visualiser`, or `canvas` (no fades by default). |
 | `width`, `height`, `fps`, `fps_reason` | Even dimensions, fps defaults to 60; other rates need a reason. No platform compliance is inferred. |
 | `audio` | `source` file reference, verified `sample_rate`, start-inclusive `start_sample`, end-exclusive `end_sample`, optional positive integer `repeats` and `fade_seconds`. |
-| `clock` | `bpm` or `beat_grid` file reference; `authority`, `status` (`confirmed`, `estimated`, `synthetic`), optional `origin` in source seconds and `phase_status`. |
+| `clock` | `bpm`, `beat_grid` or source-bound `beat_alignment` file reference; `authority`, `status` (`confirmed`, `estimated`, `synthetic`), optional `origin` in source seconds and `phase_status`. A reading owns its BPM/origin and cannot be combined with `beat_grid` or `origin`. |
 | `font` | Pinned TTF/OTF file for authored text. |
 | `lyrics`, `cues` | Separate LRC references; `.cue` files are also supported for structural cues. |
 | `canonical_lyrics` | Optional pinned plain text whose performed nonempty lines must exactly match the LRC. Bracketed structural lines in this comparison file are excluded. |
@@ -29,6 +29,13 @@ control their appearance. `mapping` amplitudes are `dx`, `dy`, `rotation`
 (degrees), `scale` (magnitude less than one); `x_axis`, `y_axis`, `rotation_axis`
 and `scale_axis` select index 0,1,2 of the motion projection. Defaults are
 0,1,2,2 respectively. Set `y_axis: 0` to map a one-dimensional bounce vertically.
+
+![Actual encoded original/aligned clock example: captions and recorded bands retain source time](media/beat-alignment.png)
+
+[Watch the synthetic clock example](media/beat-alignment.mp4) and follow the
+[source-bound alignment setup](beat-alignment.md). Its first click at 0.125
+seconds maps to pip zero; the screenshot is encoded frame 75 at source 1.25
+seconds. [Verification and media hashes](media/beat-alignment-evidence.json).
 
 Atlas configuration is `{columns, rows, count, cycle_ticks, phase_beats?}`.
 The atlas must divide into exact cells. One beat is 16 ticks; cycle ticks are
