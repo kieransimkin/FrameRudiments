@@ -10,4 +10,7 @@ coverage, run ruff and pytest with FFmpeg/font integration enabled, build wheel
 and sdist, and smoke-test the installed wheel before a release. Keep credentials,
 private media, song text, local paths and campaign evidence out of distributions.
 Respect immutable tags, public deployment gates and explicit name ownership.
-No source repository or public registry release is implied by a local package.
+Submit focused improvements to https://github.com/kieransimkin/FrameRudiments/pulls.
+Validate exact-head CI and immutable matching releases; do not rewrite tags or
+assets. GitHub and PyPI publication are separately verified states. Website:
+https://kieransimkin.co.uk/danceflow/.

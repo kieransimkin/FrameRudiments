@@ -1,0 +1,42 @@
+name: FrameRudiments CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  render-tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Linux render dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
+          echo "FRAMERUDIMENTS_FFMPEG=$(command -v ffmpeg)" >> "$GITHUB_ENV"
+      - name: Windows render dependencies
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress }
+          "FRAMERUDIMENTS_TEST_FONT=C:\Windows\Fonts\arialbd.ttf" >> $env:GITHUB_ENV
+          "FRAMERUDIMENTS_FFMPEG=$((Get-Command ffmpeg).Source)" >> $env:GITHUB_ENV
+      - run: python -m pip install -e '.[dev]'
+      - run: ruff check .
+      - run: python -m pytest -q --junitxml=test-results.xml
+      - name: No skipped rendering checks
+        run: python -c "import xml.etree.ElementTree as E; r=E.parse('test-results.xml'); assert not r.findall('.//skipped')"
+      - run: python -m build
+      - run: python -m twine check --strict dist/*

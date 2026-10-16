@@ -13,7 +13,8 @@ hooks. Historical render scripts and approved outputs remain preserved.
 ## Install and run
 
 Python 3.11+ and FFmpeg with libx264/AAC are required. Install the package into
-its own virtual environment:
+its own virtual environment. Published packages use `python -m pip install framerudiments`;
+from a source checkout use `python -m pip install .`:
 
 ```sh
 python -m pip install .
@@ -130,3 +131,21 @@ sampling, non-looping recordings, input identity, lyric clears, excerpt/repeat
 boundaries, text/alpha overflow and actual encoded portrait/landscape/square
 outputs. Use synthetic fixtures; never put songs, personal data or private
 analysis outputs into the source distribution.
+
+## Source, contribution and releases
+
+[Canonical repository](https://github.com/kieransimkin/FrameRudiments) ·
+[Python package](https://pypi.org/project/framerudiments/) ·
+[Issues and improvements](https://github.com/kieransimkin/FrameRudiments/issues)
+
+Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing the engine. Improvements
+belong in focused pull requests to the canonical repository, with current README,
+meaningful tests and reproducible synthetic examples.
+
+The GitHub Actions CI runs the complete render suite on Linux and Windows with
+Python 3.11 and 3.13. The release workflow validates the immutable `v<version>` tag,
+re-runs tests, builds/checks wheel and source distribution, performs a clean wheel
+render and publishes exact checksum-labelled assets. It refuses to overwrite
+an existing GitHub release. The optional PyPI job uses the `pypi` environment and
+a separately configured trusted publisher; no API token is stored in this project.
+A GitHub release and a PyPI listing are separately verified outcomes.

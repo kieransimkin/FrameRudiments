@@ -13,10 +13,13 @@ authors = [{name = "Kieran Simkin"}]
 dependencies = ["Pillow>=10", "dancerudiments>=0.3.0,<0.4"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "build>=1.2", "ruff>=0.9"]
+dev = ["pytest>=8", "build>=1.2", "ruff>=0.9", "twine>=6"]
 
 [project.urls]
 Homepage = "https://kieransimkin.co.uk/danceflow/"
+Repository = "https://github.com/kieransimkin/FrameRudiments"
+Issues = "https://github.com/kieransimkin/FrameRudiments/issues"
+Documentation = "https://github.com/kieransimkin/FrameRudiments#readme"
 
 [project.scripts]
 framerudiments = "framerudiments.cli:main"
