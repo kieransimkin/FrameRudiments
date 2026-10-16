@@ -239,3 +239,18 @@ My Songs suite uses Arcadians and The Truth is a Virus with their canonical
 masters, covers and timed lyrics; those private assets are not bundled.
 See [the complete capture, analysis and synthesis workflow](https://github.com/kieransimkin/FrameRudiments/blob/v0.3.0/docs/preset-profiling.md)
 for pinned packs, licences, runtime setup, resume and interpretation limits.
+
+## Visualisation Atlas and public gallery
+
+FrameRudiments now exposes 41 deterministic built-in Rudiment renderers,
+including spectral waterfall, spectrogram heatmap (linear/log/mel/Bark/ERB
+**axis remappings**, not newly computed filterbanks), radial FFT-band views,
+and oscilloscope-inspired motion traces. All spectrum renderers require pinned,
+calibrated StemLab Fourier evidence; motion traces are not raw PCM audio.
+
+[Browse the CI-generated public visualisation gallery](https://kieransimkin.github.io/FrameRudiments/)
+(available after the Pages workflow is enabled and deployed), and read the
+[comprehensive method catalogue](docs/visualisation-atlas.md). Each PR checks
+and generates every mode; main deploys an interactive searchable gallery with
+four reproducible **synthetic** frames per mode. Enable Settings → Pages →
+GitHub Actions as the repository publication source.

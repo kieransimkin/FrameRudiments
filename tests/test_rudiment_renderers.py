@@ -164,4 +164,7 @@ def test_encoded_modular_demo_has_four_renderers_and_native_evidence(tmp_path, s
 
 def test_cli_lists_builtin_renderers(capsys):
     assert main(["renderers"]) == 0
-    assert json.loads(capsys.readouterr().out) == ["particles", "bars", "waveform", "path", "spectrum"]
+    names = json.loads(capsys.readouterr().out)
+    assert names[:5] == ["particles", "bars", "waveform", "path", "spectrum"]
+    from framerudiments.visualisation_catalogue import ALL_VIEWS
+    assert set(names[5:]) == {view.name for view in ALL_VIEWS}

@@ -1,0 +1,68 @@
+name: Visualisation gallery / GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: visualisation-pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-gallery:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install distribution and test tooling
+        run: python -m pip install -e '.[dev]'
+      - name: Validate all visualisation modes and deterministic output
+        run: python -m pytest -q tests/test_advanced_renderers.py
+      - name: Lint gallery and renderer implementation
+        run: ruff check scripts/generate_visualisation_gallery.py src/framerudiments/advanced_renderers.py src/framerudiments/visualisation_catalogue.py tests/test_advanced_renderers.py
+      - name: Render complete gallery from synthetic display fixtures
+        run: python scripts/generate_visualisation_gallery.py --output _site
+      - name: Validate generated site and image count
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('_site')
+          data = json.loads((p / 'catalogue.json').read_text())
+          assert data['synthetic_test_data'] and data['not_audio_measurements']
+          assert (p / 'index.html').is_file() and (p / '.nojekyll').exists()
+          for row in data['views']:
+              assert all((p / 'images' / row['name'] / f'{i}.png').is_file() for i in range(len(data['frames'])))
+          PY
+      - name: Upload portable gallery for pull requests and main
+        uses: actions/upload-artifact@v6
+        with:
+          name: framerudiments-visualisation-gallery
+          path: _site/
+      - name: Package Pages site
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site/
+
+  deploy-pages:
+    if: github.event_name != 'pull_request'
+    needs: [build-gallery]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment
