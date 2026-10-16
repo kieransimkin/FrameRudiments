@@ -4,6 +4,19 @@ FrameRudiments renders Shorts, Canvas-style clips and full lyric visualisers
 from one traceable timeline. It is the offline Python renderer in the
 [DanceFlow ecosystem](https://kieransimkin.co.uk/danceflow/).
 
+**0.2.0** accepts source-bound StemLab BPM/first-beat readings through
+`clock.beat_alignment`. Procedural motion follows the fractional beat phase
+after excerpt/repeat mapping. Audio, lyric/cue timestamps and captured
+recordings retain their original source clock. See [beat alignment](docs/beat-alignment.md).
+
+![Actual encoded FrameRudiments 0.2.0 synthetic example with original and aligned movement side by side, source-timed captions and recorded bands](docs/media/beat-alignment.png)
+
+[Play the four-second demonstration](docs/media/beat-alignment.mp4): original
+120 BPM clicks start at 0.125 seconds; the right movement uses the -16 pip
+reading. Text and recorded bands keep source time. This synthetic example
+demonstrates clock composition; it does not establish song-analysis accuracy.
+[Encoded-frame verification and hashes](docs/media/beat-alignment-evidence.json).
+
 It consolidates the shared Python/Pillow/FFmpeg mechanisms developed across
 the existing Gilt Trip, Blame Putin, Clay, Paper Dreams, Free Danny Tommo,
 Silly Sausage Britain and Moderate or Good renderers. Release-specific artwork,
@@ -207,7 +220,7 @@ and linked video are captured renderer output; the diagram is explanatory.
 
 ## Explore and profile the preset library
 
-Version 0.1.5 adds a separately installed, checksum-pinned library of **14,680
+Version 0.3.0 adds a separately installed, checksum-pinned library of **14,680
 distinct upstream presets** (1,738 Butterchurn and 12,942 projectM), with source
 notices, duplicate aliases and 67 shared textures. Real-engine acceptance is
 recorded per preset; available catalogue entries are not claimed as tested.
@@ -219,10 +232,10 @@ capture chosen intervals and invoke released PrismMoves/PixelCue. Reports keep
 input/output, temporal, tune/silence and same-card/different-tune comparisons
 separate, with measured response ranges and explicit unknowns.
 
-![Generated static input cards for controlled preset experiments](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.5/docs/media/preset-test-cards.png)
+![Generated static input cards for controlled preset experiments](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.3.0/docs/media/preset-test-cards.png)
 
 Generated calibration illustrations; not preset-output evidence. The maintained
 My Songs suite uses Arcadians and The Truth is a Virus with their canonical
 masters, covers and timed lyrics; those private assets are not bundled.
-See [the complete capture, analysis and synthesis workflow](https://github.com/kieransimkin/FrameRudiments/blob/v0.1.5/docs/preset-profiling.md)
+See [the complete capture, analysis and synthesis workflow](https://github.com/kieransimkin/FrameRudiments/blob/v0.3.0/docs/preset-profiling.md)
 for pinned packs, licences, runtime setup, resume and interpretation limits.

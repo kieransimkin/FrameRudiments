@@ -93,6 +93,8 @@ class ButterchurnBackend:
             raise ValueError("Butterchurn needs its locked Node runtime, FRAMERUDIMENTS_BROWSER and Node.js >=22.12")
         if sha256(runtime / "package-lock.json") != sha256(ASSETS / "package-lock.json"):
             raise ValueError("Butterchurn runtime package lock differs from the tested pin")
+        profile_root = Path(os.environ.get("FRAMERUDIMENTS_BROWSER_PROFILE_ROOT") or work).resolve()
+        profile_root.mkdir(parents=True, exist_ok=True)
         self.size, self.fps, self.process_handle = size, fps, None
         self.log = (Path(work) / f"butterchurn-{seed}-{len(list(Path(work).glob('butterchurn-*.log')))}.log").open("wb")
         try:
@@ -101,7 +103,7 @@ class ButterchurnBackend:
                 text=True, encoding="utf-8", bufsize=1)
             result = self._request(dict(command="init", runtime=str(runtime.resolve()), browser=browser,
                 width=size[0], height=size[1], fps=fps, preset=json.loads(Path(preset).read_text(encoding="utf-8")),
-                mix=mix, seed=seed, work=str(Path(work).resolve())))
+                mix=mix, seed=seed, work=str(Path(work).resolve()), profile_root=str(profile_root)))
             self.evidence = dict(result["evidence"], package_lock_sha256=sha256(ASSETS / "package-lock.json"),
                                  host_bridge_sha256=sha256(ASSETS / "butterchurn-page.js"))
         except BaseException:

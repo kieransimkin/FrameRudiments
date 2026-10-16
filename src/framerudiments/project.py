@@ -6,6 +6,7 @@ from pathlib import Path
 from .io import read_json, file_ref, fields, integer, number, sha256
 from .timeline import BeatClock, parse_lrc, parse_cue, frame_ledger
 from .stemlab import beat_grid, selected_loop
+from .beat_alignment import beat_alignment
 
 
 class Project:
@@ -58,11 +59,25 @@ class Project:
         self.fade = number(self.audio.get("fade_seconds", .12 if self.purpose == "short" else 0),
                            "fade seconds", minimum=0, maximum=float(self.duration) / 2)
         cfg = data["clock"]
-        fields(cfg, {"bpm", "origin", "authority", "status", "phase_status", "beat_grid"}, "clock")
+        fields(cfg, {"bpm", "origin", "authority", "status", "phase_status", "beat_grid", "beat_alignment"}, "clock")
         if not cfg.get("authority") or cfg.get("status") not in {"confirmed", "estimated", "synthetic"}:
             raise ValueError("Clock needs authority and confirmed/estimated/synthetic status")
-        grid = beat_grid(self.ref(cfg["beat_grid"])["path"]) if "beat_grid" in cfg else None
-        self.clock = BeatClock(bpm=cfg.get("bpm"), origin=cfg.get("origin", 0), beats=grid)
+        self.alignment = None
+        if "beat_alignment" in cfg:
+            if "beat_grid" in cfg or "origin" in cfg:
+                raise ValueError('beat_alignment cannot be combined with a separate beat grid or origin')
+            ref = self.ref(cfg['beat_alignment'])
+            self.alignment = beat_alignment(ref['path'], self.audio_ref['sha256'], self.sample_rate, self.end_sample)
+            if 'bpm' in cfg and abs(number(cfg['bpm'], 'BPM')-self.alignment['bpm']) > 1e-8:
+                raise ValueError('Explicit BPM conflicts with the beat alignment reading')
+            if self.alignment['bpm_status'] == 'estimated' and cfg['status'] != 'estimated':
+                raise ValueError('An estimated alignment BPM cannot be promoted to confirmed or synthetic')
+            if 'phase_status' in cfg and cfg['phase_status'] != self.alignment['phase_status']:
+                raise ValueError('Project phase authority conflicts with the saved reading')
+            self.clock = BeatClock(bpm=self.alignment['bpm'], origin=self.alignment['first_beat_seconds'])
+        else:
+            grid = beat_grid(self.ref(cfg["beat_grid"])["path"]) if "beat_grid" in cfg else None
+            self.clock = BeatClock(bpm=cfg.get("bpm"), origin=cfg.get("origin", 0), beats=grid)
         self.font_ref = self.ref(data["font"]) if "font" in data else None
         if (data.get("lyrics") or data.get("identity")) and not self.font_ref:
             raise ValueError("Pin an explicit font for all authored text")
@@ -119,6 +134,8 @@ class Project:
                     repeats=self.repeats, duration_seconds=float(self.duration),
                     video_duration_seconds=self.frame_count / self.fps,
                     frame_rounding="nearest, ties toward positive infinity; stable source ordering",
-                    clock=self.data["clock"], endpoint_fade_seconds=self.fade, endpoint_fade_curve="qsin",
+                    clock={**self.data['clock'], 'alignment': self.alignment,
+                           'phase_status': self.alignment['phase_status'] if self.alignment else self.data['clock'].get('phase_status', 'unverified')},
+                    endpoint_fade_seconds=self.fade, endpoint_fade_curve="qsin",
                     lyrics=self.lyrics, cues=self.cues, stemlab_loop=self.loop, effects=self.data.get("effects", []), inputs=self.inputs,
                     state="prepared; perceptual review pending")

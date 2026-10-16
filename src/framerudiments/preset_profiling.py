@@ -165,6 +165,9 @@ def profile_presets(suite_path, catalogue, output, *, intervals=(0, 1, 2, 4),
     factories = factories or {"butterchurn": ButterchurnBackend, "projectm": ProjectMBackend}
     conditions = []
     audio_handles = []
+    previous_profile_root = os.environ.get("FRAMERUDIMENTS_BROWSER_PROFILE_ROOT")
+    if previous_profile_root is None:
+        os.environ["FRAMERUDIMENTS_BROWSER_PROFILE_ROOT"] = str(out / ".browser")
     previous_texture_dir = os.environ.get("FRAMERUDIMENTS_TEXTURES_DIR")
     if texture_parents:
         os.environ["FRAMERUDIMENTS_TEXTURES_DIR"] = next(iter(texture_parents))
@@ -285,6 +288,8 @@ def profile_presets(suite_path, catalogue, output, *, intervals=(0, 1, 2, 4),
     finally:
         for audio in audio_handles:
             audio.close()
+        if previous_profile_root is None:
+            os.environ.pop("FRAMERUDIMENTS_BROWSER_PROFILE_ROOT", None)
         if previous_texture_dir is None:
             os.environ.pop("FRAMERUDIMENTS_TEXTURES_DIR", None)
         else:

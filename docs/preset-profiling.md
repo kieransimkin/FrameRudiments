@@ -183,3 +183,18 @@ Evidence JSON writes use same-directory temporary files and atomic replacement,
 so a failed update preserves the previous valid receipt. Disk exhaustion can
 still leave incomplete PNGs or reports: retain the interrupted attempt and
 resume only after hash validation, or start a fresh output directory.
+
+On Windows, Chromium's internal cache filenames can exceed its path limit even
+when Python can write the evidence folder. Profiling creates fresh profiles in
+the short experiment-level `.browser/` directory, with normal verified cleanup.
+For a deeply nested output root set `FRAMERUDIMENTS_BROWSER_PROFILE_ROOT` to a
+short writable project-local folder. Existing user browser profiles are never
+opened, read or reused.
+
+To use a catalogue entry in an ordinary render, copy its verified `preset`
+`{path, sha256}` reference into an effect stage with `engine` and
+`trusted_preset: true` after the explicit library review. Set
+`FRAMERUDIMENTS_TEXTURES_DIR` to the installed library's `textures/` directory
+when the preset needs it; the runtime records image hashes and native warnings.
+The profiler does this texture attachment automatically from the verified
+catalogue. Keep public-use eligibility separate from rendering acceptance.

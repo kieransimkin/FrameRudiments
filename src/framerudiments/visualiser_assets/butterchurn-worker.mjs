@@ -16,7 +16,7 @@ try {
       if (require('butterchurn/package.json').version !== '2.6.7' || require('puppeteer-core/package.json').version !== '25.14.0')
         throw new Error('Butterchurn runtime versions differ from the package lock');
       const puppeteer = require('puppeteer-core');
-      profile = await mkdtemp(path.join(message.work, 'owned-headless-'));
+      profile = await mkdtemp(path.join(message.profile_root || message.work, 'owned-headless-'));
       browser = await puppeteer.launch({executablePath: message.browser, headless: true, userDataDir: profile,
         protocolTimeout: 60000, timeout: 60000,
         args: ['--enable-webgl', '--enable-unsafe-swiftshader', '--disable-background-timer-throttling',

@@ -1,4 +1,4 @@
-FrameRudiments 0.1.5 adds pinned upstream preset-library installation and a
+FrameRudiments 0.3.0 adds pinned upstream preset-library installation and a
 repeatable input-response profiling workflow for Butterchurn and projectM.
 
 - 14,680 distinct presets from all six stable Butterchurn bundles and the four
@@ -16,3 +16,9 @@ repeatable input-response profiling workflow for Butterchurn and projectM.
 - The native engine remains the unmodified pinned 4.2 development source. Actual
   source composition (including lyrics and DanceRudiments sprites) is still
   injected before both engines' real warp/composite processing.
+
+Retains the published 0.2.0 source-bound StemLab BPM/first-beat adapter. Lyrics,
+cues and captured recordings keep original source time; procedural phase is
+separate. No immutable earlier release is changed. Evidence JSON updates now
+use atomic replacement, and profiling uses short owned browser-profile paths
+to avoid Chromium Windows cache-path limits.
