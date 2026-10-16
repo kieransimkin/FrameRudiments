@@ -21,6 +21,24 @@ def main(argv=None):
     setup.add_argument("directory")
     setup.add_argument("--cmake-arg", action="append", default=[])
     setup.add_argument("--parallel", type=int, default=4)
+    libraries = commands.add_parser("presets-install", help="Install separately pinned upstream executable preset libraries")
+    libraries.add_argument("directory")
+    libraries.add_argument("--pack", action="append", default=[])
+    libraries.add_argument("--cache", help="Optional folder of exact checksum-pinned archives")
+    profiling = commands.add_parser("presets-profile", help="Replay sample covers/lyrics, static cards and audio; capture and profile preset response")
+    profiling.add_argument("suite")
+    profiling.add_argument("catalogue")
+    profiling.add_argument("--output", required=True)
+    profiling.add_argument("--intervals", nargs="+", type=float, default=[0, 1, 2, 4])
+    profiling.add_argument("--image", action="append", default=[])
+    profiling.add_argument("--audio-mode", action="append", choices=("programme", "silence"), default=[])
+    profiling.add_argument("--id", action="append", default=[])
+    profiling.add_argument("--limit", type=int)
+    profiling.add_argument("--resume", action="store_true")
+    profiling.add_argument("--retry-failed", action="store_true")
+    profiling.add_argument("--prism-python", help="Python with released PrismMoves and PixelCue installed; no model downloads")
+    profiling.add_argument("--model", action="append", choices=("clip", "dinov2", "blip", "ocr"), default=[])
+    profiling.add_argument("--max-edge", type=int, default=256)
     commands.add_parser("renderers", help="List available built-in rudiment renderers")
     demo = commands.add_parser("demo", help="Create a synthetic audio/image/recording project")
     demo.add_argument("directory")
@@ -63,6 +81,19 @@ def main(argv=None):
             result = (setup_butterchurn(args.directory) if args.engine == "butterchurn" else
                       setup_projectm(args.directory, cmake_args=args.cmake_arg, parallel=args.parallel))
             print(format_result(result))
+        elif args.command == "presets-install":
+            from .preset_library import PACKS, install_library
+            result = install_library(args.directory, packs=args.pack or tuple(PACKS), cache=args.cache)
+            print(json.dumps(dict(presets=len(result["presets"]), textures=len(result["textures"]))))
+        elif args.command == "presets-profile":
+            from .preset_profiling import CARDS, profile_presets
+            result = profile_presets(args.suite, args.catalogue, args.output, intervals=args.intervals,
+                images=args.image or ("cover-lyrics", *CARDS), audio_modes=args.audio_mode or ("programme", "silence"),
+                ids=args.id, limit=args.limit, resume=args.resume, retry_failed=args.retry_failed,
+                prism_python=args.prism_python, models=args.model, max_edge=args.max_edge)
+            print(json.dumps(dict(presets=len(result), captures=sum(x["state"] == "captured" for x in result))))
+            if any(x["state"] != "captured" or args.prism_python and x["analysis_state"] != "completed" for x in result):
+                return 2
         elif args.command == "renderers":
             print(json.dumps(default_renderers().names))
         elif args.command == "plan":

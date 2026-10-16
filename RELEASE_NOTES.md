@@ -1,8 +1,18 @@
-FrameRudiments 0.1.4 fixes portrait geometry in the pinned projectM legacy
-VideoEcho path. A recorded square overscan canvas and exact crop preserve
-source pixel proportions without modifying the upstream library or redrawing
-lyrics/sprites after effects. Both engines now have neutral mapping acceptance
-in portrait, landscape and square formats, alongside the full 0.1.3 suite.
-projectM remains pinned to 349b7cc2db312d47cef6be24c6856ced6643a385.
+FrameRudiments 0.1.5 adds pinned upstream preset-library installation and a
+repeatable input-response profiling workflow for Butterchurn and projectM.
 
-The host also captures native shader errors/fallback warnings and aborts instead of silently accepting a fallback. Both warp and composite error paths have real-engine tests.
+- 14,680 distinct presets from all six stable Butterchurn bundles and the four
+  official projectM packs; 67 shared textures; exact-byte deduplication with
+  retained aliases, archive/source hashes and original notices. Libraries remain
+  separate from the Python distribution and are not relicensed as MIT assets.
+- Feed ordinary sample tune/cover/timed-lyric projects plus three static cards,
+  with programme/silence controls. Replay every feedback frame and capture chosen
+  intervals, retaining exact source/output times, hashes, PCM and cleanup receipts.
+- Invoke released PrismMoves/PixelCue for measured per-frame profiles and separate
+  source/output, temporal, audio-control and shared-card comparisons. Preserve
+  condition families, response ranges, unavailable states and interpretation limits.
+- Resume validates evidence and settings; retries retain earlier attempts. Sparse
+  GPU readback and unchanged-input texture reuse reduce profiling overhead.
+- The native engine remains the unmodified pinned 4.2 development source. Actual
+  source composition (including lyrics and DanceRudiments sprites) is still
+  injected before both engines' real warp/composite processing.

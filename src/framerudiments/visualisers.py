@@ -124,17 +124,23 @@ class ButterchurnBackend:
             raise RuntimeError("Butterchurn worker communication failed") from exc
 
     def process(self, image, context, pcm):
+        return self.advance(image, context, pcm, capture=True)
+
+    def advance(self, image, context, pcm, *, capture=False):
         def encode(data):
             return base64.b64encode(data).decode("ascii")
         # Butterchurn's documented offline input uses 8-bit WebAudio-style PCM.
         left = bytes(max(0, min(255, round(128 + value * 128))) for value in pcm[0::2])
         right = bytes(max(0, min(255, round(128 + value * 128))) for value in pcm[1::2])
         mono = bytes(max(0, min(255, round(128 + (lv + rv) * 64))) for lv, rv in zip(pcm[0::2], pcm[1::2]))
-        result = self._request(dict(command="frame", time=context.output_seconds,
-            rgba=encode(image.convert("RGBA").tobytes()), left=encode(left), right=encode(right), mono=encode(mono)))
+        pixels = image.convert("RGBA").tobytes()
+        rgba = None if pixels == getattr(self, "last_pixels", None) else encode(pixels)
+        result = self._request(dict(command="frame", time=context.output_seconds, capture=capture,
+            rgba=rgba, left=encode(left), right=encode(right), mono=encode(mono)))
+        self.last_pixels = pixels
         if abs(result["time"] - context.output_seconds) > 1e-9 or result["fps"] != self.fps:
             raise RuntimeError("Butterchurn did not honour the exact frame clock")
-        return Image.frombytes("RGBA", self.size, base64.b64decode(result["rgba"], validate=True))
+        return Image.frombytes("RGBA", self.size, base64.b64decode(result["rgba"], validate=True)) if capture else None
 
     def close(self):
         proc = self.process_handle

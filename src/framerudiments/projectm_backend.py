@@ -67,10 +67,12 @@ class ProjectMBackend:
             self.handle = self.lib.projectm_create()
             if not self.handle:
                 raise RuntimeError("projectM could not create its renderer")
-            self.failures = []
+            self.failures, self.warnings = [], []
             log_type = C.CFUNCTYPE(None, C.c_char_p, C.c_int, C.c_void_p)
             def collect_log(message, level, user):
                 text = (message or b"").decode("utf-8", "replace")
+                if level >= 4:
+                    self.warnings.append(text)
                 if level >= 5 or (level >= 4 and "fallback" in text.lower()):
                     self.failures.append(text)
             self.log_callback = log_type(collect_log)
@@ -86,6 +88,13 @@ class ProjectMBackend:
             self.lib.projectm_set_preset_locked(self.handle, True)
             self.lib.projectm_set_hard_cut_enabled(self.handle, False)
             self.lib.projectm_set_preset_start_clean(self.handle, True)
+            texture_dir = os.environ.get("FRAMERUDIMENTS_TEXTURES_DIR")
+            texture_files = []
+            if texture_dir:
+                folder = Path(texture_dir).resolve(strict=True)
+                paths = (C.c_char_p * 1)(os.fsencode(folder))
+                self.lib.projectm_set_texture_search_paths(self.handle, paths, 1)
+                texture_files = [dict(name=x.name, sha256=sha256(x)) for x in sorted(folder.iterdir()) if x.is_file()]
             self.lib.projectm_load_preset_file(self.handle, os.fsencode(preset), False)
             self._check()
             self.texture = self._texture()
@@ -100,6 +109,7 @@ class ProjectMBackend:
             self.lib.projectm_opengl_render_frame_fbo(self.handle, int(self.fbo))
             self._check()
             self.evidence = dict(engine="projectm", version="4.2.0-dev", source_commit=PROJECTM_COMMIT,
+                                 texture_files=texture_files, warnings=self.warnings,
                                  library_sha256=sha256(path), runtime_receipt=data, native_version=list(actual_version),
                                  glfw_version=__import__("importlib.metadata", fromlist=["version"]).version("glfw"),
                                  pyopengl_version=__import__("importlib.metadata", fromlist=["version"]).version("PyOpenGL"),
@@ -120,6 +130,7 @@ class ProjectMBackend:
             "create": (h, []), "destroy": (None, [h]),
             "get_version_components": (None, [C.POINTER(C.c_int)] * 3),
             "set_log_callback": (None, [C.c_void_p, C.c_bool, C.c_void_p]),
+            "set_texture_search_paths": (None, [h, C.POINTER(C.c_char_p), C.c_size_t]),
             "set_window_size": (None, [h, C.c_size_t, C.c_size_t]),
             "set_mesh_size": (None, [h, C.c_size_t, C.c_size_t]),
             "set_fps": (None, [h, C.c_int32]),
@@ -156,7 +167,10 @@ class ProjectMBackend:
         if self.failures:
             raise RuntimeError("projectM preset failed: " + "; ".join(self.failures))
 
-    def process(self, image, context, pcm):
+    def advance(self, image, context, pcm, *, capture=False):
+        return self.process(image, context, pcm, capture=capture)
+
+    def process(self, image, context, pcm, *, capture=True):
         gl = self.gl
         self.glfw.make_context_current(self.window)
         self.lib.projectm_set_log_callback(self.log_callback, True, None)
@@ -185,6 +199,8 @@ class ProjectMBackend:
         actual = self.lib.projectm_get_last_frame_time(self.handle)
         if abs(actual - context.output_seconds) > 1e-9:
             raise RuntimeError("projectM did not honour the offline frame clock")
+        if not capture:
+            return None
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.fbo)
         gl.glPixelStorei(gl.GL_PACK_ALIGNMENT, 1)
         raw = gl.glReadPixels(0, 0, *self.size, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)

@@ -133,3 +133,19 @@ def test_projectm_shader_error_cannot_silently_fall_back(tmp_path, kind):
     path.write_text(preset, encoding="utf-8")
     with pytest.raises(RuntimeError, match="projectM preset failed"):
         ProjectMBackend((160, 240), 60, path, .8, 0, tmp_path)
+
+
+@pytest.mark.parametrize("factory,extension", [(ProjectMBackend,"milk"),(ButterchurnBackend,"json")])
+def test_sparse_capture_advances_real_feedback_and_retains_frame_clock(tmp_path,factory,extension):
+    image=glyph_frame()
+    backend=factory(image.size,60,ASSETS/f"feedback.{extension}",.75,12,tmp_path)
+    pcm=array("f",[0]*2048)
+    try:
+        for n in range(7):
+            assert backend.advance(image,SimpleNamespace(frame=n,output_seconds=n/60),pcm,capture=False) is None
+        final=backend.advance(image,SimpleNamespace(frame=7,output_seconds=7/60),pcm,capture=True)
+        assert final.mode=="RGBA" and final.size==image.size
+        assert final.getpixel((35,30))[0]>final.getpixel((35,30))[2]+80
+    finally:
+        backend.close()
+    assert all(backend.evidence["cleanup"].values())

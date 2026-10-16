@@ -5,3 +5,5 @@ recursive-include tests *.py
 recursive-include integration *.py
 
 prune models
+
+recursive-include scripts *.py
