@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="280" viewBox="0 0 1000 280" role="img" aria-labelledby="title desc">
+  <title id="title">Illustration of FrameRudiments full-frame effects</title>
+  <desc id="desc">Artwork, native sprites, rudiment views and lyrics are composed before optional Butterchurn and projectM stages, followed by encoding. Both effects receive PCM from the same soundtrack edits.</desc>
+  <defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8Z" fill="#76d4cf"/></marker></defs>
+  <rect width="1000" height="280" rx="18" fill="#101b2e"/>
+  <g font-family="sans-serif" fill="#f5eddf" text-anchor="middle">
+    <text x="500" y="32" font-size="18">Processing-order illustration — not a screenshot</text>
+    <g stroke="#76d4cf" stroke-width="2" fill="#192a40">
+      <rect x="20" y="65" width="250" height="110" rx="12"/>
+      <rect x="320" y="65" width="210" height="110" rx="12"/>
+      <rect x="580" y="65" width="210" height="110" rx="12"/>
+      <rect x="840" y="65" width="140" height="110" rx="12"/>
+    </g>
+    <text x="145" y="93" font-size="20">Compose full frame</text>
+    <text x="145" y="120" font-size="15">Artwork · native sprites/atlases</text>
+    <text x="145" y="145" font-size="15">Rudiment views · lyrics</text>
+    <text x="425" y="100" font-size="22">Butterchurn</text>
+    <text x="425" y="130" font-size="16">Optional warp + feedback</text>
+    <text x="425" y="153" font-size="14">Includes text and sprites</text>
+    <text x="685" y="100" font-size="22">projectM</text>
+    <text x="685" y="130" font-size="16">Optional warp + feedback</text>
+    <text x="685" y="153" font-size="14">Includes text and sprites</text>
+    <text x="910" y="105" font-size="22">Encode</text>
+    <text x="910" y="137" font-size="16">Verified MP4</text>
+    <text x="500" y="225" font-size="17">Exact output-frame clock + causal PCM from the same trim/repeat/fade chain</text>
+    <text x="500" y="255" font-size="14">Choose either engine or change stage order. No clean lyric/sprite overlay is added after effects.</text>
+  </g>
+  <g stroke="#76d4cf" stroke-width="3" marker-end="url(#arrow)"><path d="M278 120H308"/><path d="M538 120H568"/><path d="M798 120H828"/></g>
+</svg>

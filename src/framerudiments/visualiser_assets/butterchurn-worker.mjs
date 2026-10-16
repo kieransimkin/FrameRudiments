@@ -47,9 +47,15 @@ try {
   process.exitCode = 1;
 } finally {
   lines.close();
-  if (browser) await browser.close();
-  // Only the freshly allocated profile owned by this worker is removed.
-  if (profile) await rm(profile, {recursive: true, force: true});
-  send({ok: true, cleanup: {browser_closed: !browser || !browser.connected,
-    page_closed: !page || page.isClosed(), owned_profile_removed: true}});
+  try {
+    if (browser) await browser.close();
+    // Only this freshly allocated profile is removed. Windows may briefly retain
+    // file locks after browser.close() resolves; bounded fs retries handle that.
+    if (profile) await rm(profile, {recursive: true, force: true, maxRetries: 15, retryDelay: 200});
+    send({ok: true, cleanup: {browser_closed: !browser || !browser.connected,
+      page_closed: !page || page.isClosed(), owned_profile_removed: true}});
+  } catch (error) {
+    send({ok: false, error: `Owned visualiser cleanup failed: ${error}`});
+    process.exitCode = 1;
+  }
 }

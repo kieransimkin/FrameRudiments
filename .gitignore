@@ -9,3 +9,6 @@ dist/
 *.mp4
 *.wav
 local/
+
+# Project-owned model weights and framework caches
+models/
