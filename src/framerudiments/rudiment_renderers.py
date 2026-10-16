@@ -325,6 +325,8 @@ def default_renderers():
     for name, factory in (("particles", ParticleRenderer), ("bars", BarRenderer),
                           ("waveform", WaveformRenderer), ("path", PathRenderer), ("spectrum", SpectrumRenderer)):
         registry.register(name, factory)
+    from .advanced_renderers import register_extended_renderers
+    register_extended_renderers(registry)
     return registry
 
 
@@ -356,7 +358,9 @@ class RudimentLayer:
             index = dimensions.index(axis) if isinstance(axis, str) and axis in dimensions else axis
             self.axes.append(integer(index, "rudiment axis", maximum=len(dimensions) - 1))
         self.dimensions = tuple(dimensions[index] for index in self.axes)
-        self.history_frames = integer(cfg.get("history_frames", 256 if cfg["renderer"] == "spectrum" else 64), "history frames", minimum=1, maximum=512)
+        spectral_view = cfg["renderer"] == "spectrum" or (
+            isinstance(cfg["renderer"], str) and cfg["renderer"].startswith(("spectrum-", "spectrogram-")))
+        self.history_frames = integer(cfg.get("history_frames", 256 if spectral_view else 64), "history frames", minimum=1, maximum=512)
         self.history_stride = integer(cfg.get("history_stride", 1), "history stride", minimum=1, maximum=120)
         left, top, right, bottom = self.bounds
         self.renderer, identity = registry.create(cfg["renderer"], (right - left, bottom - top), cfg.get("style", {}))

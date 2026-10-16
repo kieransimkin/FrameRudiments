@@ -1,8 +1,12 @@
 # Modular rudiment renderers
 
 Use one motion source with different visual renderers, or layer several views
-of the same source alongside sprites and lyrics. The five built-ins are
-`particles`, `bars`, `waveform`, `path` and `spectrum`. List them with:
+of the same source alongside sprites and lyrics. There are now 41 built-ins:
+the original `particles`, `bars`, `waveform`, `path`, `spectrum` and 36 extra
+historical/modern spectrum, spectrogram, oscilloscope and time-frequency views.
+See the [Visualisation Atlas](visualisation-atlas.md) for the comprehensive
+catalogue, input-contract limitations and public GitHub Pages test gallery.
+List them with:
 
 ```sh
 framerudiments renderers
