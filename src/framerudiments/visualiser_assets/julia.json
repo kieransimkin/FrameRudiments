@@ -1,0 +1,25 @@
+{
+  "name": "FrameRudiments julia",
+  "baseVals": {
+    "decay": 0.96,
+    "gammaadj": 1,
+    "wave_a": 0,
+    "mv_a": 0,
+    "ob_size": 0,
+    "ib_size": 0,
+    "warp": 0,
+    "zoom": 1.015,
+    "rot": 0.025,
+    "echo_alpha": 0.12,
+    "echo_zoom": 1.04,
+    "echo_orient": 0,
+    "tex_wrap": 1
+  },
+  "shapes": [],
+  "waves": [],
+  "init_eqs_str": "",
+  "frame_eqs_str": "a.rot=0.018+0.008*Math.sin(a.time*0.7); a.zoom=1.008+0.004*Math.min(a.bass,3);",
+  "pixel_eqs_str": "",
+  "warp": "shader_body {\n          vec2 z=(uv-0.5)*2.0; vec2 c=vec2(-0.72,0.18+0.03*sin(time*0.3));\n          float orbit=0.0;\n          for(int i=0;i<12;i++){ z=vec2(z.x*z.x-z.y*z.y,2.0*z.x*z.y)+c;\n            orbit+=exp(-dot(z,z)); if(dot(z,z)>16.0) break; }\n          vec2 bend=0.022*vec2(sin(orbit*4.0),cos(orbit*3.0));\n          ret=texture2D(sampler_main,uv+bend).rgb*0.97;\n        }",
+  "comp": ""
+}

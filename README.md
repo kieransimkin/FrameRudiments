@@ -147,8 +147,8 @@ analysis outputs into the source distribution.
 
 ## Source, contribution and releases
 
-[Canonical repository](https://github.com/kieransimkin/FrameRudiments) ·
-[Python package](https://pypi.org/project/framerudiments/) ·
+[Canonical repository](https://github.com/kieransimkin/FrameRudiments) Â·
+[Python package](https://pypi.org/project/framerudiments/) Â·
 [Issues and improvements](https://github.com/kieransimkin/FrameRudiments/issues)
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing the engine. Improvements
@@ -166,3 +166,25 @@ match; assets are never overwritten. Manual dispatch can resume a registry uploa
 from an existing immutable tag, preserving its exact GitHub bytes. The PyPI job
 uses a separately configured trusted publisher; no API token is stored in this project.
 A GitHub release and a PyPI listing are separately verified outcomes.
+
+
+## Full-frame MilkDrop effects, including lyrics and animated sprites
+
+Use optional ordered `effects` stages with **Butterchurn 2.6.7** and **projectM
+4.2-dev pinned to 349b7cc2db312d47cef6be24c6856ced6643a385**. They process the
+complete image after captions, lyric artwork and DanceRudiments-driven sprites/
+atlases. Original feedback, kaleidoscope and Julia-distortion presets work in
+either engine, and stages can be chained. Offline clocks and soundtrack-derived
+PCM stay tied to the encoded programme. See [setup, format, provenance, GPU
+acceptance and limits](docs/visualisers.md).
+
+```sh
+framerudiments visualisers
+framerudiments demo ./effect-demo --font /path/to/font.ttf --effect butterchurn --effect projectm
+framerudiments render ./effect-demo/project.json --output ./effect-render
+```
+
+Optional runtime setup is explicit; the base renderer still works without Node,
+a browser or projectM. Feedback is sequential, and GPU output can vary by driver.
+Inspect processed/encoded glyphs and safe zones; pre-effect text bounds cannot
+prove final legibility.

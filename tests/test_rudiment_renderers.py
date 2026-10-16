@@ -156,7 +156,7 @@ def test_encoded_modular_demo_has_four_renderers_and_native_evidence(tmp_path, s
     result = render(path, tmp_path / "encoded", preset="ultrafast")
     assert result["frames"] == 60
     assert result["verification"]["full_decode"] == "passed"
-    assert result["software"]["framerudiments"] == "0.1.2"
+    assert result["software"]["framerudiments"] == __import__("framerudiments").__version__
     assert set(result["composition"]["rudiment_renderers"]) == {"particles", "bars", "waveform", "path"}
     assert set(result["composition"]["motions"]) == {"particles", "bars", "waveform", "path"}
     assert not result["verification"]["listening_approved"]

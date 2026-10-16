@@ -1,0 +1,16 @@
+[preset00]
+fDecay=0.96
+fGammaAdj=1
+fWaveAlpha=0
+mv_a=0
+ob_size=0
+ib_size=0
+warp=0
+zoom=1.015
+rot=0.025
+fVideoEchoAlpha=0.12
+fVideoEchoZoom=1.04
+nVideoEchoOrientation=0
+bTexWrap=1
+per_frame_1=rot=0.015*sin(time); zoom=1.012;
+per_pixel_1=rot=rot+0.22*sin(ang*6+time*0.4); zoom=zoom+0.06*cos(ang*6);

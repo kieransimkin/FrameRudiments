@@ -41,11 +41,7 @@ def validate_audio(project, ffprobe):
     return info
 
 
-def command(project, output, ffmpeg, *, preset="fast", crf=20):
-    if preset not in {"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow"}:
-        raise ValueError("Unsupported encoder preset")
-    if not isinstance(crf, int) or not 0 <= crf <= 51:
-        raise ValueError("CRF must be an integer in [0,51]")
+def audio_filters(project):
     p = project
     filters = [f"atrim=start_sample={p.start_sample}:end_sample={p.end_sample}", "asetpts=PTS-STARTPTS"]
     if p.repeats > 1:
@@ -53,10 +49,19 @@ def command(project, output, ffmpeg, *, preset="fast", crf=20):
     if p.fade:
         filters += [f"afade=t=in:st=0:d={p.fade:.12f}:curve=qsin",
                     f"afade=t=out:st={float(p.duration) - p.fade:.12f}:d={p.fade:.12f}:curve=qsin"]
+    return ",".join(filters)
+
+
+def command(project, output, ffmpeg, *, preset="fast", crf=20):
+    if preset not in {"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow"}:
+        raise ValueError("Unsupported encoder preset")
+    if not isinstance(crf, int) or not 0 <= crf <= 51:
+        raise ValueError("CRF must be an integer in [0,51]")
+    p = project
     return [ffmpeg, "-n", "-hide_banner", "-loglevel", "warning", "-f", "rawvideo",
             "-pixel_format", "rgb24", "-video_size", f"{p.width}x{p.height}",
             "-framerate", str(p.fps), "-i", "pipe:0", "-i", p.audio_ref["path"],
-            "-map", "0:v:0", "-map", "1:a:0", "-af", ",".join(filters),
+            "-map", "0:v:0", "-map", "1:a:0", "-af", audio_filters(p),
             "-c:v", "libx264", "-preset", preset, "-crf", str(crf), "-threads", "4",
             "-pix_fmt", "yuv420p", "-fps_mode", "cfr", "-color_primaries", "bt709",
             "-color_trc", "bt709", "-colorspace", "bt709", "-c:a", "aac", "-b:a", "256k",

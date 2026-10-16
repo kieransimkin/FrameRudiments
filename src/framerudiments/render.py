@@ -11,6 +11,7 @@ from .compositor import Compositor
 from .io import sha256, write_json
 from .project import Project
 from .subtitles import export_subtitles
+from .visualisers import EffectChain
 
 
 def checkpoints(project):
@@ -39,20 +40,31 @@ def _prepare(project, output, ffmpeg, ffprobe, scene, renderers):
 def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=None):
     p, out, ffmpeg, ffprobe, compositor = _prepare(project, output, ffmpeg, ffprobe, scene, renderers)
     selected = set(checkpoints(p))
+    effects = None
     try:
+        effects = EffectChain(p, compositor.effect_specs, ffmpeg, out) if compositor.effect_specs else None
         with (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
             for n in range(p.frame_count):
                 image, context = compositor.frame(n)
+                if effects:
+                    if n in selected:
+                        image.save(out / "qa" / f"composed-{n:08}.png")
+                    image = effects.process(image, context)
                 _analysis(analysis, compositor, context)
                 if n in selected:
                     image.save(out / "qa" / f"source-{n:08}.png")
+        if effects:
+            effects.close()
         p.verify_inputs()
-        result = dict(p.summary(), composition=compositor.evidence(), analysis_sidecar=_sidecar(out), state="preflight passed; no encoded video")
+        result = dict(p.summary(), composition=compositor.evidence(), full_frame_effects=effects.evidence() if effects else None, analysis_sidecar=_sidecar(out), state="preflight passed; no encoded video")
         write_json(out / "manifest.json", result)
         return result
     except BaseException as exc:
         write_json(out / "failure.json", dict(state="preflight failed", error=str(exc)))
         raise
+    finally:
+        if effects:
+            effects.close()
 
 
 def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=None, preset="fast", crf=20):
@@ -62,11 +74,17 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
     write_json(out / "encode-command.json", cmd)
     selected = set(checkpoints(p))
     process = None
+    effects = None
     try:
+        effects = EffectChain(p, compositor.effect_specs, ffmpeg, out) if compositor.effect_specs else None
         with (out / "encode.log").open("wb") as log, (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log)
             for n in range(p.frame_count):
                 image, context = compositor.frame(n)
+                if effects:
+                    if n in selected:
+                        image.save(out / "qa" / f"composed-{n:08}.png")
+                    image = effects.process(image, context)
                 _analysis(analysis, compositor, context)
                 if n in selected:
                     image.save(out / "qa" / f"source-{n:08}.png")
@@ -74,6 +92,8 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
             process.stdin.close()
             if process.wait() != 0:
                 raise RuntimeError(f"FFmpeg failed; see {out / 'encode.log'}")
+        if effects:
+            effects.close()
         p.verify_inputs()
         verified = encoding.verify(candidate, p, ffmpeg, ffprobe)
         source_audio = encoding.probe(p.audio_ref["path"], ffprobe)
@@ -94,7 +114,7 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
             thumbnail = first.copy()
             thumbnail.thumbnail((360, 640))
             thumbnail.save(out / "phone-preview.png")
-        result = dict(p.summary(), composition=compositor.evidence(), analysis_sidecar=_sidecar(out), verification=verified,
+        result = dict(p.summary(), composition=compositor.evidence(), full_frame_effects=effects.evidence() if effects else None, analysis_sidecar=_sidecar(out), verification=verified,
                       software={"framerudiments": __version__, "Pillow": version("Pillow"),
                                 "dancerudiments": version("dancerudiments"),
                                 "ffmpeg": subprocess.check_output([ffmpeg, "-version"], text=True).splitlines()[0]},
@@ -113,6 +133,9 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
                 process.wait()
         write_json(out / "failure.json", dict(state="failed; any encoded file remains unapproved", error=str(exc)))
         raise
+    finally:
+        if effects:
+            effects.close()
 
 
 def _analysis(handle, compositor, context):

@@ -1,0 +1,26 @@
+MILKDROP_PRESET_VERSION=201
+PSVERSION_WARP=2
+PSVERSION_COMP=0
+[preset00]
+fDecay=0.96
+fGammaAdj=1
+fWaveAlpha=0
+mv_a=0
+ob_size=0
+ib_size=0
+warp=0
+zoom=1.015
+rot=0.025
+fVideoEchoAlpha=0.12
+fVideoEchoZoom=1.04
+nVideoEchoOrientation=0
+bTexWrap=1
+per_frame_1=rot=0.018+0.008*sin(time*0.7); zoom=1.008+0.004*min(bass,3);
+warp_1=shader_body {
+warp_2=float2 z=(uv-0.5)*2.0; float2 c=float2(-0.72,0.18+0.03*sin(time*0.3));
+warp_3=float orbit=0.0;
+warp_4=for(int i=0;i<12;i++){ z=float2(z.x*z.x-z.y*z.y,2.0*z.x*z.y)+c;
+warp_5=orbit+=exp(-dot(z,z)); if(dot(z,z)>16.0) break; }
+warp_6=float2 bend=0.022*float2(sin(orbit*4.0),cos(orbit*3.0));
+warp_7=ret=tex2D(sampler_main,uv+bend).xyz*0.97;
+warp_8=}
