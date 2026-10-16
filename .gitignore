@@ -8,6 +8,7 @@ dist/
 *.egg-info/
 *.mp4
 *.wav
+!docs/media/beat-alignment.mp4
 local/
 
 # Project-owned model weights and framework caches
