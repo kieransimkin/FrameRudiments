@@ -31,8 +31,8 @@
   "illustration": "effects-pipeline.svg is a generated explanatory diagram, not screenshot evidence",
   "files": {
     "demo-transcript.md": {
-      "sha256": "ef6545efb1902c446f68b8dccea915e23ddc47ead4ff605d249fa82a24324dfe",
-      "bytes": 793
+      "sha256": "e331c33d2940290845484d0d17674461168f0ba4ebc8d156be02521754e97bab",
+      "bytes": 778
     },
     "effects-pipeline.svg": {
       "sha256": "73671c92921a02d0017e2d7bb33bff4527311cd60672483b6c469ba7fc52c19c",
