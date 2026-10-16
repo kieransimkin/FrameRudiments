@@ -91,7 +91,7 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, preset="fa
             thumbnail.thumbnail((360, 640))
             thumbnail.save(out / "phone-preview.png")
         result = dict(p.summary(), composition=compositor.evidence(), verification=verified,
-                      software={"framerudiments": "0.1.0", "Pillow": version("Pillow"),
+                      software={"framerudiments": "0.1.1", "Pillow": version("Pillow"),
                                 "dancerudiments": version("dancerudiments"),
                                 "ffmpeg": subprocess.check_output([ffmpeg, "-version"], text=True).splitlines()[0]},
                       output={"path": str(final), "sha256": sha256(final), "bytes": final.stat().st_size},

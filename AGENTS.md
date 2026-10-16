@@ -14,3 +14,7 @@ Submit focused improvements to https://github.com/kieransimkin/FrameRudiments/pu
 Validate exact-head CI and immutable matching releases; do not rewrite tags or
 assets. GitHub and PyPI publication are separately verified states. Website:
 https://kieransimkin.co.uk/danceflow/.
+
+Future v* tags publish automatically after CI. Keep the pypi environment free
+of human reviewer gates; preserve tests, source/tag identity, checksum validation
+and immutable assets. New publication destinations still require user authority.

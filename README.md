@@ -145,7 +145,11 @@ meaningful tests and reproducible synthetic examples.
 The GitHub Actions CI runs the complete render suite on Linux and Windows with
 Python 3.11 and 3.13. The release workflow validates the immutable `v<version>` tag,
 re-runs tests, builds/checks wheel and source distribution, performs a clean wheel
-render and publishes exact checksum-labelled assets. It refuses to overwrite
-an existing GitHub release. The optional PyPI job uses the `pypi` environment and
-a separately configured trusted publisher; no API token is stored in this project.
+render and publishes exact checksum-labelled assets. Pushing a new `v*` tag publishes
+to GitHub and PyPI automatically after validation; no human reviewer or manual
+publication approval is required. The `pypi` environment has no reviewer gate.
+An existing release is reused only after its source commit and downloaded checksums
+match; assets are never overwritten. Manual dispatch can resume a registry upload
+from an existing immutable tag, preserving its exact GitHub bytes. The PyPI job
+uses a separately configured trusted publisher; no API token is stored in this project.
 A GitHub release and a PyPI listing are separately verified outcomes.

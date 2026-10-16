@@ -1,13 +1,11 @@
-FrameRudiments 0.1.0 consolidates the offline Python Shorts and lyric-visualiser
-rendering mechanisms in DanceFlow. It consumes native DanceRudiments motion and
-saved StemLab timing, loop and recorded-signal evidence.
+FrameRudiments 0.1.1 enables automatic GitHub and PyPI publication after the
+normal validated v* tag pipeline, without a human reviewer gate. The registry
+job downloads the exact published GitHub wheel/source files and checks their
+hashes and source commit. A manual retry can resume an existing matching release
+without overwriting its tag or assets. Rendering behavior remains unchanged.
 
-Includes frame-ledger captions/cues and subtitle exports, transparent/atlas/lyric
-layers, independent motion channels, seeded flight and alpha cleaning, exact
-audio slices/repeats/fades, H.264/AAC encoding and full decoded technical QA.
-
-Validation covers synthetic fixtures and actual encode/decode on Windows/Linux.
-Automated checks do not establish musical loop quality, rights, platform approval
-or attended listening. No songs or private release assets are distributed.
+Includes the complete offline Shorts and lyric-visualiser engine from 0.1.0:
+native DanceRudiments/StemLab evidence adapters, shared timing/caption ledger,
+sprite/lyric layers, exact audio edits, encoding and full decoded technical QA.
 
 Website: https://kieransimkin.co.uk/danceflow/
