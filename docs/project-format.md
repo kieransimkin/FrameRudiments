@@ -1,0 +1,70 @@
+# Project format v1
+
+The schema identifier is `framerudiments.project.v1`. Unknown fields are errors.
+All file references are `{ "path": "relative-or-absolute", "sha256": "64 hex digits" }`.
+Hash each final input, including the font; a changed file fails preparation and
+the inputs are checked again before and after a render.
+
+| Field | Meaning |
+| --- | --- |
+| `title`, `artist`, `notes` | Private project description; text appears only through `identity`. |
+| `purpose` | `short` (120 ms endpoint fades by default), `visualiser`, or `canvas` (no fades by default). |
+| `width`, `height`, `fps`, `fps_reason` | Even dimensions, fps defaults to 60; other rates need a reason. No platform compliance is inferred. |
+| `audio` | `source` file reference, verified `sample_rate`, start-inclusive `start_sample`, end-exclusive `end_sample`, optional positive integer `repeats` and `fade_seconds`. |
+| `clock` | `bpm` or `beat_grid` file reference; `authority`, `status` (`confirmed`, `estimated`, `synthetic`), optional `origin` in source seconds and `phase_status`. |
+| `font` | Pinned TTF/OTF file for authored text. |
+| `lyrics`, `cues` | Separate LRC references; `.cue` files are also supported for structural cues. |
+| `canonical_lyrics` | Optional pinned plain text whose performed nonempty lines must exactly match the LRC. Bracketed structural lines in this comparison file are excluded. |
+| `background` | `colour`, optional pinned `image` and `fit` (`cover` or `contain`). |
+| `captions` | `box` [left,top,right,bottom], `font_size`, optional `min_font_size`, `colour`, `panel`, `stroke`, `line_spacing`, `mode` (`current` or `neighbours`). |
+| `identity` | List of `{text, style}`; each style uses the same text-block fields as captions. |
+| `layers` | Ordered sprite/bar layers described below. |
+| `lyric_art` | `{items: [{text, asset}], placement: <sprite fields>, fallback: "text" or "error"}`. Exact text lookup preserves canonical lyric association. `error` requires every visible lyric to have an asset. |
+| `stemlab_loop` | `{file: <pinned loops report>, id: <accepted loop id>}`; imports native bounds/rate, verifies source SHA, rejects conflicting explicit audio values. Does not approve a seam. |
+
+Sprites use `id`, `asset`, `center` [x,y], `width` and optional `bounds`
+[left,top,right,bottom]. Optional `crop_alpha`, `opacity`, `motion`, `mapping`,
+`atlas`, `trail`, source-time `start_seconds`/`end_seconds` and `cue_labels`
+control their appearance. `mapping` amplitudes are `dx`, `dy`, `rotation`
+(degrees), `scale` (magnitude less than one); `x_axis`, `y_axis`, `rotation_axis`
+and `scale_axis` select index 0,1,2 of the motion projection. Defaults are
+0,1,2,2 respectively. Set `y_axis: 0` to map a one-dimensional bounce vertically.
+
+Atlas configuration is `{columns, rows, count, cycle_ticks, phase_beats?}`.
+The atlas must divide into exact cells. One beat is 16 ticks; cycle ticks are
+explicitly authored rather than silently quantised. Cycles use a continuous
+beat clock across repeated source excerpts. `trail` accepts `offset` [x,y],
+`opacity` and `radius`, with the expanded result included in bounds checks.
+
+Motion kinds:
+
+* `composite`: `channels` is a list of one-to-three `{motion, axis}` entries;
+  each output axis samples its own native motion route. Use this for independent
+  sway, bounce and tilt rather than conflating their periods or phases.
+* `named`: native `pattern`, optional `rate`, `phase_beats`, `origin_beat`.
+* `table`: pinned `file` containing an existing native sample export and
+  `pattern`. Requires 64-pip, version, binary-hash and exact period identity.
+* `match`: pinned StemLab report `file`, explicit zero-based `source_index`
+  and `match_index`, optional `source_offset_seconds` for a documented excerpt
+  report. Uses the selected pattern/phase and source-window origin. Extrapolation
+  requires `allow_outside_match: true`; it never implies approval.
+* `recording`: pinned native recording `file`, optional one-to-three named
+  `axes`. Its BPM, beat zero and negative start pip stay authoritative. Outside
+  capture `outside` is `error` by default, or explicitly `neutral`. Rate,
+  phase and interpolation overrides are rejected.
+
+`interpolate: true` on named/table/match routes explicitly blends adjacent
+integer native samples for old compositor parity. Default sampling is native
+integer-pip. Named/table `repeat_clock` is `continuous` by default; `source`
+replays the source phase each cycle. Recorded and matched motion always use
+absolute source time.
+
+A layer with `type: "bars"`, `bounds` and a recording motion displays every
+dimension on a signed -1..+1 scale, including Fourier buckets. It does not
+extract frequencies or generate envelopes: StemLab supplies that evidence.
+
+The Python `scene(image, FrameContext)` hook supports release-owned custom
+flight physics, fog, backgrounds and choreography. Pure/random-access hooks
+are easiest to test; a stateful simulation must advance by encoded frame in
+a deterministic order and own its collision/occlusion QA. Custom drawing is
+not automatically covered by sprite bounds. All external assets must be pinned.
