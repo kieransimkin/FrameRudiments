@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "framerudiments"
-version = "0.1.2"
+version = "0.1.3"
 description = "Deterministic Shorts and lyric visualisers using DanceRudiments and StemLab evidence."
 requires-python = ">=3.11"
 readme = "README.md"
@@ -13,6 +13,7 @@ authors = [{name = "Kieran Simkin"}]
 dependencies = ["Pillow>=10", "dancerudiments>=0.3.0,<0.4"]
 
 [project.optional-dependencies]
+projectm = ["glfw==2.10.2", "PyOpenGL==3.1.10"]
 dev = ["pytest>=8", "build>=1.2", "ruff>=0.9", "twine>=6"]
 
 [project.urls]
@@ -36,3 +37,6 @@ line-length = 110
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
+
+[tool.setuptools.package-data]
+framerudiments = ["visualiser_assets/*"]

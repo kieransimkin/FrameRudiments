@@ -18,7 +18,7 @@ class Project:
         self.base, self.path, self.data = Path(base), project_path, data
         fields(data, {"schema", "title", "artist", "purpose", "width", "height", "fps", "fps_reason",
                       "audio", "clock", "font", "lyrics", "cues", "background", "layers", "captions",
-                      "identity", "stemlab_loop", "notes", "lyric_art", "canonical_lyrics"}, "project")
+                      "identity", "effects", "stemlab_loop", "notes", "lyric_art", "canonical_lyrics"}, "project")
         if data.get("schema") != "framerudiments.project.v1":
             raise ValueError("Expected framerudiments.project.v1")
         self.width = integer(data.get("width", 1080), "width", minimum=16, maximum=7680)
@@ -120,5 +120,5 @@ class Project:
                     video_duration_seconds=self.frame_count / self.fps,
                     frame_rounding="nearest, ties toward positive infinity; stable source ordering",
                     clock=self.data["clock"], endpoint_fade_seconds=self.fade, endpoint_fade_curve="qsin",
-                    lyrics=self.lyrics, cues=self.cues, stemlab_loop=self.loop, inputs=self.inputs,
+                    lyrics=self.lyrics, cues=self.cues, stemlab_loop=self.loop, effects=self.data.get("effects", []), inputs=self.inputs,
                     state="prepared; perceptual review pending")

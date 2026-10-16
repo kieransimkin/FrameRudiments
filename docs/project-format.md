@@ -78,3 +78,12 @@ visibility gates. See [rudiment-renderers.md](rudiment-renderers.md) for the
 complete style and extension contract. They share the same native sample and
 source/frame clock as sprites; waveform views trace the supplied rudiment
 values and do not compute PCM audio or frequency evidence.
+
+
+## Optional full-frame effects
+
+The top-level `effects` list is additive to v1. See [visualisers.md](visualisers.md)
+for the `id`, `engine`, `preset`, `input_mix`, `seed` and `trusted_preset` fields,
+runtime setup and sequential feedback contract. Both engines process all existing
+layers, including native moving sprites/atlases, captions and lyric art, before
+encoding. Existing projects without `effects` keep the original composition path.

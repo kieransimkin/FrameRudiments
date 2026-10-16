@@ -140,3 +140,28 @@ def create_spectrum_demo(directory, font, *, width=600, height=960):
     data["notes"] = "Actual StemLab Fourier analysis of a synthetic antiphase stereo sweep. Peaks are frequency bands, not pitch or audio true peaks."
     write_json(path, data)
     return path
+
+
+def add_demo_effects(path, engines, preset="feedback"):
+    """Add both full-frame engines and a native moving animated atlas."""
+    from .io import read_json
+    path = Path(path)
+    data = read_json(path)
+    width, height = data["width"], data["height"]
+    atlas = Image.new("RGBA", (256, 64))
+    draw = ImageDraw.Draw(atlas)
+    for index, colour in enumerate(("#76d4cf", "#edb56d", "#c9a4ff", "#f9edca")):
+        left = index * 64
+        draw.polygon([(left+32, 6), (left+58, 48-index*3), (left+6, 48-index*3)], fill=colour)
+        draw.ellipse((left+25, 22, left+39, 36), fill="#101b2e")
+    atlas.save(path.parent / "atlas.png")
+    data["layers"].append(dict(id="native-animated-atlas", type="sprite",
+        asset=dict(path="atlas.png", sha256=sha256(path.parent / "atlas.png")),
+        center=[width * .5, height * .55], width=round(width*.16),
+        bounds=[0, 0, width, height], atlas=dict(columns=4, rows=1, count=4, cycle_ticks=16),
+        motion=dict(kind="named", pattern="circle"),
+        mapping=dict(dx=width*.12, dy=height*.05, rotation=12, x_axis=0, y_axis=1)))
+    data["effects"] = [dict(id=f"{engine}-{i}", engine=engine, preset=preset, input_mix=.7)
+                       for i, engine in enumerate(engines)]
+    write_json(path, data)
+    return path

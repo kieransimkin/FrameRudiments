@@ -10,6 +10,7 @@ from .io import fields, number, integer, rectangle
 from .rudiment_renderers import RudimentLayer, default_renderers
 from .motion import Motion
 from .timeline import EventTrack
+from .visualisers import effect_specs
 
 
 @dataclass(frozen=True)
@@ -185,6 +186,7 @@ class Sprite:
 class Compositor:
     def __init__(self, project, *, scene=None, renderers=None):
         self.project, self.scene = project, scene
+        self.effect_specs = effect_specs(project)
         bg = project.data.get("background", {})
         fields(bg, {"colour", "image", "fit"}, "background")
         self.background = Image.new("RGBA", (project.width, project.height), bg.get("colour", "#101b2e"))

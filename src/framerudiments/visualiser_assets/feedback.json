@@ -1,0 +1,25 @@
+{
+  "name": "FrameRudiments feedback",
+  "baseVals": {
+    "decay": 0.96,
+    "gammaadj": 1,
+    "wave_a": 0,
+    "mv_a": 0,
+    "ob_size": 0,
+    "ib_size": 0,
+    "warp": 0,
+    "zoom": 1.015,
+    "rot": 0.025,
+    "echo_alpha": 0.12,
+    "echo_zoom": 1.04,
+    "echo_orient": 0,
+    "tex_wrap": 1
+  },
+  "shapes": [],
+  "waves": [],
+  "init_eqs_str": "",
+  "frame_eqs_str": "a.rot=0.018+0.008*Math.sin(a.time*0.7); a.zoom=1.008+0.004*Math.min(a.bass,3);",
+  "pixel_eqs_str": "",
+  "warp": "",
+  "comp": ""
+}
