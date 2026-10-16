@@ -59,7 +59,11 @@ class ProjectMBackend:
                 raise RuntimeError("projectM requires an OpenGL 3.3 context")
             glfw.make_context_current(self.window)
             glfw.swap_interval(0)
-            self.size, self.mix = size, mix
+            self.frame_size, self.mix = size, mix
+            # Pinned projectM legacy VideoEcho stretches portrait output. A square
+            # overscan canvas avoids that upstream path without patching the library.
+            self.size = (max(size), size[1]) if size[1] > size[0] else size
+            self.crop_left = (self.size[0] - size[0]) // 2
             self.handle = self.lib.projectm_create()
             if not self.handle:
                 raise RuntimeError("projectM could not create its renderer")
@@ -68,7 +72,7 @@ class ProjectMBackend:
             self.failure_callback = callback(lambda name, message, user: self.failures.append(
                 (message or b"Unknown preset error").decode("utf-8", "replace")))
             self.lib.projectm_set_preset_switch_failed_event_callback(self.handle, self.failure_callback, None)
-            self.lib.projectm_set_window_size(self.handle, *size)
+            self.lib.projectm_set_window_size(self.handle, *self.size)
             self.lib.projectm_set_mesh_size(self.handle, 64, 48)
             self.lib.projectm_set_fps(self.handle, fps)
             self.lib.projectm_set_frame_time(self.handle, 0.0)
@@ -95,6 +99,8 @@ class ProjectMBackend:
                                  opengl=GL.glGetString(GL.GL_VERSION).decode(),
                                  renderer=GL.glGetString(GL.GL_RENDERER).decode(),
                                  input="full composed RGBA before MilkDrop warp and composite",
+                                 frame_size=list(self.frame_size), engine_canvas_size=list(self.size),
+                                 portrait_mapping="centred square overscan, then exact pixel crop" if self.crop_left else "native viewport",
                                  clock="projectm_set_frame_time(output frame / fps)",
                                  warmup_frames=1, random_seed_supported=False)
         except BaseException:
@@ -146,6 +152,10 @@ class ProjectMBackend:
         gl = self.gl
         self.glfw.make_context_current(self.window)
         frame = image.convert("RGBA")
+        if self.size != self.frame_size:
+            canvas = Image.new("RGBA", self.size, "black")
+            canvas.paste(frame, (self.crop_left, 0))
+            frame = canvas
         # Uniform source contribution preserves previous processed pixels in feedback.
         frame.putalpha(round(self.mix * 255))
         pixels = frame.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
@@ -169,7 +179,8 @@ class ProjectMBackend:
         gl.glBindFramebuffer(gl.GL_FRAMEBUFFER, self.fbo)
         gl.glPixelStorei(gl.GL_PACK_ALIGNMENT, 1)
         raw = gl.glReadPixels(0, 0, *self.size, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
-        return Image.frombytes("RGBA", self.size, raw).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+        frame = Image.frombytes("RGBA", self.size, raw).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+        return frame.crop((self.crop_left, 0, self.crop_left + self.frame_size[0], self.frame_size[1]))
 
     def close(self):
         global _users

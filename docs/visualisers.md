@@ -15,7 +15,7 @@ together with the rest of the image. Nothing redraws clean lyrics over the resul
 ```
 
 Use either engine alone or both in the desired list order, with up to eight
-stages. Each stage has independent feedback state. `input_mix` (0.001–1) is the
+stages. Each stage has independent feedback state. `input_mix` (0.001â€“1) is the
 new full-frame contribution; lower values retain more previous processed pixels.
 Original paired presets are `feedback` (audio-reactive swirl/echo),
 `kaleidoscope` (sixfold angular distortion) and `julia` (bounded Julia-orbit
@@ -123,6 +123,17 @@ and closes its page/browser through Puppeteer on success and failure before
 removing only that owned profile. It does not attach to a signed-in browser.
 projectM destroys its instance, textures, framebuffer and hidden GLFW window.
 
+## Portrait mapping
+
+In 0.1.4+, the pinned projectM legacy VideoEcho path's portrait stretch is
+avoided with a square overscan canvas: the whole input frame is placed at its
+original pixel size in the centre, processed by the unmodified engine, and
+cropped back to the requested dimensions. The manifest records frame/canvas
+sizes and mapping. Landscape/square projectM and Butterchurn use native viewports.
+Presets use the engine canvas coordinates, so material can move through the
+overscan margin. No post-effect lyric or sprite overlay is drawn. Neutral mapping
+is tested in portrait, landscape and square formats for both engines.
+
 ## External presets and potential problems
 
 A preset may instead be a pinned `{ "path": "...", "sha256": "..." }` file
@@ -138,7 +149,7 @@ Adjust the preset/input mix or use a less aggressive stage when necessary.
 Do not report a pre-effect text-bounds pass as final-image acceptance.
 
 Butterchurn/Chromium startup and frame readback cost time, especially on software
-WebGL. CPU↔GPU copies are deliberate offline boundaries; no real-time throughput
+WebGL. CPUâ†”GPU copies are deliberate offline boundaries; no real-time throughput
 is promised. An unavailable GPU, mismatched pin, missing executable, shader
 failure or changed input fails explicitly and retains failure evidence.
 

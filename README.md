@@ -147,8 +147,8 @@ analysis outputs into the source distribution.
 
 ## Source, contribution and releases
 
-[Canonical repository](https://github.com/kieransimkin/FrameRudiments) Â·
-[Python package](https://pypi.org/project/framerudiments/) Â·
+[Canonical repository](https://github.com/kieransimkin/FrameRudiments) Ã‚Â·
+[Python package](https://pypi.org/project/framerudiments/) Ã‚Â·
 [Issues and improvements](https://github.com/kieransimkin/FrameRudiments/issues)
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing the engine. Improvements
@@ -188,3 +188,5 @@ Optional runtime setup is explicit; the base renderer still works without Node,
 a browser or projectM. Feedback is sequential, and GPU output can vary by driver.
 Inspect processed/encoded glyphs and safe zones; pre-effect text bounds cannot
 prove final legibility.
+
+Version 0.1.4 preserves portrait geometry in pinned projectM legacy presets through a recorded square overscan/crop mapping; the upstream engine remains unmodified. Neutral portrait/landscape/square mapping is tested for both backends.

@@ -1,5 +1,5 @@
 """Offline frame composition on a traceable musical clock."""
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 from .project import Project
 from .render import render, preflight

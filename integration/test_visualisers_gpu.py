@@ -91,3 +91,34 @@ def test_butterchurn_shader_failure_closes_browser(tmp_path):
 def test_projectm_missing_preset_fails_instead_of_idle_fallback(tmp_path):
     with pytest.raises(RuntimeError, match="preset failed"):
         ProjectMBackend((160, 240), 60, tmp_path / "does-not-exist.milk", .8, 0, tmp_path)
+
+
+@pytest.mark.parametrize("size", [(180, 320), (320, 180), (240, 240)])
+@pytest.mark.parametrize("engine,factory,ext", [("projectm", ProjectMBackend, "milk"), ("butterchurn", ButterchurnBackend, "json")])
+def test_neutral_mapping_preserves_source_pixel_geometry(tmp_path, size, engine, factory, ext):
+    # Disable all artistic transforms to separate host geometry from preset choices.
+    milk = ('[preset00]\nfDecay=1\nfGammaAdj=1\nfWaveAlpha=0\nfShader=0\nmv_a=0\n'
+            'ob_size=0\nib_size=0\nwarp=0\nzoom=1\nfZoomExponent=1\nrot=0\nsx=1\nsy=1\n'
+            'dx=0\ndy=0\nfVideoEchoAlpha=0\n')
+    preset = dict(baseVals=dict(decay=1, gammaadj=1, wave_a=0, shader=0, mv_a=0,
+        ob_size=0, ib_size=0, warp=0, zoom=1, zoomexp=1, rot=0, sx=1, sy=1, dx=0, dy=0, echo_alpha=0),
+        shapes=[], waves=[], init_eqs_str='', frame_eqs_str='', pixel_eqs_str='', warp='', comp='')
+    target = tmp_path / f'neutral.{ext}'
+    target.write_text(milk if engine == 'projectm' else json.dumps(preset), encoding='utf-8')
+    image = Image.new('RGBA', size, 'black')
+    width, height = size
+    expected = (width//2-20, height//2-20, width//2+21, height//2+21)
+    draw = ImageDraw.Draw(image)
+    draw.rectangle((expected[0], expected[1], expected[2]-1, expected[3]-1), fill='white')
+    draw.rectangle((8, 8, 24, 24), fill='red')
+    backend = factory(size, 60, target, 1, 0, tmp_path)
+    try:
+        output = backend.process(image, SimpleNamespace(frame=0, output_seconds=0), array('f', [0]*2048))
+        red, green, blue = output.convert('RGB').split()
+        white = ImageChops.darker(ImageChops.darker(red, green), blue).point(lambda value: 255 if value > 80 else 0)
+        assert all(abs(a-b) <= 2 for a, b in zip(white.getbbox(), expected))
+        assert output.getpixel((16, 16))[0] > 100 and output.getpixel((16, 16))[2] < 10
+        assert output.size == size
+    finally:
+        backend.close()
+    assert all(backend.evidence['cleanup'].values())
