@@ -327,13 +327,16 @@ def default_renderers():
         registry.register(name, factory)
     from .advanced_renderers import register_extended_renderers
     register_extended_renderers(registry)
+    from .circular_renderers import register_circular_renderers
+    register_circular_renderers(registry)
     return registry
 
 
 class RudimentLayer:
     def __init__(self, project, cfg, registry, context_at):
         fields(cfg, {"id", "type", "renderer", "motion", "bounds", "axes", "style", "history_frames",
-                     "history_stride", "opacity", "start_seconds", "end_seconds", "cue_labels"}, "rudiment layer")
+                     "history_stride", "opacity", "start_seconds", "end_seconds", "cue_labels",
+                     "visual", "modulations"}, "rudiment layer")
         self.project, self.cfg, self.context_at = project, cfg, context_at
         self.id = cfg["id"]
         self.bounds = rectangle(cfg.get("bounds", [0, 0, project.width, project.height]),
@@ -362,8 +365,23 @@ class RudimentLayer:
             isinstance(cfg["renderer"], str) and cfg["renderer"].startswith(("spectrum-", "spectrogram-")))
         self.history_frames = integer(cfg.get("history_frames", 256 if spectral_view else 64), "history frames", minimum=1, maximum=512)
         self.history_stride = integer(cfg.get("history_stride", 1), "history stride", minimum=1, maximum=120)
-        left, top, right, bottom = self.bounds
-        self.renderer, identity = registry.create(cfg["renderer"], (right - left, bottom - top), cfg.get("style", {}))
+        from .visual_style import VisualStyle
+        from .modulation import RudimentModulations
+        self._registry = registry
+        self._renderer_name = cfg["renderer"]
+        self._size = (self.bounds[2] - self.bounds[0], self.bounds[3] - self.bounds[1])
+        if not isinstance(cfg.get("visual", {}), dict):
+            raise ValueError("visual must be a style object")
+        self.visual_config = dict(cfg.get("visual", {}))
+        self.visual_template = VisualStyle(self.visual_config)
+        self.base_style = dict(cfg.get("style", {}))
+        if self.visual_template.palette is not None:
+            self.base_style["colours"] = ["#{:02x}{:02x}{:02x}{:02x}".format(*colour)
+                                          for colour in self.visual_template.palette]
+        self.modulations = RudimentModulations(project, cfg.get("modulations", []), context_at)
+        project.inputs.extend(self.modulations.files)
+        self._styled_renderers = {}
+        self.renderer, identity = registry.create(cfg["renderer"], self._size, self.base_style)
         if "source" in identity:
             project.inputs.append(identity["source"])
         self.spectrum_bands = spectrum_bands(self.motion, self.axes) if getattr(self.renderer, "requires_spectrum", False) else ()
@@ -373,7 +391,9 @@ class RudimentLayer:
         self.evidence = {"renderer": identity, "dimensions": self.dimensions,
                          "history_frames": self.history_frames, "history_stride": self.history_stride,
                          "history_clock": "encoded frame; native source/continuous clock per motion",
-                         "viewport": self.bounds, "style": cfg.get("style", {}), "clipping": "viewport", "config": cfg}
+                         "viewport": self.bounds, "style": cfg.get("style", {}),
+                         "visual": self.visual_config, "modulations": self.modulations.evidence,
+                         "clipping": "viewport", "config": cfg}
 
     def active(self, context):
         return (self.start <= context.source_seconds < self.end and
@@ -401,11 +421,30 @@ class RudimentLayer:
         self.frame_report = None
         if not self.active(context):
             return None
-        viewport = self.renderer.render(self.data(context))
-        expected = (self.bounds[2] - self.bounds[0], self.bounds[3] - self.bounds[1])
+        from .visual_style import VisualStyle
+        style, visual, modulation_report = self.modulations.apply(context, self.base_style, self.visual_config)
+        renderer = self.renderer
+        if style != self.base_style:
+            key = repr(sorted(style.items()))
+            renderer = self._styled_renderers.get(key)
+            if renderer is None:
+                renderer, _ = self._registry.create(self._renderer_name, self._size, style)
+                if callable(getattr(renderer, "prepare", None)):
+                    renderer.prepare(self.project)
+                if len(self._styled_renderers) >= 16:
+                    self._styled_renderers.clear()
+                self._styled_renderers[key] = renderer
+        viewport = renderer.render(self.data(context))
+        expected = self._size
         if not isinstance(viewport, Image.Image) or viewport.mode != "RGBA" or viewport.size != expected:
             raise ValueError(f"Renderer {self.cfg['renderer']} must return viewport-sized RGBA image")
-        self.frame_report = getattr(self.renderer, "frame_report", None)
+        report = getattr(renderer, "frame_report", None)
+        if modulation_report:
+            report = dict(report, modulations=modulation_report) if report is not None else dict(
+                kind="rudiment-visual-modulation", modulations=modulation_report)
+        self.frame_report = report
+        if visual:
+            viewport = VisualStyle(visual).apply(viewport, getattr(renderer, "background", (0, 0, 0, 0)))
         viewport = alpha_scaled(viewport, self.opacity)
         bounds = transformed_bounds(viewport, self.bounds[0], self.bounds[1])
         image.alpha_composite(viewport, self.bounds[:2])

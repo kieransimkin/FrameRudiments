@@ -81,8 +81,12 @@ A modular layer uses `type: "rudiment"`, `renderer` (`particles`, `bars`,
 `waveform`, `path`, `spectrum` or an explicitly registered trusted Python renderer),
 `motion`, integer-pixel `bounds`, optional original-dimension `axes`, `style`,
 `history_frames`, `history_stride`, `opacity` and the existing source-time/cue
-visibility gates. See [rudiment-renderers.md](rudiment-renderers.md) for the
-complete style and extension contract. They share the same native sample and
+visibility gates. Every rudiment layer additionally accepts optional `visual`
+(palettes, gradients, colour grading and image transforms) and `modulations`
+(up to 32 native DanceRudiments driving numeric renderer `style.*` or shared
+`visual.*` properties). See [rudiment-renderers.md](rudiment-renderers.md)
+and [annular-modulation.md](annular-modulation.md) for validated controls.
+All rudiment layers share the same native sample and
 source/frame clock as sprites; waveform views trace the supplied rudiment
 values and do not compute PCM audio or frequency evidence.
 

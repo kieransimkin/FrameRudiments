@@ -1,7 +1,7 @@
 # Visualisation Atlas: researched display families and implementation map
 
-FrameRudiments offers **41 named built-in Rudiment renderers** (the original
-five and 36 additional modes). This catalogue documents techniques from
+FrameRudiments offers **101 named built-in Rudiment renderers** (the original
+five, the first 36 advanced views and **60 new circular/annular modes**). This catalogue documents techniques from
 oscilloscopes, analogue spectrum analysers, classic Winamp-era visualisers,
 audio editors, scientific sonograms and modern time-frequency plotting tools.
 Run `framerudiments renderers` for the authoritative registry and consult the
@@ -17,6 +17,16 @@ RMS/levels come from the calibrated native recording, exactly as documented
 in [spectrum.md](spectrum.md). This module changes the **rendering of measured
 bands**, not the upstream analysis. If StemLab recording's source/audio clock
 does not match the programme, the author must correct the source association.
+
+## New: 60 circular modes, gradients and DanceRudiment modulation
+
+See the [Annular and Modulation reference](annular-modulation.md) for the full
+60-mode renderer table, 16 built-in palette families, custom RGB/HSV gradients,
+spatial and amplitude-based colour mapping, and up to 32 independent native
+DanceRudiment modulators per layer. Each modulator can drive renderer geometry
+or shared colour/image properties at the precise native source/frame time. The
+CI gallery includes 101 renderer panels and 12 additional native-modulated
+colour demonstration panels; all spectral inputs remain synthetic test values.
 
 ## Supported views: spectrum and spectral history
 
@@ -107,7 +117,7 @@ just a named Rudiment pattern:
 }
 ```
 
-The 36 added renderers use common `colours`, `background`, `padding`; spectral
+The first 36 advanced renderers use common `colours`, `background`, `padding`; spectral
 modes additionally accept `floor_db` (-240..0), `ceiling_db` (> floor, up to
 60), `line_width` (1..24), `contrast` (.1..4), and `history_limit` (8..256).
 `contrast` is a display-only heatmap gamma, not a change to stored levels;
@@ -127,7 +137,7 @@ spectrum/spectrogram modes, and 64 to motion modes; override for longer trails.
 
 `.github/workflows/visualisation-gallery.yml` builds the entire test gallery on
 PRs and main. It first runs the full visualisation mode tests and linting, then
-renders **four** frames per registered mode, checks every expected preview and
+renders **four** frames per registered mode and twelve native-modulated style scenes, checks every expected preview and
 publishes the complete `catalogue.json` and HTML/PNG site as a portable Actions
 artifact. **Only main** (or manual runs on main) can deploy via GitHub Pages;
 PRs run verification without publishing unreviewed changes. Configure repository
@@ -144,7 +154,7 @@ StemLab Fourier demo and [spectrum.md](spectrum.md). Reproduction:
 
 ```sh
 python -m pip install -e '.[dev]'
-python -m pytest -q tests/test_advanced_renderers.py
+python -m pytest -q tests/test_advanced_renderers.py tests/test_visualisation_modulation.py
 python scripts/generate_visualisation_gallery.py --output _site
 ```
 

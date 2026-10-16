@@ -52,6 +52,84 @@ MOTION_VIEWS = (
     ViewSpec("phase-portrait", "motion", "Two-dimensional history using first two motion axes", "XY oscilloscopes / Lissajous"),
     ViewSpec("phase-points", "motion", "Scatter plot of paired rudiment axes", "phase-space plots"),
 )
-ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS
+# Circular and annular modes: distinct polar geometries, not palette aliases.
+_CIRCULAR_SPECTRUM = {
+    "bars": "Continuous radial frequency bars rooted at the inner ring",
+    "bars-inward": "Radial bars growing inward from the outer perimeter",
+    "bars-bipolar": "Centred, bidirectional radial magnitude bars",
+    "bars-mirror": "Bidirectional ring bars with endpoint markers",
+    "split": "Alternating inward/outward frequency bars",
+    "sunburst": "Alternating-length radial sunburst analyser",
+    "fan": "Filled wedge-frequency fan analyser",
+    "petals": "Thin sector petals sized by frequency-band strength",
+    "led": "Segmented radial LED meter from inner to outer ring",
+    "led-inward": "LED meter counting backwards from the outside",
+    "ticks": "Isolated radial magnitude-position ticks",
+    "arc": "Concentric miniature gauge arcs for each band",
+    "dial": "Graduated frequency dial with dot-end needles",
+    "dots": "Displaced radial frequency-bin dots",
+    "lollipop": "Radial bar stems with circular end markers",
+    "orbit": "Angularly perturbed frequency-bin orbit dots",
+    "caterpillar": "Thick circular bead chain driven by spectral bins",
+    "peaks": "Selected local maximum spectral spokes",
+    "area": "Closed annular frequency response with filled band",
+    "line": "Closed radial spectrum outline",
+    "ribbon": "Nested concentric polygon ribbons",
+    "halo": "Layered low-alpha spectral halo lines",
+    "rose": "Alternating polar rose-style magnitude petals",
+    "concentric": "Multilayered frequency rings",
+    "sectors": "Coloured pie sector bars per frequency bin",
+    "layers": "Interleaved bands partitioned over concentric rings",
+    "gauge": "Single annular swept arc for mean visual band intensity",
+    "spiral": "Frequency bins plotted on an amplitude-perturbed spiral",
+    "helix": "Frequency bins along a multiple-turn polar trace",
+}
+_CIRCULAR_SPECTROGRAM = {
+    "time": "Annular spectrogram with time as radius and frequency as angle",
+    "rings": "Discrete concentric time-history rings coloured by band intensity",
+    "heatmap": "Polar annulus time-frequency heatmap",
+    "stripes": "Alternating tinted strips across the polar heatmap",
+    "contour": "Quantised spectral power annulus, band-level contour regions",
+    "frequency": "Time mapped to angle, frequency to radius",
+    "sweep": "Radar-style time sweep with old measurements faded",
+    "spiral": "Dominant-band spectral history along a time spiral",
+}
+_CIRCULAR_MOTION = {
+    "line": "Signed native Rudiment history as a complete annular outline",
+    "fill": "Signed annular waveform with fill to the centre ring",
+    "area": "Filled area between motion trace and inner ring",
+    "envelope": "Unsigned Rudiment channel amplitude around a circular baseline",
+    "halo": "Translucent circular waveform aura",
+    "rose": "Alternating-petal annular waveform",
+    "pulse": "Per-point thickness pulse around a middle ring",
+    "mirror": "Inside/outside mirrored radial waveform envelopes",
+    "ribbon": "Annular ribbon between two native Rudiment axes",
+    "rings": "Concentric independent motion channels",
+    "bands": "Two-axis banded annular trace",
+    "bars": "Bipolar motion-history spokes rooted at a centred circle",
+    "spokes": "Circular discrete-time stem oscilloscope",
+    "led": "Radial LED trail driven by absolute Rudiment channel value",
+    "petals": "Sampled waveform sectors as radial petals",
+    "sectors": "Sector length encodes absolute Rudiment motion magnitude",
+    "arc": "Time-addressed arcs with per-sample radial position",
+    "dots": "Circular sampler dots mapped to signed amplitude",
+    "radar": "Radar-like radial motion traces with dot endpoints",
+    "trails": "Chronologically fading dots along the annular waveform",
+    "spiral": "Rudiment signal warped around a multi-turn time spiral",
+    "helix": "Waveform on a spiralling annular helix",
+}
+
+CIRCULAR_VIEWS = (
+    tuple(ViewSpec("spectrum-annular-" + name, "spectrum", description, "radial spectrum analyser")
+          for name, description in _CIRCULAR_SPECTRUM.items())
+    + tuple(ViewSpec("spectrogram-annular-" + name, "spectrogram", description, "polar sonogram")
+            for name, description in _CIRCULAR_SPECTROGRAM.items())
+    + tuple(ViewSpec("waveform-annular-" + name, "motion", description, "circular oscilloscope")
+            for name, description in _CIRCULAR_MOTION.items())
+    + (ViewSpec("phase-annular-portrait", "motion",
+                "Two native Rudiment dimensions mapped into annular angle and radius",
+                "polar XY oscilloscope"),)
+)
+ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS
 BY_NAME = {v.name: v for v in ALL_VIEWS}
 assert len(BY_NAME) == len(ALL_VIEWS)

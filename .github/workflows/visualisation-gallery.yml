@@ -24,9 +24,9 @@ jobs:
       - name: Install distribution and test tooling
         run: python -m pip install -e '.[dev]'
       - name: Validate all visualisation modes and deterministic output
-        run: python -m pytest -q tests/test_advanced_renderers.py
+        run: python -m pytest -q tests/test_advanced_renderers.py tests/test_visualisation_modulation.py
       - name: Lint gallery and renderer implementation
-        run: ruff check scripts/generate_visualisation_gallery.py src/framerudiments/advanced_renderers.py src/framerudiments/visualisation_catalogue.py tests/test_advanced_renderers.py
+        run: ruff check scripts/generate_visualisation_gallery.py src/framerudiments/advanced_renderers.py src/framerudiments/circular_renderers.py src/framerudiments/visualisation_catalogue.py src/framerudiments/visual_style.py src/framerudiments/modulation.py tests/test_advanced_renderers.py tests/test_visualisation_modulation.py
       - name: Render complete gallery from synthetic display fixtures
         run: python scripts/generate_visualisation_gallery.py --output _site
       - name: Validate generated site and image count
@@ -37,6 +37,11 @@ jobs:
           p = Path('_site')
           data = json.loads((p / 'catalogue.json').read_text())
           assert data['synthetic_test_data'] and data['not_audio_measurements']
+          assert len(data['views']) == 101
+          assert len(data['style_lab']) == 12
+          for item in data['style_lab']:
+              assert item['native_drivers'] == ['circle', 'bounce']
+              assert all((p / 'lab' / item['name'] / f'{i}.png').is_file() for i in range(len(data['frames'])))
           assert (p / 'index.html').is_file() and (p / '.nojekyll').exists()
           for row in data['views']:
               assert all((p / 'images' / row['name'] / f'{i}.png').is_file() for i in range(len(data['frames'])))

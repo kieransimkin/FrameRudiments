@@ -242,7 +242,7 @@ for pinned packs, licences, runtime setup, resume and interpretation limits.
 
 ## Visualisation Atlas and public gallery
 
-FrameRudiments now exposes 41 deterministic built-in Rudiment renderers,
+FrameRudiments now exposes **101 deterministic built-in Rudiment renderers**,
 including spectral waterfall, spectrogram heatmap (linear/log/mel/Bark/ERB
 **axis remappings**, not newly computed filterbanks), radial FFT-band views,
 and oscilloscope-inspired motion traces. All spectrum renderers require pinned,
@@ -252,5 +252,15 @@ calibrated StemLab Fourier evidence; motion traces are not raw PCM audio.
 (available after the Pages workflow is enabled and deployed), and read the
 [comprehensive method catalogue](docs/visualisation-atlas.md). Each PR checks
 and generates every mode; main deploys an interactive searchable gallery with
-four reproducible **synthetic** frames per mode. Enable Settings → Pages →
-GitHub Actions as the repository publication source.
+four reproducible **synthetic** frames per mode. It now also publishes
+**12 annotated native DanceRudiment colour/geometry modulation scenes**.
+
+New options include continuous/inward/bipolar/segmented circular spectrum bars,
+polar time-frequency heatmaps, annular and spiral waveform plots, custom gradient
+stops, 16 built-in colour palettes, glow/hue/rotation/scale effects and up to
+32 independent source-clocked Rudiment modulators targeting colour *or* any
+validated numeric renderer style parameter. All modulation evidence keeps its
+pinned/native input identity. See [all 60 new modes, gradient controls and
+modulation examples](docs/annular-modulation.md).
+
+Enable Settings → Pages → GitHub Actions as the repository publication source.

@@ -18,7 +18,7 @@ def test_every_new_renderer_is_deterministic_and_uses_its_source(spec):
     registry = default_renderers()
     renderer, identity = registry.create(spec.name, (320, 210), {"background": "#142238"})
     assert identity["source"]["sha256"]
-    assert identity["source"]["path"].endswith("advanced_renderers.py")
+    assert identity["source"]["path"].endswith(("advanced_renderers.py", "circular_renderers.py"))
     frame = fixture(95, spectral=spec.family != "motion")
     result = renderer.render(frame)
     assert result.mode == "RGBA" and result.size == (320, 210)
@@ -49,6 +49,12 @@ def test_galleries_cover_all_registered_renderers(tmp_path):
     saved = json.loads((site / "catalogue.json").read_text())
     assert saved["views"] == manifest["views"]
     assert "waveform" in (site / "index.html").read_text()
+    assert "Colour &amp; DanceRudiment modulation lab" in (site / "index.html").read_text()
+    assert len(manifest["style_lab"]) == 12
+    for item in manifest["style_lab"]:
+        assert item["native_drivers"] == ["circle", "bounce"]
+        assert all((site / "lab" / item["name"] / f"{i}.png").is_file() for i in range(len(FRAMES)))
+        assert len(item["modulation_samples"]) == len(FRAMES)
     for name in names:
         with Image.open(site / "images" / name / "0.png") as image:
             assert image.size == (480, 270)

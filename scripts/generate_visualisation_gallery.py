@@ -14,6 +14,8 @@ from types import SimpleNamespace
 from framerudiments.rudiment_renderers import RudimentFrame, RudimentSample, default_renderers
 from framerudiments.spectrum import SpectrumBand
 from framerudiments.visualisation_catalogue import ALL_VIEWS
+from framerudiments.visual_style import PALETTES, VisualStyle
+from framerudiments.modulation import RudimentModulations
 
 FRAMES = (35, 65, 95, 125)
 BASE_VIEWS = (
@@ -23,6 +25,72 @@ BASE_VIEWS = (
     ("path", "motion", "First two axes plotted as an XY motion path", "XY oscilloscope"),
     ("spectrum", "spectrum", "Calibrated StemLab band meter with peak holds", "frequency band meter"),
 )
+
+
+# These cards exercise the same *public* colour/modulation pipeline as project
+# renders. The driver is a real DanceRudiments named native pattern; its input
+# music data and output spectra are deliberately synthetic, never private.
+STYLE_LAB = (
+    ("sunset-radial", "spectrum-annular-bars", "sunset", "radial", "spectrum"),
+    ("neon-led", "spectrum-annular-led", "neon", "angular", "spectrum"),
+    ("fire-inward", "spectrum-annular-bars-inward", "fire", "radial", "spectrum"),
+    ("aurora-rose", "spectrum-annular-rose", "aurora", "angular", "spectrum"),
+    ("viridis-heatmap", "spectrogram-annular-heatmap", "viridis-inspired", "level", "spectrogram"),
+    ("ocean-sweep", "spectrogram-annular-sweep", "ocean", "radial", "spectrogram"),
+    ("sunset-mirror", "waveform-annular-mirror", "sunset", "angular", "motion"),
+    ("ice-spiral", "waveform-annular-spiral", "ice", "radial", "motion"),
+    ("rainbow-bars", "waveform-annular-bars", "rainbow", "angular", "motion"),
+    ("synthwave-ribbon", "waveform-annular-ribbon", "synthwave", "vertical", "motion"),
+    ("copper-oscilloscope", "waveform-oscilloscope", "copper", "horizontal", "motion"),
+    ("aurora-classic", "spectrum", "aurora", "vertical", "spectrum"),
+)
+
+
+def style_lab_frame(frame_number):
+    return SimpleNamespace(frame=frame_number, output_seconds=frame_number / 60,
+                           source_seconds=frame_number / 60, beat=frame_number / 30)
+
+
+def build_style_lab(output, registry):
+    """Generate finite examples using actual native DanceRudiments as modulators."""
+    clock = SimpleNamespace(beat_at=lambda t: t * 2)
+    project = SimpleNamespace(clock=clock, base=Path.cwd())
+    manifest = []
+    for name, renderer_name, palette_name, gradient_mode, family in STYLE_LAB:
+        controls = [
+            dict(id="native-rotation", motion={"kind": "named", "pattern": "circle"},
+                 axis="x", target="style.start_angle" if "annular-" in renderer_name else "visual.rotation",
+                 range=[-100, 100], curve="smoothstep"),
+            dict(id="native-hue", motion={"kind": "named", "pattern": "bounce"},
+                 axis="y", target="visual.hue_shift", range=[-110, 110], curve="sine"),
+            dict(id="native-gradient", motion={"kind": "named", "pattern": "circle"},
+                 axis="z", target="gradient.phase", range=[-.35, .35]),
+        ]
+        mods = RudimentModulations(project, controls, style_lab_frame)
+        base_style = {"padding": 10, "background": "#111d32"}
+        if renderer_name == "spectrum":
+            base_style["labels"] = False
+        visual = {"palette": palette_name,
+                  "gradient": {"mode": gradient_mode, "stops": palette_name,
+                               "space": "hsv", "blend": "replace", "wrap": "repeat"}}
+        root = output / "lab" / name
+        root.mkdir(parents=True, exist_ok=True)
+        samples = []
+        for idx, stamp in enumerate(FRAMES):
+            renderer_style, visual_style, report = mods.apply(style_lab_frame(stamp), base_style, visual)
+            # Reuse all original renderer controls; no separate demo geometry.
+            pal = VisualStyle(visual_style).palette
+            renderer_style["colours"] = ["#{:02x}{:02x}{:02x}{:02x}".format(*c) for c in pal]
+            renderer, _ = registry.create(renderer_name, (480, 270), renderer_style)
+            frame = fixture(stamp, spectral=family != "motion")
+            image = renderer.render(frame)
+            VisualStyle(visual_style).apply(image, getattr(renderer, "background", (0, 0, 0, 0))).save(root / f"{idx}.png")
+            samples.append({key: round(value["value"], 6) for key, value in sorted(report.items())})
+        manifest.append(dict(name=name, renderer=renderer_name, palette=palette_name,
+                             gradient=gradient_mode, native_drivers=["circle", "bounce"],
+                             modulation_samples=samples,
+                             synthetic_test_data=True, not_audio_measurements=True))
+    return manifest
 
 
 def fixture(frame_number, *, spectral):
@@ -71,7 +139,9 @@ def build_site(output):
             if image.mode != "RGBA" or image.size != (480, 270):
                 raise RuntimeError(f"Unexpected renderer output from {name}")
             image.save(image_directory / f"{index}.png", optimize=True)
+    lab = build_style_lab(output, registry)
     manifest = dict(schema="framerudiments.visualisation-gallery.v1", frames=list(FRAMES),
+                    style_lab=lab, palette_names=sorted(PALETTES),
                     synthetic_test_data=True, not_audio_measurements=True,
                     summary="Synthetic motion and invented calibrated-band numeric test fixtures, not real measured audio",
                     views=rows)
@@ -86,6 +156,18 @@ def build_site(output):
   <figure><img src="images/{name}/3.png" alt="Synthetic preview of {name}" data-mode="{name}" loading="lazy" width="480" height="270"></figure>
   <div class="tile-body"><div class="meta">{family} <span>· {origin}</span></div>
   <h2>{name}</h2><p>{description}</p></div></article>''')
+    style_cards = []
+    for entry in lab:
+        name = html.escape(entry["name"], quote=True)
+        renderer_name = html.escape(entry["renderer"], quote=True)
+        palette_name = html.escape(entry["palette"], quote=True)
+        gradient_mode = html.escape(entry["gradient"], quote=True)
+        style_cards.append(f'''<article class="tile"><figure><img src="lab/{name}/3.png"
+          data-lab="{name}" alt="Native DanceRudiment colour modulation for {renderer_name}" loading="lazy"
+          width="480" height="270"></figure><div class="tile-body">
+          <div class="meta">NATIVE RUDIMENT MODULATION · {palette_name}</div>
+          <h2>{renderer_name}</h2><p>{gradient_mode} gradient · circle/bounce motion drivers</p>
+          </div></article>''')
     html_text = '''<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="description" content="FrameRudiments renderer catalogue and reproducible synthetic visual tests">
@@ -102,7 +184,8 @@ h1{font-size:clamp(2.3rem,5.5vw,4.8rem);margin:16px 0;letter-spacing:-.055em;lin
 input[type=search]{background:#13223a;color:#fff;border:1px solid #405473;border-radius:9px;padding:12px;font:inherit;min-width:200px;flex:1}
 select,button{background:#172c46;color:#e9f1ff;border:1px solid #45627e;border-radius:9px;padding:11px 13px;font:inherit;cursor:pointer}
 input[type=range]{accent-color:#5ae6d4;width:175px}label{display:flex;gap:12px;align-items:center;color:#c8d8eb}
-main{max-width:1280px;margin:32px auto 70px;padding:0 24px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:20px}
+main{max-width:1280px;margin:32px auto 70px;padding:0 24px}.style-lab{margin:45px 0 54px}
+.style-lab>h2{font-size:1.75rem;line-height:1.2}.style-lab>.intro{margin-bottom:24px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:20px}
 .tile{min-width:0;overflow:hidden;border:1px solid #2a405d;border-radius:14px;background:#12213a;box-shadow:0 8px 24px #0002}
 .tile[hidden]{display:none}.tile figure{margin:0;aspect-ratio:16/9;overflow:hidden;background:#111d32}
 .tile img{width:100%;height:100%;object-fit:contain;display:block}.tile-body{padding:16px 19px 20px}
@@ -121,14 +204,20 @@ footer>div{max-width:1280px;margin:auto} .notice{border-left:3px solid #f8c477;p
 <select id="family" aria-label="Filter display family"><option value="all">All families</option><option value="motion">Rudiment motion</option><option value="spectrum">Instant spectrum</option><option value="spectrogram">History spectrograms</option></select>
 <label for="frame">Time <input id="frame" type="range" min="0" max="3" value="3" step="1"><output id="frame-label">4 / 4</output></label>
 <button id="play" type="button" aria-pressed="false">Play samples</button><small id="count" aria-live="polite"></small>
-</div></div><main><div class="grid" id="gallery">''' + "\n".join(cards) + '''</div></main>
+</div></div><main><section class="style-lab"><h2>Colour &amp; DanceRudiment modulation lab</h2>
+<p class="intro">Twelve additional visual tests combine shared gradients, palettes, native
+DanceRudiments circle/bounce movements and independently modulated geometry and
+colour. Spectrum input remains invented numeric test data, not measured audio.
+The playback control above scrubs the exact native-driver frames.</p>
+<div class="grid">''' + "\n".join(style_cards) + '''</div></section>
+<h2>Full renderer catalogue</h2><div class="grid" id="gallery">''' + "\n".join(cards) + '''</div></main>
 <footer><div>FrameRudiments is a deterministic rendering toolkit. Catalogue previews are structural display tests, not claims about sound or perceptual quality. Exact analyses should come from pinned StemLab recordings. <a href="https://github.com/kieransimkin/FrameRudiments">Contribute on GitHub</a>.</div></footer>
 <script>
-const images=[...document.querySelectorAll('img[data-mode]')],cards=[...document.querySelectorAll('.tile')];
+const images=[...document.querySelectorAll('img[data-mode],img[data-lab]')],cards=[...document.querySelectorAll('.tile')];
 const slider=document.getElementById('frame'),label=document.getElementById('frame-label');
 const search=document.getElementById('search'),family=document.getElementById('family'),count=document.getElementById('count');
 const play=document.getElementById('play');let timer=null;
-function update(){const t=Number(slider.value);for(const img of images){img.src='images/'+img.dataset.mode+'/'+t+'.png'}label.textContent=(t+1)+' / 4'}
+function update(){const t=Number(slider.value);for(const img of images){img.src=(img.dataset.lab?'lab/'+img.dataset.lab:'images/'+img.dataset.mode)+'/'+t+'.png'}label.textContent=(t+1)+' / 4'}
 function filter(){const q=search.value.toLowerCase().trim(),g=family.value;let n=0;for(const card of cards){
 const ok=(g==='all'||g===card.dataset.group)&&card.dataset.search.toLowerCase().includes(q);card.hidden=!ok;if(ok)n++}count.textContent=n+' visible'}
 function toggle(){if(timer){clearInterval(timer);timer=null;play.textContent='Play samples';play.setAttribute('aria-pressed','false')}else{
