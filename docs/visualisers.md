@@ -15,7 +15,7 @@ together with the rest of the image. Nothing redraws clean lyrics over the resul
 ```
 
 Use either engine alone or both in the desired list order, with up to eight
-stages. Each stage has independent feedback state. `input_mix` (0.001â€“1) is the
+stages. Each stage has independent feedback state. `input_mix` (0.001–1) is the
 new full-frame contribution; lower values retain more previous processed pixels.
 Original paired presets are `feedback` (audio-reactive swirl/echo),
 `kaleidoscope` (sixfold angular distortion) and `julia` (bounded Julia-orbit
@@ -94,7 +94,8 @@ the next warp input. This touches pinned internal properties, so changing the
 Butterchurn version requires adapter review and real-engine acceptance tests.
 projectM uses the public 4.2 burn-in/FBO/time APIs and one zero-time allocation
 warmup. Preset selection is locked; failures abort instead of retaining an idle
-or previous preset unnoticed.
+or previous preset unnoticed. Native error/fallback log messages are captured
+through the pinned 4.2 API; malformed warp/composite shaders abort too.
 
 `effects-audio.f32` is stereo native-rate PCM decoded with the **same shared
 FFmpeg trim, repeat and qsin fade filters** as the encoded soundtrack. Each
@@ -120,7 +121,8 @@ cross-platform bit-exact contract.
 
 The headless helper creates its own temporary profile, blocks external requests,
 and closes its page/browser through Puppeteer on success and failure before
-removing only that owned profile. It does not attach to a signed-in browser.
+removing only that owned profile. Bounded retries handle transient Windows file
+locks after browser closure; an unresolved cleanup failure aborts the render. It does not attach to a signed-in browser.
 projectM destroys its instance, textures, framebuffer and hidden GLFW window.
 
 ## Portrait mapping
@@ -149,7 +151,7 @@ Adjust the preset/input mix or use a less aggressive stage when necessary.
 Do not report a pre-effect text-bounds pass as final-image acceptance.
 
 Butterchurn/Chromium startup and frame readback cost time, especially on software
-WebGL. CPUâ†”GPU copies are deliberate offline boundaries; no real-time throughput
+WebGL. CPU↔GPU copies are deliberate offline boundaries; no real-time throughput
 is promised. An unavailable GPU, mismatched pin, missing executable, shader
 failure or changed input fails explicitly and retains failure evidence.
 
@@ -159,3 +161,17 @@ wheel does not bundle the native library, browser or npm modules. When
 redistributing those runtimes, retain their own licences and corresponding
 source/relinking obligations. See the upstream [Butterchurn repository](https://github.com/jberg/butterchurn)
 and [pinned projectM source](https://github.com/projectM-visualizer/projectm/tree/349b7cc2db312d47cef6be24c6856ced6643a385).
+
+![Actual synthetic frame before and after both visualisers](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/full-frame-comparison.png)
+
+Actual FrameRudiments 0.1.4 candidate output: timed captions and native moving
+sprites/atlas before composition effects (left) and after both real engines
+(right). Synthetic oscillator audio and example words; this is a software demo.
+[Play the four-second demonstration](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/full-frame-demo.mp4)
+and [read its transcript](https://github.com/kieransimkin/FrameRudiments/blob/v0.1.4/docs/media/demo-transcript.md).
+Playback is user-controlled; no automatic media playback is required.
+
+![Generated processing-order illustration; not a screenshot](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/effects-pipeline.svg)
+
+Generated vector illustration of the processing order. The comparison above
+and linked video are captured renderer output; the diagram is explanatory.

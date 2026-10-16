@@ -122,3 +122,14 @@ def test_neutral_mapping_preserves_source_pixel_geometry(tmp_path, size, engine,
     finally:
         backend.close()
     assert all(backend.evidence['cleanup'].values())
+
+
+@pytest.mark.parametrize("kind", ["WARP", "COMP"])
+def test_projectm_shader_error_cannot_silently_fall_back(tmp_path, kind):
+    preset = (ASSETS / "feedback.milk").read_text()
+    preset = (f"MILKDROP_PRESET_VERSION=201\nPSVERSION_{kind}=2\n" + preset +
+              f"{kind.lower()}_1=shader_body {{ ret = THIS_IS_NOT_VALID; }}\n")
+    path = tmp_path / "broken.milk"
+    path.write_text(preset, encoding="utf-8")
+    with pytest.raises(RuntimeError, match="projectM preset failed"):
+        ProjectMBackend((160, 240), 60, path, .8, 0, tmp_path)

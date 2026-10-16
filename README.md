@@ -147,8 +147,8 @@ analysis outputs into the source distribution.
 
 ## Source, contribution and releases
 
-[Canonical repository](https://github.com/kieransimkin/FrameRudiments) Ã‚Â·
-[Python package](https://pypi.org/project/framerudiments/) Ã‚Â·
+[Canonical repository](https://github.com/kieransimkin/FrameRudiments) ·
+[Python package](https://pypi.org/project/framerudiments/) ·
 [Issues and improvements](https://github.com/kieransimkin/FrameRudiments/issues)
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before changing the engine. Improvements
@@ -190,3 +190,17 @@ Inspect processed/encoded glyphs and safe zones; pre-effect text bounds cannot
 prove final legibility.
 
 Version 0.1.4 preserves portrait geometry in pinned projectM legacy presets through a recorded square overscan/crop mapping; the upstream engine remains unmodified. Neutral portrait/landscape/square mapping is tested for both backends.
+
+![Actual synthetic frame before and after both visualisers](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/full-frame-comparison.png)
+
+Actual FrameRudiments 0.1.4 candidate output: timed captions and native moving
+sprites/atlas before composition effects (left) and after both real engines
+(right). Synthetic oscillator audio and example words; this is a software demo.
+[Play the four-second demonstration](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/full-frame-demo.mp4)
+and [read its transcript](https://github.com/kieransimkin/FrameRudiments/blob/v0.1.4/docs/media/demo-transcript.md).
+Playback is user-controlled; no automatic media playback is required.
+
+![Generated processing-order illustration; not a screenshot](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/effects-pipeline.svg)
+
+Generated vector illustration of the processing order. The comparison above
+and linked video are captured renderer output; the diagram is explanatory.

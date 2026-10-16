@@ -87,3 +87,17 @@ for the `id`, `engine`, `preset`, `input_mix`, `seed` and `trusted_preset` field
 runtime setup and sequential feedback contract. Both engines process all existing
 layers, including native moving sprites/atlases, captions and lyric art, before
 encoding. Existing projects without `effects` keep the original composition path.
+
+![Actual synthetic frame before and after both visualisers](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/full-frame-comparison.png)
+
+Actual FrameRudiments 0.1.4 candidate output: timed captions and native moving
+sprites/atlas before composition effects (left) and after both real engines
+(right). Synthetic oscillator audio and example words; this is a software demo.
+[Play the four-second demonstration](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/full-frame-demo.mp4)
+and [read its transcript](https://github.com/kieransimkin/FrameRudiments/blob/v0.1.4/docs/media/demo-transcript.md).
+Playback is user-controlled; no automatic media playback is required.
+
+![Generated processing-order illustration; not a screenshot](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/effects-pipeline.svg)
+
+Generated vector illustration of the processing order. The comparison above
+and linked video are captured renderer output; the diagram is explanatory.

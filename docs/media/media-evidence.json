@@ -1,0 +1,50 @@
+{
+  "context": "Actual FrameRudiments0.1.4 candidate render; source91e69c1; synthetic words/tone/art only",
+  "frames": 240,
+  "fps": 60,
+  "dimensions": [
+    360,
+    640
+  ],
+  "full_decode": "passed",
+  "source_time_seconds": 2,
+  "engines": [
+    {
+      "engine": "butterchurn",
+      "preset": "9dc533150c3807697041399961802a7c6056a8de01922bcf07440dabea33385f",
+      "runtime_version": "2.6.7"
+    },
+    {
+      "engine": "projectm",
+      "preset": "815d9c4e1574908b67aff3c7d735dc2e24b01ac1f03ceb582f268965a91d5785",
+      "runtime_version": "4.2.0-dev"
+    }
+  ],
+  "portrait_canvas": [
+    640,
+    640
+  ],
+  "frame_size": [
+    360,
+    640
+  ],
+  "illustration": "effects-pipeline.svg is a generated explanatory diagram, not screenshot evidence",
+  "files": {
+    "demo-transcript.md": {
+      "sha256": "ef6545efb1902c446f68b8dccea915e23ddc47ead4ff605d249fa82a24324dfe",
+      "bytes": 793
+    },
+    "effects-pipeline.svg": {
+      "sha256": "73671c92921a02d0017e2d7bb33bff4527311cd60672483b6c469ba7fc52c19c",
+      "bytes": 2283
+    },
+    "full-frame-comparison.png": {
+      "sha256": "fe53c0e80dfdbb52b48ae55b8bf0330793b24c76b6644d0cdad444e91f6e05ee",
+      "bytes": 88048
+    },
+    "full-frame-demo.mp4": {
+      "sha256": "5014dd1e467a73be1f17b18c03e55872c739178fdab5cdb4ad62e629019909e1",
+      "bytes": 285522
+    }
+  }
+}

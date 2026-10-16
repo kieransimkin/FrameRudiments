@@ -68,6 +68,13 @@ class ProjectMBackend:
             if not self.handle:
                 raise RuntimeError("projectM could not create its renderer")
             self.failures = []
+            log_type = C.CFUNCTYPE(None, C.c_char_p, C.c_int, C.c_void_p)
+            def collect_log(message, level, user):
+                text = (message or b"").decode("utf-8", "replace")
+                if level >= 5 or (level >= 4 and "fallback" in text.lower()):
+                    self.failures.append(text)
+            self.log_callback = log_type(collect_log)
+            self.lib.projectm_set_log_callback(self.log_callback, True, None)
             callback = C.CFUNCTYPE(None, C.c_char_p, C.c_char_p, C.c_void_p)
             self.failure_callback = callback(lambda name, message, user: self.failures.append(
                 (message or b"Unknown preset error").decode("utf-8", "replace")))
@@ -112,6 +119,7 @@ class ProjectMBackend:
         specs = {
             "create": (h, []), "destroy": (None, [h]),
             "get_version_components": (None, [C.POINTER(C.c_int)] * 3),
+            "set_log_callback": (None, [C.c_void_p, C.c_bool, C.c_void_p]),
             "set_window_size": (None, [h, C.c_size_t, C.c_size_t]),
             "set_mesh_size": (None, [h, C.c_size_t, C.c_size_t]),
             "set_fps": (None, [h, C.c_int32]),
@@ -151,6 +159,7 @@ class ProjectMBackend:
     def process(self, image, context, pcm):
         gl = self.gl
         self.glfw.make_context_current(self.window)
+        self.lib.projectm_set_log_callback(self.log_callback, True, None)
         frame = image.convert("RGBA")
         if self.size != self.frame_size:
             canvas = Image.new("RGBA", self.size, "black")
@@ -197,6 +206,8 @@ class ProjectMBackend:
                 self.gl.glDeleteFramebuffers(1, [self.fbo])
             self.glfw.destroy_window(self.window)
             self.window = None
+        if hasattr(self, "log_callback"):
+            self.lib.projectm_set_log_callback(None, True, None)
         if self.registered:
             _users -= 1
             if not _users:
