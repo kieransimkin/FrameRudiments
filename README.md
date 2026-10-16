@@ -61,6 +61,13 @@ its own tone, sprite, LRC, CUE and four-dimensional recording.
   Independent composite motion channels preserve separate bounce/sway/tilt.
   All transformed sprite alpha extents are checked against declared bounds
   on every frame. Custom scene drawing has its own review obligations.
+* Modular rudiment views: seeded moving particles and trails, signed bar graphs,
+  scrolling multi-dimensional waveform traces, XY paths and calibrated Fourier
+  spectrum views with local peak analysis and peak holds. Any view can use
+  the existing native motion sources; a trusted Python registry supports more
+  renderers without another frame loop or clock. See
+  [docs/rudiment-renderers.md](docs/rudiment-renderers.md) and run
+  `framerudiments demo demo --rudiments --font /path/to/font.ttf`.
 * The existing seeded paper-glider flight model and connected-alpha sprite
   cleaner, plus a general frame-addressed lyric-art entrance/hold/exit helper.
   The flight model is stylized animation; it does not simulate real aerodynamics
@@ -69,6 +76,12 @@ its own tone, sprite, LRC, CUE and four-dimensional recording.
   count and every decoded timestamp checked for CFR. Audio length, sample
   rate and channel count are checked against the source. Includes encoded QA
   stills, a poster, phone preview, input/output hashes, commands and logs.
+
+The [spectrum guide](docs/spectrum.md) covers saved StemLab Fourier calibration,
+frequency labels, peak controls and per-frame JSONL effect signals. Run
+`framerudiments renderers` for the current built-in names. The optional
+`demo --spectrum` generator uses StemLab 1.6+; rendering its saved recording
+keeps the core package lightweight.
 
 ## Project format
 

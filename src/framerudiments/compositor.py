@@ -6,7 +6,8 @@ import math
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 from .effects import alpha_scaled, transformed_bounds, within, directional_trail, atlas_cell
-from .io import fields, number, integer
+from .io import fields, number, integer, rectangle
+from .rudiment_renderers import RudimentLayer, default_renderers
 from .motion import Motion
 from .timeline import EventTrack
 
@@ -19,15 +20,6 @@ class FrameContext:
     beat: float
     lyric: dict | None
     cue: dict | None
-
-
-def rectangle(value, name, width, height):
-    if not isinstance(value, (list, tuple)) or len(value) != 4:
-        raise ValueError(f"{name} needs [left, top, right, bottom]")
-    value = tuple(number(x, name) for x in value)
-    if not (0 <= value[0] < value[2] <= width and 0 <= value[1] < value[3] <= height):
-        raise ValueError(f"{name} must be an ordered rectangle inside the frame")
-    return value
 
 
 class TextBlock:
@@ -191,7 +183,7 @@ class Sprite:
 
 
 class Compositor:
-    def __init__(self, project, *, scene=None):
+    def __init__(self, project, *, scene=None, renderers=None):
         self.project, self.scene = project, scene
         bg = project.data.get("background", {})
         fields(bg, {"colour", "image", "fit"}, "background")
@@ -210,7 +202,10 @@ class Compositor:
             self.background.alpha_composite(source, ((project.width - source.width) // 2,
                                                        (project.height - source.height) // 2))
         self.lyrics, self.cues = EventTrack(project.lyrics), EventTrack(project.cues)
-        self.layers = [Sprite(project, cfg) for cfg in project.data.get("layers", [])]
+        self.renderers = default_renderers() if renderers is None else renderers
+        self.layers = [RudimentLayer(project, cfg, self.renderers, self.context)
+                       if cfg.get("type") == "rudiment" else Sprite(project, cfg)
+                       for cfg in project.data.get("layers", [])]
         ids = [x.id for x in self.layers]
         if len(set(ids)) != len(ids):
             raise ValueError("Layer ids must be unique")
@@ -238,10 +233,13 @@ class Compositor:
             self.identity.append((item["text"], TextBlock(project, item["style"], label="identity")))
         self.extents, self.text_states = {}, {}
 
-    def frame(self, frame):
+    def context(self, frame):
         p = self.project
-        ctx = FrameContext(frame, frame / p.fps, p.source_time(frame), p.continuous_beat(frame),
-                           self.lyrics.at(frame), self.cues.at(frame))
+        return FrameContext(frame, frame / p.fps, p.source_time(frame), p.continuous_beat(frame),
+                            self.lyrics.at(frame), self.cues.at(frame))
+
+    def frame(self, frame):
+        ctx = self.context(frame)
         image = self.background.copy()
         if self.scene:
             image = self.scene(image, ctx)
@@ -272,7 +270,12 @@ class Compositor:
             self.text_states.setdefault(text, dict(first_frame=frame, bounds=text_bounds))
         return image.convert("RGB"), ctx
 
+    def frame_reports(self):
+        return {layer.id: layer.frame_report for layer in self.layers
+                if isinstance(layer, RudimentLayer) and layer.frame_report is not None}
+
     def evidence(self):
         return dict(transformed_alpha_extents=self.extents, text_states=self.text_states,
                     motions={x.id: x.motion.evidence for x in [*self.layers, *self.lyric_art.values()] if x.motion},
+                    rudiment_renderers={x.id: x.evidence for x in self.layers if isinstance(x, RudimentLayer)},
                     custom_scene=bool(self.scene))

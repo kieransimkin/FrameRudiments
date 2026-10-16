@@ -1,11 +1,12 @@
 """Shared render runner, cleanup, evidence and representative encoded stills."""
 from pathlib import Path
 import subprocess
+import json
 from importlib.metadata import version
 
 from PIL import Image
 
-from . import encoding
+from . import encoding, __version__
 from .compositor import Compositor
 from .io import sha256, write_json
 from .project import Project
@@ -19,12 +20,12 @@ def checkpoints(project):
                      for event in project.lyrics + project.cues for delta in (-1, 0, 1))})
 
 
-def _prepare(project, output, ffmpeg, ffprobe, scene):
+def _prepare(project, output, ffmpeg, ffprobe, scene, renderers):
     project = Project.load(project) if not isinstance(project, Project) else project
     ffmpeg, ffprobe = encoding.binaries(ffmpeg, ffprobe)
     source_probe = encoding.validate_audio(project, ffprobe)
     # Load every dependency before making the evidence snapshot.
-    compositor = Compositor(project, scene=scene)
+    compositor = Compositor(project, scene=scene, renderers=renderers)
     project.verify_inputs()
     output = Path(output).resolve()
     output.mkdir(parents=True, exist_ok=False)
@@ -35,16 +36,18 @@ def _prepare(project, output, ffmpeg, ffprobe, scene):
     return project, output, ffmpeg, ffprobe, compositor
 
 
-def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None):
-    p, out, ffmpeg, ffprobe, compositor = _prepare(project, output, ffmpeg, ffprobe, scene)
+def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=None):
+    p, out, ffmpeg, ffprobe, compositor = _prepare(project, output, ffmpeg, ffprobe, scene, renderers)
     selected = set(checkpoints(p))
     try:
-        for n in range(p.frame_count):
-            image, _ = compositor.frame(n)
-            if n in selected:
-                image.save(out / "qa" / f"source-{n:08}.png")
+        with (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
+            for n in range(p.frame_count):
+                image, context = compositor.frame(n)
+                _analysis(analysis, compositor, context)
+                if n in selected:
+                    image.save(out / "qa" / f"source-{n:08}.png")
         p.verify_inputs()
-        result = dict(p.summary(), composition=compositor.evidence(), state="preflight passed; no encoded video")
+        result = dict(p.summary(), composition=compositor.evidence(), analysis_sidecar=_sidecar(out), state="preflight passed; no encoded video")
         write_json(out / "manifest.json", result)
         return result
     except BaseException as exc:
@@ -52,18 +55,19 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None):
         raise
 
 
-def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, preset="fast", crf=20):
-    p, out, ffmpeg, ffprobe, compositor = _prepare(project, output, ffmpeg, ffprobe, scene)
+def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=None, preset="fast", crf=20):
+    p, out, ffmpeg, ffprobe, compositor = _prepare(project, output, ffmpeg, ffprobe, scene, renderers)
     candidate, final = out / "candidate.mp4", out / "video.mp4"
     cmd = encoding.command(p, candidate, ffmpeg, preset=preset, crf=crf)
     write_json(out / "encode-command.json", cmd)
     selected = set(checkpoints(p))
     process = None
     try:
-        with (out / "encode.log").open("wb") as log:
+        with (out / "encode.log").open("wb") as log, (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log)
             for n in range(p.frame_count):
-                image, _ = compositor.frame(n)
+                image, context = compositor.frame(n)
+                _analysis(analysis, compositor, context)
                 if n in selected:
                     image.save(out / "qa" / f"source-{n:08}.png")
                 process.stdin.write(image.tobytes())
@@ -90,8 +94,8 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, preset="fa
             thumbnail = first.copy()
             thumbnail.thumbnail((360, 640))
             thumbnail.save(out / "phone-preview.png")
-        result = dict(p.summary(), composition=compositor.evidence(), verification=verified,
-                      software={"framerudiments": "0.1.1", "Pillow": version("Pillow"),
+        result = dict(p.summary(), composition=compositor.evidence(), analysis_sidecar=_sidecar(out), verification=verified,
+                      software={"framerudiments": __version__, "Pillow": version("Pillow"),
                                 "dancerudiments": version("dancerudiments"),
                                 "ffmpeg": subprocess.check_output([ffmpeg, "-version"], text=True).splitlines()[0]},
                       output={"path": str(final), "sha256": sha256(final), "bytes": final.stat().st_size},
@@ -109,3 +113,15 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, preset="fa
                 process.wait()
         write_json(out / "failure.json", dict(state="failed; any encoded file remains unapproved", error=str(exc)))
         raise
+
+
+def _analysis(handle, compositor, context):
+    reports = compositor.frame_reports()
+    if reports:
+        handle.write(json.dumps(dict(schema="framerudiments.rudiment-analysis-frame.v1", frame=context.frame, source_seconds=context.source_seconds,
+                                     output_seconds=context.output_seconds, layers=reports), allow_nan=False) + "\n")
+
+
+def _sidecar(output):
+    path = output / "rudiment-analysis.jsonl"
+    return dict(path=str(path), sha256=sha256(path), bytes=path.stat().st_size)

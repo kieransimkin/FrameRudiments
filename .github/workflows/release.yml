@@ -58,7 +58,7 @@ jobs:
           python -m venv /tmp/framerudiments-wheel
           /tmp/framerudiments-wheel/bin/pip install dist/*.whl
           cd /tmp
-          /tmp/framerudiments-wheel/bin/python -I -m framerudiments demo /tmp/framerudiments-demo --font /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+          /tmp/framerudiments-wheel/bin/python -I -m framerudiments demo /tmp/framerudiments-demo --rudiments --font /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
           /tmp/framerudiments-wheel/bin/python -I -m framerudiments render /tmp/framerudiments-demo/project.json --output /tmp/framerudiments-smoke --ffmpeg /usr/bin/ffmpeg --preset veryfast
       - name: Checksums and source identity
         run: |
