@@ -272,3 +272,16 @@ solarisation and glitches. All these visual controls can be driven by
 source-clocked DanceRudiments. See [expanded effects reference](docs/expanded-effects.md).
 
 Enable Settings → Pages → GitHub Actions as the repository publication source.
+
+## Per-element and full-frame post-render effects
+
+The new `post_effects` project field supports isolated effects for **each**
+background, scene, sprite, legacy bars, Rudiment layer, identity caption or
+lyric-art element, and separate passes over the **finished frame**. All 161
+renderers and the shared gradients/CRT/colour post effects are supported. Numeric
+parameters use native DanceRudiment modulation; palettes, colour-stop sets and
+gradient modes can switch between validated alternatives. Independent layer
+passes cannot recolour already composited neighbours, while a frame pass can
+act on everything. These stages run before the existing optional
+Butterchurn/projectM feedback chain. See the [compositor effects reference](docs/scoped-post-effects.md)
+and the [public scopes gallery](https://kieransimkin.github.io/FrameRudiments/scopes/).

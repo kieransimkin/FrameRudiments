@@ -91,6 +91,19 @@ source/frame clock as sprites; waveform views trace the supplied rudiment
 values and do not compute PCM audio or frequency evidence.
 
 
+## Scoped compositor post effects
+
+The optional top-level `post_effects` object assigns ordered, deterministic
+`VisualStyle` effect stages to individual components (`background`, `scene`,
+`layer:ID`, `identity:N`, `caption`, `lyric-art:N`) using `elements`, to all
+individual elements using `all_elements`, or to the completed composited frame
+using `frame`. Every numeric effect setting accepts a source-clocked independent
+DanceRudiment modulator; palettes and gradient settings use native-driven
+categorical `choices`. See [scoped-post-effects.md](scoped-post-effects.md).
+Stages run before the optional full-frame Butterchurn/projectM `effects` chain.
+The original compositor pixel path remains unchanged when no post effects are
+configured.
+
 ## Optional full-frame effects
 
 The top-level `effects` list is additive to v1. See [visualisers.md](visualisers.md)

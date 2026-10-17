@@ -11,6 +11,7 @@ from .rudiment_renderers import RudimentLayer, default_renderers
 from .motion import Motion
 from .timeline import EventTrack
 from .visualisers import effect_specs
+from .scoped_effects import CompositingEffects
 
 
 @dataclass(frozen=True)
@@ -234,14 +235,103 @@ class Compositor:
             fields(item, {"text", "style"}, "identity")
             self.identity.append((item["text"], TextBlock(project, item["style"], label="identity")))
         self.extents, self.text_states = {}, {}
+        targets = {"background", *(f"layer:{layer.id}" for layer in self.layers),
+                   *(f"identity:{i}" for i in range(len(self.identity))),
+                   *(f"lyric-art:{layer.id.rsplit('-', 1)[-1]}" for layer in self.lyric_art.values())}
+        if self.scene:
+            targets.add("scene")
+        if self.caption:
+            targets.add("caption")
+        self.post_pipeline = CompositingEffects(project, project.data.get("post_effects", {}),
+                                                self.context, valid_elements=targets)
 
     def context(self, frame):
         p = self.project
         return FrameContext(frame, frame / p.fps, p.source_time(frame), p.continuous_beat(frame),
                             self.lyrics.at(frame), self.cues.at(frame))
 
+    def _frame_with_post_effects(self, ctx):
+        """Render isolated RGBA elements, then the final frame, in draw order.
+
+        Untargeted elements are still drawn onto transparent scratch surfaces
+        when any post pipeline exists. This leaves neighbouring pixels untouched
+        and ensures consistent alpha-over semantics across every element type.
+        """
+        pipeline = self.post_pipeline
+        pipeline.begin()
+        image = pipeline.apply_element(self.background.copy(), "background", ctx)
+
+        if self.scene:
+            if pipeline.affects("scene"):
+                # A scene hook with isolated FX paints onto transparent RGBA.
+                # Untargeted hooks keep their original composited-background API.
+                scene_ink = Image.new("RGBA", self.background.size)
+                scene_ink = self.scene(scene_ink, ctx)
+                if scene_ink.size != self.background.size or scene_ink.mode != "RGBA":
+                    raise ValueError("Custom scene hook must return frame-sized RGBA")
+                image.alpha_composite(pipeline.apply_element(scene_ink, "scene", ctx))
+            else:
+                image = self.scene(image, ctx)
+                if image.size != self.background.size or image.mode != "RGBA":
+                    raise ValueError("Custom scene hook must return frame-sized RGBA")
+
+        def paint(key, render):
+            scratch = Image.new("RGBA", self.background.size)
+            bounds = render(scratch)
+            if not bounds:
+                return None
+            scratch = pipeline.apply_element(scratch, key, ctx)
+            actual = scratch.getchannel("A").getbbox()
+            image.alpha_composite(scratch)
+            return actual
+
+        for layer in self.layers:
+            bounds = paint(f"layer:{layer.id}", lambda canvas, layer=layer: layer.draw(canvas, ctx))
+            if bounds:
+                previous = self.extents.get(layer.id, bounds)
+                self.extents[layer.id] = [min(bounds[0], previous[0]), min(bounds[1], previous[1]),
+                                         max(bounds[2], previous[2]), max(bounds[3], previous[3])]
+
+        text_bounds = []
+        for index, (text, style) in enumerate(self.identity):
+            def draw_identity(canvas, text=text, style=style):
+                boxes = style.draw(canvas, text)
+                return boxes or None
+            bounds = paint(f"identity:{index}", draw_identity)
+            if bounds:
+                text_bounds.append(bounds)
+
+        if self.caption:
+            text = ctx.lyric["text"] if ctx.lyric else ""
+            art_layer = self.lyric_art.get(text)
+            if art_layer:
+                index = art_layer.id.rsplit("-", 1)[-1]
+                bounds = paint(f"lyric-art:{index}", lambda canvas: art_layer.draw(canvas, ctx))
+                if bounds:
+                    text_bounds.append(bounds)
+            elif self.caption.mode == "neighbours":
+                before, current, after = self.lyrics.neighbours(ctx.frame)
+                text = "\n".join((before["text"] if before else "", current["text"] if current else "",
+                                  after["text"] if after else ""))
+            if not art_layer:
+                def draw_caption(canvas):
+                    return self.caption.draw(canvas, text) or None
+                bounds = paint("caption", draw_caption)
+                if bounds:
+                    text_bounds.append(bounds)
+            self.text_states.setdefault(text, dict(first_frame=ctx.frame, bounds=text_bounds))
+
+        return pipeline.apply_frame(image, ctx)
+
     def frame(self, frame):
         ctx = self.context(frame)
+        if self.post_pipeline.enabled:
+            # Final-frame opacity/rotation may leave transparent pixels. The
+            # encoded RGB output uses a deterministic black matte, never an
+            # implicit alpha-discard that would silently erase opacity.
+            matte = Image.new("RGBA", self.background.size, "#000000")
+            matte.alpha_composite(self._frame_with_post_effects(ctx))
+            return matte.convert("RGB"), ctx
         image = self.background.copy()
         if self.scene:
             image = self.scene(image, ctx)
@@ -276,8 +366,12 @@ class Compositor:
         return {layer.id: layer.frame_report for layer in self.layers
                 if isinstance(layer, RudimentLayer) and layer.frame_report is not None}
 
+    def post_effect_reports(self):
+        return dict(self.post_pipeline.last_report) if self.post_pipeline.enabled else {}
+
     def evidence(self):
         return dict(transformed_alpha_extents=self.extents, text_states=self.text_states,
                     motions={x.id: x.motion.evidence for x in [*self.layers, *self.lyric_art.values()] if x.motion},
                     rudiment_renderers={x.id: x.evidence for x in self.layers if isinstance(x, RudimentLayer)},
-                    custom_scene=bool(self.scene))
+                    custom_scene=bool(self.scene),
+                    **({"post_effects": self.post_pipeline.evidence} if self.post_pipeline.enabled else {}))
