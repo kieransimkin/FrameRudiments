@@ -139,6 +139,15 @@ Keep technical checks, visual review, attended listening and publication states
 separate as described in the main README.
 
 
+## Emitter layers alongside visualisers
+
+`type: "emitter"` adds smoke, sparks, rain, snow, confetti or other particles
+as a separate alpha-composited layer, not a replacement for any vector or
+sprite Rudiment renderer. The same scoped post-effects target syntax
+`layer:<id>` applies to emitters. Continuous and source-cue-triggered modes,
+custom pinned sprite tiles and native DanceRudiment parameter modulation are
+documented in [particle-smoke.md](particle-smoke.md).
+
 ## Calibrated Fourier spectrum
 
 The `spectrum` renderer adds actual StemLab band levels, frequency labels,
