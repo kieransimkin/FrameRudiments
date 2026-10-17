@@ -12,8 +12,9 @@ the inputs are checked again before and after a render.
 | `width`, `height`, `fps`, `fps_reason` | Even dimensions, fps defaults to 60; other rates need a reason. No platform compliance is inferred. |
 | `audio` | `source` file reference, verified `sample_rate`, start-inclusive `start_sample`, end-exclusive `end_sample`, optional positive integer `repeats` and `fade_seconds`. |
 | `clock` | `bpm`, `beat_grid` or source-bound `beat_alignment` file reference; `authority`, `status` (`confirmed`, `estimated`, `synthetic`), optional `origin` in source seconds and `phase_status`. A reading owns its BPM/origin and cannot be combined with `beat_grid` or `origin`. |
-| `font` | Pinned TTF/OTF file for authored text. |
+| `font` | Pinned default TTF/OTF for authored text; text blocks may override via their own pinned `font`. |
 | `lyrics`, `cues` | Separate LRC references; `.cue` files are also supported for structural cues. |
+| `word_lyrics`, `word_captions`, `word_indicator` | Word LRC source, optional word lane, and word-following sprite/effects. |
 | `canonical_lyrics` | Optional pinned plain text whose performed nonempty lines must exactly match the LRC. Bracketed structural lines in this comparison file are excluded. |
 | `background` | `colour`, optional pinned `image` and `fit` (`cover` or `contain`). |
 | `captions` | `box` [left,top,right,bottom], `font_size`, optional `min_font_size`, `colour`, `panel`, `stroke`, `line_spacing`, `mode` (`current` or `neighbours`). |
@@ -136,6 +137,15 @@ independently hashed per-word LRC. `captions.word_mode` may be `off`,
 is `highlight`. `word_captions` is an independent text-block configuration
 for a second, simultaneously rendered word-only subtitle lane.
 See [variable BPM/word LRC guide](variable-bpm-word-subtitles.md).
+
+## Rich text and word indicator
+
+Set `effects` and optional checksum-pinned `font` on any `captions`, `word_captions`, or
+`identity[].style` text block. Rich styles include multi-point gradient fill, stroke, bevel,
+emboss, inner/outer glow and drop shadow. `word_indicator` needs both line and word LRC,
+a full-line captions block and a selected native one-axis Rudiment bounce driver. Its
+particle options support constant emission, timed word/cue bursts and trigger-driven
+appearance changes; see [full schema and examples](rich-lyric-effects.md).
 
 ## Optional full-frame effects
 
