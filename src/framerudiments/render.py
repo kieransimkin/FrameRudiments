@@ -47,14 +47,17 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
     selected = set(checkpoints(p))
     effects = None
     try:
-        effects = EffectChain(p, compositor.effect_specs, ffmpeg, out) if compositor.effect_specs else None
+        effects = EffectChain(p, compositor.effect_specs, ffmpeg, out,
+                              routing=compositor.visualiser_routing) if compositor.effect_specs else None
         with (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
             for n in range(p.frame_count):
                 image, context = compositor.frame(n, apply_quality=False)
                 if effects:
                     if n in selected:
                         image.save(out / "qa" / f"composed-{n:08}.png")
-                    image = effects.process(image, context)
+                    image = effects.process(
+                        image, context, isolated_layers=compositor._route_parts
+                        if compositor.visualiser_routing is not None else None)
                 # Exactly one final AA pass, after optional GPU effects.
                 image = compositor.output_quality.apply(image)
                 _analysis(analysis, compositor, context)
@@ -83,7 +86,8 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
     process = None
     effects = None
     try:
-        effects = EffectChain(p, compositor.effect_specs, ffmpeg, out) if compositor.effect_specs else None
+        effects = EffectChain(p, compositor.effect_specs, ffmpeg, out,
+                              routing=compositor.visualiser_routing) if compositor.effect_specs else None
         with (out / "encode.log").open("wb") as log, (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log)
             for n in range(p.frame_count):
@@ -91,7 +95,9 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
                 if effects:
                     if n in selected:
                         image.save(out / "qa" / f"composed-{n:08}.png")
-                    image = effects.process(image, context)
+                    image = effects.process(
+                        image, context, isolated_layers=compositor._route_parts
+                        if compositor.visualiser_routing is not None else None)
                 # Exactly one final AA pass, after optional GPU effects.
                 image = compositor.output_quality.apply(image)
                 _analysis(analysis, compositor, context)
@@ -150,11 +156,15 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
 def _analysis(handle, compositor, context):
     reports = compositor.frame_reports()
     post = compositor.post_effect_reports()
-    if reports or post:
+    routed = (compositor.visualiser_routing.last_report
+              if compositor.visualiser_routing is not None else None)
+    if reports or post or routed:
         entry = dict(schema="framerudiments.rudiment-analysis-frame.v1", frame=context.frame,
                      source_seconds=context.source_seconds, output_seconds=context.output_seconds, layers=reports)
         if post:
             entry["post_effects"] = post
+        if routed:
+            entry["visualiser_routing"] = routed
         handle.write(json.dumps(entry, allow_nan=False) + "\n")
 
 

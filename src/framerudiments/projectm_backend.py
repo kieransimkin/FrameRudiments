@@ -176,11 +176,13 @@ class ProjectMBackend:
         self.lib.projectm_set_log_callback(self.log_callback, True, None)
         frame = image.convert("RGBA")
         if self.size != self.frame_size:
-            canvas = Image.new("RGBA", self.size, "black")
+            blank = (0, 0, 0, 0) if frame.getchannel("A").getextrema()[0] < 255 else "black"
+            canvas = Image.new("RGBA", self.size, blank)
             canvas.paste(frame, (self.crop_left, 0))
             frame = canvas
-        # Uniform source contribution preserves previous processed pixels in feedback.
-        frame.putalpha(round(self.mix * 255))
+        # Preserve source alpha so an unfed layer cannot paint black into feedback.
+        # Fully opaque legacy inputs remain numerically unchanged.
+        frame.putalpha(frame.getchannel("A").point(lambda a: round(a * self.mix)))
         pixels = frame.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
         gl.glActiveTexture(gl.GL_TEXTURE0)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)

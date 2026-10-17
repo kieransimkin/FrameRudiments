@@ -22,6 +22,18 @@ Original paired presets are `feedback` (audio-reactive swirl/echo),
 distortion of the frame's texture coordinates). They are examples, not a claim
 that two independent MilkDrop implementations produce identical pixels.
 
+## Per-element feed and clean overlay routing
+
+FrameRudiments supports an optional project-level `visualiser_routing` object.
+It controls the **input RGBA texture** entering the first Butterchurn or
+projectM stage and independently decides which original layers are composited
+cleanly above the **last** visualiser result. The subsequent stages remain
+sequential: a later stage still receives the earlier stage's processed output.
+All unspecified elements retain continuous input and no clean overlay.
+This feature does not change a saved preset or reroute audio. See
+[the full routing guide](visualiser-routing.md) and the
+[CI demonstration gallery](https://kieransimkin.github.io/FrameRudiments/routing/).
+
 ## Pin and install the optional runtimes
 
 `framerudiments visualisers` prints the exact required pins. Rendering never

@@ -21,6 +21,7 @@ the inputs are checked again before and after a render.
 | `captions` | `box` [left,top,right,bottom], `font_size`, optional `min_font_size`, `colour`, `panel`, `stroke`, `line_spacing`, `mode` (`current` or `neighbours`). |
 | `identity` | List of `{text, style}`; each style uses the same text-block fields as captions. |
 | `layers` | Ordered sprite, legacy bar and modular rudiment layers described below. |
+| `visualiser_routing` | Optional per-element GPU input/overlay policies. Feed continuously, only for first N native pips after visibility onset, or never; see [routing](visualiser-routing.md). |
 | `lyric_art` | `{items: [{text, asset}], placement: <sprite fields>, fallback: "text" or "error"}`. Exact text lookup preserves canonical lyric association. `error` requires every visible lyric to have an asset. |
 | `stemlab_loop` | `{file: <pinned loops report>, id: <accepted loop id>}`; imports native bounds/rate, verifies source SHA, rejects conflicting explicit audio values. Does not approve a seam. |
 

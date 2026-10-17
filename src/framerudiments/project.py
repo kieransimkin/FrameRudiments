@@ -23,7 +23,7 @@ class Project:
         fields(data, {"schema", "title", "artist", "purpose", "width", "height", "fps", "fps_reason",
                       "audio", "clock", "font", "lyrics", "cues", "background", "layers", "captions",
                       "identity", "effects", "post_effects", "stemlab_loop", "notes", "lyric_art", "canonical_lyrics",
-                      "word_lyrics", "word_captions", "word_indicator", "render_quality"}, "project")
+                      "word_lyrics", "word_captions", "word_indicator", "render_quality", "visualiser_routing"}, "project")
         if data.get("schema") != "framerudiments.project.v1":
             raise ValueError("Expected framerudiments.project.v1")
         self.width = integer(data.get("width", 1080), "width", minimum=16, maximum=7680)
@@ -183,5 +183,7 @@ class Project:
                     **({"word_timings": {"file": self.word_ref, "event_count": len(self.words)}}
                        if self.word_ref else {}),
                     **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}),
-                    render_quality=self.output_quality.evidence, inputs=self.inputs,
+                    render_quality=self.output_quality.evidence,
+                    **({"visualiser_routing": self.data["visualiser_routing"]}
+                       if "visualiser_routing" in self.data else {}), inputs=self.inputs,
                     state="prepared; perceptual review pending")

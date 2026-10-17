@@ -115,6 +115,8 @@ def test_registry_extension_is_local_and_custom_pixels_are_viewport_bounded(proj
         registry.register("particles", Dot)
     project.data["layers"] = [dict(id="dot", type="rudiment", renderer="dot", bounds=[10, 10, 170, 150],
                                     motion=dict(kind="named", pattern="bounce"))]
+    from framerudiments.output_quality import OutputQuality
+    project.output_quality = OutputQuality({"enabled": False})
     compositor = Compositor(project, renderers=registry)
     image, _ = compositor.frame(30)
     assert image.getpixel((9, 9)) != (250, 80, 96)
@@ -137,6 +139,8 @@ def test_invalid_plugin_output_and_too_many_axes_for_viewport_fail(project):
     registry.register("bad", Bad)
     project.data["layers"] = [dict(id="bad", type="rudiment", renderer="bad",
                                     motion=dict(kind="named", pattern="circle"))]
+    from framerudiments.output_quality import OutputQuality
+    project.output_quality = OutputQuality({"enabled": False})
     with pytest.raises(ValueError, match="viewport-sized RGBA"):
         Compositor(project, renderers=registry).frame(0)
     compositor = layer(project, "bars", bounds=[10, 10, 24, 30], axes=[0, 1, 2], style={"gap": 3})

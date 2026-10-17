@@ -16,6 +16,7 @@ from .rich_subtitles import RichTextAppearance
 from .lyric_indicator import WordIndicator
 from .visualisers import effect_specs
 from .scoped_effects import CompositingEffects
+from .visualiser_routing import VisualiserLayerRouting
 
 
 @dataclass(frozen=True)
@@ -294,6 +295,28 @@ class Compositor:
             targets.add("word-indicator")
         self.post_pipeline = CompositingEffects(project, project.data.get("post_effects", {}),
                                                 self.context, valid_elements=targets)
+        self.visualiser_routing = None
+        if "visualiser_routing" in project.data:
+            if not self.effect_specs:
+                raise ValueError("visualiser_routing needs at least one Butterchurn/projectM effect")
+            # Match the established draw order; the lyric artwork/caption branch
+            # determines which one is actually visible at each frame.
+            element_order = ["background"]
+            if self.scene:
+                element_order.append("scene")
+            element_order.extend(f"layer:{layer.id}" for layer in self.layers)
+            element_order.extend(f"identity:{index}" for index in range(len(self.identity)))
+            element_order.extend(f"lyric-art:{layer.id.rsplit('-', 1)[-1]}"
+                                 for layer in self.lyric_art.values())
+            if self.caption:
+                element_order.append("caption")
+            if self.word_indicator:
+                element_order.append("word-indicator")
+            if self.word_caption:
+                element_order.append("word-caption")
+            self.visualiser_routing = VisualiserLayerRouting(
+                project.data["visualiser_routing"], element_order, self.background.size)
+        self._route_parts = []
 
     def context(self, frame):
         p = self.project
@@ -320,6 +343,10 @@ class Compositor:
         state = self.words.state(ctx.frame, ctx.lyric if self.project.lyrics else None)
         return self.word_caption.draw(image, state["text"])
 
+    def _capture_route(self, name, image):
+        if self.visualiser_routing is not None:
+            self._route_parts.append((name, image.copy()))
+
     def _frame_with_post_effects(self, ctx):
         """Render isolated RGBA elements, then the final frame, in draw order.
 
@@ -329,17 +356,22 @@ class Compositor:
         """
         pipeline = self.post_pipeline
         pipeline.begin()
-        image = pipeline.apply_element(self.background.copy(), "background", ctx)
+        self._route_parts = []
+        background = pipeline.apply_element(self.background.copy(), "background", ctx)
+        self._capture_route("background", background)
+        image = background
 
         if self.scene:
-            if pipeline.affects("scene"):
+            if pipeline.affects("scene") or self.visualiser_routing is not None:
                 # A scene hook with isolated FX paints onto transparent RGBA.
                 # Untargeted hooks keep their original composited-background API.
                 scene_ink = Image.new("RGBA", self.background.size)
                 scene_ink = self.scene(scene_ink, ctx)
                 if scene_ink.size != self.background.size or scene_ink.mode != "RGBA":
                     raise ValueError("Custom scene hook must return frame-sized RGBA")
-                image.alpha_composite(pipeline.apply_element(scene_ink, "scene", ctx))
+                scene_ink = pipeline.apply_element(scene_ink, "scene", ctx)
+                self._capture_route("scene", scene_ink)
+                image.alpha_composite(scene_ink)
             else:
                 image = self.scene(image, ctx)
                 if image.size != self.background.size or image.mode != "RGBA":
@@ -352,6 +384,7 @@ class Compositor:
                 return None
             scratch = pipeline.apply_element(scratch, key, ctx)
             actual = scratch.getchannel("A").getbbox()
+            self._capture_route(key, scratch)
             image.alpha_composite(scratch)
             return actual
 
@@ -419,7 +452,7 @@ class Compositor:
             image, context = temporal_supersample(self, frame)
             return self._final_output(image, context, apply_quality)
         ctx = self.context(frame)
-        if self.post_pipeline.enabled:
+        if self.post_pipeline.enabled or self.visualiser_routing is not None:
             # Final-frame opacity/rotation may leave transparent pixels. The
             # encoded RGB output uses a deterministic black matte, never an
             # implicit alpha-discard that would silently erase opacity.
@@ -483,6 +516,8 @@ class Compositor:
                        if isinstance(x, ParticleEmitter)}} if any(isinstance(x, ParticleEmitter)
                        for x in self.layers) else {}),
                     custom_scene=bool(self.scene),
+                    **({"visualiser_routing": self.visualiser_routing.evidence}
+                       if self.visualiser_routing is not None else {}),
                     **({"word_indicator": self.word_indicator.evidence} if self.word_indicator else {}),
                     **({"word_subtitles": {"enabled": True, "count": len(self.project.words),
                        "highlight_mode": self.caption.word_mode if self.caption else "off",
