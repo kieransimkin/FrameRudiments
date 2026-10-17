@@ -11,7 +11,7 @@ from .rudiment_renderers import RudimentLayer, default_renderers
 from .particle_engine import ParticleEmitter
 from .motion import Motion
 from .timeline import EventTrack
-from .word_timing import WordTrack, draw_highlighted_line
+from .word_timing import WordTrack
 from .rich_subtitles import RichTextAppearance
 from .lyric_indicator import WordIndicator
 from .visualisers import effect_specs
