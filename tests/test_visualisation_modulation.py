@@ -27,7 +27,7 @@ def _modulations(configs):
 def test_every_circular_view_is_registered_and_has_independent_output():
     from framerudiments.visualisation_catalogue import ALL_VIEWS
     names = default_renderers().names
-    assert len(names) == 101
+    assert len(names) == 161
     assert len(names) == len(set(names))
     assert len(CIRCULAR_VIEWS) == 60
     assert set(spec.name for spec in ALL_VIEWS).issubset(names)
@@ -156,11 +156,11 @@ def test_circular_style_parameters_affect_rendered_geometry():
         r.create('spectrum-annular-bars', (320, 240), {'inner_radius': .8, 'outer_radius': .3})
 
 
-def test_gallery_can_generate_101_distinct_renderer_previews():
+def test_gallery_can_generate_161_distinct_renderer_previews():
     # The existing gallery test verifies counts + every PNG. Avoid generating
     # hundreds of 480x270 images twice in every test run.
     from framerudiments.visualisation_catalogue import ALL_VIEWS
-    assert len(ALL_VIEWS) == 96
+    assert len(ALL_VIEWS) == 156
 
 
 def test_native_source_drives_layer_modulation_in_random_access_compositor(tmp_path):
