@@ -293,4 +293,12 @@ def temporal_supersample(compositor, frame):
             report["subframe_index"] = report["frame"]
             report["frame"] = frame
     compositor._supersampled_reports = reports
+    # The original public compositor must expose the virtual layers'
+    # reports, not just its own frame_reports() wrapper.
+    for layer in getattr(compositor, "layers", ()):
+        if hasattr(layer, "frame_report"):
+            layer.frame_report = deepcopy(reports.get(layer.id))
+    indicator = getattr(compositor, "word_indicator", None)
+    if indicator is not None:
+        indicator.frame_report = deepcopy(reports.get("word-indicator"))
     return combined, compositor.context(frame)

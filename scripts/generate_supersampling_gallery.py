@@ -87,8 +87,9 @@ def build_site(site):
                      synthetic=True, measured_audio=False, frames=list(MOMENTS),
                      default=dict(enabled=True, spatial_scale=4, temporal_samples=8,
                                   antialias_passes=3),
-                     scenes=[dict(name=n, label=l, spatial_scale=s, temporal_samples=t,
-                                  enabled=e) for n, l, s, t, e in MODES])
+                     scenes=[dict(name=name, label=label, spatial_scale=spatial,
+                                  temporal_samples=temporal, enabled=enabled)
+                             for name, label, spatial, temporal, enabled in MODES])
     (root / "catalogue.json").write_text(json.dumps(catalogue, indent=2)+"\n", encoding="utf-8")
     cards = "\n".join(f'<article><img alt="{label}" data-name="{name}" src="{name}/0.png">'
                        f'<h2>{label}</h2><p>Spatial {spatial}× · Temporal {temporal}×'

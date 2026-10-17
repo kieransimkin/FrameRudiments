@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFont
 import pytest
 
 from framerudiments.output_quality import OutputQuality
-from framerudiments.super_sampling import supersampled_text, vector_viewport, _virtual_project
+from framerudiments.super_sampling import supersampled_text, vector_viewport
 
 
 class SimpleRenderer:
@@ -108,15 +108,17 @@ def test_true_subframes_are_not_repeated_integer_frames(monkeypatch):
             self.frames = []
             self.extents, self.text_states = {}, {}
             self.post_pipeline = SimpleNamespace(last_report={}, temporal=None)
+            self.layers = [SimpleNamespace(id="marker", frame_report=None)]
 
         def frame(self, frame, apply_quality=False):
             self.frames.append(frame)
+            self.layers[0].frame_report = dict(kind="test-motion", frame=frame)
             image = Image.new("RGB", (60, 36), "black")
             ImageDraw.Draw(image).ellipse((2 + frame * 3, 5, 16 + frame * 3, 20), fill="white")
             return image, SimpleNamespace(frame=frame)
 
         def frame_reports(self):
-            return {}
+            return {"marker": self.layers[0].frame_report}
 
     made = []
     def build(p, factor):
@@ -130,9 +132,13 @@ def test_true_subframes_are_not_repeated_integer_frames(monkeypatch):
     outer = SimpleNamespace(output_quality=OutputQuality({"spatial_scale": 1}),
                             project=SimpleNamespace(), scene=None, renderers=None,
                             extents={}, text_states={}, post_pipeline=SimpleNamespace(last_report={}),
+                            layers=[SimpleNamespace(id="marker", frame_report=None)],
                             context=lambda f: SimpleNamespace(frame=f))
     result, ctx = super_sampling.temporal_supersample(outer, 1)
     assert ctx.frame == 1 and result.size == (60, 36)
     assert outer._temporal_virtual.frames == list(range(8, 16))
     assert len(set(outer._temporal_virtual.frames)) == 8
+    assert outer.layers[0].frame_report == dict(
+        kind="test-motion", frame=1, subframe_index=15)
+    assert outer._supersampled_reports["marker"] == outer.layers[0].frame_report
     assert result.tobytes() == super_sampling.temporal_supersample(outer, 1)[0].tobytes()
