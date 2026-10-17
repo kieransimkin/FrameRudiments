@@ -1,6 +1,8 @@
 """Connected alpha-component cleaning extracted from the sprite preparation tools."""
+
 from collections import deque
 from PIL import Image
+
 
 def components(alpha: Image.Image, threshold: int = 18) -> list[list[tuple[int, int]]]:
     width, height = alpha.size
@@ -24,6 +26,7 @@ def components(alpha: Image.Image, threshold: int = 18) -> list[list[tuple[int, 
                             queue.append((nx, ny))
             result.append(group)
     return sorted(result, key=len, reverse=True)
+
 
 def isolate_one_object(cell: Image.Image) -> tuple[Image.Image, int, int]:
     rgba = cell.convert("RGBA")

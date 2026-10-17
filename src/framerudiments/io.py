@@ -1,4 +1,5 @@
 """Strict documents and content identities."""
+
 import hashlib
 import json
 import math
@@ -18,6 +19,7 @@ def sha256(path):
 def read_json(path):
     def bad(value):
         raise ValueError(f"Non-finite JSON number: {value}")
+
     def unique(pairs):
         out = {}
         for key, value in pairs:
@@ -25,8 +27,10 @@ def read_json(path):
                 raise ValueError(f"Duplicate JSON key: {key}")
             out[key] = value
         return out
-    return json.loads(Path(path).read_text(encoding="utf-8-sig"),
-                      parse_constant=bad, object_pairs_hook=unique)
+
+    return json.loads(
+        Path(path).read_text(encoding="utf-8-sig"), parse_constant=bad, object_pairs_hook=unique
+    )
 
 
 def write_json(path, value):
@@ -76,7 +80,11 @@ def file_ref(data, base):
     fields(data, {"path", "sha256"}, "file reference")
     path = (Path(base) / data["path"]).resolve()
     expected = data["sha256"]
-    if not isinstance(expected, str) or len(expected) != 64 or any(c not in "0123456789abcdefABCDEF" for c in expected):
+    if (
+        not isinstance(expected, str)
+        or len(expected) != 64
+        or any(c not in "0123456789abcdefABCDEF" for c in expected)
+    ):
         raise ValueError(f"A SHA-256 is required for {path}")
     actual = sha256(path)
     if actual != expected.lower():

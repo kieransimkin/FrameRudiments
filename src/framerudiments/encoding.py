@@ -1,4 +1,5 @@
 """One FFmpeg boundary for exact audio slices, repeats, H.264/AAC and decoded QA."""
+
 from fractions import Fraction
 import json
 import os
@@ -47,8 +48,10 @@ def audio_filters(project):
     if p.repeats > 1:
         filters += [f"aloop=loop={p.repeats - 1}:size={p.end_sample - p.start_sample}"]
     if p.fade:
-        filters += [f"afade=t=in:st=0:d={p.fade:.12f}:curve=qsin",
-                    f"afade=t=out:st={float(p.duration) - p.fade:.12f}:d={p.fade:.12f}:curve=qsin"]
+        filters += [
+            f"afade=t=in:st=0:d={p.fade:.12f}:curve=qsin",
+            f"afade=t=out:st={float(p.duration) - p.fade:.12f}:d={p.fade:.12f}:curve=qsin",
+        ]
     return ",".join(filters)
 
 
@@ -58,40 +61,104 @@ def command(project, output, ffmpeg, *, preset="fast", crf=20):
     if not isinstance(crf, int) or not 0 <= crf <= 51:
         raise ValueError("CRF must be an integer in [0,51]")
     p = project
-    return [ffmpeg, "-n", "-hide_banner", "-loglevel", "warning", "-f", "rawvideo",
-            "-pixel_format", "rgb24", "-video_size", f"{p.width}x{p.height}",
-            "-framerate", str(p.fps), "-i", "pipe:0", "-i", p.audio_ref["path"],
-            "-map", "0:v:0", "-map", "1:a:0", "-af", audio_filters(p),
-            "-c:v", "libx264", "-preset", preset, "-crf", str(crf), "-threads", "4",
-            "-pix_fmt", "yuv420p", "-fps_mode", "cfr", "-color_primaries", "bt709",
-            "-color_trc", "bt709", "-colorspace", "bt709", "-c:a", "aac", "-b:a", "256k",
-            "-ar", str(p.sample_rate), "-movflags", "+faststart", str(output)]
+    return [
+        ffmpeg,
+        "-n",
+        "-hide_banner",
+        "-loglevel",
+        "warning",
+        "-f",
+        "rawvideo",
+        "-pixel_format",
+        "rgb24",
+        "-video_size",
+        f"{p.width}x{p.height}",
+        "-framerate",
+        str(p.fps),
+        "-i",
+        "pipe:0",
+        "-i",
+        p.audio_ref["path"],
+        "-map",
+        "0:v:0",
+        "-map",
+        "1:a:0",
+        "-af",
+        audio_filters(p),
+        "-c:v",
+        "libx264",
+        "-preset",
+        preset,
+        "-crf",
+        str(crf),
+        "-threads",
+        "4",
+        "-pix_fmt",
+        "yuv420p",
+        "-fps_mode",
+        "cfr",
+        "-color_primaries",
+        "bt709",
+        "-color_trc",
+        "bt709",
+        "-colorspace",
+        "bt709",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "256k",
+        "-ar",
+        str(p.sample_rate),
+        "-movflags",
+        "+faststart",
+        str(output),
+    ]
 
 
 def verify(path, project, ffmpeg, ffprobe):
     info = probe(path, ffprobe, count=True)
     video = next(s for s in info["streams"] if s["codec_type"] == "video")
     audio = next(s for s in info["streams"] if s["codec_type"] == "audio")
-    if (int(video["nb_read_frames"]) != project.frame_count or
-        Fraction(video["avg_frame_rate"]) != project.fps or
-        Fraction(video["r_frame_rate"]) != project.fps or video["codec_name"] != "h264" or
-        video["pix_fmt"] != "yuv420p" or [video["width"], video["height"]] != [project.width, project.height]):
+    if (
+        int(video["nb_read_frames"]) != project.frame_count
+        or Fraction(video["avg_frame_rate"]) != project.fps
+        or Fraction(video["r_frame_rate"]) != project.fps
+        or video["codec_name"] != "h264"
+        or video["pix_fmt"] != "yuv420p"
+        or [video["width"], video["height"]] != [project.width, project.height]
+    ):
         raise ValueError("Encoded video does not match the prepared frame contract")
     if audio["codec_name"] != "aac" or int(audio["sample_rate"]) != project.sample_rate:
         raise ValueError("Encoded audio contract differs")
     duration_error = float(audio["duration"]) - float(project.duration)
-    if abs(duration_error) > max(2 / project.sample_rate, .002):
+    if abs(duration_error) > max(2 / project.sample_rate, 0.002):
         raise ValueError(f"Encoded audio programme length differs by {duration_error:.6f}s")
     # Inspect decoded timestamps, not only nominal container rate labels.
-    timestamp_command = [ffprobe, "-v", "error", "-select_streams", "v:0", "-show_entries",
-                         "frame=best_effort_timestamp_time", "-of", "csv=p=0", str(path)]
+    timestamp_command = [
+        ffprobe,
+        "-v",
+        "error",
+        "-select_streams",
+        "v:0",
+        "-show_entries",
+        "frame=best_effort_timestamp_time",
+        "-of",
+        "csv=p=0",
+        str(path),
+    ]
     completed = subprocess.run(timestamp_command, capture_output=True, text=True, check=True)
-    timestamps = [float(line.split(",")[0]) for line in completed.stdout.splitlines() if line.split(",")[0].strip()]
-    if len(timestamps) != project.frame_count or any(abs(t - i / project.fps) > .000002
-                                                    for i, t in enumerate(timestamps)):
+    timestamps = [
+        float(line.split(",")[0]) for line in completed.stdout.splitlines() if line.split(",")[0].strip()
+    ]
+    if len(timestamps) != project.frame_count or any(
+        abs(t - i / project.fps) > 0.000002 for i, t in enumerate(timestamps)
+    ):
         raise ValueError("Decoded frame timestamps are not constant-rate from zero")
-    subprocess.run([ffmpeg, "-v", "error", "-xerror", "-i", str(path), "-f", "null", "-"],
-                   check=True, capture_output=True)
+    subprocess.run(
+        [ffmpeg, "-v", "error", "-xerror", "-i", str(path), "-f", "null", "-"],
+        check=True,
+        capture_output=True,
+    )
     # Verify actual MP4 atom order for fast start.
     atoms = []
     with Path(path).open("rb") as handle:
@@ -111,6 +178,12 @@ def verify(path, project, ffmpeg, ffprobe):
             handle.seek(size - consumed, 1)
     if "moov" not in atoms or "mdat" not in atoms or atoms.index("moov") > atoms.index("mdat"):
         raise ValueError("MP4 is missing fast-start atom order")
-    return dict(probe=info, full_decode="passed", decoded_timestamps="CFR from zero; all frames checked",
-                audio_duration_error_seconds=duration_error, mp4_atoms=atoms,
-                listening_approved=False, platform_safe_zone_verified=False)
+    return dict(
+        probe=info,
+        full_decode="passed",
+        decoded_timestamps="CFR from zero; all frames checked",
+        audio_duration_error_seconds=duration_error,
+        mp4_atoms=atoms,
+        listening_approved=False,
+        platform_safe_zone_verified=False,
+    )

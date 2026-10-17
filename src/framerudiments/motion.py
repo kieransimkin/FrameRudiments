@@ -1,4 +1,5 @@
 """Native integer-pip motion. Never substitute a Python movement engine."""
+
 import math
 from importlib.metadata import version
 from functools import lru_cache
@@ -10,17 +11,42 @@ from .stemlab import selected_match
 @lru_cache(maxsize=1)
 def native_identity():
     import dancerudiments as dr
-    return dict(distribution="dancerudiments", version=version("dancerudiments"),
-                path=dr.__file__, sha256=sha256(dr.__file__), pips_per_beat=dr.PIPS_PER_BEAT)
+
+    return dict(
+        distribution="dancerudiments",
+        version=version("dancerudiments"),
+        path=dr.__file__,
+        sha256=sha256(dr.__file__),
+        pips_per_beat=dr.PIPS_PER_BEAT,
+    )
 
 
 class Motion:
     def __init__(self, config, base, clock):
         import dancerudiments as dr
+
         self.dr, self.clock = dr, clock
-        fields(config, {"kind", "pattern", "rate", "phase_beats", "origin_beat", "file",
-                        "source_index", "match_index", "source_offset_seconds", "axes", "outside",
-                        "allow_outside_match", "interpolate", "repeat_clock", "channels"}, "motion")
+        fields(
+            config,
+            {
+                "kind",
+                "pattern",
+                "rate",
+                "phase_beats",
+                "origin_beat",
+                "file",
+                "source_index",
+                "match_index",
+                "source_offset_seconds",
+                "axes",
+                "outside",
+                "allow_outside_match",
+                "interpolate",
+                "repeat_clock",
+                "channels",
+            },
+            "motion",
+        )
         if dr.PIPS_PER_BEAT != 64:
             raise ValueError("Native DanceRudiments must use 64 pips per beat")
         self.config = config
@@ -62,8 +88,11 @@ class Motion:
                 raise ValueError(f"Unknown native movement: {self.pattern}")
         elif self.kind == "recording":
             from dancerudiments_authoring.recording import load_recording
+
             if self.rate != 1 or self.phase != 0 or self.origin != 0 or config.get("interpolate", False):
-                raise ValueError("Recordings use their own source clock; no rate, phase or interpolation override")
+                raise ValueError(
+                    "Recordings use their own source clock; no rate, phase or interpolation override"
+                )
             recording = load_recording(self.file["path"])
             self.recording = recording.to_native()
             self.dimensions = list(recording.dimensions)
@@ -120,8 +149,10 @@ class Motion:
 
     def sample(self, source_seconds, *, continuous_beat=None):
         if self.kind == "composite":
-            values = tuple(child.sample(source_seconds, continuous_beat=continuous_beat)[axis]
-                           for child, axis in self.channels)
+            values = tuple(
+                child.sample(source_seconds, continuous_beat=continuous_beat)[axis]
+                for child, axis in self.channels
+            )
             return (values + (0.0, 0.0))[:3]
         if self.recording:
             values = self.recording_values(source_seconds)
@@ -129,15 +160,19 @@ class Motion:
             return (projected + (0.0, 0.0))[:3]
         if self.kind == "match" and not self.config.get("allow_outside_match", False):
             if not self.window[0] <= source_seconds < self.window[1]:
-                raise ValueError("Motion exceeds matched window; choose another fit or explicitly permit extrapolation")
+                raise ValueError(
+                    "Motion exceeds matched window; choose another fit or explicitly permit extrapolation"
+                )
         beat = self.clock.beat_at(source_seconds)
         if self.kind in {"named", "table"} and self.config.get("repeat_clock", "continuous") == "continuous":
             beat = beat if continuous_beat is None else continuous_beat
         position = ((beat - self.origin) * self.rate + self.phase) * 64
         pip = math.floor(position)
+
         def sample_at(p):
             values = tuple(self.samples[p % len(self.samples)]) if self.kind == "table" else self._named(p)
             return (values + (0.0, 0.0))[:3]
+
         a = sample_at(pip)
         if not self.config.get("interpolate", False):
             return a

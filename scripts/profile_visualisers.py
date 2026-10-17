@@ -3,6 +3,7 @@
 Usage: python scripts/profile_visualisers.py SUITE CATALOGUE --output NEW_DIRECTORY
 All remaining options are the maintained `framerudiments presets-profile` options.
 """
+
 import sys
 from framerudiments.cli import main
 

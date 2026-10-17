@@ -74,11 +74,17 @@ MOTION_EFFECTS = {
 }
 
 EFFECT_SPECS = (
-    [(f"spectrum-{name}", "spectrum", description, "spectral display typography")
-     for name, description in SPECTRUM_EFFECTS.items()]
-    + [(f"spectrogram-{name}", "spectrogram", description, "time-frequency data art")
-       for name, description in SPECTROGRAM_EFFECTS.items()]
-    + [(f"waveform-{name}", "motion", description, "motion oscilloscope")
-       for name, description in MOTION_EFFECTS.items()]
+    [
+        (f"spectrum-{name}", "spectrum", description, "spectral display typography")
+        for name, description in SPECTRUM_EFFECTS.items()
+    ]
+    + [
+        (f"spectrogram-{name}", "spectrogram", description, "time-frequency data art")
+        for name, description in SPECTROGRAM_EFFECTS.items()
+    ]
+    + [
+        (f"waveform-{name}", "motion", description, "motion oscilloscope")
+        for name, description in MOTION_EFFECTS.items()
+    ]
 )
 assert len(EFFECT_SPECS) == 60

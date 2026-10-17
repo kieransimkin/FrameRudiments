@@ -34,8 +34,11 @@ def test_lyric_art_exact_text_lookup_and_required_assets(tmp_path):
     ImageDraw.Draw(art).rectangle((0, 0, 99, 29), fill="#ff0000")
     artpath = path.parent / "lyric-art.png"
     art.save(artpath)
-    data["lyric_art"] = dict(items=[dict(text="Signals into motion", asset=dict(path=str(artpath), sha256=sha256(artpath)))],
-                             placement=dict(center=[180, 220], width=100, bounds=[60, 160, 300, 280]), fallback="text")
+    data["lyric_art"] = dict(
+        items=[dict(text="Signals into motion", asset=dict(path=str(artpath), sha256=sha256(artpath)))],
+        placement=dict(center=[180, 220], width=100, bounds=[60, 160, 300, 280]),
+        fallback="text",
+    )
     project = Project(data, path.parent)
     compositor = Compositor(project)
     frame, _ = compositor.frame(0)

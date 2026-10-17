@@ -1,4 +1,5 @@
 """Reusable bounded raster operations extracted from the release compositors."""
+
 from PIL import Image, ImageChops, ImageFilter
 
 
@@ -15,16 +16,19 @@ def transformed_bounds(image, x, y):
 
 
 def within(bounds, allowed):
-    return bounds is None or (bounds[0] >= allowed[0] and bounds[1] >= allowed[1]
-                              and bounds[2] <= allowed[2] and bounds[3] <= allowed[3])
+    return bounds is None or (
+        bounds[0] >= allowed[0]
+        and bounds[1] >= allowed[1]
+        and bounds[2] <= allowed[2]
+        and bounds[3] <= allowed[3]
+    )
 
 
-def directional_trail(image, *, offset=(0, 0), opacity=.2, radius=2):
+def directional_trail(image, *, offset=(0, 0), opacity=0.2, radius=2):
     """Same-pose trail avoids detached anatomy from a previous sprite pose."""
     dx, dy = map(int, offset)
     margin = int(radius * 3 + 2)
-    result = Image.new("RGBA", (image.width + abs(dx) + margin * 2,
-                                image.height + abs(dy) + margin * 2))
+    result = Image.new("RGBA", (image.width + abs(dx) + margin * 2, image.height + abs(dy) + margin * 2))
     origin = (margin + max(0, -dx), margin + max(0, -dy))
     trail = Image.new("RGBA", result.size)
     trail.alpha_composite(alpha_scaled(image, opacity), (origin[0] + dx, origin[1] + dy))

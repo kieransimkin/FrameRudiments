@@ -4,6 +4,7 @@ Every routing decision is deterministic for a sequential run starting at frame 0
 state lives with the EffectChain, never with GPU texture or a Python scene hook.
 Replay from zero when seeking a feedback-based visualiser.
 """
+
 from collections import OrderedDict
 import math
 
@@ -19,8 +20,7 @@ RETRIGGERS = frozenset({"reappearance", "once", "lyric", "cue"})
 def _policy(config, label, inherited=None):
     """Validate one element route. Fields omitted inherit from the default."""
     fields(config, {"feed", "overlay", "retrigger"}, label)
-    parent = inherited or dict(feed=dict(mode="continuous"), overlay=False,
-                               retrigger="reappearance")
+    parent = inherited or dict(feed=dict(mode="continuous"), overlay=False, retrigger="reappearance")
     feed = config.get("feed", parent["feed"])
     if isinstance(feed, str):
         feed = {"mode": feed}
@@ -29,8 +29,7 @@ def _policy(config, label, inherited=None):
     if mode not in MODES:
         raise ValueError(f"{label}.feed.mode must be continuous, first_pips or never")
     if mode == "first_pips":
-        duration = number(feed.get("duration_pips"), label + ".feed.duration_pips",
-                          minimum=0, maximum=65536)
+        duration = number(feed.get("duration_pips"), label + ".feed.duration_pips", minimum=0, maximum=65536)
         feed = dict(mode=mode, duration_pips=duration)
     elif "duration_pips" in feed:
         raise ValueError(f"{label}.feed.duration_pips requires first_pips")
@@ -48,8 +47,7 @@ def _policy(config, label, inherited=None):
 def _event_key(event):
     if not isinstance(event, dict):
         return None
-    return (event.get("cycle"), event.get("source_order"), event.get("frame"),
-            event.get("text"))
+    return (event.get("cycle"), event.get("source_order"), event.get("frame"), event.get("text"))
 
 
 class VisualiserLayerRouting:
@@ -71,18 +69,24 @@ class VisualiserLayerRouting:
         if not isinstance(rows, dict) or len(rows) > MAX_TARGETS:
             raise ValueError("visualiser_routing.elements needs <=256 named policies")
         if set(rows) - set(self.available):
-            raise ValueError(f"Unknown visualiser routing elements: {sorted(set(rows)-set(self.available))}")
-        self.policies = {key: _policy(row, f"visualiser_routing.elements.{key}", self.default)
-                         for key, row in rows.items()}
+            raise ValueError(
+                f"Unknown visualiser routing elements: {sorted(set(rows) - set(self.available))}"
+            )
+        self.policies = {
+            key: _policy(row, f"visualiser_routing.elements.{key}", self.default) for key, row in rows.items()
+        }
         self.states = {}  # populated only by sequential feedback frames
         self.last_report = {}
         self.next_frame = 0
-        self.evidence = dict(default=self.default, elements=self.policies,
-                             available=list(self.available),
-                             timing="64 source-clock pips per beat; independent from output FPS",
-                             start="first nontransparent pixel (rearmed on reappearance by default)",
-                             gpu_input="per-pixel alpha; zero alpha does not overwrite feedback",
-                             output="clean overlays after all Butterchurn/projectM stages")
+        self.evidence = dict(
+            default=self.default,
+            elements=self.policies,
+            available=list(self.available),
+            timing="64 source-clock pips per beat; independent from output FPS",
+            start="first nontransparent pixel (rearmed on reappearance by default)",
+            gpu_input="per-pixel alpha; zero alpha does not overwrite feedback",
+            output="clean overlays after all Butterchurn/projectM stages",
+        )
 
     def route(self, context, parts):
         if context.frame != self.next_frame:
@@ -104,14 +108,16 @@ class VisualiserLayerRouting:
             ink = images.get(name)
             visible = ink is not None and ink.getchannel("A").getbbox() is not None
             policy = self.policies.get(name, self.default)
-            state = self.states.setdefault(name, dict(visible=False, onset=None, ever=False,
-                                                       lyric=None, cue=None))
+            state = self.states.setdefault(
+                name, dict(visible=False, onset=None, ever=False, lyric=None, cue=None)
+            )
             lyric = _event_key(getattr(context, "lyric", None))
             cue = _event_key(getattr(context, "cue", None))
             new = bool(visible and not state["visible"])
             trigger = policy["retrigger"]
-            if visible and ((trigger == "lyric" and state["lyric"] != lyric) or
-                            (trigger == "cue" and state["cue"] != cue)):
+            if visible and (
+                (trigger == "lyric" and state["lyric"] != lyric) or (trigger == "cue" and state["cue"] != cue)
+            ):
                 new = True
             if new and (trigger != "once" or not state["ever"]):
                 state["onset"] = pip
@@ -122,21 +128,36 @@ class VisualiserLayerRouting:
             state["lyric"], state["cue"] = lyric, cue
             mode = policy["feed"]["mode"]
             elapsed = max(0.0, pip - state["onset"]) if state["onset"] is not None else None
-            feeding = bool(visible and (mode == "continuous" or
-                           mode == "first_pips" and elapsed is not None and
-                           elapsed < policy["feed"]["duration_pips"]))
+            feeding = bool(
+                visible
+                and (
+                    mode == "continuous"
+                    or mode == "first_pips"
+                    and elapsed is not None
+                    and elapsed < policy["feed"]["duration_pips"]
+                )
+            )
             on_top = bool(visible and policy["overlay"])
             if feeding:
                 injected.alpha_composite(ink)
             if on_top:
                 overlay.alpha_composite(ink)
             if visible or name in self.policies:
-                report[name] = dict(visible=bool(visible), feeding=feeding, overlay=on_top,
-                                    first_pip=state["onset"], elapsed_pips=elapsed,
-                                    policy=policy["feed"]["mode"])
+                report[name] = dict(
+                    visible=bool(visible),
+                    feeding=feeding,
+                    overlay=on_top,
+                    first_pip=state["onset"],
+                    elapsed_pips=elapsed,
+                    policy=policy["feed"]["mode"],
+                )
         self.next_frame += 1
-        self.last_report = dict(frame=context.frame, source_seconds=context.source_seconds,
-                                beat=context.beat, elements=report,
-                                feeding=[key for key, row in report.items() if row["feeding"]],
-                                overlays=[key for key, row in report.items() if row["overlay"]])
+        self.last_report = dict(
+            frame=context.frame,
+            source_seconds=context.source_seconds,
+            beat=context.beat,
+            elements=report,
+            feeding=[key for key, row in report.items() if row["feeding"]],
+            overlays=[key for key, row in report.items() if row["overlay"]],
+        )
         return injected, overlay

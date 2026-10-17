@@ -1,13 +1,15 @@
 """Frame-addressed entrance/hold/exit mechanics extracted from lyric-plane rendering."""
+
 from .timeline import half_up
 from .io import number, integer
 
 
-def lyric_placements(events, frame, *, fps, bpm, transition_ticks=8, width=1920, centre=960,
-                     margin=650, programme_frames):
+def lyric_placements(
+    events, frame, *, fps, bpm, transition_ticks=8, width=1920, centre=960, margin=650, programme_frames
+):
     """Enter by onset, hold to explicit end_frame, then leave; no copied song BPM."""
     fps = integer(fps, "fps", minimum=1)
-    bpm = number(bpm, "bpm", minimum=.00001)
+    bpm = number(bpm, "bpm", minimum=0.00001)
     transition = max(1, half_up(number(transition_ticks, "transition ticks", minimum=0) * 3.75 / bpm * fps))
     for index, event in enumerate(events):
         onset = event["frame"]

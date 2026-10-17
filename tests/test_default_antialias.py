@@ -1,4 +1,5 @@
 """Maximum-quality defaults and deliberate low-quality options."""
+
 import copy
 import os
 from pathlib import Path
@@ -37,12 +38,21 @@ def test_explicit_lower_quality_and_pixel_art_opt_out():
     assert not off.evidence["enabled"]
 
 
-@pytest.mark.parametrize("bad", [
-    {"enabled": 0}, {"spatial_scale": 0}, {"spatial_scale": 5},
-    {"spatial_scale": 2.5}, {"temporal_samples": 0}, {"temporal_samples": 9},
-    {"temporal_samples": True}, {"antialias_passes": 4},
-    {"antialias": float("nan")}, {"other": "unknown"},
-])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"enabled": 0},
+        {"spatial_scale": 0},
+        {"spatial_scale": 5},
+        {"spatial_scale": 2.5},
+        {"temporal_samples": 0},
+        {"temporal_samples": 9},
+        {"temporal_samples": True},
+        {"antialias_passes": 4},
+        {"antialias": float("nan")},
+        {"other": "unknown"},
+    ],
+)
 def test_invalid_or_unbounded_quality_fails_early(bad):
     with pytest.raises((ValueError, TypeError)):
         OutputQuality(bad)
@@ -55,11 +65,13 @@ def demo(tmp_path):
         pytest.skip("Native CI font is not installed")
     from framerudiments.demo import create_demo
     from framerudiments.project import Project
+
     return Project.load(create_demo(tmp_path / "max-quality", font, width=160, height=240))
 
 
 def test_direct_compositor_uses_distinct_subframes_by_default(demo):
     from framerudiments.compositor import Compositor
+
     comp = Compositor(demo)
     high, context = comp.frame(3)
     assert context.frame == 3
@@ -73,9 +85,14 @@ def test_direct_compositor_uses_distinct_subframes_by_default(demo):
 def test_explicit_one_sample_does_not_build_high_fps_compositor(demo):
     from framerudiments.project import Project
     from framerudiments.compositor import Compositor
-    custom = Project({**copy.deepcopy(demo.data),
-                      "render_quality": {"spatial_scale": 1, "temporal_samples": 1,
-                                         "antialias": 0}}, demo.base)
+
+    custom = Project(
+        {
+            **copy.deepcopy(demo.data),
+            "render_quality": {"spatial_scale": 1, "temporal_samples": 1, "antialias": 0},
+        },
+        demo.base,
+    )
     comp = Compositor(custom)
     comp.frame(3)
     assert not hasattr(comp, "_temporal_virtual")
@@ -84,8 +101,9 @@ def test_explicit_one_sample_does_not_build_high_fps_compositor(demo):
 def test_temporal_history_is_not_applied_to_each_subframe(demo):
     from framerudiments.project import Project
     from framerudiments.compositor import Compositor
+
     config = dict(**copy.deepcopy(demo.data), render_quality={"spatial_scale": 2, "temporal_samples": 2})
-    config["post_effects"] = {"temporal": {"strength": .5, "samples": 2, "shutter_frames": 1}}
+    config["post_effects"] = {"temporal": {"strength": 0.5, "samples": 2, "shutter_frames": 1}}
     comp = Compositor(Project(config, demo.base))
     a, _ = comp.frame(8)
     comp.frame(2)

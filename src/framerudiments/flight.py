@@ -34,9 +34,16 @@ class FlightState:
 class PaperPlaneFlight:
     """Deterministic portrait-space motion with visually explicit stall phases."""
 
-    def __init__(self, seed: int, x: float, y: float, speed: float,
-                 sprite_index: int, stall_after: float | None = None,
-                 behaviour: str = "cycle"):
+    def __init__(
+        self,
+        seed: int,
+        x: float,
+        y: float,
+        speed: float,
+        sprite_index: int,
+        stall_after: float | None = None,
+        behaviour: str = "cycle",
+    ):
         self.rng = random.Random(seed)
         self.sprite_index = sprite_index
         self.stall_after = stall_after
@@ -91,13 +98,13 @@ class PaperPlaneFlight:
         self._transition()
 
         targets = {
-            "glide":    (self.cruise_speed, -0.018, -6.0),
-            "climb":    (self.cruise_speed * 0.68, -0.105, -25.0),
-            "mush":     (self.cruise_speed * 0.38, -0.012, -20.0),
-            "stall":    (self.cruise_speed * 0.25,  0.055, -14.0),
-            "drop":     (self.cruise_speed * 0.76,  0.205,  36.0),
-            "recovery": (self.cruise_speed * 1.18,  0.095,  17.0),
-            "swoop":    (self.cruise_speed * 1.02, -0.090, -18.0),
+            "glide": (self.cruise_speed, -0.018, -6.0),
+            "climb": (self.cruise_speed * 0.68, -0.105, -25.0),
+            "mush": (self.cruise_speed * 0.38, -0.012, -20.0),
+            "stall": (self.cruise_speed * 0.25, 0.055, -14.0),
+            "drop": (self.cruise_speed * 0.76, 0.205, 36.0),
+            "recovery": (self.cruise_speed * 1.18, 0.095, 17.0),
+            "swoop": (self.cruise_speed * 1.02, -0.090, -18.0),
         }
         target_vx, target_vy, target_pitch_deg = targets[s.state]
         velocity_scale = self.cruise_speed / 0.22
@@ -128,8 +135,13 @@ class PaperPlaneFlight:
         # Bank belongs to the manoeuvre, not a permanent oscillation. Stable
         # flight stays almost level; climbs and pull-outs use one smooth lean.
         bank_by_state = {
-            "glide": 0.0, "climb": -7.0, "mush": -3.0,
-            "stall": 2.0, "drop": 8.0, "recovery": 5.0, "swoop": -8.0,
+            "glide": 0.0,
+            "climb": -7.0,
+            "mush": -3.0,
+            "stall": 2.0,
+            "drop": 8.0,
+            "recovery": 5.0,
+            "swoop": -8.0,
         }
         bank = bank_by_state[s.state]
         if leaf_weight:
@@ -145,8 +157,9 @@ class PaperPlaneFlight:
         return s
 
 
-def simulate_stall(seed: int = 7, seconds: float = 10.0,
-                   dt: float = 1 / 120) -> list[tuple[float, str, float, float, float]]:
+def simulate_stall(
+    seed: int = 7, seconds: float = 10.0, dt: float = 1 / 120
+) -> list[tuple[float, str, float, float, float]]:
     plane = PaperPlaneFlight(seed, 0.05, 0.42, 0.15, 0, stall_after=0.5)
     samples = []
     t = 0.0

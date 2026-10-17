@@ -21,8 +21,13 @@ def project(tmp_path):
 
 
 def layer(project, renderer="particles", **extra):
-    cfg = dict(id="view", type="rudiment", renderer=renderer, bounds=[10, 10, 170, 150],
-               motion=dict(kind="named", pattern="circle"))
+    cfg = dict(
+        id="view",
+        type="rudiment",
+        renderer=renderer,
+        bounds=[10, 10, 170, 150],
+        motion=dict(kind="named", pattern="circle"),
+    )
     cfg.update(extra)
     project.data["layers"] = [cfg]
     return Compositor(project)
@@ -82,17 +87,30 @@ def test_history_tracks_exact_repeated_excerpt_clocks(project):
     project = Project(project.data, project.base)
     compositor = layer(project, "path", history_frames=12)
     data = compositor.layers[0].data(compositor.context(35))
-    assert any(b.context.source_seconds < a.context.source_seconds for a, b in zip(data.history, data.history[1:]))
+    assert any(
+        b.context.source_seconds < a.context.source_seconds for a, b in zip(data.history, data.history[1:])
+    )
     assert all(b.context.beat > a.context.beat for a, b in zip(data.history, data.history[1:]))
     for sample in data.history:
         expected = dr.sample("circle", int(sample.context.beat * 64))
         assert sample.values == (expected.x, expected.y, expected.z)
 
 
-@pytest.mark.parametrize("change", [dict(renderer="missing"), dict(axes=["missing"]), dict(axes=[True]),
-                                    dict(history_frames=0), dict(history_frames=513), dict(history_stride=0),
-                                    dict(bounds=[.5, 10, 170, 150]), dict(style={"unrecognised": 2}),
-                                    dict(style={"colours": []}), dict(opacity=float("nan"))])
+@pytest.mark.parametrize(
+    "change",
+    [
+        dict(renderer="missing"),
+        dict(axes=["missing"]),
+        dict(axes=[True]),
+        dict(history_frames=0),
+        dict(history_frames=513),
+        dict(history_stride=0),
+        dict(bounds=[0.5, 10, 170, 150]),
+        dict(style={"unrecognised": 2}),
+        dict(style={"colours": []}),
+        dict(opacity=float("nan")),
+    ],
+)
 def test_bad_renderer_configuration_fails_closed(project, change):
     with pytest.raises(ValueError):
         layer(project, **change)
@@ -113,9 +131,17 @@ def test_registry_extension_is_local_and_custom_pixels_are_viewport_bounded(proj
     assert "dot" not in default_renderers().names
     with pytest.raises(ValueError, match="already registered"):
         registry.register("particles", Dot)
-    project.data["layers"] = [dict(id="dot", type="rudiment", renderer="dot", bounds=[10, 10, 170, 150],
-                                    motion=dict(kind="named", pattern="bounce"))]
+    project.data["layers"] = [
+        dict(
+            id="dot",
+            type="rudiment",
+            renderer="dot",
+            bounds=[10, 10, 170, 150],
+            motion=dict(kind="named", pattern="bounce"),
+        )
+    ]
     from framerudiments.output_quality import OutputQuality
+
     project.output_quality = OutputQuality({"enabled": False})
     compositor = Compositor(project, renderers=registry)
     image, _ = compositor.frame(30)
@@ -137,9 +163,11 @@ def test_invalid_plugin_output_and_too_many_axes_for_viewport_fail(project):
 
     registry = default_renderers()
     registry.register("bad", Bad)
-    project.data["layers"] = [dict(id="bad", type="rudiment", renderer="bad",
-                                    motion=dict(kind="named", pattern="circle"))]
+    project.data["layers"] = [
+        dict(id="bad", type="rudiment", renderer="bad", motion=dict(kind="named", pattern="circle"))
+    ]
     from framerudiments.output_quality import OutputQuality
+
     project.output_quality = OutputQuality({"enabled": False})
     with pytest.raises(ValueError, match="viewport-sized RGBA"):
         Compositor(project, renderers=registry).frame(0)
@@ -171,4 +199,5 @@ def test_cli_lists_builtin_renderers(capsys):
     names = json.loads(capsys.readouterr().out)
     assert names[:5] == ["particles", "bars", "waveform", "path", "spectrum"]
     from framerudiments.visualisation_catalogue import ALL_VIEWS
+
     assert set(names[5:]) == {view.name for view in ALL_VIEWS}

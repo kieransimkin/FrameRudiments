@@ -1,0 +1,1615 @@
+diff --git a/.github/workflows/visualisation-gallery.yml b/.github/workflows/visualisation-gallery.yml
+index ebc9b48..afc169b 100644
+--- a/.github/workflows/visualisation-gallery.yml
++++ b/.github/workflows/visualisation-gallery.yml
+@@ -30,10 +30,22 @@ jobs:
+         run: python -m pip install -e '.[dev]'
+       - name: Validate all visualisation modes and deterministic output
+         run: python -m pytest -q tests/test_advanced_renderers.py tests/test_visualisation_modulation.py tests/test_effect_batch.py tests/test_scoped_effects.py tests/test_sprite_renderers.py tests/test_quality_effects.py tests/test_particle_engine.py tests/test_variable_bpm_words.py tests/test_rich_subtitles.py tests/test_default_antialias.py tests/test_supersampling.py tests/test_visualiser_routing.py
++      - name: Validate renderer cross-quality and stateful scene contracts
++        run: python -m pytest -q tests/test_coverage_matrix.py
++      - name: Validate native stem aliases and track mattes
++        run: python -m pytest -q tests/test_layer_masks.py tests/test_stem_source_integration.py tests/test_stem_blend.py
++      - name: Verify deterministic keyframed mattes
++        run: python -m pytest -q tests/test_keyframes.py
++      - name: Validate Phase 3 animation and displacement
++        run: python -m pytest -q tests/test_phase3_animation.py tests/test_phase3_gpu_injection.py
++      - name: Check deterministic 3D perspective renderers
++        run: python -m pytest -q tests/test_spatial_renderers.py
+       - name: Lint gallery and renderer implementation
+         run: ruff check src/framerudiments/beat_timeline.py src/framerudiments/word_timing.py tests/test_variable_bpm_words.py scripts/generate_timing_gallery.py scripts/generate_visualisation_gallery.py src/framerudiments/advanced_renderers.py src/framerudiments/circular_renderers.py src/framerudiments/visualisation_catalogue.py src/framerudiments/visual_style.py src/framerudiments/modulation.py src/framerudiments/effect_catalogue.py src/framerudiments/effect_renderers.py src/framerudiments/post_effects.py src/framerudiments/scoped_effects.py scripts/generate_post_effect_gallery.py tests/test_advanced_renderers.py tests/test_visualisation_modulation.py tests/test_effect_batch.py tests/test_scoped_effects.py tests/test_sprite_renderers.py src/framerudiments/sprite_renderers.py src/framerudiments/sprite_catalogue.py scripts/generate_sprite_gallery.py scripts/build_sprite_assets.py src/framerudiments/quality_effects.py scripts/generate_quality_gallery.py tests/test_quality_effects.py src/framerudiments/particle_engine.py scripts/generate_particle_gallery.py tests/test_particle_engine.py src/framerudiments/rich_subtitles.py src/framerudiments/lyric_indicator.py scripts/generate_rich_lyric_gallery.py tests/test_rich_subtitles.py src/framerudiments/output_quality.py src/framerudiments/super_sampling.py tests/test_default_antialias.py tests/test_supersampling.py scripts/generate_supersampling_gallery.py src/framerudiments/visualiser_routing.py tests/test_visualiser_routing.py scripts/generate_visualiser_routing_gallery.py
+       - name: Render complete gallery from synthetic display fixtures
+         run: python scripts/generate_visualisation_gallery.py --output _site
++      - name: Record non-blocking renderer quality and memory profiles
++        run: python scripts/profile_visualisation_coverage.py --output _site/coverage-profile.json
+       - name: Generate isolated element and full-frame effects gallery
+         run: python scripts/generate_post_effect_gallery.py --output _site
+       - name: Generate high-quality anti-aliasing and motion-blur gallery
+diff --git a/docs/keyframed-mattes.md b/docs/keyframed-mattes.md
+new file mode 100644
+index 0000000..f72564a
+--- /dev/null
++++ b/docs/keyframed-mattes.md
+@@ -0,0 +1,20 @@
++# Keyframed compositor mattes
++
++`layer_masks` supports the existing prior-layer alpha/luminance masking with an optional
++output-time `opacity` property. A number from 0 to 1 is constant. An envelope
++provides nonnegative seconds and a normalized value at each keyframe. Segment
++easing can be `linear`, `smoothstep` or `hold` (assigned to the starting key).
++
++```json
++{"layer_masks": {"layer:foreground": {"source": "layer:shape", "mode": "alpha",
++  "opacity": {"keys": [{"time": 0, "value": 0, "ease": "smoothstep"},
++                        {"time": 2, "value": 1}, {"time": 5, "value": 0}]}}}}
++```
++
++This is a deterministic image presentation envelope, **not** audio analysis;
++StemLab recording data and native DanceRudiments movements keep their clocks.
++Keyframe times are output seconds (not source excerpt time), so transitions
++continue smoothly across repeated audio excerpts. Outside the keys' time range,
++values clamp to the nearest endpoint. A missing matte surface remains fully
++transparent before inversion; the final mask combines alpha, optional luminance,
++inversion, and opacity. Frame seeking has no hidden state.
+diff --git a/docs/multi-stem-modulation.md b/docs/multi-stem-modulation.md
+new file mode 100644
+index 0000000..995cb17
+--- /dev/null
++++ b/docs/multi-stem-modulation.md
+@@ -0,0 +1,28 @@
++# Cross-stem Rudiment visual drivers
++
++`stem_blend` is a presentation-only weighted mix of two to eight separately
++pinned native `stem_sources` recordings. The same source-clock arguments are
++passed to each existing DanceRudiments `Motion`; the engine does not decode
++PCM, compute loudness, extract instruments or perform new spectral analysis.
++
++```json
++{
++  "stem_sources": {
++    "bass": {"kind": "recording", "file": {"path": "bass-motion.json", "sha256": "<sha>"}},
++    "drums": {"kind": "recording", "file": {"path": "drum-motion.json", "sha256": "<sha>"}}
++  },
++  "layers": [{
++    "id": "combined-motion", "type": "rudiment", "renderer": "waveform-ribbon",
++    "stem_blend": [{"stem_source": "bass", "weight": 3},
++                   {"stem_source": "drums", "weight": 1}],
++    "bounds": [0, 0, 1080, 500]
++  }]
++}
++```
++
++Sources must share identically named dimensions and the existing source-time
++contract. Weighted channel values are clamped to [-1,+1] after normalisation.
++`stem_blend` cannot be combined with `motion` or `stem_source`. Frequency-band
++spectrum/spectrogram displays reject blended motion: spectrum aggregation needs
++calibrated measurements, not arithmetic averaging of normalised motion values.
++For spectrum views, use a single verified StemLab Fourier recording per layer.
+diff --git a/docs/phase3-compositing.md b/docs/phase3-compositing.md
+new file mode 100644
+index 0000000..fb3fd5e
+--- /dev/null
++++ b/docs/phase3-compositing.md
+@@ -0,0 +1,45 @@
++# Phase 3: declarative compositor animation and intermediate stage routing
++
++FrameRudiments preserves StemLab recordings and native DanceRudiments motion
++without extracting or transforming the audio again. This feature is purely
++presentation-layer and deterministic at any requested output frame.
++
++`layer_animations` targets known `layer:<id>` compositor surfaces. Properties
++`opacity`, `x`, `y`, and `rotation` accept finite scalar values or normalized
++keyframe envelopes (`keys` with `time`, `value`, optional `ease`). Keyframe
++values 0..1 are mapped to the property's validated range. Rotation and
++translation happen after polygon clipping, before masking/displacement and
++visualiser input routing. `clip` accepts a fixed polygon with 3..128 vertices
++or an animated `{"keys":[{"time":0,"points":[[x,y], ...]}, ...]}` polygon.
++All clip keys must have the same vertex count and increasing times; vertex
++positions interpolate deterministically with optional easing.
++
++`layer_displacement` applies bounded horizontal displacement of the target
++surface using the alpha-weighted luminance of an **earlier** source layer.
++Displacement does not modify either StemLab spectral measurements or
++DanceRudiments signals, and transparent pixels are preserved on the edges.
++
++```json
++{
++  "layer_animations": {"layer:dancer": {
++    "opacity": {"keys": [{"time":0,"value":0}, {"time":2,"value":1}]},
++    "x": 20,
++    "clip": [[0,0],[640,0],[640,480],[0,480]]
++  }},
++  "layer_displacement": {"layer:dancer": {
++    "source":"layer:noise", "amount":12
++  }},
++  "visualiser_stage_injections": [
++    {"before":1, "elements":["layer:dancer"], "opacity":0.5}
++  ]
++}
++```
++
++`visualiser_stage_injections` supplies a clean copy of the chosen compositor
++surfaces **before the selected indexed GPU effect stage** (index 1 is the
++second stage). Original layer order determines composite order, and separate
++initial GPU routing and final overlays still work. The setting requires a
++visualiser effect chain and the chosen surfaces to be available via isolated
++compositor routing. GPU processing remains sequential.
++
++New features are opt-in and create no independent signal feature formats.
+diff --git a/docs/spatial-renderers.md b/docs/spatial-renderers.md
+new file mode 100644
+index 0000000..0c3eb66
+--- /dev/null
++++ b/docs/spatial-renderers.md
+@@ -0,0 +1,32 @@
++# Phase 4: deterministic 3D projection foundations
++
++The built-in `spatial-torus`, `spatial-sphere`, and `spatial-terrain`
++renderers draw 3D parametric wire geometry using a perspective camera,
++depth-sorted edges, distance-fog approximation and optional glow. They consume
++**normalized native Rudiment channels**, exactly like the existing motion
++renderer family. They do **not** calculate audio features or infer pitch.
++
++Example layer:
++
++```json
++{"id":"bass-orbit","type":"rudiment","renderer":"spatial-torus",
++ "motion":{"kind":"recording","file":{"path":"bass-motion.json",
++ "sha256":"<recording SHA-256>"}},
++ "bounds":[0,0,1080,1080],
++ "style":{"camera_distance":4.8,"fov":55,"orbit":35,
++          "depth":0.7,"fog":0.22,"glow":0.35,"rings":13,"segments":30}}
++```
++
++For bass/drums/stems, use a pinned StemLab recording or the Phase 2 named
++source aliases/cross-stem driver. DanceRudiments continues to supply movement
++and modulation. Repeated source excerpts and variable-BPM beat clocks remain
++handled by the existing motion/context system.
++
++This is an initial **CPU perspective wire renderer**, not yet a depth-buffered
++triangle renderer, physical lighting system or volumetric fog engine. It is
++pure, seekable and deterministic. A future GPU mesh backend can build on the
++same feature routing without breaking the JSON contract.
++
++CI: `tests/test_spatial_renderers.py` verifies registry integration, source
++motion responsiveness, camera/atmosphere variation and deterministic seeking.
++The main visualisation atlas includes all three modes.
+diff --git a/docs/stem-sources-and-masks.md b/docs/stem-sources-and-masks.md
+new file mode 100644
+index 0000000..3b4f715
+--- /dev/null
++++ b/docs/stem-sources-and-masks.md
+@@ -0,0 +1,46 @@
++# StemLab stem sources and layer mattes
++
++`stem_sources` provides **named aliases** for existing native, SHA-256 pinned
++StemLab-compatible DanceRudiments recordings. It does not decode stems, derive
++FFT features, or invent new analysis formats. Motion sampling, spectrum
++calibration, source-time provenance, interpolation rules and bounds checking
++continue through the existing `Motion`/`RudimentLayer` implementation.
++
++```json
++{
++  "stem_sources": {
++    "bass": {"kind": "recording", "file": {"path": "bass.json", "sha256": "<actual sha256>"}},
++    "drums": {"kind": "recording", "file": {"path": "drums.json", "sha256": "<actual sha256>"}}
++  },
++  "layers": [
++    {"id": "bass-spectrum", "type": "rudiment", "renderer": "spectrum-ring",
++     "stem_source": "bass", "bounds": [0, 0, 512, 512]},
++    {"id": "drum-dots", "type": "rudiment", "renderer": "particles",
++     "stem_source": "drums", "bounds": [0, 0, 512, 512]}
++  ]
++}
++```
++
++Spectrum renderers require calibrated StemLab Fourier-band recordings with
++correct source identity. A generic named movement recording is not a spectrum.
++For a layer, supply **either** `motion` or `stem_source`; conflicting values and
++unknown aliases fail validation. Native/recording motion remains unchanged.
++
++## Reusable alpha/luminance track mattes
++
++`layer_masks` is an optional top-level mapping. A target must be a normal
++`layer:<id>` entry; mask sources must be previously composed `layer:<id>`
++surfaces or `background`. Only previously drawn sources are permitted to avoid
++feedback cycles. Matte alpha is applied after the target layer's own scoped
++post-effects, before the target enters GPU routing or the final composition.
++
++```json
++"layer_masks": {
++  "layer:drum-dots": {"source": "layer:bass-spectrum", "mode": "luminance", "invert": false}
++}
++```
++
++`mode` is `alpha` (default) or `luminance`. Luminance multiplies the source's
++alpha by grayscale RGB intensity; `invert` negates that coverage. The matte is
++not automatically hidden: set its own layer opacity/visualizer route as needed.
++All operations are per-frame and deterministic, including with supersampling.
+diff --git a/docs/visualisation-coverage-matrix.md b/docs/visualisation-coverage-matrix.md
+new file mode 100644
+index 0000000..895cbae
+--- /dev/null
++++ b/docs/visualisation-coverage-matrix.md
+@@ -0,0 +1,42 @@
++# Visualisation coverage: Phase 1 baseline
++
++The renderer registry is the authoritative list of built-in modes. Existing
++`tests/test_advanced_renderers.py` asserts the generated gallery includes
++**every** registered renderer; the gallery's `catalogue.json` is the public
++machine-readable index. Do not hardcode or silently inflate view counts.
++
++## Contracts currently covered
++
++| Contract | Main evidence |
++| --- | --- |
++| Registry/gallery one-to-one correspondence | `tests/test_advanced_renderers.py` |
++| Built-in deterministic synthetic frames | `tests/test_advanced_renderers.py` |
++| Native spectrum provenance and rejected uncalibrated inputs | `tests/test_advanced_renderers.py` |
++| Cross-family native and 4x vector rendering | `tests/test_coverage_matrix.py` |
++| Encoded-frame scene hooks under subframe sampling and seeking | `tests/test_coverage_matrix.py` |
++| Full compositor integration, variable BPM and word timing | `tests/test_variable_bpm_words.py`, `tests/test_pipeline.py` |
++| Per-element GPU input and overlay routing | `tests/test_visualiser_routing.py` |
++| Emitter determinism, cue/excerpt semantics | `tests/test_particle_engine.py` |
++| Actual GPU engine and encoded integration | `integration/` (dedicated Linux runner) |
++
++## Still needed for full confidence
++
++1. **Golden images:** platform-tolerant pixel similarity on a small, pinned
++   selection of combined scenes; record exact baselines and provenance.
++2. **Compound effects:** caption + particles + supersampling + visualiser routing
++   in one deterministic scene. Use small synthetic fixtures, not proprietary music.
++3. **Performance:** bounded CI bench with per-frame time, peak memory and cache
++   growth for 4x/8x rendering, reported as observations rather than unstable
++   pass/fail wall-clock thresholds.
++4. **GPU evidence:** keep the separate actual-engine integration suite and
++   verify both frame content and decoded outputs; never treat mocked backends
++   as proof that projectM or Butterchurn ran.
++5. **Published gallery validation:** ensure `catalogue.json`, card images,
++   gallery HTML, Pages artifact and deployment all agree and are accessible.
++6. **Upstream DSP evidence:** do not label movement traces as PCM, or axis-only
++   remappings as STFT/CQT/chroma calculations. New representations must arrive
++   as versioned, pinned StemLab analyses.
++
++New test modules under `tests/` are discovered by the existing CI matrix via
++`python -m pytest -q`, and the gallery workflow's focused suite should include
++`tests/test_coverage_matrix.py` when its workflow list is next edited.
+diff --git a/scripts/profile_visualisation_coverage.py b/scripts/profile_visualisation_coverage.py
+new file mode 100644
+index 0000000..534ad3e
+--- /dev/null
++++ b/scripts/profile_visualisation_coverage.py
+@@ -0,0 +1,55 @@
++"""Synthetic rendering speed, memory and reproducibility evidence.
++
++These are observations, not pass/fail time gates. Used by the Pages gallery.
++"""
++import argparse
++from hashlib import sha256
++import json
++from pathlib import Path
++import time
++import tracemalloc
++
++from framerudiments.rudiment_renderers import default_renderers
++from framerudiments.super_sampling import vector_viewport
++from generate_visualisation_gallery import fixture
++
++CASES = (("waveform-oscilloscope", "motion"),
++         ("spectrum-annular-bars", "spectrum"),
++         ("spectrogram-linear", "spectrogram"))
++
++
++def profile():
++    registry = default_renderers()
++    results = []
++    for name, family in CASES:
++        for scale in (1, 4):
++            source = fixture(95, spectral=family != "motion")
++            args = (registry, name, (320, 210), {"background": "#142238"}, source, scale)
++            tracemalloc.start()
++            start = time.perf_counter()
++            image, _ = vector_viewport(*args, cache={})
++            elapsed = time.perf_counter() - start
++            _, peak = tracemalloc.get_traced_memory()
++            tracemalloc.stop()
++            digest = sha256(image.tobytes()).hexdigest()
++            again, _ = vector_viewport(*args, cache={})
++            if image.tobytes() != again.tobytes():
++                raise RuntimeError(f"Non-deterministic profile frame: {name}")
++            results.append({"renderer": name, "spatial_scale": scale,
++                            "width": image.width, "height": image.height,
++                            "sha256": digest, "elapsed_ms": round(1000 * elapsed, 3),
++                            "peak_python_bytes": peak})
++    return {"schema": "framerudiments.visualisation-profile.v1", "synthetic": True,
++            "timings_are_nonblocking": True, "cases": results}
++
++
++def main():
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--output", type=Path, required=True)
++    args = parser.parse_args()
++    args.output.parent.mkdir(parents=True, exist_ok=True)
++    args.output.write_text(json.dumps(profile(), indent=2) + "\n", encoding="utf-8")
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/src/framerudiments/compositor.py b/src/framerudiments/compositor.py
+index 2b8eee6..a9ef7b1 100644
+--- a/src/framerudiments/compositor.py
++++ b/src/framerudiments/compositor.py
+@@ -17,6 +17,9 @@ from .lyric_indicator import WordIndicator
+ from .visualisers import effect_specs
+ from .scoped_effects import CompositingEffects
+ from .visualiser_routing import VisualiserLayerRouting
++from .layer_masks import LayerMasks
++from .layer_animation import LayerAnimations
++from .layer_displacement import LayerDisplacement
+ 
+ 
+ @dataclass(frozen=True)
+@@ -295,6 +298,12 @@ class Compositor:
+             targets.add("word-indicator")
+         self.post_pipeline = CompositingEffects(project, project.data.get("post_effects", {}),
+                                                 self.context, valid_elements=targets)
++        mask_order = ["background"]
++        mask_order.extend(f"layer:{layer.id}" for layer in self.layers)
++        self.layer_masks = LayerMasks(project.data.get("layer_masks", {}), mask_order)
++        self.layer_animations = LayerAnimations(project.data.get("layer_animations", {}), mask_order)
++        self.layer_displacement = LayerDisplacement(project.data.get("layer_displacement", {}), mask_order)
++        self._isolate_stage_injections = bool(project.data.get("visualiser_stage_injections"))
+         self.visualiser_routing = None
+         if "visualiser_routing" in project.data:
+             if not self.effect_specs:
+@@ -344,7 +353,7 @@ class Compositor:
+         return self.word_caption.draw(image, state["text"])
+ 
+     def _capture_route(self, name, image):
+-        if self.visualiser_routing is not None:
++        if self.visualiser_routing is not None or self._isolate_stage_injections:
+             self._route_parts.append((name, image.copy()))
+ 
+     def _frame_with_post_effects(self, ctx):
+@@ -357,7 +366,9 @@ class Compositor:
+         pipeline = self.post_pipeline
+         pipeline.begin()
+         self._route_parts = []
++        mask_surfaces = {}
+         background = pipeline.apply_element(self.background.copy(), "background", ctx)
++        mask_surfaces["background"] = background
+         self._capture_route("background", background)
+         image = background
+ 
+@@ -383,6 +394,12 @@ class Compositor:
+             if not bounds:
+                 return None
+             scratch = pipeline.apply_element(scratch, key, ctx)
++            scratch = self.layer_animations.apply(key, scratch, ctx)
++            scratch = self.layer_displacement.apply(key, scratch, mask_surfaces)
++            scratch = self.layer_masks.apply(key, scratch, mask_surfaces, ctx)
++            # Retain the masked surface for downstream mattes. Hidden provider
++            # layers contribute transparent surfaces, not stale prior frames.
++            mask_surfaces[key] = scratch
+             actual = scratch.getchannel("A").getbbox()
+             self._capture_route(key, scratch)
+             image.alpha_composite(scratch)
+@@ -452,7 +469,8 @@ class Compositor:
+             image, context = temporal_supersample(self, frame)
+             return self._final_output(image, context, apply_quality)
+         ctx = self.context(frame)
+-        if self.post_pipeline.enabled or self.visualiser_routing is not None:
++        if (self.post_pipeline.enabled or self.visualiser_routing is not None or self.layer_masks.enabled
++                or self.layer_animations.enabled or self.layer_displacement.enabled or self._isolate_stage_injections):
+             # Final-frame opacity/rotation may leave transparent pixels. The
+             # encoded RGB output uses a deterministic black matte, never an
+             # implicit alpha-discard that would silently erase opacity.
+@@ -515,7 +533,9 @@ class Compositor:
+                     **({"emitters": {x.id: x.evidence for x in self.layers
+                        if isinstance(x, ParticleEmitter)}} if any(isinstance(x, ParticleEmitter)
+                        for x in self.layers) else {}),
+-                    custom_scene=bool(self.scene),
++                    custom_scene=bool(self.scene), layer_masks=self.layer_masks.config,
++                    layer_animations=self.layer_animations.config,
++                    layer_displacement=self.layer_displacement.config,
+                     **({"visualiser_routing": self.visualiser_routing.evidence}
+                        if self.visualiser_routing is not None else {}),
+                     **({"word_indicator": self.word_indicator.evidence} if self.word_indicator else {}),
+diff --git a/src/framerudiments/keyframes.py b/src/framerudiments/keyframes.py
+new file mode 100644
+index 0000000..8606730
+--- /dev/null
++++ b/src/framerudiments/keyframes.py
+@@ -0,0 +1,51 @@
++"""Deterministic output-time keyframe envelopes for compositor properties.
++
++No implicit DSP or motion synthesis: samples are pure functions of timestamp.
++DanceRudiments motion and StemLab recordings remain independent drivers.
++"""
++import bisect
++import math
++
++
++def validate_envelope(config):
++    if not isinstance(config, dict) or set(config) != {"keys"}:
++        raise ValueError("Keyframe envelope needs only keys")
++    keys = config["keys"]
++    if not isinstance(keys, list) or not 1 <= len(keys) <= 128:
++        raise ValueError("Keyframe envelope needs 1..128 points")
++    times = []
++    result = []
++    for item in keys:
++        if not isinstance(item, dict) or set(item) - {"time", "value", "ease"} or not {"time", "value"} <= set(item):
++            raise ValueError("Keyframe needs time and value, optionally ease")
++        t, v = item["time"], item["value"]
++        if type(t) not in (int, float) or not math.isfinite(t) or t < 0:
++            raise ValueError("Keyframe time must be finite nonnegative seconds")
++        if type(v) not in (int, float) or not math.isfinite(v) or not 0 <= v <= 1:
++            raise ValueError("Keyframe value must be between 0 and 1")
++        if times and t <= times[-1]:
++            raise ValueError("Keyframe times must strictly increase")
++        ease = item.get("ease", "linear")
++        if ease not in ("linear", "hold", "smoothstep"):
++            raise ValueError("Unknown keyframe easing")
++        times.append(float(t))
++        result.append((float(t), float(v), ease))
++    return tuple(result)
++
++
++def sample_envelope(keys, seconds):
++    """Clamp to endpoints; easing applies to the segment's starting key."""
++    if not math.isfinite(seconds):
++        raise ValueError("Nonfinite keyframe sample time")
++    if seconds <= keys[0][0]:
++        return keys[0][1]
++    if seconds >= keys[-1][0]:
++        return keys[-1][1]
++    index = bisect.bisect_right([key[0] for key in keys], seconds) - 1
++    a, b = keys[index], keys[index + 1]
++    u = (seconds - a[0]) / (b[0] - a[0])
++    if a[2] == "hold":
++        u = 0
++    elif a[2] == "smoothstep":
++        u = u * u * (3 - 2 * u)
++    return a[1] + u * (b[1] - a[1])
+diff --git a/src/framerudiments/layer_animation.py b/src/framerudiments/layer_animation.py
+new file mode 100644
+index 0000000..65c8b6c
+--- /dev/null
++++ b/src/framerudiments/layer_animation.py
+@@ -0,0 +1,118 @@
++"""Bounded, deterministic output-time animation of isolated RGBA surfaces."""
++import math
++from PIL import Image, ImageChops, ImageDraw
++from .keyframes import validate_envelope, sample_envelope
++
++
++def _parameter(value, name, low, high):
++    if isinstance(value, dict):
++        keys = validate_envelope(value)
++        # Envelope values are normalised; map them into the property's range.
++        return (keys, low, high)
++    if type(value) not in (int, float) or not math.isfinite(value) or not low <= value <= high:
++        raise ValueError(f"{name} must be a finite value in [{low}, {high}] or keyframes")
++    return value
++
++
++def _value(value, context):
++    if isinstance(value, tuple):
++        keys, low, high = value
++        return low + sample_envelope(keys, context.output_seconds) * (high - low)
++    return value
++
++
++class LayerAnimations:
++    """Animations refer to compositor layer:<id> names, never arbitrary Python."""
++    def __init__(self, config, available):
++        if not isinstance(config, dict) or len(config) > 64:
++            raise ValueError("layer_animations must be an object with <=64 entries")
++        self.config = {}
++        for name, row in config.items():
++            if name not in available or not name.startswith('layer:') or not isinstance(row, dict):
++                raise ValueError("Animation target must be an existing layer:<id>")
++            if set(row) - {'opacity', 'x', 'y', 'rotation', 'clip'}:
++                raise ValueError("Unknown layer animation property")
++            parsed = {}
++            for prop, limits in {'opacity': (0, 1), 'x': (-1024, 1024),
++                                 'y': (-1024, 1024), 'rotation': (-360, 360)}.items():
++                if prop in row:
++                    parsed[prop] = _parameter(row[prop], prop, *limits)
++            if 'clip' in row:
++                polygon = row['clip']
++                if isinstance(polygon, dict):
++                    keys = polygon.get('keys')
++                    if set(polygon) != {'keys'} or not isinstance(keys, list) or not 1 <= len(keys) <= 128:
++                        raise ValueError('Animated clip requires 1..128 keyframes')
++                    samples = []
++                    for key in keys:
++                        if not isinstance(key, dict) or set(key) - {'time','points','ease'} or not {'time','points'} <= set(key):
++                            raise ValueError('Clip key requires time and points')
++                        t = key['time']
++                        if type(t) not in (int,float) or not math.isfinite(t) or t < 0 or (samples and t <= samples[-1][0]):
++                            raise ValueError('Clip times must increase')
++                        ease = key.get('ease', 'linear')
++                        if ease not in ('linear','smoothstep','hold'):
++                            raise ValueError('Invalid clip easing')
++                        samples.append((float(t), self._polygon(key['points']), ease))
++                    if len({len(key[1]) for key in samples}) != 1:
++                        raise ValueError('Clip vertex count must remain constant')
++                    parsed['clip'] = ('animated', tuple(samples))
++                else:
++                    parsed['clip'] = self._polygon(polygon)
++            self.config[name] = parsed
++
++    @staticmethod
++    def _polygon(points):
++        if (not isinstance(points, list) or not 3 <= len(points) <= 128 or
++            any(not isinstance(pt, list) or len(pt) != 2 or
++                any(type(v) not in (int,float) or not math.isfinite(v) for v in pt)
++                for pt in points)):
++            raise ValueError('Clip must have 3..128 finite coordinate pairs')
++        return tuple(tuple(p) for p in points)
++
++    @staticmethod
++    def _clip_at(config, seconds):
++        if not config or config[0] != 'animated':
++            return config
++        keys = config[1]
++        if seconds <= keys[0][0]:
++            return keys[0][1]
++        if seconds >= keys[-1][0]:
++            return keys[-1][1]
++        for a,b in zip(keys,keys[1:]):
++            if a[0] <= seconds < b[0]:
++                t = (seconds-a[0])/(b[0]-a[0])
++                if a[2] == 'hold': t = 0
++                elif a[2] == 'smoothstep': t = t*t*(3-2*t)
++                return tuple((x+(u-x)*t,y+(v-y)*t)
++                             for (x,y),(u,v) in zip(a[1],b[1]))
++        return keys[-1][1]
++
++    @property
++    def enabled(self):
++        return bool(self.config)
++
++    def apply(self, name, image, context):
++        settings = self.config.get(name)
++        if settings is None:
++            return image
++        if image.mode != 'RGBA':
++            raise ValueError('Layer animation needs RGBA')
++        opacity = _value(settings.get('opacity', 1), context)
++        dx = round(_value(settings.get('x', 0), context))
++        dy = round(_value(settings.get('y', 0), context))
++        angle = _value(settings.get('rotation', 0), context)
++        result = image.copy()
++        if 'clip' in settings:
++            mask = Image.new('L', image.size)
++            ImageDraw.Draw(mask).polygon(self._clip_at(settings['clip'], context.output_seconds), fill=255)
++            result.putalpha(ImageChops.multiply(result.getchannel('A'), mask))
++        if angle:
++            result = result.rotate(angle, resample=Image.Resampling.BICUBIC, expand=False)
++        if dx or dy:
++            moved = Image.new('RGBA', image.size)
++            moved.paste(result, (dx, dy))
++            result = moved
++        if opacity < 1:
++            result.putalpha(result.getchannel('A').point(lambda a: round(a * opacity)))
++        return result
+diff --git a/src/framerudiments/layer_displacement.py b/src/framerudiments/layer_displacement.py
+new file mode 100644
+index 0000000..d0e6fa7
+--- /dev/null
++++ b/src/framerudiments/layer_displacement.py
+@@ -0,0 +1,51 @@
++"""Deterministic row-wise displacement by an earlier isolated matte layer.
++
++This is an image effect, not phase, pitch, audio waveform or a DSP measure.
++"""
++import math
++from PIL import Image, ImageOps
++
++class LayerDisplacement:
++    def __init__(self, config, available):
++        if not isinstance(config, dict) or len(config) > 32:
++            raise ValueError('layer_displacement must map at most 32 layers')
++        order = {name: i for i, name in enumerate(available)}
++        self.config = {}
++        for target, row in config.items():
++            if target not in order or not target.startswith('layer:') or not isinstance(row, dict):
++                raise ValueError('Displacement target must be existing layer')
++            if set(row) != {'source', 'amount'} or row['source'] not in order or order[row['source']] >= order[target]:
++                raise ValueError('Displacement source must precede target')
++            amount = row['amount']
++            if type(amount) not in (int, float) or not math.isfinite(amount) or abs(amount) > 128:
++                raise ValueError('Displacement amount must be finite and <=128 pixels')
++            self.config[target] = (row['source'], amount)
++
++    @property
++    def enabled(self):
++        return bool(self.config)
++
++    def apply(self, target, image, surfaces):
++        entry = self.config.get(target)
++        if entry is None:
++            return image
++        source_name, amount = entry
++        source = surfaces.get(source_name)
++        if source is None or not amount:
++            return image.copy()
++        if source.mode != 'RGBA' or source.size != image.size or image.mode != 'RGBA':
++            raise ValueError('Displacement requires equal full-frame RGBA surfaces')
++        # Use alpha-weighted luminance of an explicitly earlier layer as a
++        # per-row horizontal shift. Never sample outside the frame (transparent).
++        luminance = ImageOps.grayscale(source.convert('RGB'))
++        alpha = source.getchannel('A')
++        output = Image.new('RGBA', image.size)
++        for y in range(image.height):
++            values = luminance.crop((0,y,image.width,y+1)).tobytes()
++            coverage = alpha.crop((0,y,image.width,y+1)).tobytes()
++            total = sum(v*a for v,a in zip(values,coverage))
++            denom = sum(coverage)
++            mean = total / denom if denom else 127.5
++            offset = round(((mean / 255) * 2 - 1) * amount)
++            output.paste(image.crop((0,y,image.width,y+1)), (offset,y))
++        return output
+diff --git a/src/framerudiments/layer_masks.py b/src/framerudiments/layer_masks.py
+new file mode 100644
+index 0000000..5a0cd8a
+--- /dev/null
++++ b/src/framerudiments/layer_masks.py
+@@ -0,0 +1,65 @@
++"""Deterministic, declared layer-to-layer alpha/luminance track mattes.
++
++Masks operate on post-element-effect isolated RGBA surfaces. The provider must
++precede the consumer in actual compositing order; this avoids feedback cycles
++and makes exact frame seeking safe, including with temporal supersampling.
++"""
++from PIL import Image, ImageChops, ImageOps
++
++from .keyframes import validate_envelope, sample_envelope
++
++
++class LayerMasks:
++    def __init__(self, config, available):
++        if not isinstance(config, dict) or len(config) > 64:
++            raise ValueError("layer_masks must map at most 64 layer names")
++        self.config = {}
++        order = {name: index for index, name in enumerate(available)}
++        for target, item in config.items():
++            if not isinstance(target, str) or not target.startswith("layer:") or target not in order:
++                raise ValueError("layer_masks target must be an existing layer:<id>")
++            if not isinstance(item, dict) or set(item) - {"source", "mode", "invert", "opacity"}:
++                raise ValueError("Invalid layer mask configuration")
++            source = item.get("source")
++            if source not in order or order[source] >= order[target]:
++                raise ValueError("Layer mask source must precede target in compositing order")
++            mode = item.get("mode", "alpha")
++            if mode not in {"alpha", "luminance"} or type(item.get("invert", False)) is not bool:
++                raise ValueError("Layer mask mode/invert must be alpha|luminance and boolean")
++            opacity = item.get("opacity", 1.0)
++            if isinstance(opacity, dict):
++                opacity = validate_envelope(opacity)
++            elif type(opacity) not in (int, float) or not 0 <= opacity <= 1:
++                raise ValueError("Mask opacity must be 0..1 or a keyframe envelope")
++            self.config[target] = {"source": source, "mode": mode, "invert": item.get("invert", False),
++                                   "opacity": opacity}
++
++    @property
++    def enabled(self):
++        return bool(self.config)
++
++    def apply(self, name, image, surfaces, context=None):
++        entry = self.config.get(name)
++        if entry is None:
++            return image
++        source = surfaces.get(entry["source"])
++        if source is None:
++            mask = Image.new("L", image.size, 0)
++        else:
++            if source.mode != "RGBA" or source.size != image.size:
++                raise ValueError("Mask source must be full-frame RGBA")
++            mask = source.getchannel("A")
++            if entry["mode"] == "luminance":
++                mask = ImageChops.multiply(mask, ImageOps.grayscale(source.convert("RGB")))
++        if entry["invert"]:
++            mask = ImageOps.invert(mask)
++        opacity = entry["opacity"]
++        if isinstance(opacity, tuple):
++            if context is None:
++                raise ValueError("Animated mask opacity requires frame context")
++            opacity = sample_envelope(opacity, context.output_seconds)
++        if opacity < 1:
++            mask = mask.point(lambda a: round(a * opacity))
++        result = image.copy()
++        result.putalpha(ImageChops.multiply(result.getchannel("A"), mask))
++        return result
+diff --git a/src/framerudiments/project.py b/src/framerudiments/project.py
+index f3bacac..eedcfb8 100644
+--- a/src/framerudiments/project.py
++++ b/src/framerudiments/project.py
+@@ -23,7 +23,9 @@ class Project:
+         fields(data, {"schema", "title", "artist", "purpose", "width", "height", "fps", "fps_reason",
+                       "audio", "clock", "font", "lyrics", "cues", "background", "layers", "captions",
+                       "identity", "effects", "post_effects", "stemlab_loop", "notes", "lyric_art", "canonical_lyrics",
+-                      "word_lyrics", "word_captions", "word_indicator", "render_quality", "visualiser_routing"}, "project")
++                      "word_lyrics", "word_captions", "word_indicator", "render_quality", "visualiser_routing",
++                      "stem_sources", "layer_masks", "layer_animations", "layer_displacement",
++                      "visualiser_stage_injections"}, "project")
+         if data.get("schema") != "framerudiments.project.v1":
+             raise ValueError("Expected framerudiments.project.v1")
+         self.width = integer(data.get("width", 1080), "width", minimum=16, maximum=7680)
+@@ -37,6 +39,19 @@ class Project:
+         if self.purpose not in {"short", "visualiser", "canvas"}:
+             raise ValueError("purpose must be short, visualiser or canvas")
+         self.inputs = []
++        # Named aliases reference ordinary, checksum-pinned StemLab-compatible
++        # recording motions. No analysis data or new DSP is introduced here.
++        sources = data.get("stem_sources", {})
++        if not isinstance(sources, dict) or len(sources) > 32:
++            raise ValueError("stem_sources must be an object with at most 32 entries")
++        import re
++        self.stem_sources = {}
++        for name, motion in sources.items():
++            if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", name):
++                raise ValueError("Invalid stem_sources name")
++            if not isinstance(motion, dict) or motion.get("kind") != "recording":
++                raise ValueError("stem_sources entries must be native recording motions")
++            self.stem_sources[name] = dict(motion)
+         self.output_quality = OutputQuality(data.get("render_quality", {}))
+         self.audio = dict(data["audio"])
+         fields(self.audio, {"source", "sample_rate", "start_sample", "end_sample", "repeats", "fade_seconds"}, "audio")
+@@ -180,6 +195,7 @@ class Project:
+                                 else self.data['clock'].get('phase_status', 'estimated' if self.beat_timeline else 'unverified'))},
+                     endpoint_fade_seconds=self.fade, endpoint_fade_curve="qsin",
+                     lyrics=self.lyrics, cues=self.cues, stemlab_loop=self.loop, effects=self.data.get("effects", []),
++                    stem_sources=self.stem_sources, layer_masks=self.data.get("layer_masks", {}),
+                     **({"word_timings": {"file": self.word_ref, "event_count": len(self.words)}}
+                        if self.word_ref else {}),
+                     **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}),
+diff --git a/src/framerudiments/render.py b/src/framerudiments/render.py
+index de8924b..9dd5089 100644
+--- a/src/framerudiments/render.py
++++ b/src/framerudiments/render.py
+@@ -57,7 +57,7 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
+                         image.save(out / "qa" / f"composed-{n:08}.png")
+                     image = effects.process(
+                         image, context, isolated_layers=compositor._route_parts
+-                        if compositor.visualiser_routing is not None else None)
++                        if compositor.visualiser_routing is not None or compositor._isolate_stage_injections else None)
+                 # Exactly one final AA pass, after optional GPU effects.
+                 image = compositor.output_quality.apply(image)
+                 _analysis(analysis, compositor, context)
+@@ -97,7 +97,7 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
+                         image.save(out / "qa" / f"composed-{n:08}.png")
+                     image = effects.process(
+                         image, context, isolated_layers=compositor._route_parts
+-                        if compositor.visualiser_routing is not None else None)
++                        if compositor.visualiser_routing is not None or compositor._isolate_stage_injections else None)
+                 # Exactly one final AA pass, after optional GPU effects.
+                 image = compositor.output_quality.apply(image)
+                 _analysis(analysis, compositor, context)
+diff --git a/src/framerudiments/rudiment_renderers.py b/src/framerudiments/rudiment_renderers.py
+index b35138c..dfff424 100644
+--- a/src/framerudiments/rudiment_renderers.py
++++ b/src/framerudiments/rudiment_renderers.py
+@@ -333,12 +333,14 @@ def default_renderers():
+     register_effect_renderers(registry)
+     from .sprite_renderers import register_sprite_renderers
+     register_sprite_renderers(registry)
++    from .spatial_renderers import register_spatial_renderers
++    register_spatial_renderers(registry)
+     return registry
+ 
+ 
+ class RudimentLayer:
+     def __init__(self, project, cfg, registry, context_at):
+-        fields(cfg, {"id", "type", "renderer", "motion", "bounds", "axes", "style", "history_frames",
++        fields(cfg, {"id", "type", "renderer", "motion", "stem_source", "stem_blend", "bounds", "axes", "style", "history_frames",
+                      "history_stride", "opacity", "start_seconds", "end_seconds", "cue_labels",
+                      "visual", "modulations"}, "rudiment layer")
+         self.project, self.cfg, self.context_at = project, cfg, context_at
+@@ -354,7 +356,23 @@ class RudimentLayer:
+         if "cue_labels" in cfg and (not isinstance(cfg["cue_labels"], list) or
+                                     any(not isinstance(x, str) for x in cfg["cue_labels"])):
+             raise ValueError("cue_labels must be a list of strings")
+-        self.motion = Motion(cfg["motion"], project.base, project.clock)
++        stem_name = cfg.get("stem_source")
++        stem_blend = cfg.get("stem_blend")
++        if stem_blend is not None:
++            if "motion" in cfg or "stem_source" in cfg:
++                raise ValueError("stem_blend cannot be combined with motion or stem_source")
++            from .stem_blend import StemBlend
++            self.motion = StemBlend(stem_blend, project)
++        else:
++            if stem_name is not None:
++                if "motion" in cfg:
++                    raise ValueError("Use either motion or stem_source, not both")
++                if not isinstance(stem_name, str) or stem_name not in getattr(project, "stem_sources", {}):
++                    raise ValueError("Unknown stem_source; declare it in project.stem_sources")
++                motion_config = project.stem_sources[stem_name]
++            else:
++                motion_config = cfg["motion"]
++            self.motion = Motion(motion_config, project.base, project.clock)
+         project.inputs.extend(self.motion.files)
+         dimensions = self.motion.value_dimensions
+         axes = cfg.get("axes", list(dimensions))
+@@ -394,11 +412,14 @@ class RudimentLayer:
+         self.renderer, identity = registry.create(cfg["renderer"], self._size, self.base_style)
+         if "source" in identity:
+             project.inputs.append(identity["source"])
++        if stem_blend is not None and getattr(self.renderer, "requires_spectrum", False):
++            raise ValueError("stem_blend cannot produce calibrated Fourier bands; use an actual StemLab spectrum source")
+         self.spectrum_bands = spectrum_bands(self.motion, self.axes) if getattr(self.renderer, "requires_spectrum", False) else ()
+         if callable(getattr(self.renderer, "prepare", None)):
+             self.renderer.prepare(project)
+         self.frame_report = None
+         self.evidence = {"renderer": identity, "dimensions": self.dimensions,
++                         "stem_source": stem_name, "stem_blend": stem_blend,
+                          "history_frames": self.history_frames, "history_stride": self.history_stride,
+                          "history_clock": "encoded frame; native source/continuous clock per motion",
+                          "viewport": self.bounds, "style": cfg.get("style", {}),
+diff --git a/src/framerudiments/spatial_renderers.py b/src/framerudiments/spatial_renderers.py
+new file mode 100644
+index 0000000..f4eefc7
+--- /dev/null
++++ b/src/framerudiments/spatial_renderers.py
+@@ -0,0 +1,119 @@
++"""Deterministic 3D wire geometry projected into an RGBA Rudiment viewport.
++
++Pure Pillow/CPU perspective pipeline: deliberately no GPU claims, mesh engine,
++physical volumetric solver or musical inference. Native motion channels are the
++only animation inputs.
++"""
++import math
++
++from PIL import Image, ImageColor, ImageDraw, ImageFilter
++
++from .io import fields, number, integer
++
++_ALLOWED = {"geometry", "camera_distance", "fov", "rotation", "orbit",
++            "line_width", "fog", "glow", "background", "colours", "padding",
++            "segments", "rings", "depth"}
++
++
++def _point(kind, u, v):
++    a, b = 2 * math.pi * u, 2 * math.pi * v
++    if kind == "torus":
++        radius = 1.15 + .42 * math.cos(b)
++        return radius * math.cos(a), radius * math.sin(a), .42 * math.sin(b)
++    if kind == "sphere":
++        return math.sin(b) * math.cos(a), math.sin(b) * math.sin(a), math.cos(b)
++    # Wavy sheet: bounded depth variation, independent of PCM.
++    return 2 * (u - .5), 2 * (v - .5), .24 * math.sin(a * 2) * math.cos(b * 2)
++
++
++def _rotate(x, y, z, yaw, pitch):
++    ca, sa = math.cos(yaw), math.sin(yaw)
++    x, z = x * ca + z * sa, -x * sa + z * ca
++    cb, sb = math.cos(pitch), math.sin(pitch)
++    return x, y * cb - z * sb, y * sb + z * cb
++
++
++class SpatialWireRenderer:
++    """Depth-sorted line mesh with a perspective camera and simulated distance fog."""
++
++    def __init__(self, size, style):
++        fields(style, _ALLOWED, "3D renderer style")
++        if len(size) != 2 or min(size) < 16:
++            raise ValueError("3D renderer needs a viewport of at least 16 pixels")
++        self.size = tuple(size)
++        kind = style.get("geometry", "torus")
++        if kind not in {"torus", "sphere", "terrain"}:
++            raise ValueError("geometry must be torus, sphere or terrain")
++        self.kind = kind
++        self.distance = number(style.get("camera_distance", 4.8), "camera distance", minimum=2.5, maximum=30)
++        self.fov = number(style.get("fov", 55), "camera fov", minimum=20, maximum=110)
++        self.rotation = number(style.get("rotation", 0), "camera rotation", minimum=-360, maximum=360)
++        self.orbit = number(style.get("orbit", 35), "camera orbit", minimum=-360, maximum=360)
++        self.depth = number(style.get("depth", .7), "depth modulation", minimum=0, maximum=2)
++        self.width = integer(style.get("line_width", 2), "line width", minimum=1, maximum=24)
++        self.fog = number(style.get("fog", .22), "distance fog", minimum=0, maximum=1)
++        self.glow = number(style.get("glow", .35), "wire glow", minimum=0, maximum=1)
++        self.rings = integer(style.get("rings", 13), "3D mesh rings", minimum=3, maximum=48)
++        self.segments = integer(style.get("segments", 30), "3D mesh segments", minimum=6, maximum=96)
++        self.padding = integer(style.get("padding", 8), "3D viewport padding", minimum=0, maximum=min(size)//4)
++        self.background = ImageColor.getcolor(style.get("background", "#101b2e"), "RGBA")
++        colors = style.get("colours", ["#68d9f4", "#fa7dbb"])
++        if not isinstance(colors, list) or not 1 <= len(colors) <= 16:
++            raise ValueError("colours must contain 1 to 16 CSS colours")
++        self.colors = [ImageColor.getcolor(c, "RGB") for c in colors]
++        self.frame_report = None
++
++    def render(self, frame):
++        values = tuple(getattr(frame, "values", ()))
++        if not values or any(not math.isfinite(x) or abs(x)>1.00001 for x in values):
++            raise ValueError("3D wire renderer needs finite normalized Rudiment values")
++        time = getattr(frame.context, "output_seconds", 0)
++        yaw = math.radians(self.rotation + self.orbit * time + values[0] * 45)
++        pitch = .27 + (values[1] if len(values)>1 else values[0]) * .3
++        amplitude = 1 + self.depth * abs(values[0]) * .3
++        w,h = self.size
++        focal = .5 * min(w,h) / math.tan(math.radians(self.fov) / 2)
++        points = {}
++        for a in range(self.rings + 1):
++            for b in range(self.segments + 1):
++                x,y,z = _point(self.kind, a / self.rings, b / self.segments)
++                x,y,z = _rotate(x * amplitude, y * amplitude, z * amplitude, yaw, pitch)
++                denominator = self.distance - z
++                if denominator <= .01:
++                    continue
++                px,py = w/2 + focal*x/denominator, h/2 - focal*y/denominator
++                points[(a,b)] = (px,py,z)
++        strokes = []
++        for a in range(self.rings + 1):
++            for b in range(self.segments + 1):
++                for target in ((a+1,b),(a,b+1)):
++                    if target not in points or (a,b) not in points:
++                        continue
++                    p,q = points[(a,b)],points[target]
++                    z = (p[2]+q[2])/2
++                    attenuation = 1 - self.fog * max(0,min(1,(self.distance-z)/self.distance))
++                    c = self.colors[(a*len(self.colors))//(self.rings+1)]
++                    rgba=tuple(round(max(0,min(255,v*attenuation))) for v in c)+(210,)
++                    strokes.append((z, p[:2], q[:2], rgba))
++        strokes.sort(key=lambda row: row[0])
++        ink = Image.new("RGBA",self.size)
++        draw=ImageDraw.Draw(ink)
++        for _,p,q,colour in strokes:
++            draw.line((p,q),fill=colour,width=self.width)
++        if self.glow:
++            blurred = ink.filter(ImageFilter.GaussianBlur(max(1,self.width*2)))
++            blurred.putalpha(blurred.getchannel("A").point(lambda a:round(a*self.glow)))
++            blurred.alpha_composite(ink)
++            ink=blurred
++        canvas=Image.new("RGBA",self.size,self.background)
++        canvas.alpha_composite(ink)
++        self.frame_report={"kind":"procedural-perspective-wire", "geometry":self.kind,
++                           "source":"normalized-native-rudiment", "projected_edges":len(strokes)}
++        return canvas
++
++
++def register_spatial_renderers(registry):
++    for kind in ("torus", "sphere", "terrain"):
++        def factory(size, style, kind=kind):
++            return SpatialWireRenderer(size, dict(style, geometry=kind))
++        registry.register("spatial-" + kind, factory)
+diff --git a/src/framerudiments/stem_blend.py b/src/framerudiments/stem_blend.py
+new file mode 100644
+index 0000000..878fcb8
+--- /dev/null
++++ b/src/framerudiments/stem_blend.py
+@@ -0,0 +1,48 @@
++"""Mix separately pinned native DanceRudiments recording streams, not PCM.
++
++The container delegates source association, sample clocks and file provenance to
++Motion. It is a presentation-domain weighted channel combination, not stem
++separation, loudness estimation, FFT or spectral aggregation.
++"""
++import math
++
++from .motion import Motion
++
++
++class StemBlend:
++    def __init__(self, sources, project):
++        if not isinstance(sources, list) or not 2 <= len(sources) <= 8:
++            raise ValueError("stem_blend requires 2 to 8 named stem inputs")
++        self.entries = []
++        self.files = []
++        seen = set()
++        for item in sources:
++            if not isinstance(item, dict) or set(item) - {"stem_source", "weight"}:
++                raise ValueError("stem_blend entries need stem_source and optional weight")
++            name = item.get("stem_source")
++            if not isinstance(name, str) or name not in project.stem_sources or name in seen:
++                raise ValueError("stem_blend requires distinct declared stem_source names")
++            seen.add(name)
++            weight = item.get("weight", 1.0)
++            if type(weight) not in (int, float) or not math.isfinite(weight) or weight <= 0 or weight > 100:
++                raise ValueError("stem_blend weights must be finite and positive (<=100)")
++            motion = Motion(project.stem_sources[name], project.base, project.clock)
++            if self.entries and motion.value_dimensions != self.value_dimensions:
++                raise ValueError("stem_blend recordings must have identical named dimensions")
++            self.entries.append((name, float(weight), motion))
++            self.files.extend(motion.files)
++            if not hasattr(self, 'value_dimensions'):
++                self.value_dimensions = motion.value_dimensions
++        self.evidence = {"kind": "stem-blend", "domain": "native normalized motion values",
++                         "inputs": [{"stem_source": n, "weight": w, "motion": m.evidence}
++                                    for n, w, m in self.entries]}
++
++    def values(self, seconds, *, continuous_beat=None):
++        total = sum(weight for _, weight, _ in self.entries)
++        arrays = [motion.values(seconds, continuous_beat=continuous_beat)
++                  for _, _, motion in self.entries]
++        if any(len(values) != len(self.value_dimensions) for values in arrays):
++            raise ValueError("stem_blend source channel count changed")
++        return tuple(max(-1.0, min(1.0, sum(values[i] * weight
++                         for values, (_, weight, _) in zip(arrays, self.entries)) / total))
++                     for i in range(len(self.value_dimensions)))
+diff --git a/src/framerudiments/visualisation_catalogue.py b/src/framerudiments/visualisation_catalogue.py
+index c9e55f7..cf97ef6 100644
+--- a/src/framerudiments/visualisation_catalogue.py
++++ b/src/framerudiments/visualisation_catalogue.py
+@@ -134,6 +134,12 @@ CIRCULAR_VIEWS = (
+ )
+ EFFECT_VIEWS = tuple(ViewSpec(*spec) for spec in EFFECT_SPECS)
+ SPRITE_VIEWS = tuple(ViewSpec(*spec) for spec in SPRITE_SPECS)
+-ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS + SPRITE_VIEWS
++SPATIAL_VIEWS = tuple(
++    ViewSpec("spatial-" + shape, "motion",
++             "Deterministic 3D projected wire geometry animated by native Rudiment channels",
++             "CPU perspective mesh rendering")
++    for shape in ("torus", "sphere", "terrain")
++)
++ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS + SPRITE_VIEWS + SPATIAL_VIEWS
+ BY_NAME = {v.name: v for v in ALL_VIEWS}
+ assert len(BY_NAME) == len(ALL_VIEWS)
+diff --git a/src/framerudiments/visualisers.py b/src/framerudiments/visualisers.py
+index 11f03fd..712fd1d 100644
+--- a/src/framerudiments/visualisers.py
++++ b/src/framerudiments/visualisers.py
+@@ -168,6 +168,22 @@ class EffectChain:
+         self.closed = False
+         self.specs = specs
+         self.routing = routing
++        self.stage_injections = {}
++        requested = getattr(project, "data", {}).get("visualiser_stage_injections", [])
++        if not isinstance(requested, list) or len(requested) > 32 or (requested and not specs):
++            raise ValueError("visualiser_stage_injections requires a bounded effect chain")
++        for entry in requested:
++            if not isinstance(entry, dict) or set(entry) - {"before", "elements", "opacity"}:
++                raise ValueError("Invalid visualiser stage injection")
++            before, names, opacity = entry.get("before"), entry.get("elements"), entry.get("opacity", 1)
++            if type(before) is not int or not 1 <= before < len(specs):
++                raise ValueError("Stage injection must target a later effect stage")
++            if (not isinstance(names, list) or not names or len(names) != len(set(names)) or
++                    any(not isinstance(name, str) or not name for name in names)):
++                raise ValueError("Stage injection needs distinct element names")
++            if type(opacity) not in (int, float) or not 0 <= opacity <= 1:
++                raise ValueError("Stage injection opacity must be between zero and one")
++            self.stage_injections.setdefault(before, []).append((tuple(names), opacity))
+         if factories is None:
+             from .projectm_backend import ProjectMBackend
+             factories = dict(butterchurn=ButterchurnBackend, projectm=ProjectMBackend)
+@@ -190,7 +206,25 @@ class EffectChain:
+                 raise ValueError("Routed visualisers require the isolated compositor surfaces")
+             image, overlay = self.routing.route(context, isolated_layers)
+         pcm = self.audio.at(context.frame)
+-        for backend in self.backends:
++        surfaces = dict(isolated_layers or [])
++        if self.stage_injections and isolated_layers is None:
++            raise ValueError("Intermediate stage injection needs isolated layer surfaces")
++        for index, backend in enumerate(self.backends):
++            if index in self.stage_injections:
++                image = image.convert("RGBA")
++                for names, opacity in self.stage_injections[index]:
++                    for name in names:
++                        surface = surfaces.get(name)
++                        if surface is None:
++                            # A gated or invisible layer has no isolated pixels
++                            # in this frame; it is a valid empty contribution.
++                            continue
++                        if surface.mode != "RGBA" or surface.size != image.size:
++                            raise ValueError("Stage injection must be full-frame RGBA")
++                        source = surface.copy()
++                        if opacity != 1:
++                            source.putalpha(source.getchannel("A").point(lambda a: round(a * opacity)))
++                        image.alpha_composite(source)
+             image = backend.process(image, context, pcm)
+             if image.size != (self.audio.project.width, self.audio.project.height) or image.mode != "RGBA":
+                 raise ValueError("Visualiser must return frame-sized RGBA")
+@@ -205,6 +239,7 @@ class EffectChain:
+         return dict(stage="after scene, layers, identity, captions and lyric art; before encoding",
+                     sequential_frames=self.next_frame, pcm=self.audio.evidence,
+                     routing=self.routing.evidence if self.routing is not None else None,
++                    stage_injections={index: entries for index, entries in self.stage_injections.items()},
+                     stages=[dict(spec, runtime=backend.evidence) for spec, backend in zip(self.specs, self.backends)],
+                     limits="GPU/driver and engine noise can vary; not a cross-platform bit-exact contract. Text bounds refer to pre-effect composition.")
+ 
+diff --git a/tests/test_advanced_renderers.py b/tests/test_advanced_renderers.py
+index 028e08d..3b09c6e 100644
+--- a/tests/test_advanced_renderers.py
++++ b/tests/test_advanced_renderers.py
+@@ -18,7 +18,7 @@ def test_every_new_renderer_is_deterministic_and_uses_its_source(spec):
+     registry = default_renderers()
+     renderer, identity = registry.create(spec.name, (320, 210), {"background": "#142238"})
+     assert identity["source"]["sha256"]
+-    assert identity["source"]["path"].endswith(("advanced_renderers.py", "circular_renderers.py", "effect_renderers.py", "sprite_renderers.py"))
++    assert identity["source"]["path"].endswith(("advanced_renderers.py", "circular_renderers.py", "effect_renderers.py", "sprite_renderers.py", "spatial_renderers.py"))
+     frame = fixture(95, spectral=spec.family != "motion")
+     result = renderer.render(frame)
+     assert result.mode == "RGBA" and result.size == (320, 210)
+diff --git a/tests/test_coverage_matrix.py b/tests/test_coverage_matrix.py
+new file mode 100644
+index 0000000..a2850d0
+--- /dev/null
++++ b/tests/test_coverage_matrix.py
+@@ -0,0 +1,67 @@
++"""Cross-feature acceptance tests for the public rendering contract.
++
++All data is generated locally. No audio models, external assets or GPU engines
++are needed; the renderer catalogue's own synthetic fixtures are used.
++"""
++from pathlib import Path
++import os
++import sys
++
++from PIL import Image
++import pytest
++
++from framerudiments.compositor import Compositor
++from framerudiments.demo import create_demo
++from framerudiments.output_quality import OutputQuality
++from framerudiments.project import Project
++from framerudiments.rudiment_renderers import default_renderers
++from framerudiments.super_sampling import vector_viewport
++
++sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
++from generate_visualisation_gallery import fixture  # noqa: E402
++
++
++@pytest.mark.parametrize("name,family", [
++    ("particles", "motion"),
++    ("waveform-oscilloscope", "motion"),
++    ("spectrum", "spectrum"),
++    ("spectrogram-linear", "spectrogram"),
++    ("spectrum-annular-bars", "spectrum"),
++    ("spectrogram-pixel-mosaic", "spectrogram"),
++])
++@pytest.mark.parametrize("scale", [1, 4])
++def test_renderer_quality_matrix_is_deterministic(name, family, scale):
++    """Spatial quality settings preserve correct size, mode and determinism."""
++    registry = default_renderers()
++    assert name in registry.names
++    data = fixture(95, spectral=family != "motion")
++    kwargs = (registry, name, (320, 210), {"background": "#142238"}, data, scale)
++    a, _ = vector_viewport(*kwargs, cache={})
++    b, _ = vector_viewport(*kwargs, cache={})
++    assert isinstance(a, Image.Image)
++    assert a.mode == "RGBA" and a.size == (320, 210)
++    assert a.tobytes() == b.tobytes()
++    assert a.getbbox() is not None
++
++
++def test_temporal_custom_scene_hook_runs_once_per_encoded_frame_even_after_seek(tmp_path):
++    """Lookback/repeated subframe visits must not replay stateful scene hooks."""
++    font = os.environ.get("FRAMERUDIMENTS_TEST_FONT")
++    if not font or not Path(font).is_file():
++        pytest.skip("Requires the pinned test font")
++    project = Project.load(create_demo(tmp_path / "scene", font, width=180, height=320))
++    project.output_quality = OutputQuality({"spatial_scale": 1, "temporal_samples": 4})
++    calls = []
++
++    def scene(image, ctx):
++        calls.append(ctx.frame)
++        return image
++
++    compositor = Compositor(project, scene=scene)
++    first, _ = compositor.frame(1, apply_quality=False)
++    assert calls == [1]
++    second, _ = compositor.frame(0, apply_quality=False)
++    again, _ = compositor.frame(1, apply_quality=False)
++    assert calls == [1, 0]  # cache also survives a seek back to frame zero
++    assert first.tobytes() == again.tobytes()
++    assert second.size == first.size
+diff --git a/tests/test_keyframes.py b/tests/test_keyframes.py
+new file mode 100644
+index 0000000..9760e32
+--- /dev/null
++++ b/tests/test_keyframes.py
+@@ -0,0 +1,43 @@
++"""Deterministic keyed alpha/luminance matte transitions."""
++from types import SimpleNamespace
++
++import pytest
++from PIL import Image
++from framerudiments.keyframes import validate_envelope, sample_envelope
++from framerudiments.layer_masks import LayerMasks
++
++
++def test_keyframe_easing_and_clamped_seek():
++    keys = validate_envelope({"keys": [
++        {"time": 0, "value": 0, "ease": "smoothstep"},
++        {"time": 2, "value": 1, "ease": "hold"},
++        {"time": 4, "value": 0}]})
++    assert sample_envelope(keys, -1) == 0
++    assert sample_envelope(keys, 1) == .5
++    assert sample_envelope(keys, 3) == 1
++    assert sample_envelope(keys, 5) == 0
++    assert sample_envelope(keys, 1) == .5
++
++
++@pytest.mark.parametrize("bad", [
++    {"keys": []}, {"keys": [{"time": 0, "value": 2}]},
++    {"keys": [{"time": 0, "value": 0}, {"time": 0, "value": 1}]},
++    {"keys": [{"time": 0, "value": 0, "ease": "bogus"}]},
++    {"keys": [{"time": True, "value": 0}]},
++])
++def test_bad_keyframes_fail_closed(bad):
++    with pytest.raises(ValueError):
++        validate_envelope(bad)
++
++
++def test_keyframed_mask_random_access_and_source_unchanged():
++    config = {"layer:ink": {"source": "layer:matte", "opacity": {"keys": [
++        {"time": 0, "value": 0}, {"time": 2, "value": 1}]}}}
++    masks = LayerMasks(config, ["background", "layer:matte", "layer:ink"])
++    matte = Image.new("RGBA", (8, 8), "white")
++    ink = Image.new("RGBA", (8, 8), "red")
++    def at(t):
++        return masks.apply("layer:ink", ink, {"layer:matte": matte},
++                           SimpleNamespace(output_seconds=t)).getpixel((3, 3))[3]
++    assert [at(t) for t in (2, 0, 1, 2)] == [255, 0, 128, 255]
++    assert ink.getpixel((3, 3))[3] == 255
+diff --git a/tests/test_layer_masks.py b/tests/test_layer_masks.py
+new file mode 100644
+index 0000000..984fcbf
+--- /dev/null
++++ b/tests/test_layer_masks.py
+@@ -0,0 +1,47 @@
++"""Coverage of pinned StemLab recording aliases and deterministic track mattes."""
++import pytest
++from PIL import Image, ImageDraw
++from framerudiments.layer_masks import LayerMasks
++
++SIZE = (12, 12)
++
++
++def paint(colour, bounds):
++    image = Image.new("RGBA", SIZE)
++    ImageDraw.Draw(image).rectangle(bounds, fill=colour)
++    return image
++
++
++def test_alpha_mask_preserves_colour_and_scales_alpha():
++    matte = paint((255, 255, 255, 128), (0, 0, 5, 11))
++    ink = paint((255, 40, 10, 255), (0, 0, 11, 11))
++    masks = LayerMasks({"layer:ink": {"source": "layer:matte"}},
++                       ["background", "layer:matte", "layer:ink"])
++    result = masks.apply("layer:ink", ink, {"layer:matte": matte})
++    assert result.getpixel((2, 2)) == (255, 40, 10, 128)
++    assert result.getpixel((9, 2))[3] == 0
++    assert ink.getpixel((9, 2))[3] == 255
++
++
++def test_luma_inverted_and_missing_source():
++    masks = LayerMasks({"layer:ink": {"source": "layer:matte", "mode": "luminance", "invert": True}},
++                       ["background", "layer:matte", "layer:ink"])
++    ink = Image.new("RGBA", SIZE, "red")
++    black = Image.new("RGBA", SIZE, "black")
++    assert masks.apply("layer:ink", ink, {"layer:matte": black}).getpixel((3, 3))[3] == 255
++    assert masks.apply("layer:ink", ink, {}).getpixel((3, 3))[3] == 255
++    white = Image.new("RGBA", SIZE, "white")
++    assert masks.apply("layer:ink", ink, {"layer:matte": white}).getpixel((3, 3))[3] == 0
++
++
++@pytest.mark.parametrize("config", [
++    {"layer:matte": {"source": "layer:ink"}},  # forward reference
++    {"layer:ink": {"source": "layer:ink"}},   # cycle
++    {"layer:missing": {"source": "layer:matte"}},
++    {"layer:ink": {"source": "layer:missing"}},
++    {"layer:ink": {"source": "layer:matte", "mode": "nope"}},
++    {"layer:ink": {"source": "layer:matte", "invert": 1}},
++])
++def test_reject_invalid_mask_graphs(config):
++    with pytest.raises(ValueError):
++        LayerMasks(config, ["background", "layer:matte", "layer:ink"])
+diff --git a/tests/test_phase3_animation.py b/tests/test_phase3_animation.py
+new file mode 100644
+index 0000000..9e85803
+--- /dev/null
++++ b/tests/test_phase3_animation.py
+@@ -0,0 +1,70 @@
++"""Declarative layer animation and displacement regression coverage."""
++from types import SimpleNamespace
++from PIL import Image, ImageDraw
++import pytest
++from framerudiments.layer_animation import LayerAnimations
++from framerudiments.layer_displacement import LayerDisplacement
++
++ORDER = ['background', 'layer:matte', 'layer:ink']
++
++def frame(seconds):
++    return SimpleNamespace(output_seconds=seconds)
++
++
++def test_animated_opacity_and_translation_seek_are_repeatable():
++    animation = LayerAnimations({'layer:ink': {'opacity': {'keys': [
++        {'time': 0, 'value': 0}, {'time': 2, 'value': 1}]},
++        'x': {'keys': [{'time': 0, 'value': .5}, {'time': 2, 'value': .51}]}}}, ORDER)
++    original = Image.new('RGBA', (36, 24))
++    ImageDraw.Draw(original).rectangle((8, 6, 18, 16), fill='red')
++    at_one = animation.apply('layer:ink', original, frame(1))
++    animation.apply('layer:ink', original, frame(2))
++    assert animation.apply('layer:ink', original, frame(1)).tobytes() == at_one.tobytes()
++    assert original.getpixel((10,10))[3] == 255
++    assert 0 < at_one.getchannel('A').getextrema()[1] < 255
++
++
++def test_animated_polygon_vertices_are_seek_stable():
++    config = {'layer:ink': {'clip': {'keys': [
++        {'time': 0, 'points': [[0,0],[4,0],[0,4]]},
++        {'time': 2, 'points': [[0,0],[22,0],[0,22]]}]}}}
++    animation = LayerAnimations(config, ORDER)
++    image = Image.new('RGBA', (24,24), 'white')
++    middle = animation.apply('layer:ink', image, frame(1))
++    assert middle.getpixel((4,4))[3] == 255
++    assert middle.getpixel((16,16))[3] == 0
++    animation.apply('layer:ink', image, frame(2))
++    assert animation.apply('layer:ink', image, frame(1)).tobytes() == middle.tobytes()
++
++
++def test_polygon_clip_and_rotation():
++    animation = LayerAnimations({'layer:ink': {'clip': [[0,0],[14,0],[0,14]], 'rotation': 0}}, ORDER)
++    original = Image.new('RGBA', (24,24), 'white')
++    result = animation.apply('layer:ink', original, frame(0))
++    assert result.getpixel((2,2))[3] == 255
++    assert result.getpixel((20,20))[3] == 0
++
++
++def test_displacement_uses_earlier_surface_and_keeps_source_unchanged():
++    displacement = LayerDisplacement({'layer:ink': {'source': 'layer:matte', 'amount': 5}}, ORDER)
++    matte = Image.new('RGBA', (20,10), 'white')
++    ink = Image.new('RGBA', (20,10))
++    ImageDraw.Draw(ink).rectangle((4,2,8,6),fill='blue')
++    moved = displacement.apply('layer:ink', ink, {'layer:matte': matte})
++    assert moved.getpixel((9,4))[3] == 255
++    assert ink.getpixel((9,4))[3] == 0
++    assert moved.tobytes() == displacement.apply('layer:ink', ink, {'layer:matte': matte}).tobytes()
++
++
++@pytest.mark.parametrize('config', [
++    {'layer:missing': {'x': 1}}, {'layer:ink': {'unexpected': 1}},
++    {'layer:ink': {'clip': [[0,0],[1,1]]}}, {'layer:ink': {'opacity': 1.5}},
++])
++def test_animation_invalid_config_fails_closed(config):
++    with pytest.raises(ValueError):
++        LayerAnimations(config, ORDER)
++
++
++def test_displacement_cycle_rejected():
++    with pytest.raises(ValueError):
++        LayerDisplacement({'layer:matte': {'source': 'layer:ink', 'amount': 3}}, ORDER)
+diff --git a/tests/test_phase3_gpu_injection.py b/tests/test_phase3_gpu_injection.py
+new file mode 100644
+index 0000000..962c9cf
+--- /dev/null
++++ b/tests/test_phase3_gpu_injection.py
+@@ -0,0 +1,57 @@
++"""Intermediate GPU routing must not alter earlier stage feedback inputs."""
++from types import SimpleNamespace
++from PIL import Image
++import pytest
++from framerudiments import visualisers
++
++
++def test_gpu_stage_injection_applies_between_engines(monkeypatch, tmp_path):
++    size = (24, 16)
++    class Audio:
++        def __init__(self, project, *args):
++            self.project = project
++            self.evidence = {}
++        def at(self, frame):
++            return [0.0] * 100
++        def close(self):
++            pass
++    monkeypatch.setattr(visualisers, 'EffectAudio', Audio)
++    seen = []
++    class Fake:
++        def __init__(self, *args):
++            self.evidence = {}
++        def process(self, image, context, pcm):
++            seen.append(image.getpixel((8, 8))[:3])
++            return image.convert('RGBA')
++        def close(self):
++            pass
++    project = SimpleNamespace(width=24, height=16, fps=60, data={
++        'visualiser_stage_injections': [{'before':1,'elements':['layer:ink'],'opacity':1}]})
++    specs = [{'engine':'projectm','preset':{'path':'unused'},'input_mix':1,'seed':1},
++             {'engine':'butterchurn','preset':{'path':'unused'},'input_mix':1,'seed':1}]
++    chain = visualisers.EffectChain(project, specs, None, tmp_path,
++                                    factories={'projectm':Fake,'butterchurn':Fake})
++    overlay = Image.new('RGBA', size, 'red')
++    try:
++        chain.process(Image.new('RGB', size), SimpleNamespace(frame=0),
++                      isolated_layers=[('layer:ink',overlay)])
++        assert seen == [(0,0,0),(255,0,0)]
++    finally:
++        chain.close()
++
++
++def test_stage_injection_validation(tmp_path, monkeypatch):
++    class Audio:
++        def __init__(self, project, *args): self.project = project
++        def close(self): pass
++    monkeypatch.setattr(visualisers, 'EffectAudio', Audio)
++    specs = [{'engine':'projectm','preset':{'path':'unused'},'input_mix':1,'seed':1}]
++    for invalid in ([{'before':0,'elements':['layer:x']}],
++                    [{'before':1,'elements':['layer:x']}],
++                    [{'before':True,'elements':['layer:x']}],
++                    [{'before':0,'elements':[]}],
++                    [{'before':1,'elements':['layer:x'],'opacity':2}]):
++        p = SimpleNamespace(width=24,height=16,fps=60,
++                            data={'visualiser_stage_injections':invalid})
++        with pytest.raises(ValueError):
++            visualisers.EffectChain(p,specs,None,tmp_path)
+diff --git a/tests/test_spatial_renderers.py b/tests/test_spatial_renderers.py
+new file mode 100644
+index 0000000..afcaed6
+--- /dev/null
++++ b/tests/test_spatial_renderers.py
+@@ -0,0 +1,49 @@
++"""Phase 4 deterministic projected geometry and rendering contract checks."""
++from types import SimpleNamespace
++
++import pytest
++from PIL import Image
++
++from framerudiments.spatial_renderers import SpatialWireRenderer
++from framerudiments.rudiment_renderers import default_renderers
++
++
++def frame(t=0, values=(.4, -.2)):
++    return SimpleNamespace(values=values,
++                           context=SimpleNamespace(output_seconds=t, frame=round(t*60)))
++
++
++@pytest.mark.parametrize("kind", ["torus", "sphere", "terrain"])
++def test_registered_spatial_modes_are_frame_addressed(kind):
++    renderer, _ = default_renderers().create("spatial-"+kind, (180, 120),
++                                            {"background":"#101b2e"})
++    image = renderer.render(frame(1))
++    assert image.mode == "RGBA" and image.size == (180,120)
++    assert image.tobytes() == renderer.render(frame(1)).tobytes()
++    assert image.tobytes() != renderer.render(frame(2)).tobytes()
++    assert renderer.frame_report["kind"] == "procedural-perspective-wire"
++    assert renderer.frame_report["projected_edges"] > 10
++
++
++def test_camera_distance_fog_glow_and_audio_motion_change_pixels():
++    a = SpatialWireRenderer((180,120), {"camera_distance": 4, "glow":0})
++    b = SpatialWireRenderer((180,120), {"camera_distance": 8, "glow":.8})
++    assert a.render(frame()).tobytes() != b.render(frame()).tobytes()
++    assert a.render(frame(values=(-.8,.1))).tobytes() != a.render(frame()).tobytes()
++
++
++@pytest.mark.parametrize("style", [
++    {"geometry":"cube"}, {"fov":0}, {"camera_distance": 0},
++    {"rings":1}, {"segments":3}, {"glow":2}, {"fog":float("nan")},
++    {"colours":[]}, {"unexpected":1}, {"line_width":0}
++])
++def test_bad_3d_styles_fail_closed(style):
++    with pytest.raises(ValueError):
++        SpatialWireRenderer((180,120), style)
++
++
++def test_no_external_gpu_runtime_or_state_required():
++    r = SpatialWireRenderer((160,100), {})
++    later=r.render(frame(4)).tobytes()
++    r.render(frame(1))
++    assert r.render(frame(4)).tobytes() == later
+diff --git a/tests/test_stem_blend.py b/tests/test_stem_blend.py
+new file mode 100644
+index 0000000..bc8d516
+--- /dev/null
++++ b/tests/test_stem_blend.py
+@@ -0,0 +1,48 @@
++"""Cross-stem visual modulation preserves native Motion clocks and validation."""
++from types import SimpleNamespace
++import pytest
++from framerudiments.stem_blend import StemBlend
++
++
++class FakeMotion:
++    def __init__(self, config, base, clock):
++        self.value_dimensions = tuple(config["dimensions"])
++        self._values = config["values"]
++        self.files = [config["name"]]
++        self.evidence = {"source": config["name"]}
++    def values(self, seconds, *, continuous_beat=None):
++        return tuple(self._values)
++
++
++def project():
++    return SimpleNamespace(base=".", clock=object(), stem_sources={
++        "bass": {"name": "bass.json", "dimensions": ["x", "y"], "values": [1, -1]},
++        "drums": {"name": "drums.json", "dimensions": ["x", "y"], "values": [-1, 1]},
++        "mismatched": {"name": "wrong.json", "dimensions": ["z"], "values": [1]},
++    })
++
++
++def test_weighted_stem_motion_is_normalized_and_deterministic(monkeypatch):
++    monkeypatch.setattr("framerudiments.stem_blend.Motion", FakeMotion)
++    mix = StemBlend([{"stem_source": "bass", "weight": 3},
++                     {"stem_source": "drums", "weight": 1}], project())
++    assert mix.value_dimensions == ("x", "y")
++    assert mix.values(0) == (.5, -.5)
++    assert mix.values(35.25, continuous_beat=99) == (.5, -.5)
++    assert mix.files == ["bass.json", "drums.json"]
++    assert mix.evidence["inputs"][0]["stem_source"] == "bass"
++
++
++@pytest.mark.parametrize("items", [
++    [], [{"stem_source": "bass"}],
++    [{"stem_source": "bass"}, {"stem_source": "bass"}],
++    [{"stem_source": "bass"}, {"stem_source": "unknown"}],
++    [{"stem_source": "bass", "weight": -1}, {"stem_source": "drums"}],
++    [{"stem_source": "bass", "weight": float('nan')}, {"stem_source": "drums"}],
++    [{"stem_source": "bass"}, {"stem_source": "mismatched"}],
++    [{"stem_source": "bass", "kind": "unsafe"}, {"stem_source": "drums"}],
++])
++def test_invalid_blends_fail_closed(monkeypatch, items):
++    monkeypatch.setattr("framerudiments.stem_blend.Motion", FakeMotion)
++    with pytest.raises(ValueError):
++        StemBlend(items, project())
+diff --git a/tests/test_stem_source_integration.py b/tests/test_stem_source_integration.py
+new file mode 100644
+index 0000000..042c6fa
+--- /dev/null
++++ b/tests/test_stem_source_integration.py
+@@ -0,0 +1,63 @@
++"""Full compositor coverage for StemLab recording aliases and track mattes."""
++import os
++from pathlib import Path
++
++import pytest
++from framerudiments.compositor import Compositor
++from framerudiments.demo import create_demo
++from framerudiments.project import Project
++
++
++def example(tmp_path):
++    font = os.environ.get("FRAMERUDIMENTS_TEST_FONT")
++    if not font or not Path(font).is_file():
++        pytest.skip("CI-provided font required")
++    p = Project.load(create_demo(tmp_path / "stem-demo", font, width=180, height=320))
++    p.data["render_quality"] = {"enabled": False}
++    return p
++
++
++def test_named_stem_alias_uses_original_native_motion(tmp_path):
++    p = example(tmp_path)
++    recording = p.data["layers"][1]["motion"]
++    p.data["stem_sources"] = {"drums": recording}
++    p.data["layers"] = [{"id": "stem", "type": "rudiment", "renderer": "waveform",
++                         "stem_source": "drums", "bounds": [5, 5, 175, 155]}]
++    p = Project(p.data, p.base)
++    c = Compositor(p)
++    assert c.frame(20)[0].size == (180, 320)
++    assert c.layers[0].evidence["stem_source"] == "drums"
++    assert c.layers[0].motion.files
++    assert c.layers[0].data(c.context(20)).values == c.layers[0].sample(20).values
++
++
++def test_stem_alias_conflicts_and_unknown_names_fail(tmp_path):
++    p = example(tmp_path)
++    motion = p.data["layers"][1]["motion"]
++    p.data["stem_sources"] = {"drums": motion}
++    p = Project(p.data, p.base)
++    layer = {"id": "stem", "type": "rudiment", "renderer": "waveform",
++             "bounds": [5, 5, 175, 155]}
++    p.data["layers"] = [dict(layer, stem_source="missing")]
++    with pytest.raises(ValueError, match="Unknown stem_source"):
++        Compositor(p)
++    p.data["layers"] = [dict(layer, stem_source="drums", motion=motion)]
++    with pytest.raises(ValueError, match="either motion or stem_source"):
++        Compositor(p)
++
++
++def test_masked_compositor_random_access_is_stable(tmp_path):
++    p = example(tmp_path)
++    p.data["layers"] = [
++        {"id": "matte", "type": "rudiment", "renderer": "particles",
++         "motion": {"kind": "named", "pattern": "circle"}, "bounds": [0, 0, 180, 160]},
++        {"id": "ink", "type": "rudiment", "renderer": "waveform",
++         "motion": {"kind": "named", "pattern": "bounce"}, "bounds": [0, 0, 180, 160]},
++    ]
++    p.data["layer_masks"] = {"layer:ink": {"source": "layer:matte"}}
++    p = Project(p.data, p.base)
++    c = Compositor(p)
++    first, _ = c.frame(30)
++    c.frame(5)
++    assert c.frame(30)[0].tobytes() == first.tobytes()
++    assert c.evidence()["layer_masks"]["layer:ink"]["mode"] == "alpha"

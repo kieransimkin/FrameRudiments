@@ -30,10 +30,22 @@ jobs:
         run: python -m pip install -e '.[dev]'
       - name: Validate all visualisation modes and deterministic output
         run: python -m pytest -q tests/test_advanced_renderers.py tests/test_visualisation_modulation.py tests/test_effect_batch.py tests/test_scoped_effects.py tests/test_sprite_renderers.py tests/test_quality_effects.py tests/test_particle_engine.py tests/test_variable_bpm_words.py tests/test_rich_subtitles.py tests/test_default_antialias.py tests/test_supersampling.py tests/test_visualiser_routing.py
+      - name: Validate renderer cross-quality and stateful scene contracts
+        run: python -m pytest -q tests/test_coverage_matrix.py
+      - name: Validate native stem aliases and track mattes
+        run: python -m pytest -q tests/test_layer_masks.py tests/test_stem_source_integration.py tests/test_stem_blend.py
+      - name: Verify deterministic keyframed mattes
+        run: python -m pytest -q tests/test_keyframes.py
+      - name: Validate Phase 3 animation and displacement
+        run: python -m pytest -q tests/test_phase3_animation.py tests/test_phase3_gpu_injection.py
+      - name: Check deterministic 3D perspective renderers
+        run: python -m pytest -q tests/test_spatial_renderers.py
       - name: Lint gallery and renderer implementation
         run: ruff check src/framerudiments/beat_timeline.py src/framerudiments/word_timing.py tests/test_variable_bpm_words.py scripts/generate_timing_gallery.py scripts/generate_visualisation_gallery.py src/framerudiments/advanced_renderers.py src/framerudiments/circular_renderers.py src/framerudiments/visualisation_catalogue.py src/framerudiments/visual_style.py src/framerudiments/modulation.py src/framerudiments/effect_catalogue.py src/framerudiments/effect_renderers.py src/framerudiments/post_effects.py src/framerudiments/scoped_effects.py scripts/generate_post_effect_gallery.py tests/test_advanced_renderers.py tests/test_visualisation_modulation.py tests/test_effect_batch.py tests/test_scoped_effects.py tests/test_sprite_renderers.py src/framerudiments/sprite_renderers.py src/framerudiments/sprite_catalogue.py scripts/generate_sprite_gallery.py scripts/build_sprite_assets.py src/framerudiments/quality_effects.py scripts/generate_quality_gallery.py tests/test_quality_effects.py src/framerudiments/particle_engine.py scripts/generate_particle_gallery.py tests/test_particle_engine.py src/framerudiments/rich_subtitles.py src/framerudiments/lyric_indicator.py scripts/generate_rich_lyric_gallery.py tests/test_rich_subtitles.py src/framerudiments/output_quality.py src/framerudiments/super_sampling.py tests/test_default_antialias.py tests/test_supersampling.py scripts/generate_supersampling_gallery.py src/framerudiments/visualiser_routing.py tests/test_visualiser_routing.py scripts/generate_visualiser_routing_gallery.py
       - name: Render complete gallery from synthetic display fixtures
         run: python scripts/generate_visualisation_gallery.py --output _site
+      - name: Record non-blocking renderer quality and memory profiles
+        run: python scripts/profile_visualisation_coverage.py --output _site/coverage-profile.json
       - name: Generate isolated element and full-frame effects gallery
         run: python scripts/generate_post_effect_gallery.py --output _site
       - name: Generate high-quality anti-aliasing and motion-blur gallery

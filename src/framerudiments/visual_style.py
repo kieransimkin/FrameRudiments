@@ -3,6 +3,7 @@
 This is a compositing/presentation operation, not a change to calibrated data.
 Absent `visual` the renderer's exact original pixels are retained.
 """
+
 import colorsys
 import math
 
@@ -38,25 +39,37 @@ VISUAL_RANGES = {
     "brightness": (0, 4, 1),
     "contrast": (0, 4, 1),
     "opacity": (0, 1, 1),
-    "gamma": (.1, 5, 1),
+    "gamma": (0.1, 5, 1),
     "threshold": (0, 1, 0),
     "posterize": (0, 16, 0),
     "glow": (0, 24, 0),
     "blur": (0, 12, 0),
     "rotation": (-36000, 36000, 0),
-    "scale": (.1, 3, 1),
-    "scale_x": (.1, 3, 1),
-    "scale_y": (.1, 3, 1),
+    "scale": (0.1, 3, 1),
+    "scale_x": (0.1, 3, 1),
+    "scale_y": (0.1, 3, 1),
     "offset_x": (-1, 1, 0),
     "offset_y": (-1, 1, 0),
     "gradient_phase": (-100, 100, 0),
     "gradient_mix": (0, 1, 1),
-    "gradient_cycles": (.01, 32, 1),
+    "gradient_cycles": (0.01, 32, 1),
 }
 VISUAL_RANGES.update(POST_RANGES)
 VISUAL_RANGES.update(QUALITY_RANGES)
-_GRADIENT_MODES = {"horizontal", "vertical", "diagonal", "anti-diagonal", "radial",
-                   "angular", "diamond", "wave", "checker", "level", "frequency", "time"}
+_GRADIENT_MODES = {
+    "horizontal",
+    "vertical",
+    "diagonal",
+    "anti-diagonal",
+    "radial",
+    "angular",
+    "diamond",
+    "wave",
+    "checker",
+    "level",
+    "frequency",
+    "time",
+}
 
 
 def _clamp(value, lo=0, hi=1):
@@ -93,7 +106,11 @@ def _stops(value):
         if not isinstance(item["colour"], str):
             raise ValueError("Gradient stop colour must be CSS string")
         positions.append((pos, ImageColor.getcolor(item["colour"], "RGBA")))
-    if positions[0][0] != 0 or positions[-1][0] != 1 or any(a[0] >= b[0] for a, b in zip(positions, positions[1:])):
+    if (
+        positions[0][0] != 0
+        or positions[-1][0] != 1
+        or any(a[0] >= b[0] for a, b in zip(positions, positions[1:]))
+    ):
         raise ValueError("Gradient stops must strictly increase from 0 to 1")
     return tuple(positions)
 
@@ -110,7 +127,11 @@ class VisualStyle:
         if value is not None:
             if not isinstance(value, dict):
                 raise ValueError("visual.gradient must be an object")
-            fields(value, {"mode", "stops", "space", "wrap", "reverse", "blend", "bands", "phase", "mix", "cycles"}, "gradient")
+            fields(
+                value,
+                {"mode", "stops", "space", "wrap", "reverse", "blend", "bands", "phase", "mix", "cycles"},
+                "gradient",
+            )
             self.gradient_mode = value.get("mode", "vertical")
             if self.gradient_mode not in _GRADIENT_MODES:
                 raise ValueError("Unknown gradient coordinate mode")
@@ -130,7 +151,9 @@ class VisualStyle:
                 raise ValueError("Gradient reverse must be boolean")
             self.gradient_phase += number(value.get("phase", 0), "gradient phase", minimum=-100, maximum=100)
             self.gradient_mix *= number(value.get("mix", 1), "gradient mix", minimum=0, maximum=1)
-            self.gradient_cycles *= number(value.get("cycles", 1), "gradient cycles", minimum=.01, maximum=32)
+            self.gradient_cycles *= number(
+                value.get("cycles", 1), "gradient cycles", minimum=0.01, maximum=32
+            )
         else:
             self.gradient_mode = None
 
@@ -152,7 +175,7 @@ class VisualStyle:
                 if self.gradient_space == "hsv":
                     h1, s1, v1 = colorsys.rgb_to_hsv(*(x / 255 for x in ca[:3]))
                     h2, s2, v2 = colorsys.rgb_to_hsv(*(x / 255 for x in cb[:3]))
-                    dh = ((h2 - h1 + .5) % 1) - .5
+                    dh = ((h2 - h1 + 0.5) % 1) - 0.5
                     rgb = colorsys.hsv_to_rgb((h1 + t * dh) % 1, s1 + t * (s2 - s1), v1 + t * (v2 - v1))
                     return tuple(round(x * 255) for x in rgb)
                 return tuple(round(ca[j] * (1 - t) + cb[j] * t) for j in range(3))
@@ -160,7 +183,7 @@ class VisualStyle:
 
     def _position(self, x, y, w, h, rgb):
         xx, yy = x / max(1, w - 1), y / max(1, h - 1)
-        dx, dy = xx - .5, yy - .5
+        dx, dy = xx - 0.5, yy - 0.5
         mode = self.gradient_mode
         if mode in {"horizontal", "time"}:
             return xx
@@ -173,11 +196,11 @@ class VisualStyle:
         if mode == "radial":
             return _clamp(math.hypot(dx, dy) * 2)
         if mode == "angular":
-            return ((math.atan2(dx, -dy) / (2 * math.pi)) % 1)
+            return (math.atan2(dx, -dy) / (2 * math.pi)) % 1
         if mode == "diamond":
             return _clamp((abs(dx) + abs(dy)))
         if mode == "wave":
-            return .5 + .5 * math.sin(6 * math.pi * xx + 4 * math.pi * yy)
+            return 0.5 + 0.5 * math.sin(6 * math.pi * xx + 4 * math.pi * yy)
         if mode == "checker":
             return (int(xx * 10) + int(yy * 10)) % 2
         return max(rgb) / 255  # 'level' measures rendered luminance proxy, not audio RMS.
@@ -195,15 +218,20 @@ class VisualStyle:
                 mixed = tuple(round(z * max(colour) / 255) for z in gradient)
             else:
                 mixed = gradient
-            r, g, b = (round(a * (1 - self.gradient_mix) + z * self.gradient_mix)
-                       for a, z in zip(colour, mixed))
+            r, g, b = (
+                round(a * (1 - self.gradient_mix) + z * self.gradient_mix) for a, z in zip(colour, mixed)
+            )
         if self.hue_shift or self.saturation != 1:
             hue, sat, val = colorsys.rgb_to_hsv(r / 255, g / 255, b / 255)
-            r, g, b = (round(x * 255) for x in colorsys.hsv_to_rgb(
-                (hue + self.hue_shift / 360) % 1, _clamp(sat * self.saturation), val))
+            r, g, b = (
+                round(x * 255)
+                for x in colorsys.hsv_to_rgb(
+                    (hue + self.hue_shift / 360) % 1, _clamp(sat * self.saturation), val
+                )
+            )
         channels = []
         for c in (r, g, b):
-            value = _clamp((c / 255 - .5) * self.contrast + .5)
+            value = _clamp((c / 255 - 0.5) * self.contrast + 0.5)
             value = _clamp(value * self.brightness)
             value = value ** (1 / self.gamma)
             if self.posterize >= 2:
@@ -239,9 +267,17 @@ class VisualStyle:
             # Draw a diffuse coloured halo underneath the sharp ink.
             blurred.alpha_composite(image)
             image = blurred
-        grade = (self.gradient_mode is not None or self.hue_shift != 0 or self.saturation != 1
-                 or self.brightness != 1 or self.contrast != 1 or self.gamma != 1
-                 or self.threshold or self.posterize >= 2 or self.opacity != 1)
+        grade = (
+            self.gradient_mode is not None
+            or self.hue_shift != 0
+            or self.saturation != 1
+            or self.brightness != 1
+            or self.contrast != 1
+            or self.gamma != 1
+            or self.threshold
+            or self.posterize >= 2
+            or self.opacity != 1
+        )
         if not grade:
             return apply_quality_effects(apply_post_effects(image, self), self)
         pixels = image.load()

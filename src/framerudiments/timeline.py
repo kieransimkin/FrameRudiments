@@ -1,4 +1,5 @@
 """Source time -> output time -> one authoritative encoded-frame ledger."""
+
 from bisect import bisect_right
 from dataclasses import dataclass
 from fractions import Fraction
@@ -9,7 +10,9 @@ from pathlib import Path
 from .io import number
 
 STAMP = re.compile(r"\[(\d+):(\d{1,2}(?:\.\d+)?)\]")
-SECTION = re.compile(r"\[(?:intro|verse|chorus|bridge|outro|instrumental|spoken(?: word)?|pre[- ]?chorus)[^]]*\]", re.I)
+SECTION = re.compile(
+    r"\[(?:intro|verse|chorus|bridge|outro|instrumental|spoken(?: word)?|pre[- ]?chorus)[^]]*\]", re.I
+)
 
 
 def half_up(value):
@@ -42,7 +45,7 @@ def parse_lrc(path, *, lyrics=True):
             raise ValueError(f"Unrecognised timed line: {line!r}")
         if matches[0].start() != 0 or any(a.end() != b.start() for a, b in zip(matches, matches[1:])):
             raise ValueError(f"Malformed timestamps: {line!r}")
-        text = line[matches[-1].end():].strip()
+        text = line[matches[-1].end() :].strip()
         if lyrics and SECTION.fullmatch(text):
             text = ""  # retain the clear boundary; never render a structural label
         for m in matches:
@@ -77,16 +80,25 @@ def frame_ledger(events, *, start_sample, end_sample, sample_rate, fps, repeats=
     for cycle in range(repeats):
         before = [e for e in events if Fraction(str(e.source_seconds)) < start]
         selected = ([before[-1]] if before else []) + [
-            e for e in events if start <= Fraction(str(e.source_seconds)) < start + duration]
+            e for e in events if start <= Fraction(str(e.source_seconds)) < start + duration
+        ]
         if not selected or Fraction(str(selected[0].source_seconds)) > start:
             selected.insert(0, Event(float(start), "", -1))
         for e in selected:
             relative = max(Fraction(0), Fraction(str(e.source_seconds)) - start) + cycle * duration
             frame = half_up(relative * fps)
-            result.append(dict(source_seconds=e.source_seconds, output_seconds=float(relative),
-                               frame=frame, frame_error_seconds=float(Fraction(frame, fps) - relative),
-                               text=e.text, source_order=e.order, cycle=cycle,
-                               carried=e.source_seconds < float(start)))
+            result.append(
+                dict(
+                    source_seconds=e.source_seconds,
+                    output_seconds=float(relative),
+                    frame=frame,
+                    frame_error_seconds=float(Fraction(frame, fps) - relative),
+                    text=e.text,
+                    source_order=e.order,
+                    cycle=cycle,
+                    carried=e.source_seconds < float(start),
+                )
+            )
     return result
 
 
@@ -102,8 +114,8 @@ class EventTrack:
     def neighbours(self, frame):
         index = bisect_right(self.frames, frame) - 1
         current = self.events[index] if index >= 0 else None
-        previous = next((x for x in reversed(self.events[:max(0, index)]) if x["text"]), None)
-        following = next((x for x in self.events[index + 1:] if x["text"]), None)
+        previous = next((x for x in reversed(self.events[: max(0, index)]) if x["text"]), None)
+        following = next((x for x in self.events[index + 1 :] if x["text"]), None)
         return previous, current, following
 
 

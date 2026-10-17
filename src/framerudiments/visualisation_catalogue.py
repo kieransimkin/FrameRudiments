@@ -1,4 +1,5 @@
 """Auditable visualisation presets; display axes are not a replacement for DSP."""
+
 from dataclasses import dataclass
 from .effect_catalogue import EFFECT_SPECS
 from .sprite_catalogue import SPRITE_SPECS
@@ -20,38 +21,145 @@ SPECTRAL_VIEWS = (
     ViewSpec("spectrum-dots", "spectrum", "Discrete frequency-bin points", "measurement plot"),
     ViewSpec("spectrum-stems", "spectrum", "Vertical impulse / lollipop spectrum", "spectrum analyser"),
     ViewSpec("spectrum-steps", "spectrum", "Sample-and-hold staircase bands", "digital spectrum analyser"),
-    ViewSpec("spectrum-mirror", "spectrum", "Mirrored upper and lower frequency spectrum", "Winamp-era visualisers"),
-    ViewSpec("spectrum-radial", "spectrum", "Spoke-style circular frequency bars", "circular music visualisers"),
-    ViewSpec("spectrum-ring", "spectrum", "Radial polygon that follows spectral levels", "circular music visualisers"),
-    ViewSpec("spectrum-spiral", "spectrum", "Frequency bins along a logarithmic-looking spiral path", "creative spectrum art"),
+    ViewSpec(
+        "spectrum-mirror", "spectrum", "Mirrored upper and lower frequency spectrum", "Winamp-era visualisers"
+    ),
+    ViewSpec(
+        "spectrum-radial", "spectrum", "Spoke-style circular frequency bars", "circular music visualisers"
+    ),
+    ViewSpec(
+        "spectrum-ring",
+        "spectrum",
+        "Radial polygon that follows spectral levels",
+        "circular music visualisers",
+    ),
+    ViewSpec(
+        "spectrum-spiral",
+        "spectrum",
+        "Frequency bins along a logarithmic-looking spiral path",
+        "creative spectrum art",
+    ),
     ViewSpec("spectrum-horizon", "spectrum", "Overlaid temporal spectrum traces", "persistence displays"),
-    ViewSpec("spectrum-waterfall", "spectrum", "Perspective waterfall of successive band spectra", "RF spectrum analysers"),
+    ViewSpec(
+        "spectrum-waterfall",
+        "spectrum",
+        "Perspective waterfall of successive band spectra",
+        "RF spectrum analysers",
+    ),
     ViewSpec("spectrum-ridgeline", "spectrum", "Offset stacked spectrum ridges", "joy plots / sonograms"),
     ViewSpec("spectrum-peaks", "spectrum", "Local-maximum spike display", "peak-pick spectrograms"),
-    ViewSpec("spectrum-log", "spectrum", "Current spectrum with a logarithmic frequency axis", "log-spectrum analysers"),
-    ViewSpec("spectrum-mel", "spectrum", "Current recorded bands positioned on a mel frequency axis", "psychoacoustic frequency scales"),
-    ViewSpec("spectrum-third-octave", "spectrum", "Current bands shown on a 1/3-octave frequency axis", "acoustic measurement analysers"),
-    ViewSpec("spectrogram-linear", "spectrogram", "Time-frequency heatmap, linear Hz positioning", "sonograph / STFT display"),
-    ViewSpec("spectrogram-log", "spectrogram", "Time-frequency heatmap, logarithmic Hz positioning", "musical spectrogram"),
-    ViewSpec("spectrogram-mel", "spectrogram", "Recorded Fourier bands remapped to a mel axis", "mel frequency-axis display"),
-    ViewSpec("spectrogram-bark", "spectrogram", "Recorded Fourier bands remapped to a Bark axis", "critical-band frequency scale"),
-    ViewSpec("spectrogram-erb", "spectrogram", "Recorded Fourier bands remapped to ERB-rate axis", "auditory filterbank displays"),
-    ViewSpec("spectrogram-peaks", "spectrogram", "Time-frequency heatmap retaining only local band maxima", "spectral peak maps"),
-    ViewSpec("spectrogram-contours", "spectrogram", "Quantised amplitude contour strips across time", "contour sonograms"),
-    ViewSpec("spectrogram-mirror", "spectrogram", "Mirrored time-frequency heatmap", "creative audio visualisers"),
-    ViewSpec("spectrogram-transposed", "spectrogram", "Vertical-time spectrogram / scrolling frequency history", "classic sideways waterfall"),
-    ViewSpec("spectrogram-polar", "spectrogram", "Time wrapped around angle, frequency along radius", "polar sonograms"),
+    ViewSpec(
+        "spectrum-log",
+        "spectrum",
+        "Current spectrum with a logarithmic frequency axis",
+        "log-spectrum analysers",
+    ),
+    ViewSpec(
+        "spectrum-mel",
+        "spectrum",
+        "Current recorded bands positioned on a mel frequency axis",
+        "psychoacoustic frequency scales",
+    ),
+    ViewSpec(
+        "spectrum-third-octave",
+        "spectrum",
+        "Current bands shown on a 1/3-octave frequency axis",
+        "acoustic measurement analysers",
+    ),
+    ViewSpec(
+        "spectrogram-linear",
+        "spectrogram",
+        "Time-frequency heatmap, linear Hz positioning",
+        "sonograph / STFT display",
+    ),
+    ViewSpec(
+        "spectrogram-log",
+        "spectrogram",
+        "Time-frequency heatmap, logarithmic Hz positioning",
+        "musical spectrogram",
+    ),
+    ViewSpec(
+        "spectrogram-mel",
+        "spectrogram",
+        "Recorded Fourier bands remapped to a mel axis",
+        "mel frequency-axis display",
+    ),
+    ViewSpec(
+        "spectrogram-bark",
+        "spectrogram",
+        "Recorded Fourier bands remapped to a Bark axis",
+        "critical-band frequency scale",
+    ),
+    ViewSpec(
+        "spectrogram-erb",
+        "spectrogram",
+        "Recorded Fourier bands remapped to ERB-rate axis",
+        "auditory filterbank displays",
+    ),
+    ViewSpec(
+        "spectrogram-peaks",
+        "spectrogram",
+        "Time-frequency heatmap retaining only local band maxima",
+        "spectral peak maps",
+    ),
+    ViewSpec(
+        "spectrogram-contours",
+        "spectrogram",
+        "Quantised amplitude contour strips across time",
+        "contour sonograms",
+    ),
+    ViewSpec(
+        "spectrogram-mirror", "spectrogram", "Mirrored time-frequency heatmap", "creative audio visualisers"
+    ),
+    ViewSpec(
+        "spectrogram-transposed",
+        "spectrogram",
+        "Vertical-time spectrogram / scrolling frequency history",
+        "classic sideways waterfall",
+    ),
+    ViewSpec(
+        "spectrogram-polar",
+        "spectrogram",
+        "Time wrapped around angle, frequency along radius",
+        "polar sonograms",
+    ),
 )
 MOTION_VIEWS = (
     ViewSpec("waveform-area", "motion", "Filled multi-lane rudiment value histories", "DAW waveform style"),
-    ViewSpec("waveform-mirror", "motion", "Symmetric amplitude envelope of rudiment values", "mirrored waveforms"),
-    ViewSpec("waveform-dots", "motion", "Sampled rudiment values drawn as points", "discrete sampled signals"),
+    ViewSpec(
+        "waveform-mirror", "motion", "Symmetric amplitude envelope of rudiment values", "mirrored waveforms"
+    ),
+    ViewSpec(
+        "waveform-dots", "motion", "Sampled rudiment values drawn as points", "discrete sampled signals"
+    ),
     ViewSpec("waveform-steps", "motion", "Zero-order-hold rudiment signal traces", "digital oscilloscopes"),
-    ViewSpec("waveform-oscilloscope", "motion", "Centred scrolling single-trace rudiment oscilloscope", "CRT oscilloscopes"),
-    ViewSpec("waveform-envelope", "motion", "Windowed min/max envelope of observed rudiment values", "DAW waveform summaries"),
-    ViewSpec("waveform-ribbon", "motion", "Coloured variation ribbon of paired rudiment channels", "creative data visualisation"),
-    ViewSpec("waveform-polar", "motion", "Polar history of the first rudiment channel", "polar oscilloscopes"),
-    ViewSpec("phase-portrait", "motion", "Two-dimensional history using first two motion axes", "XY oscilloscopes / Lissajous"),
+    ViewSpec(
+        "waveform-oscilloscope",
+        "motion",
+        "Centred scrolling single-trace rudiment oscilloscope",
+        "CRT oscilloscopes",
+    ),
+    ViewSpec(
+        "waveform-envelope",
+        "motion",
+        "Windowed min/max envelope of observed rudiment values",
+        "DAW waveform summaries",
+    ),
+    ViewSpec(
+        "waveform-ribbon",
+        "motion",
+        "Coloured variation ribbon of paired rudiment channels",
+        "creative data visualisation",
+    ),
+    ViewSpec(
+        "waveform-polar", "motion", "Polar history of the first rudiment channel", "polar oscilloscopes"
+    ),
+    ViewSpec(
+        "phase-portrait",
+        "motion",
+        "Two-dimensional history using first two motion axes",
+        "XY oscilloscopes / Lissajous",
+    ),
     ViewSpec("phase-points", "motion", "Scatter plot of paired rudiment axes", "phase-space plots"),
 )
 # Circular and annular modes: distinct polar geometries, not palette aliases.
@@ -122,18 +230,38 @@ _CIRCULAR_MOTION = {
 }
 
 CIRCULAR_VIEWS = (
-    tuple(ViewSpec("spectrum-annular-" + name, "spectrum", description, "radial spectrum analyser")
-          for name, description in _CIRCULAR_SPECTRUM.items())
-    + tuple(ViewSpec("spectrogram-annular-" + name, "spectrogram", description, "polar sonogram")
-            for name, description in _CIRCULAR_SPECTROGRAM.items())
-    + tuple(ViewSpec("waveform-annular-" + name, "motion", description, "circular oscilloscope")
-            for name, description in _CIRCULAR_MOTION.items())
-    + (ViewSpec("phase-annular-portrait", "motion",
-                "Two native Rudiment dimensions mapped into annular angle and radius",
-                "polar XY oscilloscope"),)
+    tuple(
+        ViewSpec("spectrum-annular-" + name, "spectrum", description, "radial spectrum analyser")
+        for name, description in _CIRCULAR_SPECTRUM.items()
+    )
+    + tuple(
+        ViewSpec("spectrogram-annular-" + name, "spectrogram", description, "polar sonogram")
+        for name, description in _CIRCULAR_SPECTROGRAM.items()
+    )
+    + tuple(
+        ViewSpec("waveform-annular-" + name, "motion", description, "circular oscilloscope")
+        for name, description in _CIRCULAR_MOTION.items()
+    )
+    + (
+        ViewSpec(
+            "phase-annular-portrait",
+            "motion",
+            "Two native Rudiment dimensions mapped into annular angle and radius",
+            "polar XY oscilloscope",
+        ),
+    )
 )
 EFFECT_VIEWS = tuple(ViewSpec(*spec) for spec in EFFECT_SPECS)
 SPRITE_VIEWS = tuple(ViewSpec(*spec) for spec in SPRITE_SPECS)
-ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS + SPRITE_VIEWS
+SPATIAL_VIEWS = tuple(
+    ViewSpec(
+        "spatial-" + shape,
+        "motion",
+        "Deterministic 3D projected wire geometry animated by native Rudiment channels",
+        "CPU perspective mesh rendering",
+    )
+    for shape in ("torus", "sphere", "terrain")
+)
+ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS + SPRITE_VIEWS + SPATIAL_VIEWS
 BY_NAME = {v.name: v for v in ALL_VIEWS}
 assert len(BY_NAME) == len(ALL_VIEWS)

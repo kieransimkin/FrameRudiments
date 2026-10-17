@@ -3,6 +3,7 @@
 All spectral/motion content is synthetic. Actual source FFT and DanceRudiment
 clock contracts are demonstrated separately by the production compositor.
 """
+
 import argparse
 import json
 from functools import lru_cache
@@ -26,43 +27,90 @@ DISPLAY_VIEWS = (
     ("waveform-ribbon", False, "Motion ribbon"),
 )
 SCENES = (
-    ("default-aa", "Highest default spatial and temporal quality", {}, None,
-     "4x source geometry + 8x true time samples + final edge treatment"),
-    ("default-off", "Explicit reduced-quality pixel-art path", {}, None,
-     "Disable the default supersampling and raster AA"),
+    (
+        "default-aa",
+        "Highest default spatial and temporal quality",
+        {},
+        None,
+        "4x source geometry + 8x true time samples + final edge treatment",
+    ),
+    (
+        "default-off",
+        "Explicit reduced-quality pixel-art path",
+        {},
+        None,
+        "Disable the default supersampling and raster AA",
+    ),
     ("raw", "Original output", {}, None, "Unfiltered vector/raster samples"),
-    ("edge-aa", "Edge-aware AA", {"antialias": .85, "antialias_radius": .85}, None,
-     "Alpha-aware edge smoothing, preserving interior textures"),
-    ("fine-aa", "High-quality AA", {"antialias": 1, "antialias_radius": 1.2,
-                                     "antialias_passes": 2, "antialias_threshold": .04}, None,
-     "Two edge-aware antialias passes; not true source supersampling"),
-    ("trail-blur", "Directional streaks", {"motion_blur": .85, "motion_blur_distance": 18,
-                                          "motion_blur_angle": 18, "motion_blur_samples": 12}, None,
-     "Premultiplied-alpha subpixel directional shutter"),
-    ("radial-blur", "Diagonal motion blur", {"motion_blur": .75, "motion_blur_distance": 12,
-                                            "motion_blur_angle": -62, "motion_blur_samples": 16,
-                                            "motion_blur_trail": .35}, None,
-     "Arbitrary angle and trailing-to-centred blur control"),
-    ("temporal-soft", "Observed-frame blur", {},
-     {"samples": 3, "shutter_frames": 2, "strength": .65, "falloff": 1.2},
-     "Linear-light accumulation of prior encoded frames"),
-    ("temporal-long", "Long shutter", {},
-     {"samples": 6, "shutter_frames": 5, "strength": .9, "falloff": .5},
-     "History-based blur; no invented future/subframe motion"),
-    ("both-blurs", "AA + both blur types", {"antialias": .8, "motion_blur": .45,
-                                            "motion_blur_distance": 9, "motion_blur_angle": 28},
-     {"samples": 4, "shutter_frames": 3, "strength": .5, "falloff": 1},
-     "Stack of edge-aware AA, directional approximation and temporal integration"),
-    ("dancerudiment", "DanceRudiment-driven", {"antialias": .7, "motion_blur": .6,
-                                               "motion_blur_distance": 10,
-                                               "motion_blur_angle": 0}, None,
-     "Independent circle/bounce modulation of blur angle, strength and AA"),
+    (
+        "edge-aa",
+        "Edge-aware AA",
+        {"antialias": 0.85, "antialias_radius": 0.85},
+        None,
+        "Alpha-aware edge smoothing, preserving interior textures",
+    ),
+    (
+        "fine-aa",
+        "High-quality AA",
+        {"antialias": 1, "antialias_radius": 1.2, "antialias_passes": 2, "antialias_threshold": 0.04},
+        None,
+        "Two edge-aware antialias passes; not true source supersampling",
+    ),
+    (
+        "trail-blur",
+        "Directional streaks",
+        {"motion_blur": 0.85, "motion_blur_distance": 18, "motion_blur_angle": 18, "motion_blur_samples": 12},
+        None,
+        "Premultiplied-alpha subpixel directional shutter",
+    ),
+    (
+        "radial-blur",
+        "Diagonal motion blur",
+        {
+            "motion_blur": 0.75,
+            "motion_blur_distance": 12,
+            "motion_blur_angle": -62,
+            "motion_blur_samples": 16,
+            "motion_blur_trail": 0.35,
+        },
+        None,
+        "Arbitrary angle and trailing-to-centred blur control",
+    ),
+    (
+        "temporal-soft",
+        "Observed-frame blur",
+        {},
+        {"samples": 3, "shutter_frames": 2, "strength": 0.65, "falloff": 1.2},
+        "Linear-light accumulation of prior encoded frames",
+    ),
+    (
+        "temporal-long",
+        "Long shutter",
+        {},
+        {"samples": 6, "shutter_frames": 5, "strength": 0.9, "falloff": 0.5},
+        "History-based blur; no invented future/subframe motion",
+    ),
+    (
+        "both-blurs",
+        "AA + both blur types",
+        {"antialias": 0.8, "motion_blur": 0.45, "motion_blur_distance": 9, "motion_blur_angle": 28},
+        {"samples": 4, "shutter_frames": 3, "strength": 0.5, "falloff": 1},
+        "Stack of edge-aware AA, directional approximation and temporal integration",
+    ),
+    (
+        "dancerudiment",
+        "DanceRudiment-driven",
+        {"antialias": 0.7, "motion_blur": 0.6, "motion_blur_distance": 10, "motion_blur_angle": 0},
+        None,
+        "Independent circle/bounce modulation of blur angle, strength and AA",
+    ),
 )
 
 
 def _context(n):
-    return SimpleNamespace(frame=n, output_seconds=n / 60,
-                           source_seconds=n / 60, beat=n / 30, lyric=None, cue=None)
+    return SimpleNamespace(
+        frame=n, output_seconds=n / 60, source_seconds=n / 60, beat=n / 30, lyric=None, cue=None
+    )
 
 
 def _project():
@@ -84,8 +132,9 @@ def _base(n, element_grade=False):
         renderer, _ = _registry().create(name, (w, h), {"background": "#11283e"})
         part = renderer.render(fixture(n, spectral=spectral))
         if element_grade:
-            part = VisualStyle({"antialias": .9, "motion_blur": .5,
-                                "motion_blur_distance": 9, "motion_blur_angle": 25}).apply(part)
+            part = VisualStyle(
+                {"antialias": 0.9, "motion_blur": 0.5, "motion_blur_distance": 9, "motion_blur_angle": 25}
+            ).apply(part)
         x = 12 + (i % 2) * 240
         y = 10 + (i // 2) * 143
         canvas.alpha_composite(part, (x, y))
@@ -113,14 +162,33 @@ def build_site(output):
     output = Path(output)
     root = output / "quality"
     root.mkdir(parents=True, exist_ok=False)
-    mods = RudimentModulations(_project(), [
-        {"id": "direction", "motion": {"kind": "named", "pattern": "circle"},
-         "axis": "x", "target": "visual.motion_blur_angle", "range": [-130, 130]},
-        {"id": "exposure", "motion": {"kind": "named", "pattern": "bounce"},
-         "axis": "y", "target": "visual.motion_blur_distance", "range": [3, 22]},
-        {"id": "smooth", "motion": {"kind": "named", "pattern": "circle"},
-         "axis": "z", "target": "visual.antialias", "range": [.2, 1]},
-    ], _context)
+    mods = RudimentModulations(
+        _project(),
+        [
+            {
+                "id": "direction",
+                "motion": {"kind": "named", "pattern": "circle"},
+                "axis": "x",
+                "target": "visual.motion_blur_angle",
+                "range": [-130, 130],
+            },
+            {
+                "id": "exposure",
+                "motion": {"kind": "named", "pattern": "bounce"},
+                "axis": "y",
+                "target": "visual.motion_blur_distance",
+                "range": [3, 22],
+            },
+            {
+                "id": "smooth",
+                "motion": {"kind": "named", "pattern": "circle"},
+                "axis": "z",
+                "target": "visual.antialias",
+                "range": [0.2, 1],
+            },
+        ],
+        _context,
+    )
     rows = []
     for name, label, config, temporal, description in SCENES:
         folder = root / name
@@ -132,18 +200,35 @@ def build_site(output):
             elif name == "default-off":
                 image = OutputQuality({"enabled": False}).apply(image)
             image.save(folder / f"{k}.png")
-        rows.append(dict(name=name, label=label, visual=config, temporal=temporal,
-                         description=description, frames=len(MOMENTS)))
-    catalogue = dict(schema="framerudiments.synthetic-quality-gallery.v1", synthetic=True,
-                     default_render_quality=OutputQuality().evidence,
-                     measured_audio=False, frames=list(MOMENTS),
-                     visualisers=[row[0] for row in DISPLAY_VIEWS], scenes=rows)
+        rows.append(
+            dict(
+                name=name,
+                label=label,
+                visual=config,
+                temporal=temporal,
+                description=description,
+                frames=len(MOMENTS),
+            )
+        )
+    catalogue = dict(
+        schema="framerudiments.synthetic-quality-gallery.v1",
+        synthetic=True,
+        default_render_quality=OutputQuality().evidence,
+        measured_audio=False,
+        frames=list(MOMENTS),
+        visualisers=[row[0] for row in DISPLAY_VIEWS],
+        scenes=rows,
+    )
     (root / "catalogue.json").write_text(json.dumps(catalogue, indent=2), encoding="utf-8")
-    cards = "\n".join(f'''<article><h2>{row["label"]}</h2><p>{row["description"]}</p>
+    cards = "\n".join(
+        f'''<article><h2>{row["label"]}</h2><p>{row["description"]}</p>
       <div class="compare"><img data-name="{row["name"]}" src="{row["name"]}/0.png"
       alt="{row["label"]} preview of four synthetic visualisations"></div>
-      <code>{row["name"]}</code></article>''' for row in rows)
-    html = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+      <code>{row["name"]}</code></article>'''
+        for row in rows
+    )
+    html = (
+        """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>FrameRudiments · Anti-aliasing &amp; Motion Blur Atlas</title><style>
 :root{color-scheme:dark}*{box-sizing:border-box}body{background:#080f1c;color:#e5f5ff;font:16px system-ui;margin:0}
 header{max-width:1300px;margin:auto;padding:45px 24px 22px}a{color:#5ee9dc}h1{font-size:clamp(2rem,5vw,3.8rem);line-height:1.1}
@@ -161,10 +246,13 @@ input{accent-color:#5ee9dc}footer{max-width:1300px;margin:30px auto;padding:20px
 <a href="catalogue.json">Machine-readable presets and methods</a></header>
 <div class="tools"><div><label for="frame">Timeline <input id="frame" type="range" min="0" max="3" value="0" step="1"></label>
 <output id="count">1 / 4</output> <button type="button" id="play">Play sampled moments</button></div></div>
-<main>''' + cards + '''</main><footer>Offline, reproducible demonstrations · <a href="../scopes/">Element and frame scope examples</a></footer>
+<main>"""
+        + cards
+        + """</main><footer>Offline, reproducible demonstrations · <a href="../scopes/">Element and frame scope examples</a></footer>
 <script>const slider=document.querySelector('#frame'),count=document.querySelector('#count'),play=document.querySelector('#play');let timer;
 function update(){document.querySelectorAll('img[data-name]').forEach(img=>img.src=img.dataset.name+'/'+slider.value+'.png');count.textContent=(Number(slider.value)+1)+' / 4'}
-slider.addEventListener('input',update);play.addEventListener('click',()=>{if(timer){clearInterval(timer);timer=null;play.textContent='Play sampled moments'}else{timer=setInterval(()=>{slider.value=(Number(slider.value)+1)%4;update()},900);play.textContent='Pause'}});</script></body></html>'''
+slider.addEventListener('input',update);play.addEventListener('click',()=>{if(timer){clearInterval(timer);timer=null;play.textContent='Play sampled moments'}else{timer=setInterval(()=>{slider.value=(Number(slider.value)+1)%4;update()},900);play.textContent='Pause'}});</script></body></html>"""
+    )
     (root / "index.html").write_text(html, encoding="utf-8")
     home = output / "index.html"
     content = home.read_text(encoding="utf-8")

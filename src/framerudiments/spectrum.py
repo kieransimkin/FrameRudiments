@@ -1,4 +1,5 @@
 """Calibrated display analysis of saved StemLab Fourier bands, without FFT DSP."""
+
 from dataclasses import dataclass
 import json
 import math
@@ -21,7 +22,9 @@ class SpectrumBand:
     def rms(self, value):
         if self.silent:
             return 0.0
-        return number(max(0.0, (value / self.gain + 1) / 2 * self.divisor), "recovered Fourier RMS", minimum=0)
+        return number(
+            max(0.0, (value / self.gain + 1) / 2 * self.divisor), "recovered Fourier RMS", minimum=0
+        )
 
 
 def spectrum_bands(motion, axes):
@@ -42,7 +45,9 @@ def spectrum_bands(motion, axes):
             if row["mode"] != "fourier" or row["output_scale"] != "bipolar":
                 raise ValueError("Spectrum dimensions must be calibrated bipolar Fourier bands")
             if integer(row["clipped_windows"], "clipped Fourier windows") != 0:
-                raise ValueError("Clipped Fourier axes cannot recover calibrated RMS; re-export without clipping")
+                raise ValueError(
+                    "Clipped Fourier axes cannot recover calibrated RMS; re-export without clipping"
+                )
             silent = row["silent_axis"]
             if not isinstance(silent, bool):
                 raise ValueError("Fourier silent_axis must be boolean")
@@ -57,7 +62,11 @@ def spectrum_bands(motion, axes):
             digest = row["source_sha256"]
             if high <= low or high > rate / 2 or fft & (fft - 1):
                 raise ValueError("Invalid Fourier frequency bounds or FFT size")
-            if not isinstance(digest, str) or len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest.lower()):
+            if (
+                not isinstance(digest, str)
+                or len(digest) != 64
+                or any(c not in "0123456789abcdef" for c in digest.lower())
+            ):
                 raise ValueError("Fourier source SHA-256 is required")
             bands.append(SpectrumBand(row["name"], low, high, divisor, gain, silent, digest, rate, fft))
         if len({(b.source_sha256, b.sample_rate, b.fft_size) for b in bands}) != 1:
@@ -77,7 +86,9 @@ def peak_indices(levels, *, floor, threshold, contrast, distance, count):
         end = start
         while end + 1 < len(levels) and abs(levels[end + 1] - levels[start]) <= 1e-9:
             end += 1
-        neighbours = ([levels[start - 1]] if start else []) + ([levels[end + 1]] if end + 1 < len(levels) else [])
+        neighbours = ([levels[start - 1]] if start else []) + (
+            [levels[end + 1]] if end + 1 < len(levels) else []
+        )
         surrounding = max(neighbours, default=floor)
         height = levels[start]
         if height >= threshold and height > surrounding and height - surrounding >= contrast:
@@ -92,8 +103,18 @@ def peak_indices(levels, *, floor, threshold, contrast, distance, count):
     return selected
 
 
-def analyse_spectrum(frame, *, floor=-72, ceiling=0, hold_seconds=.4, decay_db_per_second=24,
-                     peak_count=3, min_peak_db=-60, min_peak_contrast_db=3, min_peak_distance=2):
+def analyse_spectrum(
+    frame,
+    *,
+    floor=-72,
+    ceiling=0,
+    hold_seconds=0.4,
+    decay_db_per_second=24,
+    peak_count=3,
+    min_peak_db=-60,
+    min_peak_contrast_db=3,
+    min_peak_distance=2,
+):
     if not frame.spectrum_bands:
         raise ValueError("Spectrum frame has no calibrated Fourier bands")
     bands = frame.spectrum_bands
@@ -107,21 +128,46 @@ def analyse_spectrum(frame, *, floor=-72, ceiling=0, hold_seconds=.4, decay_db_p
             amplitude = band.rms(value)
             db = 20 * math.log10(amplitude) if amplitude > 0 else floor
             held[j] = max(held[j], db - max(0, age - hold_seconds) * decay_db_per_second)
-    peaks = peak_indices(levels, floor=floor, threshold=min_peak_db, contrast=min_peak_contrast_db,
-                         distance=min_peak_distance, count=peak_count)
+    peaks = peak_indices(
+        levels,
+        floor=floor,
+        threshold=min_peak_db,
+        contrast=min_peak_contrast_db,
+        distance=min_peak_distance,
+        count=peak_count,
+    )
+
     def entry(index):
         band = bands[index]
-        return dict(axis=band.name, index=index, low_hz=band.low_hz, high_hz=band.high_hz,
-                    rms=rms[index], dbfs=actual_db[index], display_dbfs=min(ceiling, levels[index]),
-                    held_dbfs=held[index])
+        return dict(
+            axis=band.name,
+            index=index,
+            low_hz=band.low_hz,
+            high_hz=band.high_hz,
+            rms=rms[index],
+            dbfs=actual_db[index],
+            display_dbfs=min(ceiling, levels[index]),
+            held_dbfs=held[index],
+        )
+
     dominant = max(range(len(rms)), key=lambda index: rms[index])
-    return dict(kind="stemlab-fourier-band-spectrum", units="PCM-unity RMS dBFS",
-                source_sha256=bands[0].source_sha256, fft_size=bands[0].fft_size,
-                fft_bin_resolution_hz=bands[0].sample_rate / bands[0].fft_size,
-                bands=[entry(j) for j in range(len(bands))],
-                peaks=[dict(entry(index), plateau_low_hz=bands[start].low_hz,
-                            plateau_high_hz=bands[end].high_hz, adjacent_contrast_db=contrast)
-                       for index, start, end, contrast in peaks],
-                dominant=entry(dominant) if rms[dominant] > 0 else None,
-                peak_method="local band maxima; plateaus centred; adjacent contrast; strongest first",
-                hold_clock="observed encoded frames within configured history; no audio true-peak claim")
+    return dict(
+        kind="stemlab-fourier-band-spectrum",
+        units="PCM-unity RMS dBFS",
+        source_sha256=bands[0].source_sha256,
+        fft_size=bands[0].fft_size,
+        fft_bin_resolution_hz=bands[0].sample_rate / bands[0].fft_size,
+        bands=[entry(j) for j in range(len(bands))],
+        peaks=[
+            dict(
+                entry(index),
+                plateau_low_hz=bands[start].low_hz,
+                plateau_high_hz=bands[end].high_hz,
+                adjacent_contrast_db=contrast,
+            )
+            for index, start, end, contrast in peaks
+        ],
+        dominant=entry(dominant) if rms[dominant] > 0 else None,
+        peak_method="local band maxima; plateaus centred; adjacent contrast; strongest first",
+        hold_clock="observed encoded frames within configured history; no audio true-peak claim",
+    )

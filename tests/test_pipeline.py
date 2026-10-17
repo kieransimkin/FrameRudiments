@@ -24,7 +24,7 @@ def demo(tmp_path):
 
 def test_native_matches_binding_and_negative_clock():
     motion = Motion(dict(kind="named", pattern="circle"), Path.cwd(), BeatClock(bpm=120))
-    for t in (-.01, 0, .117, 1.0):
+    for t in (-0.01, 0, 0.117, 1.0):
         a = motion.sample(t)
         b = dr.sample("circle", motion.clock.pip_at(t))
         assert a == (b.x, b.y, b.z)
@@ -35,10 +35,10 @@ def test_recording_does_not_wrap_and_named_axis_projection(demo):
     cfg = dict(kind="recording", file=project.data["layers"][1]["motion"]["file"], axes=["high", "low"])
     motion = Motion(cfg, demo.parent, project.clock)
     values = motion.recording.sample(64)
-    assert motion.sample(.5) == (values[2], values[0], 0)
+    assert motion.sample(0.5) == (values[2], values[0], 0)
     with pytest.raises(ValueError, match="outside"):
         motion.sample(4)
-    assert motion.sample(0) != motion.sample(.5)
+    assert motion.sample(0) != motion.sample(0.5)
 
 
 def test_hashes_and_unknown_fields_fail_closed(demo):
@@ -64,9 +64,16 @@ def test_sprite_extent_and_caption_overflow_are_rejected(demo):
 
 def test_loop_report_checks_identity_and_accepted_pool(tmp_path):
     path = tmp_path / "loops.json"
-    write_json(path, dict(schema="stemlab.loops.v1", source_sha256="abc", sample_rate=48000,
-                         loops=[dict(id="loop-001", start_sample=12, end_sample=48012)],
-                         exploratory_candidates=[dict(id="explore")]))
+    write_json(
+        path,
+        dict(
+            schema="stemlab.loops.v1",
+            source_sha256="abc",
+            sample_rate=48000,
+            loops=[dict(id="loop-001", start_sample=12, end_sample=48012)],
+            exploratory_candidates=[dict(id="explore")],
+        ),
+    )
     assert selected_loop(path, "loop-001", "abc")["start_sample"] == 12
     with pytest.raises(ValueError):
         selected_loop(path, "loop-001", "wrong")
@@ -90,8 +97,9 @@ def test_actual_encode_decode_cfr_and_fractional_sample_repeats(demo, tmp_path, 
         pytest.skip("FFmpeg integration: set FRAMERUDIMENTS_FFMPEG")
     # Rebuild responsive example at the target size; repeat an exact native-rate fractional interval.
     font = os.environ["FRAMERUDIMENTS_TEST_FONT"]
-    path = create_demo(tmp_path / f"demo-{dimensions[0]}x{dimensions[1]}", font,
-                       width=dimensions[0], height=dimensions[1])
+    path = create_demo(
+        tmp_path / f"demo-{dimensions[0]}x{dimensions[1]}", font, width=dimensions[0], height=dimensions[1]
+    )
     data = json.loads(path.read_text())
     data["audio"].update(start_sample=12001, end_sample=36002, repeats=2, fade_seconds=0)
     write_json(path, data)
@@ -118,9 +126,11 @@ def test_custom_scene_hook_and_preflight(demo, tmp_path):
     if not os.environ.get("FRAMERUDIMENTS_FFMPEG"):
         pytest.skip("Set FRAMERUDIMENTS_FFMPEG")
     calls = []
+
     def scene(image, ctx):
         calls.append(ctx.frame)
         return image
+
     result = preflight(demo, tmp_path / "preflight", scene=scene)
     assert calls == list(range(240))
     assert result["composition"]["custom_scene"]

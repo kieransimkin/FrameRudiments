@@ -1,4 +1,5 @@
 """Pinned, separately installed upstream preset libraries; never bundled as MIT assets."""
+
 import hashlib
 import io
 import json
@@ -10,41 +11,68 @@ import zipfile
 from .io import sha256, write_json
 
 PACKS = {
-    "butterchurn": dict(engine="butterchurn", version="2.4.7", licence="MIT",
+    "butterchurn": dict(
+        engine="butterchurn",
+        version="2.4.7",
+        licence="MIT",
         url="https://registry.npmjs.org/butterchurn-presets/-/butterchurn-presets-2.4.7.tgz",
-        sha256="d9c067b354e4ed87b3a1dace1dc59c9d64e6a99300a82d5fa086f696e35204a7"),
-    "cream": dict(engine="projectm", repository="projectM-visualizer/presets-cream-of-the-crop",
+        sha256="d9c067b354e4ed87b3a1dace1dc59c9d64e6a99300a82d5fa086f696e35204a7",
+    ),
+    "cream": dict(
+        engine="projectm",
+        repository="projectM-visualizer/presets-cream-of-the-crop",
         commit="0180df21f5e0bd39b9060cc5de420ed2f1f9e509",
-        sha256="5600f974497d8f73295393fbdf866895ceb89efe82892f5e2d019358b2659202"),
-    "classic": dict(engine="projectm", repository="projectM-visualizer/presets-projectm-classic",
+        sha256="5600f974497d8f73295393fbdf866895ceb89efe82892f5e2d019358b2659202",
+    ),
+    "classic": dict(
+        engine="projectm",
+        repository="projectM-visualizer/presets-projectm-classic",
         commit="14a6244a7d32eb7e114e1a92d1cb93358cdcc54a",
-        sha256="328a41acf9216057fce0d873b244ca06e1aee5b466f7560df4903fdf28832ad0"),
-    "original": dict(engine="projectm", repository="projectM-visualizer/presets-milkdrop-original",
+        sha256="328a41acf9216057fce0d873b244ca06e1aee5b466f7560df4903fdf28832ad0",
+    ),
+    "original": dict(
+        engine="projectm",
+        repository="projectM-visualizer/presets-milkdrop-original",
         commit="e03b83e3338d8f1ed6cbcf908c719f249ef24288",
-        sha256="4479bbd10e4f4a005d636f7b0ed26004042541a62a925ca97e12ff13765b688d"),
-    "en-d": dict(engine="projectm", repository="projectM-visualizer/presets-en-d",
+        sha256="4479bbd10e4f4a005d636f7b0ed26004042541a62a925ca97e12ff13765b688d",
+    ),
+    "en-d": dict(
+        engine="projectm",
+        repository="projectM-visualizer/presets-en-d",
         commit="fff71ea81223109f3558351667eef851f2781c96",
-        sha256="6badaf79e1ff095a5b56d38a380dd9b9ac8c2b5c6f6770879cbc0f65d549b5e1"),
-    "textures": dict(engine="textures", repository="projectM-visualizer/presets-milkdrop-texture-pack",
+        sha256="6badaf79e1ff095a5b56d38a380dd9b9ac8c2b5c6f6770879cbc0f65d549b5e1",
+    ),
+    "textures": dict(
+        engine="textures",
+        repository="projectM-visualizer/presets-milkdrop-texture-pack",
         commit="6368812f27bc747b517218fbf89d21d59afce4d9",
-        sha256="38e93612f79a313830480d7458d8eb065d2b67992211a5dd0c92ef87b8607f6a"),
+        sha256="38e93612f79a313830480d7458d8eb065d2b67992211a5dd0c92ef87b8607f6a",
+    ),
 }
 for _pin in PACKS.values():
     if "url" not in _pin:
         _pin["url"] = f"https://codeload.github.com/{_pin['repository']}/zip/{_pin['commit']}"
-        _pin["licence"] = "No explicit preset/texture grant established; retain upstream notices; not redistributed in FrameRudiments"
+        _pin["licence"] = (
+            "No explicit preset/texture grant established; retain upstream notices; not redistributed in FrameRudiments"
+        )
 
 
 def archive_members(data, *, tar=False):
     """Read bounded ordinary files only; never extract paths, links or devices."""
     if tar:
         archive = tarfile.open(fileobj=io.BytesIO(data))
-        entries = ((x.name, x.size, lambda x=x: archive.extractfile(x).read())
-                   for x in archive.getmembers() if x.isfile())
+        entries = (
+            (x.name, x.size, lambda x=x: archive.extractfile(x).read())
+            for x in archive.getmembers()
+            if x.isfile()
+        )
     else:
         archive = zipfile.ZipFile(io.BytesIO(data))
-        entries = ((x.filename, x.file_size, lambda x=x: archive.read(x))
-                   for x in archive.infolist() if not x.is_dir())
+        entries = (
+            (x.filename, x.file_size, lambda x=x: archive.read(x))
+            for x in archive.infolist()
+            if not x.is_dir()
+        )
     total = 0
     with archive:
         for name, size, read in entries:
@@ -88,8 +116,13 @@ def install_library(directory, *, packs=tuple(PACKS), cache=None):
                 target.write_bytes(content)
                 notices.append(dict(path=str(target), sha256=sha256(target)))
             suffix = path.suffix.lower()
-            is_preset = (name == "butterchurn" and original.startswith("presets/converted/") and suffix == ".json"
-                         or pin["engine"] == "projectm" and suffix in {".milk", ".prjm"})
+            is_preset = (
+                name == "butterchurn"
+                and original.startswith("presets/converted/")
+                and suffix == ".json"
+                or pin["engine"] == "projectm"
+                and suffix in {".milk", ".prjm"}
+            )
             is_texture = name == "textures" and suffix in {".png", ".jpg", ".jpeg", ".bmp", ".dds", ".tga"}
             if not is_preset and not is_texture:
                 continue
@@ -109,14 +142,26 @@ def install_library(directory, *, packs=tuple(PACKS), cache=None):
                 continue
             target = pack / (digest + suffix)
             target.write_bytes(content)
-            row = dict(id=pin["engine"] + ":" + digest, engine=pin["engine"], name=path.stem,
-                       preset=dict(path=str(target), sha256=digest), aliases=[alias],
-                       source_pack=name, licence=pin["licence"], compatibility="unverified until actual rendering")
+            row = dict(
+                id=pin["engine"] + ":" + digest,
+                engine=pin["engine"],
+                name=path.stem,
+                preset=dict(path=str(target), sha256=digest),
+                aliases=[alias],
+                source_pack=name,
+                licence=pin["licence"],
+                compatibility="unverified until actual rendering",
+            )
             rows.append(row)
             seen[key] = row
         receipts.append(dict(id=name, **pin, preset_files=count, notices=notices))
-    result = dict(schema="framerudiments.preset-library.v1", packs=receipts, presets=rows,
-                  textures=textures, limits="Source membership and syntax are not shader/GPU acceptance or rights clearance.")
+    result = dict(
+        schema="framerudiments.preset-library.v1",
+        packs=receipts,
+        presets=rows,
+        textures=textures,
+        limits="Source membership and syntax are not shader/GPU acceptance or rights clearance.",
+    )
     write_json(out / "catalogue.json", result)
     return result
 

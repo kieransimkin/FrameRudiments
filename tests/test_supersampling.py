@@ -1,4 +1,5 @@
 """True high-res glyph/vector rerasterisation and subframe source-clock QA."""
+
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -36,8 +37,7 @@ class Registry:
 def test_vector_rerenders_at_four_times_true_physical_resolution():
     r = Registry()
     cache = {}
-    out, report = vector_viewport(r, "test-vector", (160, 92), {"line_width": 2}, 7, 4,
-                                  cache=cache)
+    out, report = vector_viewport(r, "test-vector", (160, 92), {"line_width": 2}, 7, 4, cache=cache)
     assert r.requests[0][1] == (640, 368)
     assert r.requests[0][2]["line_width"] == 8
     assert out.size == (160, 92) and out.mode == "RGBA"
@@ -50,8 +50,12 @@ def test_vector_rerenders_at_four_times_true_physical_resolution():
 
 def _font():
     import os
-    for path in (os.environ.get("FRAMERUDIMENTS_TEST_FONT"),
-                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:/Windows/Fonts/arial.ttf"):
+
+    for path in (
+        os.environ.get("FRAMERUDIMENTS_TEST_FONT"),
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "C:/Windows/Fonts/arial.ttf",
+    ):
         if path and Path(path).is_file():
             return path
     pytest.skip("Test requires a real TTF/OTF font")
@@ -65,8 +69,9 @@ class FontBlock:
         self.stroke = 0
         self.spacing = 3
         self.font_ref = {"path": _font()}
-        self.project = SimpleNamespace(output_quality=OutputQuality({"spatial_scale": scale,
-                                                                    "temporal_samples": 1}))
+        self.project = SimpleNamespace(
+            output_quality=OutputQuality({"spatial_scale": scale, "temporal_samples": 1})
+        )
         self.config = {"colour": "white"}
         self.colour = "#ffffff"
         self.rich = None
@@ -94,8 +99,9 @@ def test_text_supersamples_actual_typeface_outlines_and_limits_working_surface()
     assert high.mode == "RGBA" and high.size == low.size
     assert high.tobytes() != low.tobytes()
     assert high.getpixel((0, 0))[3] == 0
-    assert high.tobytes() == (lambda other: (supersampled_text(FontBlock(4), other, text), other.tobytes())[1])(
-        Image.new("RGBA", high.size))
+    assert high.tobytes() == (
+        lambda other: (supersampled_text(FontBlock(4), other, text), other.tobytes())[1]
+    )(Image.new("RGBA", high.size))
 
 
 def test_true_subframes_are_not_repeated_integer_frames(monkeypatch):
@@ -121,24 +127,36 @@ def test_true_subframes_are_not_repeated_integer_frames(monkeypatch):
             return {"marker": self.layers[0].frame_report}
 
     made = []
+
     def build(p, factor):
-        q = SimpleNamespace(fps=60 * factor, frame_count=100,
-                            data={"post_effects": {}}, output_quality=OutputQuality({"temporal_samples": 1}))
+        q = SimpleNamespace(
+            fps=60 * factor,
+            frame_count=100,
+            data={"post_effects": {}},
+            output_quality=OutputQuality({"temporal_samples": 1}),
+        )
         made.append(q)
         return q
+
     monkeypatch.setattr(super_sampling, "_virtual_project", build)
     import framerudiments.compositor as compositor_mod
+
     monkeypatch.setattr(compositor_mod, "Compositor", Fake)
-    outer = SimpleNamespace(output_quality=OutputQuality({"spatial_scale": 1}),
-                            project=SimpleNamespace(), scene=None, renderers=None,
-                            extents={}, text_states={}, post_pipeline=SimpleNamespace(last_report={}),
-                            layers=[SimpleNamespace(id="marker", frame_report=None)],
-                            context=lambda f: SimpleNamespace(frame=f))
+    outer = SimpleNamespace(
+        output_quality=OutputQuality({"spatial_scale": 1}),
+        project=SimpleNamespace(),
+        scene=None,
+        renderers=None,
+        extents={},
+        text_states={},
+        post_pipeline=SimpleNamespace(last_report={}),
+        layers=[SimpleNamespace(id="marker", frame_report=None)],
+        context=lambda f: SimpleNamespace(frame=f),
+    )
     result, ctx = super_sampling.temporal_supersample(outer, 1)
     assert ctx.frame == 1 and result.size == (60, 36)
     assert outer._temporal_virtual.frames == list(range(8, 16))
     assert len(set(outer._temporal_virtual.frames)) == 8
-    assert outer.layers[0].frame_report == dict(
-        kind="test-motion", frame=1, subframe_index=15)
+    assert outer.layers[0].frame_report == dict(kind="test-motion", frame=1, subframe_index=15)
     assert outer._supersampled_reports["marker"] == outer.layers[0].frame_report
     assert result.tobytes() == super_sampling.temporal_supersample(outer, 1)[0].tobytes()

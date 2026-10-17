@@ -18,21 +18,49 @@ def spectrum_project(tmp_path):
     if not font:
         pytest.skip("Set font")
     project = Project.load(create_demo(tmp_path / "demo", font, width=360, height=640))
-    rows = [dict(name=f"band_{j:03d}", mode="fourier", output_scale="bipolar", clipped_windows=0,
-                 silent_axis=j == 3, normalization_divisor=.5, gain=-.5 if j == 2 else 1,
-                 frequency_low_hz=j * 100, frequency_high_hz=(j + 1) * 100,
-                 source_sample_rate=8000, fourier=dict(fft_size=256), source_sha256=project.audio_ref["sha256"])
-            for j in range(4)]
-    values = tuple(tuple(0 if row["silent_axis"] else (2 * value / row["normalization_divisor"] - 1) * row["gain"]
-                         for row, value in zip(rows, [.1, .45 if i < 20 else .05, .02, 0])) for i in range(512))
+    rows = [
+        dict(
+            name=f"band_{j:03d}",
+            mode="fourier",
+            output_scale="bipolar",
+            clipped_windows=0,
+            silent_axis=j == 3,
+            normalization_divisor=0.5,
+            gain=-0.5 if j == 2 else 1,
+            frequency_low_hz=j * 100,
+            frequency_high_hz=(j + 1) * 100,
+            source_sample_rate=8000,
+            fourier=dict(fft_size=256),
+            source_sha256=project.audio_ref["sha256"],
+        )
+        for j in range(4)
+    ]
+    values = tuple(
+        tuple(
+            0 if row["silent_axis"] else (2 * value / row["normalization_divisor"] - 1) * row["gain"]
+            for row, value in zip(rows, [0.1, 0.45 if i < 20 else 0.05, 0.02, 0])
+        )
+        for i in range(512)
+    )
     path = project.base / "fourier.json"
-    rec = Recording("synthetic_fourier_contract_fixture", tuple(row["name"] for row in rows), values,
-                    RecordingClock(120, "synthetic fixture", "confirmed", 0, "supplied", 0),
-                    json.dumps(dict(producer="StemLab", axes=rows)))
+    rec = Recording(
+        "synthetic_fourier_contract_fixture",
+        tuple(row["name"] for row in rows),
+        values,
+        RecordingClock(120, "synthetic fixture", "confirmed", 0, "supplied", 0),
+        json.dumps(dict(producer="StemLab", axes=rows)),
+    )
     write_recording(path, rec)
-    project.data["layers"] = [dict(id="spectrum", type="rudiment", renderer="spectrum",
-                                   bounds=[10, 280, 350, 590], history_frames=256,
-                                   motion=dict(kind="recording", file=dict(path=str(path), sha256=sha256(path))))]
+    project.data["layers"] = [
+        dict(
+            id="spectrum",
+            type="rudiment",
+            renderer="spectrum",
+            bounds=[10, 280, 350, 590],
+            history_frames=256,
+            motion=dict(kind="recording", file=dict(path=str(path), sha256=sha256(path))),
+        )
+    ]
     return project, rows, rec
 
 
@@ -42,13 +70,13 @@ def test_calibrated_level_recovery_silence_negative_gain_and_frequency_peaks(spe
     view = comp.layers[0]
     data = view.data(comp.context(0))
     report = analyse_spectrum(data)
-    assert [b["rms"] for b in report["bands"]] == pytest.approx([.1, .45, .02, 0], abs=1e-12)
+    assert [b["rms"] for b in report["bands"]] == pytest.approx([0.1, 0.45, 0.02, 0], abs=1e-12)
     assert report["bands"][0]["dbfs"] == pytest.approx(-20)
     assert report["bands"][3]["dbfs"] is None
     assert report["dominant"]["low_hz"] == 100
     assert report["peaks"][0]["high_hz"] == 200
     assert report["fft_bin_resolution_hz"] == 31.25
-    assert report["bands"][1]["dbfs"] == pytest.approx(20 * math.log10(.45))
+    assert report["bands"][1]["dbfs"] == pytest.approx(20 * math.log10(0.45))
 
 
 def test_peak_hold_decays_deterministically_without_hidden_state(spectrum_project):
@@ -66,20 +94,32 @@ def test_peak_hold_decays_deterministically_without_hidden_state(spectrum_projec
 
 
 def test_local_peak_plateaus_threshold_contrast_and_minimum_distance():
-    assert peak_indices([-60, -10, -10, -60, -20, -60], floor=-72, threshold=-50,
-                        contrast=3, distance=2, count=3) == [(1, 1, 2, 50), (4, 4, 4, 40)]
+    assert peak_indices(
+        [-60, -10, -10, -60, -20, -60], floor=-72, threshold=-50, contrast=3, distance=2, count=3
+    ) == [(1, 1, 2, 50), (4, 4, 4, 40)]
     assert peak_indices([-72] * 4, floor=-72, threshold=-60, contrast=3, distance=1, count=3) == []
     peaks = peak_indices([-60, -10, -60, -20, -60], floor=-72, threshold=-50, contrast=3, distance=3, count=2)
     assert [row[0] for row in peaks] == [1]
 
 
-@pytest.mark.parametrize("change", [{"clipped_windows": 1}, {"gain": 0}, {"normalization_divisor": 0},
-                                    {"mode": "peak"}, {"source_sha256": "unknown"},
-                                    {"frequency_high_hz": 6000}, {"fourier": {"fft_size": 255}}])
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"clipped_windows": 1},
+        {"gain": 0},
+        {"normalization_divisor": 0},
+        {"mode": "peak"},
+        {"source_sha256": "unknown"},
+        {"frequency_high_hz": 6000},
+        {"fourier": {"fft_size": 255}},
+    ],
+)
 def test_unrecoverable_or_unverified_calibration_is_rejected(spectrum_project, change):
     project, rows, rec = spectrum_project
     rows[0].update(change)
-    rec = Recording(rec.name, rec.dimensions, rec.samples, rec.clock, json.dumps(dict(producer="StemLab", axes=rows)))
+    rec = Recording(
+        rec.name, rec.dimensions, rec.samples, rec.clock, json.dumps(dict(producer="StemLab", axes=rows))
+    )
     path = project.base / "bad.json"
     write_recording(path, rec)
     project.data["layers"][0]["motion"]["file"] = dict(path=str(path), sha256=sha256(path))

@@ -1,4 +1,5 @@
 """Optional projectM 4.2 C API host; no movement or MilkDrop implementation here."""
+
 import ctypes as C
 import json
 import os
@@ -20,7 +21,9 @@ class ProjectMBackend:
             import glfw
             from OpenGL import GL
         except ImportError as exc:
-            raise ValueError("projectM needs pip install 'framerudiments[projectm]' and the pinned native runtime") from exc
+            raise ValueError(
+                "projectM needs pip install 'framerudiments[projectm]' and the pinned native runtime"
+            ) from exc
         self.glfw, self.gl = glfw, GL
         self.window = self.handle = None
         self.texture = self.fbo = self.output_texture = None
@@ -32,9 +35,14 @@ class ProjectMBackend:
         receipt = path.parent / "framerudiments-projectm.json"
         data = json.loads(receipt.read_text(encoding="utf-8"))
         if data.get("source_commit") != PROJECTM_COMMIT or data.get("library_sha256") != sha256(path):
-            raise ValueError("projectM runtime receipt does not match the required source pin and library bytes")
+            raise ValueError(
+                "projectM runtime receipt does not match the required source pin and library bytes"
+            )
         if os.name == "nt":
-            for folder in [str(path.parent), *os.environ.get("FRAMERUDIMENTS_PROJECTM_DLL_DIRS", "").split(os.pathsep)]:
+            for folder in [
+                str(path.parent),
+                *os.environ.get("FRAMERUDIMENTS_PROJECTM_DLL_DIRS", "").split(os.pathsep),
+            ]:
                 if folder:
                     self.dll_dirs.append(os.add_dll_directory(folder))
         try:
@@ -69,18 +77,25 @@ class ProjectMBackend:
                 raise RuntimeError("projectM could not create its renderer")
             self.failures, self.warnings = [], []
             log_type = C.CFUNCTYPE(None, C.c_char_p, C.c_int, C.c_void_p)
+
             def collect_log(message, level, user):
                 text = (message or b"").decode("utf-8", "replace")
                 if level >= 4:
                     self.warnings.append(text)
                 if level >= 5 or (level >= 4 and "fallback" in text.lower()):
                     self.failures.append(text)
+
             self.log_callback = log_type(collect_log)
             self.lib.projectm_set_log_callback(self.log_callback, True, None)
             callback = C.CFUNCTYPE(None, C.c_char_p, C.c_char_p, C.c_void_p)
-            self.failure_callback = callback(lambda name, message, user: self.failures.append(
-                (message or b"Unknown preset error").decode("utf-8", "replace")))
-            self.lib.projectm_set_preset_switch_failed_event_callback(self.handle, self.failure_callback, None)
+            self.failure_callback = callback(
+                lambda name, message, user: self.failures.append(
+                    (message or b"Unknown preset error").decode("utf-8", "replace")
+                )
+            )
+            self.lib.projectm_set_preset_switch_failed_event_callback(
+                self.handle, self.failure_callback, None
+            )
             self.lib.projectm_set_window_size(self.handle, *self.size)
             self.lib.projectm_set_mesh_size(self.handle, 64, 48)
             self.lib.projectm_set_fps(self.handle, fps)
@@ -94,32 +109,46 @@ class ProjectMBackend:
                 folder = Path(texture_dir).resolve(strict=True)
                 paths = (C.c_char_p * 1)(os.fsencode(folder))
                 self.lib.projectm_set_texture_search_paths(self.handle, paths, 1)
-                texture_files = [dict(name=x.name, sha256=sha256(x)) for x in sorted(folder.iterdir()) if x.is_file()]
+                texture_files = [
+                    dict(name=x.name, sha256=sha256(x)) for x in sorted(folder.iterdir()) if x.is_file()
+                ]
             self.lib.projectm_load_preset_file(self.handle, os.fsencode(preset), False)
             self._check()
             self.texture = self._texture()
             self.output_texture = self._texture()
             self.fbo = GL.glGenFramebuffers(1)
             GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.fbo)
-            GL.glFramebufferTexture2D(GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0,
-                                      GL.GL_TEXTURE_2D, self.output_texture, 0)
+            GL.glFramebufferTexture2D(
+                GL.GL_FRAMEBUFFER, GL.GL_COLOR_ATTACHMENT0, GL.GL_TEXTURE_2D, self.output_texture, 0
+            )
             if GL.glCheckFramebufferStatus(GL.GL_FRAMEBUFFER) != GL.GL_FRAMEBUFFER_COMPLETE:
                 raise RuntimeError("projectM output framebuffer is incomplete")
             # Allocate the preset feedback buffers without consuming output frame zero.
             self.lib.projectm_opengl_render_frame_fbo(self.handle, int(self.fbo))
             self._check()
-            self.evidence = dict(engine="projectm", version="4.2.0-dev", source_commit=PROJECTM_COMMIT,
-                                 texture_files=texture_files, warnings=self.warnings,
-                                 library_sha256=sha256(path), runtime_receipt=data, native_version=list(actual_version),
-                                 glfw_version=__import__("importlib.metadata", fromlist=["version"]).version("glfw"),
-                                 pyopengl_version=__import__("importlib.metadata", fromlist=["version"]).version("PyOpenGL"),
-                                 opengl=GL.glGetString(GL.GL_VERSION).decode(),
-                                 renderer=GL.glGetString(GL.GL_RENDERER).decode(),
-                                 input="full composed RGBA before MilkDrop warp and composite",
-                                 frame_size=list(self.frame_size), engine_canvas_size=list(self.size),
-                                 portrait_mapping="centred square overscan, then exact pixel crop" if self.crop_left else "native viewport",
-                                 clock="projectm_set_frame_time(output frame / fps)",
-                                 warmup_frames=1, random_seed_supported=False)
+            self.evidence = dict(
+                engine="projectm",
+                version="4.2.0-dev",
+                source_commit=PROJECTM_COMMIT,
+                texture_files=texture_files,
+                warnings=self.warnings,
+                library_sha256=sha256(path),
+                runtime_receipt=data,
+                native_version=list(actual_version),
+                glfw_version=__import__("importlib.metadata", fromlist=["version"]).version("glfw"),
+                pyopengl_version=__import__("importlib.metadata", fromlist=["version"]).version("PyOpenGL"),
+                opengl=GL.glGetString(GL.GL_VERSION).decode(),
+                renderer=GL.glGetString(GL.GL_RENDERER).decode(),
+                input="full composed RGBA before MilkDrop warp and composite",
+                frame_size=list(self.frame_size),
+                engine_canvas_size=list(self.size),
+                portrait_mapping="centred square overscan, then exact pixel crop"
+                if self.crop_left
+                else "native viewport",
+                clock="projectm_set_frame_time(output frame / fps)",
+                warmup_frames=1,
+                random_seed_supported=False,
+            )
         except BaseException:
             self.close()
             raise
@@ -127,7 +156,8 @@ class ProjectMBackend:
     def _bind(self):
         h = C.c_void_p
         specs = {
-            "create": (h, []), "destroy": (None, [h]),
+            "create": (h, []),
+            "destroy": (None, [h]),
             "get_version_components": (None, [C.POINTER(C.c_int)] * 3),
             "set_log_callback": (None, [C.c_void_p, C.c_bool, C.c_void_p]),
             "set_texture_search_paths": (None, [h, C.POINTER(C.c_char_p), C.c_size_t]),
@@ -160,7 +190,9 @@ class ProjectMBackend:
             gl.glTexParameteri(gl.GL_TEXTURE_2D, parameter, gl.GL_LINEAR)
         for parameter in (gl.GL_TEXTURE_WRAP_S, gl.GL_TEXTURE_WRAP_T):
             gl.glTexParameteri(gl.GL_TEXTURE_2D, parameter, gl.GL_CLAMP_TO_EDGE)
-        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGBA8, *self.size, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None)
+        gl.glTexImage2D(
+            gl.GL_TEXTURE_2D, 0, gl.GL_RGBA8, *self.size, 0, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, None
+        )
         return texture
 
     def _check(self):
@@ -232,7 +264,9 @@ class ProjectMBackend:
                 self.glfw.terminate()
             self.registered = False
         if hasattr(self, "evidence"):
-            self.evidence["cleanup"] = dict(instance_destroyed=self.handle is None, window_destroyed=self.window is None)
+            self.evidence["cleanup"] = dict(
+                instance_destroyed=self.handle is None, window_destroyed=self.window is None
+            )
         for directory in self.dll_dirs:
             directory.close()
         self.dll_dirs = []

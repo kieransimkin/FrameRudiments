@@ -1,4 +1,5 @@
 """Real engine acceptance, run explicitly in the GPU CI job (never silently skipped)."""
+
 from array import array
 import json
 import os
@@ -17,21 +18,27 @@ from framerudiments.render import render
 def glyph_frame(size=(320, 240)):
     image = Image.new("RGBA", size, "black")
     draw = ImageDraw.Draw(image)
-    draw.text((36, 70), "LYRICS", fill="white", font=ImageFont.truetype(os.environ["FRAMERUDIMENTS_TEST_FONT"], 36))
+    draw.text(
+        (36, 70), "LYRICS", fill="white", font=ImageFont.truetype(os.environ["FRAMERUDIMENTS_TEST_FONT"], 36)
+    )
     draw.rectangle((16, 16, 55, 50), fill="red")
     draw.rectangle((260, 186, 300, 222), fill="blue")
     return image
 
 
-@pytest.mark.parametrize("engine,factory,ext", [("projectm", ProjectMBackend, "milk"), ("butterchurn", ButterchurnBackend, "json")])
+@pytest.mark.parametrize(
+    "engine,factory,ext", [("projectm", ProjectMBackend, "milk"), ("butterchurn", ButterchurnBackend, "json")]
+)
 @pytest.mark.parametrize("preset", ["feedback", "kaleidoscope", "julia"])
-def test_actual_engine_glyph_distortion_feedback_orientation_and_cleanup(tmp_path, engine, factory, ext, preset):
+def test_actual_engine_glyph_distortion_feedback_orientation_and_cleanup(
+    tmp_path, engine, factory, ext, preset
+):
     image = glyph_frame()
-    backend = factory(image.size, 60, ASSETS / f"{preset}.{ext}", .75, 12, tmp_path)
-    zero = array("f", [0]*2048)
+    backend = factory(image.size, 60, ASSETS / f"{preset}.{ext}", 0.75, 12, tmp_path)
+    zero = array("f", [0] * 2048)
     try:
         for n in range(8):
-            output = backend.process(image, SimpleNamespace(frame=n, output_seconds=n/60), zero)
+            output = backend.process(image, SimpleNamespace(frame=n, output_seconds=n / 60), zero)
         output.save(tmp_path / f"{engine}-{preset}.png")
         # The actual caption region changes, not only an unrelated background.
         original = image.convert("RGB").crop((25, 55, 235, 130))
@@ -44,7 +51,7 @@ def test_actual_engine_glyph_distortion_feedback_orientation_and_cleanup(tmp_pat
             assert output.getpixel((280, 205))[2] > output.getpixel((280, 205))[0] + 80
         # Remove every input pixel: the engine's feedback still contains glyphs.
         black = Image.new("RGBA", image.size, "black")
-        feedback = backend.process(black, SimpleNamespace(frame=8, output_seconds=8/60), zero)
+        feedback = backend.process(black, SimpleNamespace(frame=8, output_seconds=8 / 60), zero)
         assert feedback.crop((25, 55, 235, 130)).getchannel("R").getextrema()[1] > 20
     finally:
         backend.close()
@@ -58,9 +65,11 @@ def test_real_ordered_chain_encoded_lyrics_and_clock(tmp_path):
     path = create_demo(tmp_path / "demo", os.environ["FRAMERUDIMENTS_TEST_FONT"], width=160, height=240)
     add_demo_effects(path, ["butterchurn", "projectm"], "julia")
     data = read_json(path)
-    data["audio"].update(start_sample=0, end_sample=24000, repeats=2, fade_seconds=.05)
-    data["effects"] = [dict(id="web-feedback", engine="butterchurn", preset="feedback", input_mix=.85),
-                       dict(id="native-julia", engine="projectm", preset="julia", input_mix=.85)]
+    data["audio"].update(start_sample=0, end_sample=24000, repeats=2, fade_seconds=0.05)
+    data["effects"] = [
+        dict(id="web-feedback", engine="butterchurn", preset="feedback", input_mix=0.85),
+        dict(id="native-julia", engine="projectm", preset="julia", input_mix=0.85),
+    ]
     write_json(path, data)
     result = render(path, tmp_path / "encoded", preset="ultrafast")
     assert result["verification"]["full_decode"] == "passed"
@@ -75,7 +84,9 @@ def test_real_ordered_chain_encoded_lyrics_and_clock(tmp_path):
     assert (tmp_path / "encoded/qa/composed-00000000.png").is_file()
     assert (tmp_path / "encoded/qa/encoded-00000000.png").is_file()
     assert not list((tmp_path / "encoded").glob("owned-headless-*"))
-    (tmp_path / "gpu-evidence.json").write_text(json.dumps(result["full_frame_effects"], indent=2), encoding="utf-8")
+    (tmp_path / "gpu-evidence.json").write_text(
+        json.dumps(result["full_frame_effects"], indent=2), encoding="utf-8"
+    )
 
 
 def test_butterchurn_shader_failure_closes_browser(tmp_path):
@@ -84,68 +95,104 @@ def test_butterchurn_shader_failure_closes_browser(tmp_path):
     target = tmp_path / "bad.json"
     write_json(target, preset)
     with pytest.raises(RuntimeError, match="Butterchurn"):
-        ButterchurnBackend((160, 240), 60, target, .8, 0, tmp_path)
+        ButterchurnBackend((160, 240), 60, target, 0.8, 0, tmp_path)
     assert not list(tmp_path.glob("owned-headless-*"))
 
 
 def test_projectm_missing_preset_fails_instead_of_idle_fallback(tmp_path):
     with pytest.raises(RuntimeError, match="preset failed"):
-        ProjectMBackend((160, 240), 60, tmp_path / "does-not-exist.milk", .8, 0, tmp_path)
+        ProjectMBackend((160, 240), 60, tmp_path / "does-not-exist.milk", 0.8, 0, tmp_path)
 
 
 @pytest.mark.parametrize("size", [(180, 320), (320, 180), (240, 240)])
-@pytest.mark.parametrize("engine,factory,ext", [("projectm", ProjectMBackend, "milk"), ("butterchurn", ButterchurnBackend, "json")])
+@pytest.mark.parametrize(
+    "engine,factory,ext", [("projectm", ProjectMBackend, "milk"), ("butterchurn", ButterchurnBackend, "json")]
+)
 def test_neutral_mapping_preserves_source_pixel_geometry(tmp_path, size, engine, factory, ext):
     # Disable all artistic transforms to separate host geometry from preset choices.
-    milk = ('[preset00]\nfDecay=1\nfGammaAdj=1\nfWaveAlpha=0\nfShader=0\nmv_a=0\n'
-            'ob_size=0\nib_size=0\nwarp=0\nzoom=1\nfZoomExponent=1\nrot=0\nsx=1\nsy=1\n'
-            'dx=0\ndy=0\nfVideoEchoAlpha=0\n')
-    preset = dict(baseVals=dict(decay=1, gammaadj=1, wave_a=0, shader=0, mv_a=0,
-        ob_size=0, ib_size=0, warp=0, zoom=1, zoomexp=1, rot=0, sx=1, sy=1, dx=0, dy=0, echo_alpha=0),
-        shapes=[], waves=[], init_eqs_str='', frame_eqs_str='', pixel_eqs_str='', warp='', comp='')
-    target = tmp_path / f'neutral.{ext}'
-    target.write_text(milk if engine == 'projectm' else json.dumps(preset), encoding='utf-8')
-    image = Image.new('RGBA', size, 'black')
+    milk = (
+        "[preset00]\nfDecay=1\nfGammaAdj=1\nfWaveAlpha=0\nfShader=0\nmv_a=0\n"
+        "ob_size=0\nib_size=0\nwarp=0\nzoom=1\nfZoomExponent=1\nrot=0\nsx=1\nsy=1\n"
+        "dx=0\ndy=0\nfVideoEchoAlpha=0\n"
+    )
+    preset = dict(
+        baseVals=dict(
+            decay=1,
+            gammaadj=1,
+            wave_a=0,
+            shader=0,
+            mv_a=0,
+            ob_size=0,
+            ib_size=0,
+            warp=0,
+            zoom=1,
+            zoomexp=1,
+            rot=0,
+            sx=1,
+            sy=1,
+            dx=0,
+            dy=0,
+            echo_alpha=0,
+        ),
+        shapes=[],
+        waves=[],
+        init_eqs_str="",
+        frame_eqs_str="",
+        pixel_eqs_str="",
+        warp="",
+        comp="",
+    )
+    target = tmp_path / f"neutral.{ext}"
+    target.write_text(milk if engine == "projectm" else json.dumps(preset), encoding="utf-8")
+    image = Image.new("RGBA", size, "black")
     width, height = size
-    expected = (width//2-20, height//2-20, width//2+21, height//2+21)
+    expected = (width // 2 - 20, height // 2 - 20, width // 2 + 21, height // 2 + 21)
     draw = ImageDraw.Draw(image)
-    draw.rectangle((expected[0], expected[1], expected[2]-1, expected[3]-1), fill='white')
-    draw.rectangle((8, 8, 24, 24), fill='red')
+    draw.rectangle((expected[0], expected[1], expected[2] - 1, expected[3] - 1), fill="white")
+    draw.rectangle((8, 8, 24, 24), fill="red")
     backend = factory(size, 60, target, 1, 0, tmp_path)
     try:
-        output = backend.process(image, SimpleNamespace(frame=0, output_seconds=0), array('f', [0]*2048))
-        red, green, blue = output.convert('RGB').split()
-        white = ImageChops.darker(ImageChops.darker(red, green), blue).point(lambda value: 255 if value > 80 else 0)
-        assert all(abs(a-b) <= 2 for a, b in zip(white.getbbox(), expected))
+        output = backend.process(image, SimpleNamespace(frame=0, output_seconds=0), array("f", [0] * 2048))
+        red, green, blue = output.convert("RGB").split()
+        white = ImageChops.darker(ImageChops.darker(red, green), blue).point(
+            lambda value: 255 if value > 80 else 0
+        )
+        assert all(abs(a - b) <= 2 for a, b in zip(white.getbbox(), expected))
         assert output.getpixel((16, 16))[0] > 100 and output.getpixel((16, 16))[2] < 10
         assert output.size == size
     finally:
         backend.close()
-    assert all(backend.evidence['cleanup'].values())
+    assert all(backend.evidence["cleanup"].values())
 
 
 @pytest.mark.parametrize("kind", ["WARP", "COMP"])
 def test_projectm_shader_error_cannot_silently_fall_back(tmp_path, kind):
     preset = (ASSETS / "feedback.milk").read_text()
-    preset = (f"MILKDROP_PRESET_VERSION=201\nPSVERSION_{kind}=2\n" + preset +
-              f"{kind.lower()}_1=shader_body {{ ret = THIS_IS_NOT_VALID; }}\n")
+    preset = (
+        f"MILKDROP_PRESET_VERSION=201\nPSVERSION_{kind}=2\n"
+        + preset
+        + f"{kind.lower()}_1=shader_body {{ ret = THIS_IS_NOT_VALID; }}\n"
+    )
     path = tmp_path / "broken.milk"
     path.write_text(preset, encoding="utf-8")
     with pytest.raises(RuntimeError, match="projectM preset failed"):
-        ProjectMBackend((160, 240), 60, path, .8, 0, tmp_path)
+        ProjectMBackend((160, 240), 60, path, 0.8, 0, tmp_path)
 
 
-@pytest.mark.parametrize("factory,extension", [(ProjectMBackend,"milk"),(ButterchurnBackend,"json")])
-def test_sparse_capture_advances_real_feedback_and_retains_frame_clock(tmp_path,factory,extension):
-    image=glyph_frame()
-    backend=factory(image.size,60,ASSETS/f"feedback.{extension}",.75,12,tmp_path)
-    pcm=array("f",[0]*2048)
+@pytest.mark.parametrize("factory,extension", [(ProjectMBackend, "milk"), (ButterchurnBackend, "json")])
+def test_sparse_capture_advances_real_feedback_and_retains_frame_clock(tmp_path, factory, extension):
+    image = glyph_frame()
+    backend = factory(image.size, 60, ASSETS / f"feedback.{extension}", 0.75, 12, tmp_path)
+    pcm = array("f", [0] * 2048)
     try:
         for n in range(7):
-            assert backend.advance(image,SimpleNamespace(frame=n,output_seconds=n/60),pcm,capture=False) is None
-        final=backend.advance(image,SimpleNamespace(frame=7,output_seconds=7/60),pcm,capture=True)
-        assert final.mode=="RGBA" and final.size==image.size
-        assert final.getpixel((35,30))[0]>final.getpixel((35,30))[2]+80
+            assert (
+                backend.advance(image, SimpleNamespace(frame=n, output_seconds=n / 60), pcm, capture=False)
+                is None
+            )
+        final = backend.advance(image, SimpleNamespace(frame=7, output_seconds=7 / 60), pcm, capture=True)
+        assert final.mode == "RGBA" and final.size == image.size
+        assert final.getpixel((35, 30))[0] > final.getpixel((35, 30))[2] + 80
     finally:
         backend.close()
     assert all(backend.evidence["cleanup"].values())

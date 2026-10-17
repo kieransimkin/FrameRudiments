@@ -3,6 +3,7 @@
 Both karaoke highlighting and an optional separate word-subtitle lane use this
 ledger.  No BPM correction is ever applied to lyrics or audio cue times.
 """
+
 from bisect import bisect_right
 from dataclasses import dataclass
 from fractions import Fraction
@@ -77,11 +78,11 @@ def parse_word_lrc(path):
         if enhanced:
             if len(stamps) != 1:
                 raise ValueError("Enhanced word LRC needs one parent line timestamp")
-            if tail[:enhanced[0].start()].strip():
+            if tail[: enhanced[0].start()].strip():
                 raise ValueError("Enhanced word LRC requires a timestamp before each word")
             for j, tag in enumerate(enhanced):
                 end = enhanced[j + 1].start() if j + 1 < len(enhanced) else len(tail)
-                value = _word(tail[tag.end():end])
+                value = _word(tail[tag.end() : end])
                 # Enhanced time is authoritative; the parent line timestamp
                 # is not an additional offset.
                 result.append(WordCue(_time(tag) + offset, value, len(result)))
@@ -111,15 +112,31 @@ def word_frame_ledger(events, *, start_sample, end_sample, sample_rate, fps, rep
         # in the previous cycle carrying into the next before its first word.
         begin = half_up(cycle * span * fps)
         if begin < frame_count:
-            result.append(dict(frame=begin, text="", source_seconds=float(start),
-                               source_order=-1, cycle=cycle, output_seconds=float(cycle * span)))
+            result.append(
+                dict(
+                    frame=begin,
+                    text="",
+                    source_seconds=float(start),
+                    source_order=-1,
+                    cycle=cycle,
+                    output_seconds=float(cycle * span),
+                )
+            )
         for event in selected:
             relative = event.time - start + cycle * span
             frame = half_up(relative * fps)
             if frame >= frame_count:
                 continue
-            result.append(dict(frame=frame, text=event.text, source_seconds=float(event.time),
-                               source_order=event.order, cycle=cycle, output_seconds=float(relative)))
+            result.append(
+                dict(
+                    frame=frame,
+                    text=event.text,
+                    source_seconds=float(event.time),
+                    source_order=event.order,
+                    cycle=cycle,
+                    output_seconds=float(relative),
+                )
+            )
     return sorted(result, key=lambda row: (row["frame"], row["cycle"], row["source_order"]))
 
 
@@ -155,7 +172,9 @@ def assign_words_to_lines(word_rows, line_rows):
         wanted = _normalised(word["text"])
         matched = next((i for i in range(start, len(tokens)) if _normalised(tokens[i]) == wanted), None)
         if matched is None:
-            raise ValueError(f"Timed word {word['text']!r} does not match its active lyric line: {line['text']!r}")
+            raise ValueError(
+                f"Timed word {word['text']!r} does not match its active lyric line: {line['text']!r}"
+            )
         cursor[key] = matched + 1
         word["word_index"] = matched
         word["line_frame"] = line["frame"]
@@ -173,9 +192,11 @@ class WordTrack:
         if index < 0:
             return None
         word = self.events[index]
-        if line is not None and (word.get("line_frame") != line["frame"] or
-                                 word.get("line_order") != line["source_order"] or
-                                 word["cycle"] != line["cycle"]):
+        if line is not None and (
+            word.get("line_frame") != line["frame"]
+            or word.get("line_order") != line["source_order"]
+            or word["cycle"] != line["cycle"]
+        ):
             return None
         return word if word["text"] else None
 
@@ -189,21 +210,31 @@ class WordTrack:
         # Only source observations within the current line can be highlighted.
         start = bisect_right(self.frames, line["frame"] - 1)
         end = bisect_right(self.frames, frame)
-        completed = tuple(sorted({row["word_index"] for row in self.events[start:end]
-                                 if row.get("line_frame") == line["frame"] and
-                                 row.get("line_order") == line["source_order"] and
-                                 row["cycle"] == line["cycle"] and row.get("word_index") is not None and
-                                 row["word_index"] < active}))
+        completed = tuple(
+            sorted(
+                {
+                    row["word_index"]
+                    for row in self.events[start:end]
+                    if row.get("line_frame") == line["frame"]
+                    and row.get("line_order") == line["source_order"]
+                    and row["cycle"] == line["cycle"]
+                    and row.get("word_index") is not None
+                    and row["word_index"] < active
+                }
+            )
+        )
         return dict(text=current["text"], active=active, completed=completed)
 
 
-def draw_highlighted_line(block, image, text, *, active, completed=(), colour="#ffe082",
-                          completed_colour="#9ad9d5"):
+def draw_highlighted_line(
+    block, image, text, *, active, completed=(), colour="#ffe082", completed_colour="#9ad9d5"
+):
     """Reuse original TextBlock layout and overlay timed words at matching glyph positions."""
     bounds = block.draw(image, text)
     if not text or active is None:
         return bounds
     from PIL import ImageColor, ImageDraw
+
     draw = ImageDraw.Draw(image)
     active_colour = ImageColor.getcolor(colour, "RGBA")
     past_colour = ImageColor.getcolor(completed_colour, "RGBA")
@@ -217,9 +248,15 @@ def draw_highlighted_line(block, image, text, *, active, completed=(), colour="#
             ink = active_colour if count == active else past_colour if count in completed else None
             if ink:
                 # Same baseline as TextBlock.draw(), preserving line wrapping.
-                offset = draw.textlength(line[:match.start()], font=font)
-                draw.text((x + offset, y - bbox[1]), match.group(), font=font, fill=ink,
-                          stroke_width=block.stroke, stroke_fill="#12111c")
+                offset = draw.textlength(line[: match.start()], font=font)
+                draw.text(
+                    (x + offset, y - bbox[1]),
+                    match.group(),
+                    font=font,
+                    fill=ink,
+                    stroke_width=block.stroke,
+                    stroke_fill="#12111c",
+                )
             count += 1
         y += bbox[3] - bbox[1] + block.spacing
     return bounds
@@ -229,6 +266,14 @@ def word_export_ledger(word_events, line_events=None):
     """Bound word SRT/ASS intervals to line changes and excerpt boundaries."""
     output = [dict(row) for row in word_events]
     if line_events:
-        output.extend(dict(frame=row["frame"], text="", source_seconds=row.get("source_seconds", 0),
-                           cycle=row["cycle"], source_order=-2) for row in line_events)
+        output.extend(
+            dict(
+                frame=row["frame"],
+                text="",
+                source_seconds=row.get("source_seconds", 0),
+                cycle=row["cycle"],
+                source_order=-2,
+            )
+            for row in line_events
+        )
     return sorted(output, key=lambda row: (row["frame"], row["source_order"]))

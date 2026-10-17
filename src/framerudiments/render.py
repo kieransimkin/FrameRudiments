@@ -1,4 +1,5 @@
 """Shared render runner, cleanup, evidence and representative encoded stills."""
+
 from pathlib import Path
 import subprocess
 import json
@@ -16,9 +17,20 @@ from .visualisers import EffectChain
 
 def checkpoints(project):
     count = project.frame_count
-    return sorted({0, count - 1, count // 4, count // 2, 3 * count // 4,
-                   *(max(0, min(count - 1, event["frame"] + delta))
-                     for event in project.lyrics + project.cues for delta in (-1, 0, 1))})
+    return sorted(
+        {
+            0,
+            count - 1,
+            count // 4,
+            count // 2,
+            3 * count // 4,
+            *(
+                max(0, min(count - 1, event["frame"] + delta))
+                for event in project.lyrics + project.cues
+                for delta in (-1, 0, 1)
+            ),
+        }
+    )
 
 
 def _prepare(project, output, ffmpeg, ffprobe, scene, renderers):
@@ -36,9 +48,16 @@ def _prepare(project, output, ffmpeg, ffprobe, scene, renderers):
     export_subtitles(project.lyrics, project.fps, project.frame_count, output, project.width, project.height)
     if project.words:
         from .word_timing import word_export_ledger
-        export_subtitles(word_export_ledger(project.words, project.lyrics), project.fps,
-                         project.frame_count, output, project.width, project.height,
-                         basename="word-captions")
+
+        export_subtitles(
+            word_export_ledger(project.words, project.lyrics),
+            project.fps,
+            project.frame_count,
+            output,
+            project.width,
+            project.height,
+            basename="word-captions",
+        )
     return project, output, ffmpeg, ffprobe, compositor
 
 
@@ -47,8 +66,11 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
     selected = set(checkpoints(p))
     effects = None
     try:
-        effects = EffectChain(p, compositor.effect_specs, ffmpeg, out,
-                              routing=compositor.visualiser_routing) if compositor.effect_specs else None
+        effects = (
+            EffectChain(p, compositor.effect_specs, ffmpeg, out, routing=compositor.visualiser_routing)
+            if compositor.effect_specs
+            else None
+        )
         with (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
             for n in range(p.frame_count):
                 image, context = compositor.frame(n, apply_quality=False)
@@ -56,8 +78,12 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
                     if n in selected:
                         image.save(out / "qa" / f"composed-{n:08}.png")
                     image = effects.process(
-                        image, context, isolated_layers=compositor._route_parts
-                        if compositor.visualiser_routing is not None else None)
+                        image,
+                        context,
+                        isolated_layers=compositor._route_parts
+                        if compositor.visualiser_routing is not None or compositor._isolate_stage_injections
+                        else None,
+                    )
                 # Exactly one final AA pass, after optional GPU effects.
                 image = compositor.output_quality.apply(image)
                 _analysis(analysis, compositor, context)
@@ -66,7 +92,13 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
         if effects:
             effects.close()
         p.verify_inputs()
-        result = dict(p.summary(), composition=compositor.evidence(), full_frame_effects=effects.evidence() if effects else None, analysis_sidecar=_sidecar(out), state="preflight passed; no encoded video")
+        result = dict(
+            p.summary(),
+            composition=compositor.evidence(),
+            full_frame_effects=effects.evidence() if effects else None,
+            analysis_sidecar=_sidecar(out),
+            state="preflight passed; no encoded video",
+        )
         write_json(out / "manifest.json", result)
         return result
     except BaseException as exc:
@@ -86,9 +118,15 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
     process = None
     effects = None
     try:
-        effects = EffectChain(p, compositor.effect_specs, ffmpeg, out,
-                              routing=compositor.visualiser_routing) if compositor.effect_specs else None
-        with (out / "encode.log").open("wb") as log, (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
+        effects = (
+            EffectChain(p, compositor.effect_specs, ffmpeg, out, routing=compositor.visualiser_routing)
+            if compositor.effect_specs
+            else None
+        )
+        with (
+            (out / "encode.log").open("wb") as log,
+            (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis,
+        ):
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log)
             for n in range(p.frame_count):
                 image, context = compositor.frame(n, apply_quality=False)
@@ -96,8 +134,12 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
                     if n in selected:
                         image.save(out / "qa" / f"composed-{n:08}.png")
                     image = effects.process(
-                        image, context, isolated_layers=compositor._route_parts
-                        if compositor.visualiser_routing is not None else None)
+                        image,
+                        context,
+                        isolated_layers=compositor._route_parts
+                        if compositor.visualiser_routing is not None or compositor._isolate_stage_injections
+                        else None,
+                    )
                 # Exactly one final AA pass, after optional GPU effects.
                 image = compositor.output_quality.apply(image)
                 _analysis(analysis, compositor, context)
@@ -113,15 +155,35 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
         verified = encoding.verify(candidate, p, ffmpeg, ffprobe)
         source_audio = encoding.probe(p.audio_ref["path"], ffprobe)
         source_channels = next(s["channels"] for s in source_audio["streams"] if s["codec_type"] == "audio")
-        output_channels = next(s["channels"] for s in verified["probe"]["streams"] if s["codec_type"] == "audio")
+        output_channels = next(
+            s["channels"] for s in verified["probe"]["streams"] if s["codec_type"] == "audio"
+        )
         if source_channels != output_channels:
             raise ValueError("Encoder changed channel count")
         candidate.rename(final)
         # Extract from the actual encoded file, independently of the source Pillow frames.
         selection = "+".join(f"eq(n\\,{n})" for n in sorted(selected))
-        subprocess.run([ffmpeg, "-n", "-v", "error", "-i", str(final), "-vf", f"select={selection}",
-                        "-fps_mode", "passthrough", "-start_number", "0", "-frames:v", str(len(selected)),
-                        str(out / "qa" / "checkpoint-%08d.png")], check=True, capture_output=True)
+        subprocess.run(
+            [
+                ffmpeg,
+                "-n",
+                "-v",
+                "error",
+                "-i",
+                str(final),
+                "-vf",
+                f"select={selection}",
+                "-fps_mode",
+                "passthrough",
+                "-start_number",
+                "0",
+                "-frames:v",
+                str(len(selected)),
+                str(out / "qa" / "checkpoint-%08d.png"),
+            ],
+            check=True,
+            capture_output=True,
+        )
         for i, n in enumerate(sorted(selected)):
             (out / "qa" / f"checkpoint-{i:08}.png").rename(out / "qa" / f"encoded-{n:08}.png")
         with Image.open(out / "qa" / "encoded-00000000.png") as first:
@@ -129,12 +191,21 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
             thumbnail = first.copy()
             thumbnail.thumbnail((360, 640))
             thumbnail.save(out / "phone-preview.png")
-        result = dict(p.summary(), composition=compositor.evidence(), full_frame_effects=effects.evidence() if effects else None, analysis_sidecar=_sidecar(out), verification=verified,
-                      software={"framerudiments": __version__, "Pillow": version("Pillow"),
-                                "dancerudiments": version("dancerudiments"),
-                                "ffmpeg": subprocess.check_output([ffmpeg, "-version"], text=True).splitlines()[0]},
-                      output={"path": str(final), "sha256": sha256(final), "bytes": final.stat().st_size},
-                      state="technical-QA passed; creative and attended listening review pending")
+        result = dict(
+            p.summary(),
+            composition=compositor.evidence(),
+            full_frame_effects=effects.evidence() if effects else None,
+            analysis_sidecar=_sidecar(out),
+            verification=verified,
+            software={
+                "framerudiments": __version__,
+                "Pillow": version("Pillow"),
+                "dancerudiments": version("dancerudiments"),
+                "ffmpeg": subprocess.check_output([ffmpeg, "-version"], text=True).splitlines()[0],
+            },
+            output={"path": str(final), "sha256": sha256(final), "bytes": final.stat().st_size},
+            state="technical-QA passed; creative and attended listening review pending",
+        )
         write_json(out / "manifest.json", result)
         return result
     except BaseException as exc:
@@ -146,7 +217,9 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
             except subprocess.TimeoutExpired:
                 process.kill()  # only the encoder child owned by this render
                 process.wait()
-        write_json(out / "failure.json", dict(state="failed; any encoded file remains unapproved", error=str(exc)))
+        write_json(
+            out / "failure.json", dict(state="failed; any encoded file remains unapproved", error=str(exc))
+        )
         raise
     finally:
         if effects:
@@ -156,11 +229,15 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
 def _analysis(handle, compositor, context):
     reports = compositor.frame_reports()
     post = compositor.post_effect_reports()
-    routed = (compositor.visualiser_routing.last_report
-              if compositor.visualiser_routing is not None else None)
+    routed = compositor.visualiser_routing.last_report if compositor.visualiser_routing is not None else None
     if reports or post or routed:
-        entry = dict(schema="framerudiments.rudiment-analysis-frame.v1", frame=context.frame,
-                     source_seconds=context.source_seconds, output_seconds=context.output_seconds, layers=reports)
+        entry = dict(
+            schema="framerudiments.rudiment-analysis-frame.v1",
+            frame=context.frame,
+            source_seconds=context.source_seconds,
+            output_seconds=context.output_seconds,
+            layers=reports,
+        )
         if post:
             entry["post_effects"] = post
         if routed:

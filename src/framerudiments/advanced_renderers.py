@@ -4,6 +4,7 @@ No FFT or audio decoding happens here. Spectral views require the existing
 validated StemLab Fourier-band contract. Waveform views plot rudiment values,
 not PCM. All geometry is a pure function of (RudimentFrame, style).
 """
+
 import math
 
 from PIL import ImageDraw
@@ -32,9 +33,9 @@ def _frequency(value, scale):
     if scale == "mel":
         return 2595 * math.log10(1 + value / 700)
     if scale == "bark":
-        return 13 * math.atan(.00076 * value) + 3.5 * math.atan((value / 7500) ** 2)
+        return 13 * math.atan(0.00076 * value) + 3.5 * math.atan((value / 7500) ** 2)
     if scale == "erb":
-        return 21.4 * math.log10(1 + .00437 * value)
+        return 21.4 * math.log10(1 + 0.00437 * value)
     return value
 
 
@@ -52,10 +53,14 @@ class AdvancedSpectrumRenderer(_Viewport):
         super().__init__(size, style, {"floor_db", "ceiling_db", "line_width", "contrast", "history_limit"})
         self.mode = mode
         self.floor = number(style.get("floor_db", -72), "spectrum floor", minimum=-240, maximum=0)
-        self.ceiling = number(style.get("ceiling_db", 0), "spectrum ceiling", minimum=self.floor + .01, maximum=60)
+        self.ceiling = number(
+            style.get("ceiling_db", 0), "spectrum ceiling", minimum=self.floor + 0.01, maximum=60
+        )
         self.line_width = integer(style.get("line_width", 2), "spectrum stroke", minimum=1, maximum=24)
-        self.contrast = number(style.get("contrast", 1.35), "spectrum contrast", minimum=.1, maximum=4)
-        self.history_limit = integer(style.get("history_limit", 96), "spectrum history limit", minimum=8, maximum=256)
+        self.contrast = number(style.get("contrast", 1.35), "spectrum contrast", minimum=0.1, maximum=4)
+        self.history_limit = integer(
+            style.get("history_limit", 96), "spectrum history limit", minimum=8, maximum=256
+        )
         self.area(max(2, self.line_width))
         self.frame_report = None
 
@@ -77,8 +82,9 @@ class AdvancedSpectrumRenderer(_Viewport):
         start = _frequency(bands[0].low_hz, scale)
         stop = _frequency(bands[-1].high_hz, scale)
         width = max(1e-12, stop - start)
-        return [lo + (hi - lo) * (_frequency((b.low_hz + b.high_hz) / 2, scale) - start) / width
-                for b in bands]
+        return [
+            lo + (hi - lo) * (_frequency((b.low_hz + b.high_hz) / 2, scale) - start) / width for b in bands
+        ]
 
     def _spectrum(self, image, frame, report):
         draw = ImageDraw.Draw(image)
@@ -86,8 +92,9 @@ class AdvancedSpectrumRenderer(_Viewport):
         mid = (top + bottom) / 2
         mode = self.mode
         levels = [self._level(b, v) for b, v in zip(frame.spectrum_bands, frame.values)]
-        points = [(x, bottom - v * (bottom - top))
-                  for x, v in zip(self._positions(frame, left, right), levels)]
+        points = [
+            (x, bottom - v * (bottom - top)) for x, v in zip(self._positions(frame, left, right), levels)
+        ]
         ink = self.colours[0]
         if mode in {"spectrum-line", "spectrum-log", "spectrum-mel", "spectrum-third-octave"}:
             if len(points) >= 2:
@@ -117,12 +124,15 @@ class AdvancedSpectrumRenderer(_Viewport):
         elif mode == "spectrum-mirror":
             for index, (x, _) in enumerate(points):
                 length = levels[index] * (bottom - top) / 2
-                draw.line((x, mid - length, x, mid + length),
-                          fill=self.colours[index % len(self.colours)], width=max(1, self.line_width + 1))
+                draw.line(
+                    (x, mid - length, x, mid + length),
+                    fill=self.colours[index % len(self.colours)],
+                    width=max(1, self.line_width + 1),
+                )
         elif mode in {"spectrum-radial", "spectrum-ring", "spectrum-spiral"}:
             self._circular(draw, levels, mode)
         elif mode == "spectrum-peaks":
-            chosen = peak_indices(levels, floor=0, threshold=.12, contrast=.04, distance=1, count=32)
+            chosen = peak_indices(levels, floor=0, threshold=0.12, contrast=0.04, distance=1, count=32)
             for index, _, _, _ in chosen:
                 x, y = points[index]
                 draw.line((x, bottom, x, y), fill=self.colours[index % len(self.colours)], width=3)
@@ -140,18 +150,19 @@ class AdvancedSpectrumRenderer(_Viewport):
             points = []
             for j, value in enumerate(levels):
                 angle = 5 * math.pi * j / max(1, n - 1) - math.pi / 2
-                r = radius * (.12 + .58 * j / max(1, n - 1) + .22 * value)
+                r = radius * (0.12 + 0.58 * j / max(1, n - 1) + 0.22 * value)
                 points.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
             if len(points) > 1:
                 draw.line(points, fill=self.colours[0], width=self.line_width)
             for j, p in enumerate(points):
-                draw.ellipse((p[0] - 2, p[1] - 2, p[0] + 2, p[1] + 2),
-                             fill=self.colours[j % len(self.colours)])
+                draw.ellipse(
+                    (p[0] - 2, p[1] - 2, p[0] + 2, p[1] + 2), fill=self.colours[j % len(self.colours)]
+                )
             return
         coords = []
         for j, value in enumerate(levels):
             angle = -math.pi / 2 + 2 * math.pi * j / n
-            a, b = radius * .24, radius * (.24 + .72 * value)
+            a, b = radius * 0.24, radius * (0.24 + 0.72 * value)
             p = (cx + a * math.cos(angle), cy + a * math.sin(angle))
             q = (cx + b * math.cos(angle), cy + b * math.sin(angle))
             coords.append(q)
@@ -173,14 +184,14 @@ class AdvancedSpectrumRenderer(_Viewport):
             t = i / max(1, len(rows) - 1)
             xcoords = self._positions(frame, left + 13 * t, right - 13 * (1 - t))
             if mode == "spectrum-horizon":
-                ybase = bottom - t * (bottom - top) * .46
-                height = (bottom - top) * .51
+                ybase = bottom - t * (bottom - top) * 0.46
+                height = (bottom - top) * 0.51
             elif mode == "spectrum-ridgeline":
-                ybase = bottom - t * (bottom - top) * .79
-                height = (bottom - top) * .3
+                ybase = bottom - t * (bottom - top) * 0.79
+                height = (bottom - top) * 0.3
             else:  # perspective waterfall
-                ybase = bottom - t * (bottom - top) * .63
-                height = (bottom - top) * (.34 + t * .16)
+                ybase = bottom - t * (bottom - top) * 0.63
+                height = (bottom - top) * (0.34 + t * 0.16)
             points = [(x, max(top, ybase - v * height)) for x, v in zip(xcoords, levels)]
             if len(points) > 1:
                 colour = self.colours[i % len(self.colours)]
@@ -201,11 +212,16 @@ class AdvancedSpectrumRenderer(_Viewport):
         f_min = _frequency(frame.spectrum_bands[0].low_hz, scale)
         f_max = _frequency(frame.spectrum_bands[-1].high_hz, scale)
         extent = max(1e-12, f_max - f_min)
-        ranges = [(top + (1 - (_frequency(b.high_hz, scale) - f_min) / extent) * (bottom - top),
-                   top + (1 - (_frequency(b.low_hz, scale) - f_min) / extent) * (bottom - top))
-                  for b in frame.spectrum_bands]
-        centres = [right - (frame.context.frame - item.context.frame) / span * (right - left)
-                   for item in samples]
+        ranges = [
+            (
+                top + (1 - (_frequency(b.high_hz, scale) - f_min) / extent) * (bottom - top),
+                top + (1 - (_frequency(b.low_hz, scale) - f_min) / extent) * (bottom - top),
+            )
+            for b in frame.spectrum_bands
+        ]
+        centres = [
+            right - (frame.context.frame - item.context.frame) / span * (right - left) for item in samples
+        ]
         # A history downsample changes inter-sample spacing. Tessellate using
         # midpoint boundaries so heatmaps have no synthetic black gaps.
         column_bounds = []
@@ -217,8 +233,12 @@ class AdvancedSpectrumRenderer(_Viewport):
             levels = self._levels(frame, sample)
             selected = set()
             if mode == "spectrogram-peaks":
-                selected = {j for j, _, _, _ in peak_indices(levels, floor=0, threshold=.12,
-                                                              contrast=.05, distance=1, count=len(levels))}
+                selected = {
+                    j
+                    for j, _, _, _ in peak_indices(
+                        levels, floor=0, threshold=0.12, contrast=0.05, distance=1, count=len(levels)
+                    )
+                }
             for j, (lo, hi) in enumerate(ranges):
                 if mode == "spectrogram-peaks" and j not in selected:
                     continue
@@ -254,24 +274,38 @@ class AdvancedSpectrumRenderer(_Viewport):
         if len(indices) > 80:
             indices = [round(x) for x in [i * (len(bands) - 1) / 79 for i in range(80)]]
         span = max(1, (frame.history_frames - 1) * frame.history_stride)
-        angles = [-math.pi / 2 + 2 * math.pi *
-                  (1 - (frame.context.frame - sample.context.frame) / span)
-                  for sample in samples]
+        angles = [
+            -math.pi / 2 + 2 * math.pi * (1 - (frame.context.frame - sample.context.frame) / span)
+            for sample in samples
+        ]
         for i, sample in enumerate(samples):
             angle = angles[i]
-            theta0 = ((angles[i - 1] + angle) / 2 if i else
-                      angle - (angles[1] - angle) / 2 if len(angles) > 1 else angle)
-            theta1 = ((angle + angles[i + 1]) / 2 if i + 1 < len(angles) else
-                      angle + (angle - angles[i - 1]) / 2 if i else angle)
+            theta0 = (
+                (angles[i - 1] + angle) / 2
+                if i
+                else angle - (angles[1] - angle) / 2
+                if len(angles) > 1
+                else angle
+            )
+            theta1 = (
+                (angle + angles[i + 1]) / 2
+                if i + 1 < len(angles)
+                else angle + (angle - angles[i - 1]) / 2
+                if i
+                else angle
+            )
             levels = self._levels(frame, sample)
             for j in indices:
                 band = bands[j]
-                r0 = radius * (.12 + .86 * (band.low_hz - lo) / max(1, hi - lo))
-                r1 = radius * (.12 + .86 * (band.high_hz - lo) / max(1, hi - lo))
+                r0 = radius * (0.12 + 0.86 * (band.low_hz - lo) / max(1, hi - lo))
+                r1 = radius * (0.12 + 0.86 * (band.high_hz - lo) / max(1, hi - lo))
                 polygon = []
                 for r, theta in [(r0, theta0), (r1, theta0), (r1, theta1), (r0, theta1)]:
                     polygon.append((cx + r * math.cos(theta), cy + r * math.sin(theta)))
-                draw.polygon(polygon, fill=_gradient(self.colours[j % len(self.colours)], levels[j] ** (1 / self.contrast)))
+                draw.polygon(
+                    polygon,
+                    fill=_gradient(self.colours[j % len(self.colours)], levels[j] ** (1 / self.contrast)),
+                )
 
     def render(self, frame):
         if not frame.spectrum_bands or len(frame.spectrum_bands) != len(frame.values):
@@ -299,8 +333,13 @@ class AdvancedWaveformRenderer(_Viewport):
         left, top, right, bottom = bounds
         span = max(1, (frame.history_frames - 1) * frame.history_stride)
         mid = (top + bottom) / 2
-        return [(right - (frame.context.frame - sample.context.frame) / span * (right - left),
-                 mid - sample.values[axis] * (bottom - top) / 2) for sample in samples]
+        return [
+            (
+                right - (frame.context.frame - sample.context.frame) / span * (right - left),
+                mid - sample.values[axis] * (bottom - top) / 2,
+            )
+            for sample in samples
+        ]
 
     def render(self, frame):
         if not frame.history or not frame.values:
@@ -316,8 +355,10 @@ class AdvancedWaveformRenderer(_Viewport):
             if self.grid:
                 draw.line((left, (top + bottom) / 2, right, (top + bottom) / 2), fill="#30465d")
                 draw.line(((left + right) / 2, top, (left + right) / 2, bottom), fill="#30465d")
-            coords = [(left + (1 + s.values[0]) / 2 * (right - left),
-                       top + (1 - s.values[1]) / 2 * (bottom - top)) for s in history]
+            coords = [
+                (left + (1 + s.values[0]) / 2 * (right - left), top + (1 - s.values[1]) / 2 * (bottom - top))
+                for s in history
+            ]
             if mode == "phase-portrait" and len(coords) > 1:
                 draw.line(coords, fill=self.colours[0], width=self.line_width)
             for i, (x, y) in enumerate(coords):
@@ -333,7 +374,7 @@ class AdvancedWaveformRenderer(_Viewport):
                 age = frame.context.frame - sample.context.frame
                 span = max(1, (frame.history_frames - 1) * frame.history_stride)
                 angle = -math.pi / 2 + 2 * math.pi * (1 - age / span)
-                r = radius * (.5 + sample.values[0] * .45)
+                r = radius * (0.5 + sample.values[0] * 0.45)
                 points.append((cx + r * math.cos(angle), cy + r * math.sin(angle)))
             if len(points) > 1:
                 draw.line(points, fill=self.colours[0], width=self.line_width)
@@ -350,8 +391,12 @@ class AdvancedWaveformRenderer(_Viewport):
             return image
         if mode == "waveform-mirror":
             mid = (top + bottom) / 2
-            upper = [(x, mid - abs(s.values[0]) * (bottom - top) / 2)
-                     for x, s in zip([p[0] for p in self._xy(frame, history, 0, (left, top, right, bottom))], history)]
+            upper = [
+                (x, mid - abs(s.values[0]) * (bottom - top) / 2)
+                for x, s in zip(
+                    [p[0] for p in self._xy(frame, history, 0, (left, top, right, bottom))], history
+                )
+            ]
             lower = [(x, 2 * mid - y) for x, y in upper]
             if len(upper) > 1:
                 draw.polygon([*upper, *reversed(lower)], fill=(*self.colours[0][:3], 115))
@@ -377,8 +422,11 @@ class AdvancedWaveformRenderer(_Viewport):
                     draw.ellipse((x - 2, y - 2, x + 2, y + 2), fill=colour)
             elif mode == "waveform-steps":
                 for prev, cur in zip(points, points[1:]):
-                    draw.line((prev[0], prev[1], cur[0], prev[1], cur[0], cur[1]),
-                              fill=colour, width=self.line_width)
+                    draw.line(
+                        (prev[0], prev[1], cur[0], prev[1], cur[0], cur[1]),
+                        fill=colour,
+                        width=self.line_width,
+                    )
             elif mode == "waveform-envelope":
                 # One observed value per frame; this is not a PCM peak envelope.
                 groups = {}
@@ -399,10 +447,13 @@ def register_extended_renderers(registry):
     """Renderers are explicit, locally registered and source-hashed by registry."""
     for spec in (*SPECTRAL_VIEWS, *MOTION_VIEWS):
         if spec.family == "motion":
+
             def factory(size, style, mode=spec.name):
                 return AdvancedWaveformRenderer(size, style, mode)
         else:
+
             def factory(size, style, mode=spec.name):
                 return AdvancedSpectrumRenderer(size, style, mode)
+
         registry.register(spec.name, factory)
     return registry

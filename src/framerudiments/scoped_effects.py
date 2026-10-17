@@ -5,6 +5,7 @@ Independent native DanceRudiments drive all numeric effects and discrete
 palette/gradient configuration choices. No mutable temporal effect state, DSP,
 user-supplied executable code, or future sample access.
 """
+
 from copy import deepcopy
 
 from PIL import Image
@@ -16,11 +17,31 @@ from .quality_effects import TemporalShutter
 
 MAX_STAGES = 16
 MAX_TARGETS = 256
-CHOICE_TARGETS = {"visual.palette", "visual.gradient", "stage.coordinate_space", "stage.padding",
-                  *(f"visual.gradient.{p}" for p in (
-    "mode", "stops", "space", "wrap", "reverse", "blend", "bands", "phase", "mix", "cycles"))}
-CHOICE_DRIVER_FIELDS = {"id", "target", "choices", "motion", "axis", "curve", "steps",
-                        "power", "invert", "lag_frames", "smoothing_frames", "deadzone", "sample_stride"}
+CHOICE_TARGETS = {
+    "visual.palette",
+    "visual.gradient",
+    "stage.coordinate_space",
+    "stage.padding",
+    *(
+        f"visual.gradient.{p}"
+        for p in ("mode", "stops", "space", "wrap", "reverse", "blend", "bands", "phase", "mix", "cycles")
+    ),
+}
+CHOICE_DRIVER_FIELDS = {
+    "id",
+    "target",
+    "choices",
+    "motion",
+    "axis",
+    "curve",
+    "steps",
+    "power",
+    "invert",
+    "lag_frames",
+    "smoothing_frames",
+    "deadzone",
+    "sample_stride",
+}
 
 
 def _set_choice(visual, target, value):
@@ -65,16 +86,22 @@ class ChoiceDriver:
         self.native = RudimentModulations(project, [proxy], context_at)
         self.files = self.native.files
         self.id = config.get("id") or self.target
-        self.evidence = dict(target=self.target, id=self.id, choices=self.choices,
-                             native=self.native.evidence, policy="nearest categorical choice")
+        self.evidence = dict(
+            target=self.target,
+            id=self.id,
+            choices=self.choices,
+            native=self.native.evidence,
+            policy="nearest categorical choice",
+        )
 
     def choose(self, ctx):
         _, visual, report = self.native.apply(ctx, {}, {})
         if not report:
             return None
         index = max(0, min(len(self.choices) - 1, round(visual["gradient_phase"])))
-        return self.choices[index], dict(source=next(iter(report.values()))["source_value"],
-                                         selected_index=index, target=self.target)
+        return self.choices[index], dict(
+            source=next(iter(report.values()))["source_value"], selected_index=index, target=self.target
+        )
 
 
 class EffectStage:
@@ -109,35 +136,53 @@ class EffectStage:
                     interval = row.get("range", [0, 256])
                     if not isinstance(interval, (list, tuple)) or len(interval) != 2:
                         raise ValueError("stage.padding range must contain exactly two numeric bounds")
-                    low, high = (number(v, "stage.padding bound", minimum=0, maximum=256)
-                                 for v in interval)
+                    low, high = (number(v, "stage.padding bound", minimum=0, maximum=256) for v in interval)
                     if high <= low:
                         raise ValueError("stage.padding modulation bounds must be strictly increasing")
                     proxy = dict(row, target="visual.gradient_phase")
                     padding_drivers.append(proxy)
-                elif isinstance(target, str) and (target.startswith("visual.") or target.startswith("gradient.")):
+                elif isinstance(target, str) and (
+                    target.startswith("visual.") or target.startswith("gradient.")
+                ):
                     normal.append(row)
                 else:
-                    raise ValueError("Stage numeric modulations must target visual.*, gradient.* or stage.padding")
+                    raise ValueError(
+                        "Stage numeric modulations must target visual.*, gradient.* or stage.padding"
+                    )
         if len(padding_drivers) > 1:
             raise ValueError("Only one stage.padding numeric modulator is allowed per stage")
         self.numeric = RudimentModulations(project, normal, context_at)
         self.padding_drivers = [RudimentModulations(project, [row], context_at) for row in padding_drivers]
         self.choices = [ChoiceDriver(project, row, context_at, self.base) for row in choices]
         # A target may only have one driver. This avoids ordering-dependent conflicts.
-        targets = ([driver.target for driver in self.numeric.drivers] +
-                   ["stage.padding" for _ in self.padding_drivers] +
-                   [driver.target for driver in self.choices])
+        targets = (
+            [driver.target for driver in self.numeric.drivers]
+            + ["stage.padding" for _ in self.padding_drivers]
+            + [driver.target for driver in self.choices]
+        )
         if len(set(targets)) != len(targets):
             raise ValueError("Duplicate post effect parameter target")
-        self.files = (self.numeric.files + [ref for driver in self.choices for ref in driver.files] +
-                      [ref for driver in self.padding_drivers for ref in driver.files])
-        self.evidence = dict(id=self.id, scope=label, visual=deepcopy(self.base),
-                             coordinate_space=self.coordinate_space, padding=self.padding,
-                             native_modulations=[*self.numeric.evidence,
-                                                 *(dict(row, target="stage.padding") for driver in
-                                                   self.padding_drivers for row in driver.evidence),
-                                                 *(driver.evidence for driver in self.choices)])
+        self.files = (
+            self.numeric.files
+            + [ref for driver in self.choices for ref in driver.files]
+            + [ref for driver in self.padding_drivers for ref in driver.files]
+        )
+        self.evidence = dict(
+            id=self.id,
+            scope=label,
+            visual=deepcopy(self.base),
+            coordinate_space=self.coordinate_space,
+            padding=self.padding,
+            native_modulations=[
+                *self.numeric.evidence,
+                *(
+                    dict(row, target="stage.padding")
+                    for driver in self.padding_drivers
+                    for row in driver.evidence
+                ),
+                *(driver.evidence for driver in self.choices),
+            ],
+        )
 
     def apply(self, image, context, *, frame_scope=False):
         _, visual, sample_report = self.numeric.apply(context, {}, deepcopy(self.base))
@@ -147,9 +192,12 @@ class EffectStage:
         for driver in self.padding_drivers:
             _, values, native_report = driver.apply(context, {}, {})
             if native_report:
-                padding = integer(round(values["gradient_phase"]), "modulated post padding", minimum=0, maximum=256)
-                report["stage.padding"] = dict(next(iter(native_report.values())), target="stage.padding",
-                                               value=padding)
+                padding = integer(
+                    round(values["gradient_phase"]), "modulated post padding", minimum=0, maximum=256
+                )
+                report["stage.padding"] = dict(
+                    next(iter(native_report.values())), target="stage.padding", value=padding
+                )
         for driver in self.choices:
             chosen = driver.choose(context)
             if chosen is not None:
@@ -182,8 +230,12 @@ class EffectStage:
                 result.alpha_composite(transformed, (x0, y0))
         if result.mode != "RGBA" or result.size != image.size:
             raise ValueError("Post effect stage returned invalid frame dimensions or mode")
-        return result, dict(id=self.id, parameters=visual, modulations=report,
-                            stage_options=dict(padding=padding, coordinate_space=coordinate_space))
+        return result, dict(
+            id=self.id,
+            parameters=visual,
+            modulations=report,
+            stage_options=dict(padding=padding, coordinate_space=coordinate_space),
+        )
 
 
 class CompositingEffects:
@@ -215,20 +267,28 @@ class CompositingEffects:
         self.all_elements = build(config.get("all_elements", []), "all_elements")
         self.elements = {key: build(value, f"elements.{key}") for key, value in elements.items()}
         self.frame = build(config.get("frame", []), "frame")
-        self.temporal = (TemporalShutter(project, config["temporal"], context_at)
-                         if "temporal" in config else None)
-        self.enabled = bool(self.all_elements or self.frame or any(self.elements.values())
-                            or self.temporal is not None)
-        stages = [*self.all_elements, *self.frame, *(stage for value in self.elements.values() for stage in value)]
+        self.temporal = (
+            TemporalShutter(project, config["temporal"], context_at) if "temporal" in config else None
+        )
+        self.enabled = bool(
+            self.all_elements or self.frame or any(self.elements.values()) or self.temporal is not None
+        )
+        stages = [
+            *self.all_elements,
+            *self.frame,
+            *(stage for value in self.elements.values() for stage in value),
+        ]
         self.files = [ref for stage in stages for ref in stage.files]
         if self.temporal is not None:
             self.files.extend(self.temporal.files)
         project.inputs.extend(self.files)
-        self.evidence = dict(order="background, scene, layers, identity, caption/art; then frame; then GPU effects",
-                             all_elements=[stage.evidence for stage in self.all_elements],
-                             elements={key: [stage.evidence for stage in stages] for key, stages in self.elements.items()},
-                             frame=[stage.evidence for stage in self.frame],
-                             temporal=self.temporal.evidence if self.temporal else None)
+        self.evidence = dict(
+            order="background, scene, layers, identity, caption/art; then frame; then GPU effects",
+            all_elements=[stage.evidence for stage in self.all_elements],
+            elements={key: [stage.evidence for stage in stages] for key, stages in self.elements.items()},
+            frame=[stage.evidence for stage in self.frame],
+            temporal=self.temporal.evidence if self.temporal else None,
+        )
         self.last_report = {}
 
     def begin(self):

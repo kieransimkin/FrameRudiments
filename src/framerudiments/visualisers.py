@@ -1,4 +1,5 @@
 """Full-frame, sequential MilkDrop post-processing for composed lyric videos."""
+
 from array import array
 import base64
 import json
@@ -38,31 +39,61 @@ def effect_specs(project):
             ref = project.ref(dict(path=str(path), sha256=sha256(path)))
         else:
             if cfg.get("trusted_preset") is not True:
-                raise ValueError("External presets contain executable equations/shaders: set trusted_preset true after review")
+                raise ValueError(
+                    "External presets contain executable equations/shaders: set trusted_preset true after review"
+                )
             ref = project.ref(preset)
-        specs.append(dict(id=name, engine=engine, preset=ref,
-                          input_mix=number(cfg.get("input_mix", .65), "input mix", minimum=.001, maximum=1),
-                          seed=integer(cfg.get("seed", 0), "visualiser seed", maximum=2**32 - 1)))
+        specs.append(
+            dict(
+                id=name,
+                engine=engine,
+                preset=ref,
+                input_mix=number(cfg.get("input_mix", 0.65), "input mix", minimum=0.001, maximum=1),
+                seed=integer(cfg.get("seed", 0), "visualiser seed", maximum=2**32 - 1),
+            )
+        )
     return specs
 
 
 class EffectAudio:
     """Windowed native-rate PCM from the encoder's exact excerpt/repeat/fade chain."""
+
     def __init__(self, project, ffmpeg, output):
         self.project, self.handle, self.data = project, None, None
         path = Path(output) / "effects-audio.f32"
-        command = [ffmpeg, "-n", "-v", "error", "-i", project.audio_ref["path"], "-map", "0:a:0",
-                   "-af", audio_filters(project), "-ac", "2", "-ar", str(project.sample_rate),
-                   "-f", "f32le", str(path)]
+        command = [
+            ffmpeg,
+            "-n",
+            "-v",
+            "error",
+            "-i",
+            project.audio_ref["path"],
+            "-map",
+            "0:a:0",
+            "-af",
+            audio_filters(project),
+            "-ac",
+            "2",
+            "-ar",
+            str(project.sample_rate),
+            "-f",
+            "f32le",
+            str(path),
+        ]
         subprocess.run(command, check=True, capture_output=True)
         self.samples = path.stat().st_size // 8
         expected = (project.end_sample - project.start_sample) * project.repeats
         if self.samples != expected or path.stat().st_size % 8:
             raise ValueError("Effect PCM does not match the encoded programme sample count")
-        self.evidence = dict(sha256=sha256(path), samples_per_channel=self.samples,
-                             sample_rate=project.sample_rate, channels=2, format="f32le",
-                             filters=audio_filters(project),
-                             window="1024 stereo samples ending at floor(output_seconds * native sample_rate); zero padded")
+        self.evidence = dict(
+            sha256=sha256(path),
+            samples_per_channel=self.samples,
+            sample_rate=project.sample_rate,
+            channels=2,
+            format="f32le",
+            filters=audio_filters(project),
+            window="1024 stereo samples ending at floor(output_seconds * native sample_rate); zero padded",
+        )
         self.handle = path.open("rb")
         self.data = mmap.mmap(self.handle.fileno(), 0, access=mmap.ACCESS_READ)
 
@@ -70,7 +101,7 @@ class EffectAudio:
         end = min(self.samples, frame * self.project.sample_rate // self.project.fps)
         start = max(0, end - 1024)
         values = array("f")
-        values.frombytes(bytes((1024 - (end - start)) * 8) + self.data[start * 8:end * 8])
+        values.frombytes(bytes((1024 - (end - start)) * 8) + self.data[start * 8 : end * 8])
         if __import__("sys").byteorder != "little":
             values.byteswap()
         return values
@@ -89,23 +120,53 @@ class ButterchurnBackend:
         runtime = Path(os.environ.get("FRAMERUDIMENTS_BUTTERCHURN_RUNTIME", ""))
         browser = os.environ.get("FRAMERUDIMENTS_BROWSER")
         node = os.environ.get("FRAMERUDIMENTS_NODE") or shutil.which("node")
-        if not node or not browser or not Path(browser).is_file() or not (runtime / "package-lock.json").is_file():
-            raise ValueError("Butterchurn needs its locked Node runtime, FRAMERUDIMENTS_BROWSER and Node.js >=22.12")
+        if (
+            not node
+            or not browser
+            or not Path(browser).is_file()
+            or not (runtime / "package-lock.json").is_file()
+        ):
+            raise ValueError(
+                "Butterchurn needs its locked Node runtime, FRAMERUDIMENTS_BROWSER and Node.js >=22.12"
+            )
         if sha256(runtime / "package-lock.json") != sha256(ASSETS / "package-lock.json"):
             raise ValueError("Butterchurn runtime package lock differs from the tested pin")
         profile_root = Path(os.environ.get("FRAMERUDIMENTS_BROWSER_PROFILE_ROOT") or work).resolve()
         profile_root.mkdir(parents=True, exist_ok=True)
         self.size, self.fps, self.process_handle = size, fps, None
-        self.log = (Path(work) / f"butterchurn-{seed}-{len(list(Path(work).glob('butterchurn-*.log')))}.log").open("wb")
+        self.log = (
+            Path(work) / f"butterchurn-{seed}-{len(list(Path(work).glob('butterchurn-*.log')))}.log"
+        ).open("wb")
         try:
-            self.process_handle = subprocess.Popen([node, str(ASSETS / "butterchurn-worker.mjs")],
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=self.log,
-                text=True, encoding="utf-8", bufsize=1)
-            result = self._request(dict(command="init", runtime=str(runtime.resolve()), browser=browser,
-                width=size[0], height=size[1], fps=fps, preset=json.loads(Path(preset).read_text(encoding="utf-8")),
-                mix=mix, seed=seed, work=str(Path(work).resolve()), profile_root=str(profile_root)))
-            self.evidence = dict(result["evidence"], package_lock_sha256=sha256(ASSETS / "package-lock.json"),
-                                 host_bridge_sha256=sha256(ASSETS / "butterchurn-page.js"))
+            self.process_handle = subprocess.Popen(
+                [node, str(ASSETS / "butterchurn-worker.mjs")],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=self.log,
+                text=True,
+                encoding="utf-8",
+                bufsize=1,
+            )
+            result = self._request(
+                dict(
+                    command="init",
+                    runtime=str(runtime.resolve()),
+                    browser=browser,
+                    width=size[0],
+                    height=size[1],
+                    fps=fps,
+                    preset=json.loads(Path(preset).read_text(encoding="utf-8")),
+                    mix=mix,
+                    seed=seed,
+                    work=str(Path(work).resolve()),
+                    profile_root=str(profile_root),
+                )
+            )
+            self.evidence = dict(
+                result["evidence"],
+                package_lock_sha256=sha256(ASSETS / "package-lock.json"),
+                host_bridge_sha256=sha256(ASSETS / "butterchurn-page.js"),
+            )
         except BaseException:
             self.close()
             raise
@@ -131,18 +192,32 @@ class ButterchurnBackend:
     def advance(self, image, context, pcm, *, capture=False):
         def encode(data):
             return base64.b64encode(data).decode("ascii")
+
         # Butterchurn's documented offline input uses 8-bit WebAudio-style PCM.
         left = bytes(max(0, min(255, round(128 + value * 128))) for value in pcm[0::2])
         right = bytes(max(0, min(255, round(128 + value * 128))) for value in pcm[1::2])
         mono = bytes(max(0, min(255, round(128 + (lv + rv) * 64))) for lv, rv in zip(pcm[0::2], pcm[1::2]))
         pixels = image.convert("RGBA").tobytes()
         rgba = None if pixels == getattr(self, "last_pixels", None) else encode(pixels)
-        result = self._request(dict(command="frame", time=context.output_seconds, capture=capture,
-            rgba=rgba, left=encode(left), right=encode(right), mono=encode(mono)))
+        result = self._request(
+            dict(
+                command="frame",
+                time=context.output_seconds,
+                capture=capture,
+                rgba=rgba,
+                left=encode(left),
+                right=encode(right),
+                mono=encode(mono),
+            )
+        )
         self.last_pixels = pixels
         if abs(result["time"] - context.output_seconds) > 1e-9 or result["fps"] != self.fps:
             raise RuntimeError("Butterchurn did not honour the exact frame clock")
-        return Image.frombytes("RGBA", self.size, base64.b64decode(result["rgba"], validate=True)) if capture else None
+        return (
+            Image.frombytes("RGBA", self.size, base64.b64decode(result["rgba"], validate=True))
+            if capture
+            else None
+        )
 
     def close(self):
         proc = self.process_handle
@@ -168,14 +243,41 @@ class EffectChain:
         self.closed = False
         self.specs = specs
         self.routing = routing
+        self.stage_injections = {}
+        requested = getattr(project, "data", {}).get("visualiser_stage_injections", [])
+        if not isinstance(requested, list) or len(requested) > 32 or (requested and not specs):
+            raise ValueError("visualiser_stage_injections requires a bounded effect chain")
+        for entry in requested:
+            if not isinstance(entry, dict) or set(entry) - {"before", "elements", "opacity"}:
+                raise ValueError("Invalid visualiser stage injection")
+            before, names, opacity = entry.get("before"), entry.get("elements"), entry.get("opacity", 1)
+            if type(before) is not int or not 1 <= before < len(specs):
+                raise ValueError("Stage injection must target a later effect stage")
+            if (
+                not isinstance(names, list)
+                or not names
+                or len(names) != len(set(names))
+                or any(not isinstance(name, str) or not name for name in names)
+            ):
+                raise ValueError("Stage injection needs distinct element names")
+            if type(opacity) not in (int, float) or not 0 <= opacity <= 1:
+                raise ValueError("Stage injection opacity must be between zero and one")
+            self.stage_injections.setdefault(before, []).append((tuple(names), opacity))
         if factories is None:
             from .projectm_backend import ProjectMBackend
+
             factories = dict(butterchurn=ButterchurnBackend, projectm=ProjectMBackend)
         try:
             self.audio = EffectAudio(project, ffmpeg, output)
             for spec in specs:
-                backend = factories[spec["engine"]]((project.width, project.height), project.fps,
-                    spec["preset"]["path"], spec["input_mix"], spec["seed"], output)
+                backend = factories[spec["engine"]](
+                    (project.width, project.height),
+                    project.fps,
+                    spec["preset"]["path"],
+                    spec["input_mix"],
+                    spec["seed"],
+                    output,
+                )
                 self.backends.append(backend)
         except BaseException:
             self.close()
@@ -183,14 +285,34 @@ class EffectChain:
 
     def process(self, image, context, *, isolated_layers=None):
         if context.frame != self.next_frame:
-            raise ValueError("MilkDrop feedback requires sequential frames from zero; recreate and replay to seek")
+            raise ValueError(
+                "MilkDrop feedback requires sequential frames from zero; recreate and replay to seek"
+            )
         overlay = None
         if self.routing is not None:
             if isolated_layers is None:
                 raise ValueError("Routed visualisers require the isolated compositor surfaces")
             image, overlay = self.routing.route(context, isolated_layers)
         pcm = self.audio.at(context.frame)
-        for backend in self.backends:
+        surfaces = dict(isolated_layers or [])
+        if self.stage_injections and isolated_layers is None:
+            raise ValueError("Intermediate stage injection needs isolated layer surfaces")
+        for index, backend in enumerate(self.backends):
+            if index in self.stage_injections:
+                image = image.convert("RGBA")
+                for names, opacity in self.stage_injections[index]:
+                    for name in names:
+                        surface = surfaces.get(name)
+                        if surface is None:
+                            # A gated or invisible layer has no isolated pixels
+                            # in this frame; it is a valid empty contribution.
+                            continue
+                        if surface.mode != "RGBA" or surface.size != image.size:
+                            raise ValueError("Stage injection must be full-frame RGBA")
+                        source = surface.copy()
+                        if opacity != 1:
+                            source.putalpha(source.getchannel("A").point(lambda a: round(a * opacity)))
+                        image.alpha_composite(source)
             image = backend.process(image, context, pcm)
             if image.size != (self.audio.project.width, self.audio.project.height) or image.mode != "RGBA":
                 raise ValueError("Visualiser must return frame-sized RGBA")
@@ -202,11 +324,15 @@ class EffectChain:
         return image.convert("RGB")
 
     def evidence(self):
-        return dict(stage="after scene, layers, identity, captions and lyric art; before encoding",
-                    sequential_frames=self.next_frame, pcm=self.audio.evidence,
-                    routing=self.routing.evidence if self.routing is not None else None,
-                    stages=[dict(spec, runtime=backend.evidence) for spec, backend in zip(self.specs, self.backends)],
-                    limits="GPU/driver and engine noise can vary; not a cross-platform bit-exact contract. Text bounds refer to pre-effect composition.")
+        return dict(
+            stage="after scene, layers, identity, captions and lyric art; before encoding",
+            sequential_frames=self.next_frame,
+            pcm=self.audio.evidence,
+            routing=self.routing.evidence if self.routing is not None else None,
+            stage_injections={index: entries for index, entries in self.stage_injections.items()},
+            stages=[dict(spec, runtime=backend.evidence) for spec, backend in zip(self.specs, self.backends)],
+            limits="GPU/driver and engine noise can vary; not a cross-platform bit-exact contract. Text bounds refer to pre-effect composition.",
+        )
 
     def close(self):
         if self.closed:

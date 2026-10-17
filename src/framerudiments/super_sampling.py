@@ -5,6 +5,7 @@ resolution. Source time subframes are rendered by an independent high-fps
 compositor, not synthesized by blending repeated ordinary frames. Output timing,
 recording identities and original cue/word timings remain authoritative.
 """
+
 from copy import copy, deepcopy
 from functools import lru_cache
 import math
@@ -17,10 +18,20 @@ from .quality_effects import linear_shutter_composite
 
 # These are physical pixel dimensions, not amplitudes, tempo or the number of
 # spectrum/Rudiment channels. Unknown style keys remain untouched.
-_PIXEL_STYLE = frozenset((
-    "line_width", "padding", "font_size", "sprite_size", "dot_size", "bar_gap",
-    "stroke_width", "peak_marker_size", "point_size", "grid_width",
-))
+_PIXEL_STYLE = frozenset(
+    (
+        "line_width",
+        "padding",
+        "font_size",
+        "sprite_size",
+        "dot_size",
+        "bar_gap",
+        "stroke_width",
+        "peak_marker_size",
+        "point_size",
+        "grid_width",
+    )
+)
 
 
 def vector_viewport(renderer_registry, name, size, style, frame, scale, project=None, cache=None):
@@ -62,8 +73,9 @@ class _ScaledText:
     def __init__(self, original, scale, crop_x, crop_y):
         self.original = original
         self.factor = scale
-        self.box = tuple(round((v - (crop_x if i % 2 == 0 else crop_y)) * scale)
-                         for i, v in enumerate(original.box))
+        self.box = tuple(
+            round((v - (crop_x if i % 2 == 0 else crop_y)) * scale) for i, v in enumerate(original.box)
+        )
         self.stroke = original.stroke * scale
         self.spacing = original.spacing * scale
         self.maximum = original.maximum * scale
@@ -93,8 +105,14 @@ class _ScaledText:
         bounds = []
         for row, bb in zip(rows, boxes):
             x = left + (right - left - (bb[2] - bb[0])) / 2 - bb[0]
-            draw.text((x, y - bb[1]), row, font=font, fill=colour or self.colour,
-                      stroke_width=self.stroke, stroke_fill="#12111c")
+            draw.text(
+                (x, y - bb[1]),
+                row,
+                font=font,
+                fill=colour or self.colour,
+                stroke_width=self.stroke,
+                stroke_fill="#12111c",
+            )
             bounds.append((x + bb[0], y, x + bb[2], y + bb[3] - bb[1]))
             y += bb[3] - bb[1] + self.spacing
         return bounds
@@ -103,9 +121,14 @@ class _ScaledText:
 def _high_rich(appearance, factor):
     """Copy bounded glyph effects and scale their geometric pixel dimensions."""
     high = copy(appearance)
-    for prop, keys in (("stroke", ("width",)), ("bevel", ("depth",)),
-                       ("emboss", ("depth",)), ("inner", ("radius",)),
-                       ("outer", ("radius",)), ("shadow", ("dx", "dy", "blur"))):
+    for prop, keys in (
+        ("stroke", ("width",)),
+        ("bevel", ("depth",)),
+        ("emboss", ("depth",)),
+        ("inner", ("radius",)),
+        ("outer", ("radius",)),
+        ("shadow", ("dx", "dy", "blur")),
+    ):
         data = dict(getattr(high, prop))
         for key in keys:
             data[key] *= factor
@@ -127,35 +150,58 @@ def supersampled_text(block, image, text, *, colour=None, active=None, completed
             return block.rich.draw(image, block, text, colour=colour, active=active, completed=completed)
         if active is not None:
             from .word_timing import draw_highlighted_line
-            return draw_highlighted_line(block, image, text, active=active, completed=completed,
-                                         colour=block.config.get("word_colour", "#ffe082"),
-                                         completed_colour=block.config.get("completed_colour", "#9ad9d5"))
+
+            return draw_highlighted_line(
+                block,
+                image,
+                text,
+                active=active,
+                completed=completed,
+                colour=block.config.get("word_colour", "#ffe082"),
+                completed_colour=block.config.get("completed_colour", "#9ad9d5"),
+            )
         return block._draw_native(image, text, colour=colour)
     left, top, right, bottom = block.box
     halo = 16 + block.stroke
     if block.rich is not None:
         appearance = block.rich
-        halo = min(192, max(halo, appearance.outer["radius"] * 4,
-                            appearance.shadow["blur"] * 4 + max(abs(appearance.shadow["dx"]),
-                                                                  abs(appearance.shadow["dy"]))))
+        halo = min(
+            192,
+            max(
+                halo,
+                appearance.outer["radius"] * 4,
+                appearance.shadow["blur"] * 4
+                + max(abs(appearance.shadow["dx"]), abs(appearance.shadow["dy"])),
+            ),
+        )
     x0, y0 = max(0, math.floor(left - halo)), max(0, math.floor(top - halo))
     x1, y1 = min(image.width, math.ceil(right + halo)), min(image.height, math.ceil(bottom + halo))
     high = Image.new("RGBA", ((x1 - x0) * factor, (y1 - y0) * factor))
     scaled = _ScaledText(block, factor, x0, y0)
     if block.rich is not None:
-        bounds = _high_rich(block.rich, factor).draw(high, scaled, text, colour=colour,
-                                                     active=active, completed=completed)
+        bounds = _high_rich(block.rich, factor).draw(
+            high, scaled, text, colour=colour, active=active, completed=completed
+        )
     elif active is not None:
         from .word_timing import draw_highlighted_line
-        bounds = draw_highlighted_line(scaled, high, text, active=active, completed=completed,
-                                       colour=block.config.get("word_colour", "#ffe082"),
-                                       completed_colour=block.config.get("completed_colour", "#9ad9d5"))
+
+        bounds = draw_highlighted_line(
+            scaled,
+            high,
+            text,
+            active=active,
+            completed=completed,
+            colour=block.config.get("word_colour", "#ffe082"),
+            completed_colour=block.config.get("completed_colour", "#9ad9d5"),
+        )
     else:
         bounds = scaled.draw(high, text, colour=colour)
-    reduced = high.resize((x1-x0, y1-y0), Image.Resampling.LANCZOS)
+    reduced = high.resize((x1 - x0, y1 - y0), Image.Resampling.LANCZOS)
     image.alpha_composite(reduced, (x0, y0))
-    return [tuple(round((value / factor + (x0 if i % 2 == 0 else y0)), 3)
-                  for i, value in enumerate(rect)) for rect in bounds]
+    return [
+        tuple(round((value / factor + (x0 if i % 2 == 0 else y0)), 3) for i, value in enumerate(rect))
+        for rect in bounds
+    ]
 
 
 def _interpolate_native_motion(value):
@@ -202,6 +248,7 @@ def _virtual_project(original, factor):
     for layer in virtual.data.get("layers", []):
         if layer.get("type") == "rudiment":
             layer["history_stride"] = min(120, layer.get("history_stride", 1) * factor)
+
     # Lag and smoothing are measured in encoded-frame counts, not seconds.
     # Maintain their original wall-clock duration for the high-FPS compositor.
     def scaled_modulations(value):
@@ -217,16 +264,19 @@ def _virtual_project(original, factor):
                             if type(original_smoothing) is int and original_smoothing > 0:
                                 row["smoothing_frames"] = min(120, original_smoothing * factor)
                                 wanted_span = original_smoothing * original_stride * factor
-                                row["sample_stride"] = min(60, max(1, math.ceil(
-                                    wanted_span / row["smoothing_frames"])))
+                                row["sample_stride"] = min(
+                                    60, max(1, math.ceil(wanted_span / row["smoothing_frames"]))
+                                )
                 else:
                     scaled_modulations(inner)
         elif isinstance(value, list):
             for inner in value:
                 scaled_modulations(inner)
+
     scaled_modulations(virtual.data)
     from .timeline import parse_lrc, parse_cue
     from .word_timing import parse_word_lrc, word_frame_ledger, assign_words_to_lines
+
     virtual.lyrics = virtual.ledger(parse_lrc(original.lyric_ref["path"])) if original.lyric_ref else []
     if "cues" in original.data:
         raw = virtual.ref(original.data["cues"])
@@ -236,10 +286,15 @@ def _virtual_project(original, factor):
     else:
         virtual.cues = []
     if original.word_ref:
-        virtual.words = word_frame_ledger(parse_word_lrc(original.word_ref["path"]),
-                                          start_sample=virtual.start_sample, end_sample=virtual.end_sample,
-                                          sample_rate=virtual.sample_rate, fps=virtual.fps,
-                                          repeats=virtual.repeats, frame_count=virtual.frame_count)
+        virtual.words = word_frame_ledger(
+            parse_word_lrc(original.word_ref["path"]),
+            start_sample=virtual.start_sample,
+            end_sample=virtual.end_sample,
+            sample_rate=virtual.sample_rate,
+            fps=virtual.fps,
+            repeats=virtual.repeats,
+            frame_count=virtual.frame_count,
+        )
         if virtual.words and virtual.lyrics:
             assign_words_to_lines(virtual.words, virtual.lyrics)
     else:
@@ -260,6 +315,7 @@ def temporal_supersample(compositor, frame):
     virtual = getattr(compositor, "_temporal_virtual", None)
     if virtual is None:
         from .compositor import Compositor
+
         project = _virtual_project(compositor.project, factor)
         scene = compositor.scene
         if scene is not None:
@@ -267,6 +323,7 @@ def temporal_supersample(compositor, frame):
             # retain their meaning for trusted custom scene hooks.
             from dataclasses import replace
             from collections import OrderedDict
+
             # Shutter lookback revisits earlier encoded frames. Preserve a
             # bounded history to avoid invoking stateful hooks again.
             scene_cache = OrderedDict()
@@ -276,7 +333,11 @@ def temporal_supersample(compositor, frame):
                 if encoded not in scene_cache:
                     # Trusted hooks own encoded frames, not subframes.
                     result = scene(image, replace(context, frame=encoded))
-                    if not isinstance(result, Image.Image) or result.mode != "RGBA" or result.size != image.size:
+                    if (
+                        not isinstance(result, Image.Image)
+                        or result.mode != "RGBA"
+                        or result.size != image.size
+                    ):
                         raise ValueError("Custom scene hook must return frame-sized RGBA")
                     scene_cache[encoded] = result.copy()
                     if len(scene_cache) > 32:
@@ -290,11 +351,15 @@ def temporal_supersample(compositor, frame):
         compositor._temporal_virtual = virtual
     images = []
     route_averages = {}
-    route_keys = (compositor.visualiser_routing.available
-                  if getattr(compositor, "visualiser_routing", None) is not None else ())
+    route_keys = (
+        compositor.visualiser_routing.available
+        if getattr(compositor, "visualiser_routing", None) is not None
+        else ()
+    )
     for j in range(factor):
-        sample, _ = virtual.frame(min(frame * factor + j, virtual.project.frame_count - 1),
-                                  apply_quality=False)
+        sample, _ = virtual.frame(
+            min(frame * factor + j, virtual.project.frame_count - 1), apply_quality=False
+        )
         images.append(sample)
         if route_keys:
             parts = dict(virtual._route_parts)
@@ -303,11 +368,11 @@ def temporal_supersample(compositor, frame):
                 if value is None:
                     value = Image.new("RGBA", sample.size)
                 value = value.convert("RGBa")
-                route_averages[key] = (value if j == 0 else
-                    Image.blend(route_averages[key], value, 1 / (j + 1)))
+                route_averages[key] = (
+                    value if j == 0 else Image.blend(route_averages[key], value, 1 / (j + 1))
+                )
     if route_keys:
-        compositor._route_parts = [(key, route_averages[key].convert("RGBA"))
-                                   for key in route_keys]
+        compositor._route_parts = [(key, route_averages[key].convert("RGBA")) for key in route_keys]
     # Source samples are genuinely different instants in the virtual clock.
     combined = linear_shutter_composite(images, [1] * factor, strength=1)
     compositor.extents.update(virtual.extents)

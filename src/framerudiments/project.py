@@ -1,4 +1,5 @@
 """Validated portable render projects; private media remains outside the package."""
+
 from fractions import Fraction
 import math
 from pathlib import Path
@@ -20,10 +21,45 @@ class Project:
 
     def __init__(self, data, base, *, project_path=None):
         self.base, self.path, self.data = Path(base), project_path, data
-        fields(data, {"schema", "title", "artist", "purpose", "width", "height", "fps", "fps_reason",
-                      "audio", "clock", "font", "lyrics", "cues", "background", "layers", "captions",
-                      "identity", "effects", "post_effects", "stemlab_loop", "notes", "lyric_art", "canonical_lyrics",
-                      "word_lyrics", "word_captions", "word_indicator", "render_quality", "visualiser_routing"}, "project")
+        fields(
+            data,
+            {
+                "schema",
+                "title",
+                "artist",
+                "purpose",
+                "width",
+                "height",
+                "fps",
+                "fps_reason",
+                "audio",
+                "clock",
+                "font",
+                "lyrics",
+                "cues",
+                "background",
+                "layers",
+                "captions",
+                "identity",
+                "effects",
+                "post_effects",
+                "stemlab_loop",
+                "notes",
+                "lyric_art",
+                "canonical_lyrics",
+                "word_lyrics",
+                "word_captions",
+                "word_indicator",
+                "render_quality",
+                "visualiser_routing",
+                "stem_sources",
+                "layer_masks",
+                "layer_animations",
+                "layer_displacement",
+                "visualiser_stage_injections",
+            },
+            "project",
+        )
         if data.get("schema") != "framerudiments.project.v1":
             raise ValueError("Expected framerudiments.project.v1")
         self.width = integer(data.get("width", 1080), "width", minimum=16, maximum=7680)
@@ -37,9 +73,27 @@ class Project:
         if self.purpose not in {"short", "visualiser", "canvas"}:
             raise ValueError("purpose must be short, visualiser or canvas")
         self.inputs = []
+        # Named aliases reference ordinary, checksum-pinned StemLab-compatible
+        # recording motions. No analysis data or new DSP is introduced here.
+        sources = data.get("stem_sources", {})
+        if not isinstance(sources, dict) or len(sources) > 32:
+            raise ValueError("stem_sources must be an object with at most 32 entries")
+        import re
+
+        self.stem_sources = {}
+        for name, motion in sources.items():
+            if not isinstance(name, str) or not re.fullmatch(r"[a-z][a-z0-9_-]{0,63}", name):
+                raise ValueError("Invalid stem_sources name")
+            if not isinstance(motion, dict) or motion.get("kind") != "recording":
+                raise ValueError("stem_sources entries must be native recording motions")
+            self.stem_sources[name] = dict(motion)
         self.output_quality = OutputQuality(data.get("render_quality", {}))
         self.audio = dict(data["audio"])
-        fields(self.audio, {"source", "sample_rate", "start_sample", "end_sample", "repeats", "fade_seconds"}, "audio")
+        fields(
+            self.audio,
+            {"source", "sample_rate", "start_sample", "end_sample", "repeats", "fade_seconds"},
+            "audio",
+        )
         self.audio_ref = self.ref(self.audio["source"])
         self.sample_rate = integer(self.audio["sample_rate"], "sample rate", minimum=1, maximum=768000)
         self.loop = None
@@ -61,11 +115,27 @@ class Project:
         self.frame_count = math.ceil(self.duration * self.fps)
         if self.frame_count > 10_000_000:
             raise ValueError("Render exceeds ten million frames")
-        self.fade = number(self.audio.get("fade_seconds", .12 if self.purpose == "short" else 0),
-                           "fade seconds", minimum=0, maximum=float(self.duration) / 2)
+        self.fade = number(
+            self.audio.get("fade_seconds", 0.12 if self.purpose == "short" else 0),
+            "fade seconds",
+            minimum=0,
+            maximum=float(self.duration) / 2,
+        )
         cfg = data["clock"]
-        fields(cfg, {"bpm", "origin", "authority", "status", "phase_status", "beat_grid", "beat_alignment",
-                     "beat_timeline"}, "clock")
+        fields(
+            cfg,
+            {
+                "bpm",
+                "origin",
+                "authority",
+                "status",
+                "phase_status",
+                "beat_grid",
+                "beat_alignment",
+                "beat_timeline",
+            },
+            "clock",
+        )
         if not cfg.get("authority") or cfg.get("status") not in {"confirmed", "estimated", "synthetic"}:
             raise ValueError("Clock needs authority and confirmed/estimated/synthetic status")
         self.alignment = None
@@ -76,44 +146,63 @@ class Project:
             if cfg["status"] == "synthetic":
                 raise ValueError("StemLab beat timeline cannot claim synthetic source authority")
             ref = self.ref(cfg["beat_timeline"])
-            self.clock = load_beat_timeline(ref["path"], source_sha256=self.audio_ref["sha256"],
-                                            sample_rate=self.sample_rate, end_sample=self.end_sample)
+            self.clock = load_beat_timeline(
+                ref["path"],
+                source_sha256=self.audio_ref["sha256"],
+                sample_rate=self.sample_rate,
+                end_sample=self.end_sample,
+            )
             if cfg.get("phase_status") not in (None, "estimated", "confirmed"):
                 raise ValueError("Beat timeline phase status must be estimated or confirmed")
-            if self.clock.review_status == "estimated" and (cfg["status"] != "estimated" or
-                                                              cfg.get("phase_status") == "confirmed"):
+            if self.clock.review_status == "estimated" and (
+                cfg["status"] != "estimated" or cfg.get("phase_status") == "confirmed"
+            ):
                 raise ValueError("Estimated beat timeline cannot claim confirmed tempo or phase")
             if "bpm" in cfg:
                 number(cfg["bpm"], "Nominal BPM", minimum=0.00001)  # display hint only
             self.beat_timeline = dict(self.clock.evidence, file=ref)
         elif "beat_alignment" in cfg:
             if "beat_grid" in cfg or "origin" in cfg:
-                raise ValueError('beat_alignment cannot be combined with a separate beat grid or origin')
-            ref = self.ref(cfg['beat_alignment'])
-            self.alignment = beat_alignment(ref['path'], self.audio_ref['sha256'], self.sample_rate, self.end_sample)
-            if 'bpm' in cfg and abs(number(cfg['bpm'], 'BPM')-self.alignment['bpm']) > 1e-8:
-                raise ValueError('Explicit BPM conflicts with the beat alignment reading')
-            if self.alignment['bpm_status'] == 'estimated' and cfg['status'] != 'estimated':
-                raise ValueError('An estimated alignment BPM cannot be promoted to confirmed or synthetic')
-            if 'phase_status' in cfg and cfg['phase_status'] != self.alignment['phase_status']:
-                raise ValueError('Project phase authority conflicts with the saved reading')
-            self.clock = BeatClock(bpm=self.alignment['bpm'], origin=self.alignment['first_beat_seconds'])
+                raise ValueError("beat_alignment cannot be combined with a separate beat grid or origin")
+            ref = self.ref(cfg["beat_alignment"])
+            self.alignment = beat_alignment(
+                ref["path"], self.audio_ref["sha256"], self.sample_rate, self.end_sample
+            )
+            if "bpm" in cfg and abs(number(cfg["bpm"], "BPM") - self.alignment["bpm"]) > 1e-8:
+                raise ValueError("Explicit BPM conflicts with the beat alignment reading")
+            if self.alignment["bpm_status"] == "estimated" and cfg["status"] != "estimated":
+                raise ValueError("An estimated alignment BPM cannot be promoted to confirmed or synthetic")
+            if "phase_status" in cfg and cfg["phase_status"] != self.alignment["phase_status"]:
+                raise ValueError("Project phase authority conflicts with the saved reading")
+            self.clock = BeatClock(bpm=self.alignment["bpm"], origin=self.alignment["first_beat_seconds"])
         else:
             grid = beat_grid(self.ref(cfg["beat_grid"])["path"]) if "beat_grid" in cfg else None
             self.clock = BeatClock(bpm=cfg.get("bpm"), origin=cfg.get("origin", 0), beats=grid)
         self.font_ref = self.ref(data["font"]) if "font" in data else None
-        if (data.get("lyrics") or data.get("identity") or
-            (data.get("word_lyrics") and (data.get("captions") or data.get("word_captions")))) and not self.font_ref:
+        if (
+            data.get("lyrics")
+            or data.get("identity")
+            or (data.get("word_lyrics") and (data.get("captions") or data.get("word_captions")))
+        ) and not self.font_ref:
             raise ValueError("Pin an explicit font for all authored text")
         self.lyric_ref = self.ref(data["lyrics"]) if "lyrics" in data else None
         self.lyrics = self.ledger(parse_lrc(self.lyric_ref["path"])) if self.lyric_ref else []
         self.word_ref = self.ref(data["word_lyrics"]) if "word_lyrics" in data else None
         if self.word_ref and Path(self.word_ref["path"]).suffix.lower() != ".lrc":
             raise ValueError("word_lyrics must be a pinned .lrc file")
-        self.words = (word_frame_ledger(parse_word_lrc(self.word_ref["path"]),
-                    start_sample=self.start_sample, end_sample=self.end_sample,
-                    sample_rate=self.sample_rate, fps=self.fps, repeats=self.repeats,
-                    frame_count=self.frame_count) if self.word_ref else [])
+        self.words = (
+            word_frame_ledger(
+                parse_word_lrc(self.word_ref["path"]),
+                start_sample=self.start_sample,
+                end_sample=self.end_sample,
+                sample_rate=self.sample_rate,
+                fps=self.fps,
+                repeats=self.repeats,
+                frame_count=self.frame_count,
+            )
+            if self.word_ref
+            else []
+        )
         if self.words and self.lyrics:
             assign_words_to_lines(self.words, self.lyrics)
         if "word_indicator" in data and (not self.word_ref or not self.lyric_ref or not data.get("captions")):
@@ -124,8 +213,11 @@ class Project:
             raise ValueError("caption word_mode requires word_lyrics")
         if "canonical_lyrics" in data:
             ref = self.ref(data["canonical_lyrics"])
-            canonical = [line.strip() for line in Path(ref["path"]).read_text(encoding="utf-8-sig").splitlines()
-                         if line.strip() and not line.strip().startswith("[")]
+            canonical = [
+                line.strip()
+                for line in Path(ref["path"]).read_text(encoding="utf-8-sig").splitlines()
+                if line.strip() and not line.strip().startswith("[")
+            ]
             if not self.lyric_ref:
                 raise ValueError("canonical_lyrics requires a timed lyrics file")
             timed = [e.text for e in parse_lrc(self.lyric_ref["path"]) if e.text]
@@ -144,8 +236,14 @@ class Project:
         return result
 
     def ledger(self, events):
-        return frame_ledger(events, start_sample=self.start_sample, end_sample=self.end_sample,
-                            sample_rate=self.sample_rate, fps=self.fps, repeats=self.repeats)
+        return frame_ledger(
+            events,
+            start_sample=self.start_sample,
+            end_sample=self.end_sample,
+            sample_rate=self.sample_rate,
+            fps=self.fps,
+            repeats=self.repeats,
+        )
 
     def source_time(self, frame):
         output = Fraction(frame, self.fps)
@@ -159,7 +257,8 @@ class Project:
         start = float(Fraction(self.start_sample, self.sample_rate))
         end = float(Fraction(self.end_sample, self.sample_rate))
         return self.clock.beat_at(self.source_time(frame)) + cycle * (
-            self.clock.beat_at(end) - self.clock.beat_at(start))
+            self.clock.beat_at(end) - self.clock.beat_at(start)
+        )
 
     def verify_inputs(self):
         for ref in self.inputs:
@@ -167,23 +266,52 @@ class Project:
                 raise ValueError(f"Input changed since preparation: {ref['path']}")
 
     def summary(self):
-        return dict(schema="framerudiments.plan.v1", dimensions=[self.width, self.height], fps=self.fps,
-                    frames=self.frame_count, source_start_sample=self.start_sample,
-                    source_end_sample_exclusive=self.end_sample, sample_rate=self.sample_rate,
-                    repeats=self.repeats, duration_seconds=float(self.duration),
-                    video_duration_seconds=self.frame_count / self.fps,
-                    frame_rounding="nearest, ties toward positive infinity; stable source ordering",
-                    clock={**self.data['clock'], 'alignment': self.alignment,
-                           'beat_timeline': self.beat_timeline,
-                           'phase_status': self.alignment['phase_status'] if self.alignment else
-                               ('confirmed' if self.beat_timeline and self.beat_timeline['review_status'] == 'artist_confirmed'
-                                else self.data['clock'].get('phase_status', 'estimated' if self.beat_timeline else 'unverified'))},
-                    endpoint_fade_seconds=self.fade, endpoint_fade_curve="qsin",
-                    lyrics=self.lyrics, cues=self.cues, stemlab_loop=self.loop, effects=self.data.get("effects", []),
-                    **({"word_timings": {"file": self.word_ref, "event_count": len(self.words)}}
-                       if self.word_ref else {}),
-                    **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}),
-                    render_quality=self.output_quality.evidence,
-                    **({"visualiser_routing": self.data["visualiser_routing"]}
-                       if "visualiser_routing" in self.data else {}), inputs=self.inputs,
-                    state="prepared; perceptual review pending")
+        return dict(
+            schema="framerudiments.plan.v1",
+            dimensions=[self.width, self.height],
+            fps=self.fps,
+            frames=self.frame_count,
+            source_start_sample=self.start_sample,
+            source_end_sample_exclusive=self.end_sample,
+            sample_rate=self.sample_rate,
+            repeats=self.repeats,
+            duration_seconds=float(self.duration),
+            video_duration_seconds=self.frame_count / self.fps,
+            frame_rounding="nearest, ties toward positive infinity; stable source ordering",
+            clock={
+                **self.data["clock"],
+                "alignment": self.alignment,
+                "beat_timeline": self.beat_timeline,
+                "phase_status": self.alignment["phase_status"]
+                if self.alignment
+                else (
+                    "confirmed"
+                    if self.beat_timeline and self.beat_timeline["review_status"] == "artist_confirmed"
+                    else self.data["clock"].get(
+                        "phase_status", "estimated" if self.beat_timeline else "unverified"
+                    )
+                ),
+            },
+            endpoint_fade_seconds=self.fade,
+            endpoint_fade_curve="qsin",
+            lyrics=self.lyrics,
+            cues=self.cues,
+            stemlab_loop=self.loop,
+            effects=self.data.get("effects", []),
+            stem_sources=self.stem_sources,
+            layer_masks=self.data.get("layer_masks", {}),
+            **(
+                {"word_timings": {"file": self.word_ref, "event_count": len(self.words)}}
+                if self.word_ref
+                else {}
+            ),
+            **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}),
+            render_quality=self.output_quality.evidence,
+            **(
+                {"visualiser_routing": self.data["visualiser_routing"]}
+                if "visualiser_routing" in self.data
+                else {}
+            ),
+            inputs=self.inputs,
+            state="prepared; perceptual review pending",
+        )

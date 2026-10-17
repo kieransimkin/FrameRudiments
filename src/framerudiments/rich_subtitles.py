@@ -3,6 +3,7 @@
 The owned masks are generated from checksum-pinned fonts using Pillow; all colour
 fills and highlights are raster effects. No font files or song text are bundled.
 """
+
 from __future__ import annotations
 
 import colorsys
@@ -35,8 +36,12 @@ def stops(value):
             rows.append((index / (len(value) - 1), rgba(item, "gradient stop")))
         elif isinstance(item, dict):
             fields(item, {"at", "colour"}, "gradient stop")
-            rows.append((number(item["at"], "stop position", minimum=0, maximum=1),
-                         rgba(item["colour"], "gradient stop colour")))
+            rows.append(
+                (
+                    number(item["at"], "stop position", minimum=0, maximum=1),
+                    rgba(item["colour"], "gradient stop colour"),
+                )
+            )
         else:
             raise ValueError("Gradient stop must be a colour or {at, colour}")
     if rows[0][0] != 0 or rows[-1][0] != 1 or any(a[0] >= b[0] for a, b in zip(rows, rows[1:])):
@@ -52,9 +57,13 @@ def _colour_row(rows, u, *, space="rgb"):
             if space == "hsv":
                 a = colorsys.rgb_to_hsv(*(c / 255 for c in col[:3]))
                 b = colorsys.rgb_to_hsv(*(c / 255 for c in nxt[:3]))
-                delta = ((b[0] - a[0] + .5) % 1) - .5
-                return tuple(round(c * 255) for c in colorsys.hsv_to_rgb(
-                    (a[0] + t * delta) % 1, a[1] + t * (b[1] - a[1]), a[2] + t * (b[2] - a[2])))
+                delta = ((b[0] - a[0] + 0.5) % 1) - 0.5
+                return tuple(
+                    round(c * 255)
+                    for c in colorsys.hsv_to_rgb(
+                        (a[0] + t * delta) % 1, a[1] + t * (b[1] - a[1]), a[2] + t * (b[2] - a[2])
+                    )
+                )
             return tuple(round(col[k] * (1 - t) + nxt[k] * t) for k in range(3))
     return rows[-1][1][:3]
 
@@ -67,8 +76,7 @@ def gradient_image(size, colours, angle=90, space="rgb"):
     rows = stops(colours)
     direction = math.radians(angle)
     dx, dy = math.cos(direction), math.sin(direction)
-    corners = [x * dx + y * dy for x in (0, max(0, width - 1))
-               for y in (0, max(0, height - 1))]
+    corners = [x * dx + y * dy for x in (0, max(0, width - 1)) for y in (0, max(0, height - 1))]
     lo, hi = min(corners), max(corners)
     spread = max(1e-7, hi - lo)
     image = Image.new("RGBA", size)
@@ -98,15 +106,20 @@ class RichTextAppearance:
     """Single opt-in effect profile shared by captions, word captions and titles."""
 
     def __init__(self, config):
-        fields(config, {"gradient", "stroke", "bevel", "emboss", "inner_glow",
-                        "outer_glow", "drop_shadow"}, "rich subtitle effects")
+        fields(
+            config,
+            {"gradient", "stroke", "bevel", "emboss", "inner_glow", "outer_glow", "drop_shadow"},
+            "rich subtitle effects",
+        )
         self.gradient = None
         if "gradient" in config:
             val = config["gradient"]
             fields(val, {"stops", "angle", "space"}, "subtitle gradient")
-            self.gradient = dict(stops=stops(val["stops"]),
-                                 angle=number(val.get("angle", 90), "gradient angle", minimum=-360, maximum=360),
-                                 space=val.get("space", "rgb"))
+            self.gradient = dict(
+                stops=stops(val["stops"]),
+                angle=number(val.get("angle", 90), "gradient angle", minimum=-360, maximum=360),
+                space=val.get("space", "rgb"),
+            )
             if self.gradient["space"] not in {"rgb", "hsv"}:
                 raise ValueError("Gradient space must be rgb or hsv")
         self.stroke = self._stroke(config.get("stroke", {}))
@@ -119,33 +132,41 @@ class RichTextAppearance:
     @staticmethod
     def _stroke(row):
         fields(row, {"width", "colour"}, "text stroke")
-        return dict(width=integer(row.get("width", 0), "stroke width", maximum=24),
-                    colour=rgba(row.get("colour", "#111827"), "stroke colour"))
+        return dict(
+            width=integer(row.get("width", 0), "stroke width", maximum=24),
+            colour=rgba(row.get("colour", "#111827"), "stroke colour"),
+        )
 
     @staticmethod
     def _relief(row, name):
         fields(row, {"depth", "strength", "angle", "highlight", "shadow"}, name)
-        return dict(depth=integer(row.get("depth", 0), f"{name} depth", maximum=12),
-                    strength=number(row.get("strength", .65), f"{name} strength", minimum=0, maximum=1),
-                    angle=number(row.get("angle", 135), f"{name} angle", minimum=-360, maximum=360),
-                    highlight=rgba(row.get("highlight", "#ffffff"), f"{name} highlight"),
-                    shadow=rgba(row.get("shadow", "#05091b"), f"{name} shadow"))
+        return dict(
+            depth=integer(row.get("depth", 0), f"{name} depth", maximum=12),
+            strength=number(row.get("strength", 0.65), f"{name} strength", minimum=0, maximum=1),
+            angle=number(row.get("angle", 135), f"{name} angle", minimum=-360, maximum=360),
+            highlight=rgba(row.get("highlight", "#ffffff"), f"{name} highlight"),
+            shadow=rgba(row.get("shadow", "#05091b"), f"{name} shadow"),
+        )
 
     @staticmethod
     def _glow(row, name):
         fields(row, {"radius", "strength", "colour"}, name)
-        return dict(radius=number(row.get("radius", 0), f"{name} radius", minimum=0, maximum=28),
-                    strength=number(row.get("strength", .65), f"{name} strength", minimum=0, maximum=1),
-                    colour=rgba(row.get("colour", "#75dfff"), f"{name} colour"))
+        return dict(
+            radius=number(row.get("radius", 0), f"{name} radius", minimum=0, maximum=28),
+            strength=number(row.get("strength", 0.65), f"{name} strength", minimum=0, maximum=1),
+            colour=rgba(row.get("colour", "#75dfff"), f"{name} colour"),
+        )
 
     @staticmethod
     def _shadow(row):
         fields(row, {"dx", "dy", "blur", "opacity", "colour"}, "subtitle drop shadow")
-        return dict(dx=integer(row.get("dx", 0), "shadow dx", minimum=-64, maximum=64),
-                    dy=integer(row.get("dy", 0), "shadow dy", minimum=-64, maximum=64),
-                    blur=number(row.get("blur", 0), "shadow blur", minimum=0, maximum=32),
-                    opacity=number(row.get("opacity", 0), "shadow opacity", minimum=0, maximum=1),
-                    colour=rgba(row.get("colour", "#000000"), "shadow colour"))
+        return dict(
+            dx=integer(row.get("dx", 0), "shadow dx", minimum=-64, maximum=64),
+            dy=integer(row.get("dy", 0), "shadow dy", minimum=-64, maximum=64),
+            blur=number(row.get("blur", 0), "shadow blur", minimum=0, maximum=32),
+            opacity=number(row.get("opacity", 0), "shadow opacity", minimum=0, maximum=1),
+            colour=rgba(row.get("colour", "#000000"), "shadow colour"),
+        )
 
     def draw(self, image, block, text, *, colour=None, active=None, completed=()):
         if not text:
@@ -155,9 +176,18 @@ class RichTextAppearance:
         if block.config.get("panel"):
             ImageDraw.Draw(image).rounded_rectangle(block.box, radius=12, fill=block.config["panel"])
         # Use an effects margin so blurred halos aren't prematurely cropped.
-        padding = min(96, math.ceil(max(self.outer["radius"] * 3,
-                       self.shadow["blur"] * 3 + max(abs(self.shadow["dx"]), abs(self.shadow["dy"])),
-                       self.stroke["width"] + 3, self.bevel["depth"] + 3, self.emboss["depth"] + 3)))
+        padding = min(
+            96,
+            math.ceil(
+                max(
+                    self.outer["radius"] * 3,
+                    self.shadow["blur"] * 3 + max(abs(self.shadow["dx"]), abs(self.shadow["dy"])),
+                    self.stroke["width"] + 3,
+                    self.bevel["depth"] + 3,
+                    self.emboss["depth"] + 3,
+                )
+            ),
+        )
         x0, y0 = max(0, round(left - padding)), max(0, round(top - padding))
         x1, y1 = min(image.width, round(right + padding)), min(image.height, round(bottom + padding))
         if x1 <= x0 or y1 <= y0:
@@ -179,9 +209,10 @@ class RichTextAppearance:
             for match in re.finditer(r"\S+", row):
                 if word_index == active or word_index in completed:
                     glyph = Image.new("L", size)
-                    offset = ink.textlength(row[:match.start()], font=font)
-                    ImageDraw.Draw(glyph).text((x - x0 + offset, y - bb[1] - y0),
-                                               match.group(), font=font, fill=255)
+                    offset = ink.textlength(row[: match.start()], font=font)
+                    ImageDraw.Draw(glyph).text(
+                        (x - x0 + offset, y - bb[1] - y0), match.group(), font=font, fill=255
+                    )
                     word_masks[word_index] = glyph
                 word_index += 1
             y += bb[3] - bb[1] + block.spacing
@@ -209,20 +240,27 @@ class RichTextAppearance:
         if self.gradient:
             stops_data = self.gradient["stops"]
             direction = self.gradient["angle"]
-            fill = gradient_image(size, [dict(at=p, colour=f"#{c[0]:02x}{c[1]:02x}{c[2]:02x}")
-                                         for p, c in stops_data], direction, self.gradient["space"])
+            fill = gradient_image(
+                size,
+                [dict(at=p, colour=f"#{c[0]:02x}{c[1]:02x}{c[2]:02x}") for p, c in stops_data],
+                direction,
+                self.gradient["space"],
+            )
             fill.putalpha(mask)
         else:
             fill = _tinted(mask, colour or block.colour)
         layer.alpha_composite(fill)
         for k, wm in word_masks.items():
-            special = block.config.get("word_colour", "#ffe082") if k == active else block.config.get(
-                "completed_colour", "#9ad9d5")
+            special = (
+                block.config.get("word_colour", "#ffe082")
+                if k == active
+                else block.config.get("completed_colour", "#9ad9d5")
+            )
             layer.alpha_composite(_tinted(wm, special))
         if self.inner["radius"] and self.inner["strength"]:
             erosion_radius = 2 * min(12, max(1, math.ceil(self.inner["radius"]))) + 1
             inner = ImageChops.subtract(mask, mask.filter(ImageFilter.MinFilter(erosion_radius)))
-            inner = inner.filter(ImageFilter.GaussianBlur(max(.2, self.inner["radius"] / 2)))
+            inner = inner.filter(ImageFilter.GaussianBlur(max(0.2, self.inner["radius"] / 2)))
             inner = ImageChops.multiply(inner, mask)
             layer.alpha_composite(_tinted(_strength(inner, self.inner["strength"]), self.inner["colour"]))
         for setting in (self.bevel, self.emboss):
@@ -249,7 +287,7 @@ def word_centres(block, text):
     for row, bb in zip(rows, boxes):
         x = left + (right - left - (bb[2] - bb[0])) / 2 - bb[0]
         for match in re.finditer(r"\S+", row):
-            start = x + pen.textlength(row[:match.start()], font=font)
+            start = x + pen.textlength(row[: match.start()], font=font)
             finish = start + pen.textlength(match.group(), font=font)
             result.append((0.5 * (start + finish), y))
         y += bb[3] - bb[1] + block.spacing
