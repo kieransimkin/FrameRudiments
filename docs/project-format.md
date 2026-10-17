@@ -15,6 +15,7 @@ the inputs are checked again before and after a render.
 | `font` | Pinned default TTF/OTF for authored text; text blocks may override via their own pinned `font`. |
 | `lyrics`, `cues` | Separate LRC references; `.cue` files are also supported for structural cues. |
 | `word_lyrics`, `word_captions`, `word_indicator` | Word LRC source, optional word lane, and word-following sprite/effects. |
+| `render_quality` | High-quality default: 4× source-vector/font raster, 8 distinct source-time samples per encoded frame and 3-pass edge-aware finishing; explicit `enabled`, `spatial_scale` (1–4), `temporal_samples` (1–8), and AA controls lower the quality for chosen projects. |
 | `canonical_lyrics` | Optional pinned plain text whose performed nonempty lines must exactly match the LRC. Bracketed structural lines in this comparison file are excluded. |
 | `background` | `colour`, optional pinned `image` and `fit` (`cover` or `contain`). |
 | `captions` | `box` [left,top,right,bottom], `font_size`, optional `min_font_size`, `colour`, `panel`, `stroke`, `line_spacing`, `mode` (`current` or `neighbours`). |

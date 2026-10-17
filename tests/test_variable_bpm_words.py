@@ -150,9 +150,14 @@ def test_export_word_interval_is_cut_on_line_change():
 
 def test_karaoke_overlay_uses_existing_textblock_layout():
     from PIL import ImageFont
-    font_file = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
-    if not Path(font_file).exists():
-        pytest.skip("Needs DejaVuSans for precise visual regression")
+    font_file = os.environ.get("FRAMERUDIMENTS_TEST_FONT")
+    if not font_file:
+        font_file = next((path for path in (
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf")
+            if Path(path).is_file()), None)
+    if not font_file or not Path(font_file).is_file():
+        pytest.skip("Requires an installed pinned test font")
     from PIL import ImageDraw
     class Block:
         def __init__(self):

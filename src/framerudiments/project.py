@@ -9,6 +9,7 @@ from .stemlab import beat_grid, selected_loop
 from .beat_alignment import beat_alignment
 from .beat_timeline import load_beat_timeline
 from .word_timing import parse_word_lrc, word_frame_ledger, assign_words_to_lines
+from .output_quality import OutputQuality
 
 
 class Project:
@@ -22,7 +23,7 @@ class Project:
         fields(data, {"schema", "title", "artist", "purpose", "width", "height", "fps", "fps_reason",
                       "audio", "clock", "font", "lyrics", "cues", "background", "layers", "captions",
                       "identity", "effects", "post_effects", "stemlab_loop", "notes", "lyric_art", "canonical_lyrics",
-                      "word_lyrics", "word_captions", "word_indicator"}, "project")
+                      "word_lyrics", "word_captions", "word_indicator", "render_quality"}, "project")
         if data.get("schema") != "framerudiments.project.v1":
             raise ValueError("Expected framerudiments.project.v1")
         self.width = integer(data.get("width", 1080), "width", minimum=16, maximum=7680)
@@ -36,6 +37,7 @@ class Project:
         if self.purpose not in {"short", "visualiser", "canvas"}:
             raise ValueError("purpose must be short, visualiser or canvas")
         self.inputs = []
+        self.output_quality = OutputQuality(data.get("render_quality", {}))
         self.audio = dict(data["audio"])
         fields(self.audio, {"source", "sample_rate", "start_sample", "end_sample", "repeats", "fade_seconds"}, "audio")
         self.audio_ref = self.ref(self.audio["source"])
@@ -180,5 +182,6 @@ class Project:
                     lyrics=self.lyrics, cues=self.cues, stemlab_loop=self.loop, effects=self.data.get("effects", []),
                     **({"word_timings": {"file": self.word_ref, "event_count": len(self.words)}}
                        if self.word_ref else {}),
-                    **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}), inputs=self.inputs,
+                    **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}),
+                    render_quality=self.output_quality.evidence, inputs=self.inputs,
                     state="prepared; perceptual review pending")

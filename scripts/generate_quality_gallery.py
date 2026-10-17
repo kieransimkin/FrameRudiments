@@ -12,6 +12,7 @@ from types import SimpleNamespace
 from PIL import Image, ImageDraw
 
 from framerudiments.quality_effects import TemporalShutter, linear_shutter_composite
+from framerudiments.output_quality import OutputQuality
 from framerudiments.rudiment_renderers import default_renderers
 from framerudiments.visual_style import VisualStyle
 from framerudiments.modulation import RudimentModulations
@@ -25,6 +26,10 @@ DISPLAY_VIEWS = (
     ("waveform-ribbon", False, "Motion ribbon"),
 )
 SCENES = (
+    ("default-aa", "Highest default spatial and temporal quality", {}, None,
+     "4x source geometry + 8x true time samples + final edge treatment"),
+    ("default-off", "Explicit reduced-quality pixel-art path", {}, None,
+     "Disable the default supersampling and raster AA"),
     ("raw", "Original output", {}, None, "Unfiltered vector/raster samples"),
     ("edge-aa", "Edge-aware AA", {"antialias": .85, "antialias_radius": .85}, None,
      "Alpha-aware edge smoothing, preserving interior textures"),
@@ -121,10 +126,16 @@ def build_site(output):
         folder = root / name
         folder.mkdir()
         for k, n in enumerate(MOMENTS):
-            _run(n, config, temporal, modulator=mods if name == "dancerudiment" else None).save(folder / f"{k}.png")
+            image = _run(n, config, temporal, modulator=mods if name == "dancerudiment" else None)
+            if name == "default-aa":
+                image = OutputQuality().apply(image)
+            elif name == "default-off":
+                image = OutputQuality({"enabled": False}).apply(image)
+            image.save(folder / f"{k}.png")
         rows.append(dict(name=name, label=label, visual=config, temporal=temporal,
                          description=description, frames=len(MOMENTS)))
     catalogue = dict(schema="framerudiments.synthetic-quality-gallery.v1", synthetic=True,
+                     default_render_quality=OutputQuality().evidence,
                      measured_audio=False, frames=list(MOMENTS),
                      visualisers=[row[0] for row in DISPLAY_VIEWS], scenes=rows)
     (root / "catalogue.json").write_text(json.dumps(catalogue, indent=2), encoding="utf-8")

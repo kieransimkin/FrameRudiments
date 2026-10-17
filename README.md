@@ -60,6 +60,20 @@ trigger windows independently change colour, density, size, glow and burst count
 See [rich lyric reference](docs/rich-lyric-effects.md) and the
 [CI-generated demo](https://kieransimkin.github.io/FrameRudiments/rich-lyrics/).
 
+## Maximum-quality rendering enabled by default
+
+FrameRudiments now redraws pinned text outlines and procedural vector Rudiment
+views at **4× linear pixel resolution** before Lanczos reduction. It also
+renders **eight different source-clock subframes per output frame**,
+averaging them in linear light for true temporal supersampling. A final
+three-pass edge-aware AA filter runs after the optional GPU effect chain.
+These are the maximum supported preset settings and require no project changes.
+Explicitly lower them with `render_quality.spatial_scale` (1–4),
+`render_quality.temporal_samples` (1–8), or
+`render_quality.enabled: false` for deliberate pixel art or legacy output.
+Full-quality rendering can be much slower; read the
+[spatiotemporal sampling guide](docs/spatiotemporal-supersampling.md).
+
 ## Install and run
 
 Python 3.11+ and FFmpeg with libx264/AAC are required. Install the package into

@@ -390,6 +390,7 @@ class RudimentLayer:
             self.modulations = RudimentModulations(project, cfg.get("modulations", []), context_at)
         project.inputs.extend(self.modulations.files)
         self._styled_renderers = {}
+        self._hires_renderers = {}
         self.renderer, identity = registry.create(cfg["renderer"], self._size, self.base_style)
         if "source" in identity:
             project.inputs.append(identity["source"])
@@ -443,11 +444,17 @@ class RudimentLayer:
                 if len(self._styled_renderers) >= 16:
                     self._styled_renderers.clear()
                 self._styled_renderers[key] = renderer
-        viewport = renderer.render(self.data(context))
+        scale = getattr(getattr(self.project, "output_quality", None), "vector_scale", 1)
+        if scale > 1 and not self._renderer_name.startswith("sprite-"):
+            from .super_sampling import vector_viewport
+            viewport, report = vector_viewport(self._registry, self._renderer_name,
+                self._size, style, self.data(context), scale, self.project, self._hires_renderers)
+        else:
+            viewport = renderer.render(self.data(context))
+            report = getattr(renderer, "frame_report", None)
         expected = self._size
         if not isinstance(viewport, Image.Image) or viewport.mode != "RGBA" or viewport.size != expected:
             raise ValueError(f"Renderer {self.cfg['renderer']} must return viewport-sized RGBA image")
-        report = getattr(renderer, "frame_report", None)
         if modulation_report:
             report = dict(report, modulations=modulation_report) if report is not None else dict(
                 kind="rudiment-visual-modulation", modulations=modulation_report)

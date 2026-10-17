@@ -33,7 +33,7 @@ def _sig(seed, frame, ordinal):
     return random.Random((int(seed) * 1103515245 + frame * 1664525 + ordinal * 1013904223) & 0xffffffff)
 
 
-def _profile(row, label):
+def _profile(row, label, time_factor=1):
     fields(row, {"burst_count", "rate_multiplier", "size_multiplier", "colour", "glow",
                  "duration_frames", "opacity", "indicator_scale", "indicator_colour"}, label)
     result = dict(burst_count=integer(row.get("burst_count", 0), f"{label} burst", maximum=128),
@@ -42,7 +42,7 @@ def _profile(row, label):
                   glow=number(row.get("glow", 0), f"{label} glow", minimum=0, maximum=24),
                   opacity=number(row.get("opacity", 1), f"{label} opacity", minimum=0, maximum=1),
                   indicator_scale=number(row.get("indicator_scale", 1), f"{label} indicator scale", minimum=.2, maximum=4),
-                  duration_frames=integer(row.get("duration_frames", 12), f"{label} duration", minimum=1, maximum=240))
+                  duration_frames=integer(row.get("duration_frames", 12), f"{label} duration", minimum=1, maximum=240 * time_factor))
     result["colour"] = rgba(row["colour"], f"{label} particle colour") if "colour" in row else None
     result["indicator_colour"] = (rgba(row["indicator_colour"], f"{label} indicator colour")
                                   if "indicator_colour" in row else None)
@@ -87,7 +87,9 @@ class WordIndicator:
         self.position = config.get("position", "above")
         if self.position not in {"above", "below", "on"}:
             raise ValueError("Indicator position must be above, below or on")
-        self.travel = integer(config.get("travel_frames", 8), "indicator transition frames", maximum=120)
+        time_factor = getattr(project, "_time_sampling_factor", 1)
+        self.travel = integer(config.get("travel_frames", 8), "indicator transition frames",
+                              maximum=120 * time_factor)
         self.style = dict(indicator_size=number(config.get("size", 18), "indicator size", minimum=2, maximum=128),
                           indicator_glow=number(config.get("glow", 4), "indicator glow", minimum=0, maximum=24),
                           indicator_opacity=number(config.get("opacity", 1), "indicator opacity", minimum=0, maximum=1),
@@ -134,7 +136,8 @@ class WordIndicator:
         self.rate = number(particle.get("rate", 12), "indicator particle rate", minimum=0, maximum=120)
         self.burst = integer(particle.get("burst_count", 14), "indicator particle burst", maximum=128)
         self.particle_size = number(particle.get("size", 5), "indicator particle size", minimum=1, maximum=30)
-        self.particle_lifetime = integer(particle.get("lifetime_frames", 35), "indicator particle lifetime", minimum=1, maximum=240)
+        self.particle_lifetime = integer(particle.get("lifetime_frames", 35), "indicator particle lifetime",
+                                         minimum=1, maximum=240 * time_factor)
         self.particle_speed = number(particle.get("speed", 1.7), "indicator particle speed", minimum=0, maximum=12)
         self.particle_spread = number(particle.get("spread", 360), "indicator particle spread", minimum=0, maximum=360)
         self.particle_gravity = number(particle.get("gravity", 0), "indicator particle gravity", minimum=-2, maximum=2)
@@ -144,8 +147,8 @@ class WordIndicator:
         self.particle_glow = number(particle.get("glow", 1), "indicator particle glow", minimum=0, maximum=24)
         self.particle_trail = number(particle.get("trail", 0), "particle trail", minimum=0, maximum=30)
         self.seed = integer(particle.get("seed", 23), "indicator particle seed", maximum=2147483647)
-        self.on_word = _profile(particle.get("on_word", {}), "word trigger")
-        self.on_cue = _profile(particle.get("on_cue", {}), "cue trigger")
+        self.on_word = _profile(particle.get("on_word", {}), "word trigger", time_factor)
+        self.on_cue = _profile(particle.get("on_cue", {}), "cue trigger", time_factor)
         labels = particle.get("cue_labels", [])
         if not isinstance(labels, list) or len(labels) > 64 or any(not isinstance(x, str) for x in labels):
             raise ValueError("Cue label patterns must be a list of up to 64 strings")

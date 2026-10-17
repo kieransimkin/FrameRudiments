@@ -87,6 +87,18 @@ class TextBlock:
     def draw(self, image, text, *, colour=None):
         if not text:
             return []
+        if getattr(getattr(self.project, "output_quality", None), "vector_scale", 1) > 1:
+            from .super_sampling import supersampled_text
+            return supersampled_text(self, image, text, colour=colour)
+        return self._draw_native(image, text, colour=colour)
+
+    def draw_styled(self, image, text, *, active=None, completed=()):
+        from .super_sampling import supersampled_text
+        return supersampled_text(self, image, text, active=active, completed=completed)
+
+    def _draw_native(self, image, text, *, colour=None):
+        if not text:
+            return []
         if self.rich is not None:
             return self.rich.draw(image, self, text, colour=colour)
         font, rows, boxes, height = self.layout(text)
@@ -207,6 +219,7 @@ class Sprite:
 class Compositor:
     def __init__(self, project, *, scene=None, renderers=None):
         self.project, self.scene = project, scene
+        self.output_quality = project.output_quality
         self.effect_specs = effect_specs(project)
         bg = project.data.get("background", {})
         fields(bg, {"colour", "image", "fit"}, "background")
@@ -296,14 +309,12 @@ class Compositor:
         if self.caption.word_mode == "current":
             return self.caption.draw(image, state["text"])
         if self.caption.rich is not None:
-            return self.caption.rich.draw(
-                image, self.caption, text, active=state["active"],
+            return self.caption.draw_styled(
+                image, text, active=state["active"],
                 completed=state["completed"] if self.caption.word_mode == "progressive" else ())
-        return draw_highlighted_line(
-            self.caption, image, text, active=state["active"],
-            completed=state["completed"] if self.caption.word_mode == "progressive" else (),
-            colour=self.caption.config.get("word_colour", "#ffe082"),
-            completed_colour=self.caption.config.get("completed_colour", "#9ad9d5"))
+        return self.caption.draw_styled(
+            image, text, active=state["active"],
+            completed=state["completed"] if self.caption.word_mode == "progressive" else ())
 
     def _word_caption_draw(self, image, ctx):
         state = self.words.state(ctx.frame, ctx.lyric if self.project.lyrics else None)
@@ -392,10 +403,21 @@ class Compositor:
 
         return pipeline.apply_frame(image, ctx)
 
-    def frame(self, frame):
+    def _final_output(self, image, context, apply_quality):
+        # Historical shutter samples must not receive a separate AA pass.
+        if apply_quality and not getattr(self, "_temporal_sampling", False):
+            image = self.output_quality.apply(image)
+        return image, context
+
+    def frame(self, frame, *, apply_quality=True):
         if self.post_pipeline.temporal is not None and not getattr(self, "_temporal_sampling", False):
             from .quality_effects import render_temporal_frame
-            return render_temporal_frame(self, frame)
+            image, context = render_temporal_frame(self, frame)
+            return self._final_output(image, context, apply_quality)
+        if self.output_quality.time_samples > 1:
+            from .super_sampling import temporal_supersample
+            image, context = temporal_supersample(self, frame)
+            return self._final_output(image, context, apply_quality)
         ctx = self.context(frame)
         if self.post_pipeline.enabled:
             # Final-frame opacity/rotation may leave transparent pixels. The
@@ -403,7 +425,7 @@ class Compositor:
             # implicit alpha-discard that would silently erase opacity.
             matte = Image.new("RGBA", self.background.size, "#000000")
             matte.alpha_composite(self._frame_with_post_effects(ctx))
-            return matte.convert("RGB"), ctx
+            return self._final_output(matte.convert("RGB"), ctx, apply_quality)
         image = self.background.copy()
         if self.scene:
             image = self.scene(image, ctx)
@@ -438,9 +460,11 @@ class Compositor:
             self.text_states.setdefault(text, dict(first_frame=frame, bounds=text_bounds))
         elif self.word_caption and self.words:
             self._word_caption_draw(image, ctx)
-        return image.convert("RGB"), ctx
+        return self._final_output(image.convert("RGB"), ctx, apply_quality)
 
     def frame_reports(self):
+        if hasattr(self, "_supersampled_reports"):
+            return dict(self._supersampled_reports)
         reports = {layer.id: layer.frame_report for layer in self.layers
                    if isinstance(layer, (RudimentLayer, ParticleEmitter)) and layer.frame_report is not None}
         if self.word_indicator and self.word_indicator.frame_report is not None:
@@ -452,6 +476,7 @@ class Compositor:
 
     def evidence(self):
         return dict(transformed_alpha_extents=self.extents, text_states=self.text_states,
+                    render_quality=self.output_quality.evidence,
                     motions={x.id: x.motion.evidence for x in [*self.layers, *self.lyric_art.values()] if x.motion},
                     rudiment_renderers={x.id: x.evidence for x in self.layers if isinstance(x, RudimentLayer)},
                     **({"emitters": {x.id: x.evidence for x in self.layers

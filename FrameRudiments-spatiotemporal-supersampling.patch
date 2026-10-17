@@ -1,0 +1,1171 @@
+diff --git a/src/framerudiments/project.py b/src/framerudiments/project.py
+--- a/src/framerudiments/project.py
++++ b/src/framerudiments/project.py
+@@ -11,1 +11,2 @@
+-from .word_timing import parse_word_lrc, word_frame_ledger, assign_words_to_lines
++from .word_timing import parse_word_lrc, word_frame_ledger, assign_words_to_lines
++from .output_quality import OutputQuality
+@@ -25,1 +26,1 @@
+-                      "word_lyrics", "word_captions", "word_indicator"}, "project")
++                      "word_lyrics", "word_captions", "word_indicator", "render_quality"}, "project")
+@@ -38,2 +39,3 @@
+-        self.inputs = []
+-        self.audio = dict(data["audio"])
++        self.inputs = []
++        self.output_quality = OutputQuality(data.get("render_quality", {}))
++        self.audio = dict(data["audio"])
+@@ -183,1 +185,2 @@
+-                    **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}), inputs=self.inputs,
++                    **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}),
++                    render_quality=self.output_quality.evidence, inputs=self.inputs,
+diff --git a/src/framerudiments/compositor.py b/src/framerudiments/compositor.py
+--- a/src/framerudiments/compositor.py
++++ b/src/framerudiments/compositor.py
+@@ -87,4 +87,16 @@
+-    def draw(self, image, text, *, colour=None):
+-        if not text:
+-            return []
+-        if self.rich is not None:
++    def draw(self, image, text, *, colour=None):
++        if not text:
++            return []
++        if getattr(getattr(self.project, "output_quality", None), "vector_scale", 1) > 1:
++            from .super_sampling import supersampled_text
++            return supersampled_text(self, image, text, colour=colour)
++        return self._draw_native(image, text, colour=colour)
++
++    def draw_styled(self, image, text, *, active=None, completed=()):
++        from .super_sampling import supersampled_text
++        return supersampled_text(self, image, text, active=active, completed=completed)
++
++    def _draw_native(self, image, text, *, colour=None):
++        if not text:
++            return []
++        if self.rich is not None:
+@@ -209,2 +221,3 @@
+-        self.project, self.scene = project, scene
+-        self.effect_specs = effect_specs(project)
++        self.project, self.scene = project, scene
++        self.output_quality = project.output_quality
++        self.effect_specs = effect_specs(project)
+@@ -298,3 +311,3 @@
+-            return self.caption.rich.draw(
+-                image, self.caption, text, active=state["active"],
+-                completed=state["completed"] if self.caption.word_mode == "progressive" else ())
++            return self.caption.draw_styled(
++                image, text, active=state["active"],
++                completed=state["completed"] if self.caption.word_mode == "progressive" else ())
+@@ -302,5 +315,3 @@
+-        return draw_highlighted_line(
+-            self.caption, image, text, active=state["active"],
+-            completed=state["completed"] if self.caption.word_mode == "progressive" else (),
+-            colour=self.caption.config.get("word_colour", "#ffe082"),
+-            completed_colour=self.caption.config.get("completed_colour", "#9ad9d5"))
++        return self.caption.draw_styled(
++            image, text, active=state["active"],
++            completed=state["completed"] if self.caption.word_mode == "progressive" else ())
+@@ -395,2 +406,8 @@
+-    def frame(self, frame):
+-        if self.post_pipeline.temporal is not None
++    def _final_output(self, image, context, apply_quality):
++        # Historical shutter samples must not receive a separate AA pass.
++        if apply_quality and not getattr(self, "_temporal_sampling", False):
++            image = self.output_quality.apply(image)
++        return image, context
++
++    def frame(self, frame, *, apply_quality=True):
++        if self.post_pipeline.temporal is not None
+@@ -398,2 +415,3 @@
+-            return render_temporal_frame(self, frame)
+-        ctx = self.context(frame)
++            image, context = render_temporal_frame(self, frame)
++            return self._final_output(image, context, apply_quality)
++        ctx = self.context(frame)
+@@ -400,2 +418,6 @@
+-        ctx = self.context(frame)
+-        if self.post_pipeline.enabled:
++        if self.output_quality.time_samples > 1:
++            from .super_sampling import temporal_supersample
++            image, context = temporal_supersample(self, frame)
++            return self._final_output(image, context, apply_quality)
++        ctx = self.context(frame)
++        if self.post_pipeline.enabled:
+@@ -406,2 +428,2 @@
+-            return matte.convert("RGB"), ctx
+-        image = self.background.copy()
++            return self._final_output(matte.convert("RGB"), ctx, apply_quality)
++        image = self.background.copy()
+@@ -441,3 +463,3 @@
+-        return image.convert("RGB"), ctx
+-
+-    def frame_reports(self):
++        return self._final_output(image.convert("RGB"), ctx, apply_quality)
++
++    def frame_reports(self):
+@@ -447,2 +469,4 @@
+-    def frame_reports(self):
+-        reports = {layer.id: layer.frame_report
++    def frame_reports(self):
++        if hasattr(self, "_supersampled_reports"):
++            return dict(self._supersampled_reports)
++        reports = {layer.id: layer.frame_report
+@@ -454,1 +478,2 @@
+-        return dict(transformed_alpha_extents=self.extents, text_states=self.text_states,
++        return dict(transformed_alpha_extents=self.extents, text_states=self.text_states,
++                    render_quality=self.output_quality.evidence,
+diff --git a/src/framerudiments/render.py b/src/framerudiments/render.py
+--- a/src/framerudiments/render.py
++++ b/src/framerudiments/render.py
+@@ -53,1 +53,1 @@
+-                image, context = compositor.frame(n)
++                image, context = compositor.frame(n, apply_quality=False)
+@@ -58,1 +58,3 @@
+-                _analysis(analysis, compositor, context)
++                # Exactly one final AA pass, after optional GPU effects.
++                image = compositor.output_quality.apply(image)
++                _analysis(analysis, compositor, context)
+@@ -88,1 +90,1 @@
+-                image, context = compositor.frame(n)
++                image, context = compositor.frame(n, apply_quality=False)
+@@ -93,1 +95,3 @@
+-                _analysis(analysis, compositor, context)
++                # Exactly one final AA pass, after optional GPU effects.
++                image = compositor.output_quality.apply(image)
++                _analysis(analysis, compositor, context)
+diff --git a/scripts/generate_quality_gallery.py b/scripts/generate_quality_gallery.py
+--- a/scripts/generate_quality_gallery.py
++++ b/scripts/generate_quality_gallery.py
+@@ -14,1 +14,2 @@
+-from framerudiments.quality_effects import TemporalShutter, linear_shutter_composite
++from framerudiments.quality_effects import TemporalShutter, linear_shutter_composite
++from framerudiments.output_quality import OutputQuality
+@@ -27,2 +28,6 @@
+-SCENES = (
+-    ("raw", "Original output", {}, None, "Unfiltered vector/raster samples"),
++SCENES = (
++    ("default-aa", "Highest default spatial and temporal quality", {}, None,
++     "4x source geometry + 8x true time samples + final edge treatment"),
++    ("default-off", "Explicit reduced-quality pixel-art path", {}, None,
++     "Disable the default supersampling and raster AA"),
++    ("raw", "Original output", {}, None, "Unfiltered vector/raster samples"),
+@@ -124,1 +129,6 @@
+-            _run(n, config, temporal, modulator=mods if name == "dancerudiment" else None).save(folder / f"{k}.png")
++            image = _run(n, config, temporal, modulator=mods if name == "dancerudiment" else None)
++            if name == "default-aa":
++                image = OutputQuality().apply(image)
++            elif name == "default-off":
++                image = OutputQuality({"enabled": False}).apply(image)
++            image.save(folder / f"{k}.png")
+@@ -127,2 +137,3 @@
+-    catalogue = dict(schema="framerudiments.synthetic-quality-gallery.v1", synthetic=True,
+-                     measured_audio=False, frames=list(MOMENTS),
++    catalogue = dict(schema="framerudiments.synthetic-quality-gallery.v1", synthetic=True,
++                     default_render_quality=OutputQuality().evidence,
++                     measured_audio=False, frames=list(MOMENTS),
+diff --git a/.github/workflows/visualisation-gallery.yml b/.github/workflows/visualisation-gallery.yml
+--- a/.github/workflows/visualisation-gallery.yml
++++ b/.github/workflows/visualisation-gallery.yml
+@@ -32,1 +32,1 @@
+-tests/test_particle_engine.py tests/test_variable_bpm_words.py tests/test_rich_subtitles.py
++tests/test_particle_engine.py tests/test_variable_bpm_words.py tests/test_rich_subtitles.py tests/test_default_antialias.py tests/test_supersampling.py
+@@ -34,1 +34,1 @@
+-scripts/generate_rich_lyric_gallery.py tests/test_rich_subtitles.py
++scripts/generate_rich_lyric_gallery.py tests/test_rich_subtitles.py src/framerudiments/output_quality.py src/framerudiments/super_sampling.py tests/test_default_antialias.py tests/test_supersampling.py scripts/generate_supersampling_gallery.py
+@@ -47,2 +47,4 @@
+-      - name: Generate rich lyrics and word-indicator gallery
+-        run: python scripts/generate_rich_lyric_gallery.py --output _site
++      - name: Generate rich lyrics and word-indicator gallery
++        run: python scripts/generate_rich_lyric_gallery.py --output _site
++      - name: Generate source-level supersampling gallery
++        run: python scripts/generate_supersampling_gallery.py --output _site
+@@ -66,1 +68,8 @@
+-          quality = json.loads((p / 'quality/catalogue.json').read_text())
++          supersampling = json.loads((p / 'supersampling/catalogue.json').read_text())
++          assert supersampling['synthetic'] and not supersampling['measured_audio']
++          assert len(supersampling['scenes']) == 8 and len(supersampling['frames']) == 4
++          assert supersampling['default']['spatial_scale'] == 4
++          assert supersampling['default']['temporal_samples'] == 8
++          assert (p / 'supersampling/index.html').is_file()
++          assert len(list((p / 'supersampling').glob('*/*.png'))) == 32
++          quality = json.loads((p / 'quality/catalogue.json').read_text())
+@@ -68,1 +77,3 @@
+-          assert len(quality['scenes']) >= 9 and len(quality['visualisers']) >= 4
++          assert len(quality['scenes']) >= 11 and len(quality['visualisers']) >= 4
++          assert quality['default_render_quality']['enabled'] is True
++          assert {'default-aa', 'default-off'} <= {s['name'] for s in quality['scenes']}
+diff --git a/docs/project-format.md b/docs/project-format.md
+--- a/docs/project-format.md
++++ b/docs/project-format.md
+@@ -17,1 +17,2 @@
+-| `word_lyrics`, `word_captions`, `word_indicator` | Word LRC source, optional word lane, and word-following sprite/effects. |
++| `word_lyrics`, `word_captions`, `word_indicator` | Word LRC source, optional word lane, and word-following sprite/effects. |
++| `render_quality` | High-quality default: 4× source-vector/font raster, 8 distinct source-time samples per encoded frame and 3-pass edge-aware finishing; explicit `enabled`, `spatial_scale` (1–4), `temporal_samples` (1–8), and AA controls lower the quality for chosen projects. |
+diff --git a/docs/quality-effects.md b/docs/quality-effects.md
+--- a/docs/quality-effects.md
++++ b/docs/quality-effects.md
+@@ -3,1 +3,1 @@
+-FrameRudiments adds **opt-in, deterministic edge-aware anti-aliasing**, **subpixel directional motion blur** and a distinct **encoded-frame temporal shutter** to the existing `visual` / `post_effects` pipeline. Their parameters can be modulated by independent native DanceRudiments, using the source clock and bounded history already documented in [scoped post effects](scoped-post-effects.md). Existing projects remain byte-for-byte unchanged unless the new effects are enabled.
++FrameRudiments offers **opt-in per-element edge-aware anti-aliasing**, **subpixel directional motion blur** and a distinct **encoded-frame temporal shutter** in the `visual` / `post_effects` pipeline. Their parameters can be modulated by independent native DanceRudiments, using the source clock and bounded history already documented in [scoped post effects](scoped-post-effects.md). The *final output* additionally receives high-quality AA by default (a change in output pixels); disable `render_quality` to recover unfiltered output.
+@@ -5,1 +5,37 @@
+-## Three different effects, not interchangeable methods
++## High-quality source-level spatial and temporal supersampling
++
++The **default** rendering quality is 4× high-resolution rasterisation for
++pinned TrueType/OpenType text, word-highlight masks and procedural-vector
++Rudiment viewports, followed by Lanczos downsampling. Bitmap sprite modes
++retain their verified source pixels rather than being incorrectly described
++as vector redraws. Other non-vector surfaces receive the final AA treatment.
++Motion is sampled eight times at different positions inside each target frame
++by an internal high-FPS compositor using the same pinned source-clock inputs.
++Native procedural motions interpolate fractional phases unless their motion
++config explicitly disables interpolation. The eight samples are averaged in
++linear light; they are **not** blended copies of one encoded frame. Source audio
++is never time-stretched, nor are variable-BPM maps or LRC times changed.
++Word-indicator frame-duration fields are translated to the higher internal
++sample rate, preserving their durations in seconds. Scene hooks that depend on
++integer frame indices see the original frame ordinal while fractional source
++seconds stay available for smooth custom movement. Optional GPU projectM and
++Butterchurn feedback still run once per encoded output frame, after the
++Pillow subframe blend, so GPU-only motion cannot be subframe sampled.
++
++```json
++{"render_quality": {"enabled": true, "spatial_scale": 4,
++                    "temporal_samples": 8, "antialias": 1,
++                    "antialias_radius": 0.75,
++                    "antialias_threshold": 0.04, "antialias_passes": 3}}
++```
++
++To deliberately reduce quality and rendering cost, set the two sample counts
++to 2 or 1, or use `{"render_quality":{"enabled":false}}` for unfiltered
++pixels. The maximum defaults have substantial CPU and memory cost (potentially
++many times a previous release). The final edge-aware filter does not undo
++badly aliased original bitmap assets. This is not optical-flow interpolation,
++and no unrecorded acoustic events are invented.
++
++See [spatiotemporal configuration and limits](spatiotemporal-supersampling.md).
++
++## Three different effects, not interchangeable methods
+diff --git a/tests/test_variable_bpm_words.py b/tests/test_variable_bpm_words.py
+--- a/tests/test_variable_bpm_words.py
++++ b/tests/test_variable_bpm_words.py
+@@ -153,3 +153,8 @@
+-    font_file = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
+-    if not Path(font_file).exists():
+-        pytest.skip("Needs DejaVuSans for precise visual regression")
++    font_file = os.environ.get("FRAMERUDIMENTS_TEST_FONT")
++    if not font_file:
++        font_file = next((path for path in (
++            "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
++            "C:/Windows/Fonts/arialbd.ttf", "C:/Windows/Fonts/arial.ttf")
++            if Path(path).is_file()), None)
++    if not font_file or not Path(font_file).is_file():
++        pytest.skip("Requires an installed pinned test font")
+diff --git a/README.md b/README.md
+--- a/README.md
++++ b/README.md
+@@ -63,1 +63,15 @@
+-## Install and run
++## Maximum-quality rendering enabled by default
++
++FrameRudiments now redraws pinned text outlines and procedural vector Rudiment
++views at **4× linear pixel resolution** before Lanczos reduction. It also
++renders **eight different source-clock subframes per output frame**,
++averaging them in linear light for true temporal supersampling. A final
++three-pass edge-aware AA filter runs after the optional GPU effect chain.
++These are the maximum supported preset settings and require no project changes.
++Explicitly lower them with `render_quality.spatial_scale` (1–4),
++`render_quality.temporal_samples` (1–8), or
++`render_quality.enabled: false` for deliberate pixel art or legacy output.
++Full-quality rendering can be much slower; read the
++[spatiotemporal sampling guide](docs/spatiotemporal-supersampling.md).
++
++## Install and run
+diff --git a/src/framerudiments/rudiment_renderers.py b/src/framerudiments/rudiment_renderers.py
+--- a/src/framerudiments/rudiment_renderers.py
++++ b/src/framerudiments/rudiment_renderers.py
+@@ -392,2 +392,3 @@
+-        self._styled_renderers = {}
+-        self.renderer, identity = registry.create
++        self._styled_renderers = {}
++        self._hires_renderers = {}
++        self.renderer, identity = registry.create
+@@ -446,2 +447,9 @@
+-        viewport = renderer.render(self.data(context))
+-        expected = self._size
++        scale = getattr(getattr(self.project, "output_quality", None), "vector_scale", 1)
++        if scale > 1 and not self._renderer_name.startswith("sprite-"):
++            from .super_sampling import vector_viewport
++            viewport, report = vector_viewport(self._registry, self._renderer_name,
++                self._size, style, self.data(context), scale, self.project, self._hires_renderers)
++        else:
++            viewport = renderer.render(self.data(context))
++            report = getattr(renderer, "frame_report", None)
++        expected = self._size
+@@ -450,2 +458,1 @@
+-        report = getattr(renderer, "frame_report", None)
+-        if modulation_report:
++        if modulation_report:
+diff --git a/src/framerudiments/lyric_indicator.py b/src/framerudiments/lyric_indicator.py
+--- a/src/framerudiments/lyric_indicator.py
++++ b/src/framerudiments/lyric_indicator.py
+@@ -36,1 +36,1 @@
+-def _profile(row, label):
++def _profile(row, label, time_factor=1):
+@@ -45,1 +45,1 @@
+-duration_frames=integer(row.get("duration_frames", 12), f"{label} duration", minimum=1, maximum=240))
++duration_frames=integer(row.get("duration_frames", 12), f"{label} duration", minimum=1, maximum=240 * time_factor))
+@@ -90,1 +90,3 @@
+-        self.travel = integer(config.get("travel_frames", 8), "indicator transition frames", maximum=120)
++        time_factor = getattr(project, "_time_sampling_factor", 1)
++        self.travel = integer(config.get("travel_frames", 8), "indicator transition frames",
++                              maximum=120 * time_factor)
+@@ -137,1 +139,2 @@
+-self.particle_lifetime = integer(particle.get("lifetime_frames", 35), "indicator particle lifetime", minimum=1, maximum=240)
++self.particle_lifetime = integer(particle.get("lifetime_frames", 35), "indicator particle lifetime",
++                                         minimum=1, maximum=240 * time_factor)
+@@ -147,2 +150,2 @@
+-        self.on_word = _profile(particle.get("on_word", {}), "word trigger")
+-        self.on_cue = _profile(particle.get("on_cue", {}), "cue trigger")
++        self.on_word = _profile(particle.get("on_word", {}), "word trigger", time_factor)
++        self.on_cue = _profile(particle.get("on_cue", {}), "cue trigger", time_factor)
+diff --git a/src/framerudiments/output_quality.py b/src/framerudiments/output_quality.py
+new file mode 100644
+--- /dev/null
++++ b/src/framerudiments/output_quality.py
+@@ -0,0 +1,77 @@
++"""Project-wide, default-maximum spatial and temporal supersampling policy.
++
++The spatial stage redraws pinned fonts and procedural vector geometry at four
++physical source pixels per output pixel. Temporal subframes use a temporary
++high-fps compositor bound to the *same* source audio and beat timeline.
++"""
++
++from PIL import Image
++
++from .io import fields, integer, number
++from .quality_effects import edge_aware_antialias
++
++
++class OutputQuality:
++    """Validated quality controls. Values below the maxima require explicit JSON."""
++
++    MAX_SPATIAL = 4
++    MAX_TEMPORAL = 8
++
++    def __init__(self, config=None):
++        config = config or {}
++        fields(config, {"enabled", "spatial_scale", "temporal_samples", "antialias",
++                        "antialias_radius", "antialias_threshold", "antialias_passes"},
++               "render_quality")
++        self.enabled = config.get("enabled", True)
++        if type(self.enabled) is not bool:
++            raise ValueError("render_quality.enabled must be a boolean")
++        self.spatial_scale = integer(config.get("spatial_scale", self.MAX_SPATIAL),
++                                     "render_quality.spatial_scale", minimum=1, maximum=self.MAX_SPATIAL)
++        self.temporal_samples = integer(config.get("temporal_samples", self.MAX_TEMPORAL),
++                                        "render_quality.temporal_samples", minimum=1, maximum=self.MAX_TEMPORAL)
++        self.strength = number(config.get("antialias", 1), "output antialias strength",
++                               minimum=0, maximum=1)
++        self.radius = number(config.get("antialias_radius", .75), "output antialias radius",
++                             minimum=.25, maximum=3)
++        self.threshold = number(config.get("antialias_threshold", .04),
++                                "output antialias threshold", minimum=0, maximum=.95)
++        self.passes = integer(config.get("antialias_passes", 3), "output antialias passes",
++                              minimum=1, maximum=3)
++        self.evidence = dict(enabled=self.enabled,
++                             spatial_scale=self.spatial_scale if self.enabled else 1,
++                             temporal_samples=self.temporal_samples if self.enabled else 1,
++                             antialias=self.strength if self.enabled else 0,
++                             antialias_radius=self.radius,
++                             antialias_threshold=self.threshold,
++                             antialias_passes=self.passes,
++                             spatial_method="true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
++                             temporal_method="real native-source-clock subframe renders; linear-light shutter integration",
++                             final_method="premultiplied edge-aware AA after GPU output, before encode",
++                             optical_flow=False,
++                             gpu_feedback_subframes=False)
++
++    @property
++    def vector_scale(self):
++        return self.spatial_scale if self.enabled else 1
++
++    @property
++    def time_samples(self):
++        return self.temporal_samples if self.enabled else 1
++
++    def virtual_quality(self):
++        """A source-time sampling compositor must not recursively oversample."""
++        return OutputQuality(dict(enabled=self.enabled, spatial_scale=self.spatial_scale,
++                                  temporal_samples=1, antialias=self.strength,
++                                  antialias_radius=self.radius, antialias_threshold=self.threshold,
++                                  antialias_passes=self.passes))
++
++    def apply(self, image):
++        """Final spatial AA, once per finished encoded frame (after GPU effects)."""
++        if not isinstance(image, Image.Image) or image.mode not in {"RGB", "RGBA"}:
++            raise ValueError("Output quality requires an RGB or RGBA frame")
++        if not self.enabled or not self.strength or min(image.size) < 2:
++            return image
++        rgba = image.convert("RGBA") if image.mode == "RGB" else image
++        result = edge_aware_antialias(rgba, strength=self.strength, radius=self.radius,
++                                      threshold=self.threshold, passes=self.passes)
++        return result.convert("RGB") if image.mode == "RGB" else result
+diff --git a/src/framerudiments/super_sampling.py b/src/framerudiments/super_sampling.py
+new file mode 100644
+--- /dev/null
++++ b/src/framerudiments/super_sampling.py
+@@ -0,0 +1,296 @@
++"""Real high-resolution source rendering and subframe integrations.
++
++Pinned font outlines and procedural vector geometry are rasterised above output
++resolution. Source time subframes are rendered by an independent high-fps
++compositor, not synthesized by blending repeated ordinary frames. Output timing,
++recording identities and original cue/word timings remain authoritative.
++"""
++from copy import copy, deepcopy
++from functools import lru_cache
++import math
++from pathlib import Path
++
++from PIL import Image, ImageDraw, ImageFont
++
++from .quality_effects import linear_shutter_composite
++
++
++# These are physical pixel dimensions, not amplitudes, tempo or the number of
++# spectrum/Rudiment channels. Unknown style keys remain untouched.
++_PIXEL_STYLE = frozenset((
++    "line_width", "padding", "font_size", "sprite_size", "dot_size", "bar_gap",
++    "stroke_width", "peak_marker_size", "point_size", "grid_width",
++))
++
++
++def vector_viewport(renderer_registry, name, size, style, frame, scale, project=None, cache=None):
++    """Make a genuine high-res vector viewport, then reduce to encoded pixels.
++
++    Sprite-backed renderer names are deliberately excluded by the caller, to
++    retain authored bitmap pixel edges and checksum-pinned source texels.
++    """
++    if scale == 1:
++        view, _ = renderer_registry.create(name, size, style)
++        if project is not None and callable(getattr(view, "prepare", None)):
++            view.prepare(project)
++        return view.render(frame), getattr(view, "frame_report", None)
++    high_style = dict(style)
++    for key in _PIXEL_STYLE & high_style.keys():
++        value = high_style[key]
++        if type(value) in (int, float):
++            high_style[key] = max(1, round(value * scale))
++    scaled_size = (size[0] * scale, size[1] * scale)
++    key = (name, scaled_size, repr(sorted(high_style.items())))
++    high = cache.get(key) if cache is not None else None
++    if high is None:
++        high, _ = renderer_registry.create(name, scaled_size, high_style)
++        if project is not None and callable(getattr(high, "prepare", None)):
++            high.prepare(project)
++        if cache is not None:
++            if len(cache) >= 16:
++                cache.clear()
++            cache[key] = high
++    source = high.render(frame)
++    if not isinstance(source, Image.Image) or source.mode != "RGBA" or source.size != scaled_size:
++        raise ValueError("Supersampled vector must render a full-size RGBA viewport")
++    return source.resize(size, Image.Resampling.LANCZOS), getattr(high, "frame_report", None)
++
++
++class _ScaledText:
++    """Pillow layout adapter: same word wraps, larger real TrueType outlines."""
++
++    def __init__(self, original, scale, crop_x, crop_y):
++        self.original = original
++        self.factor = scale
++        self.box = tuple(round((v - (crop_x if i % 2 == 0 else crop_y)) * scale)
++                         for i, v in enumerate(original.box))
++        self.stroke = original.stroke * scale
++        self.spacing = original.spacing * scale
++        self.maximum = original.maximum * scale
++        self.minimum = original.minimum * scale
++        self.font_ref = original.font_ref
++        self.colour = original.colour
++        self.config = original.config
++
++    @lru_cache(maxsize=64)
++    def layout(self, text):
++        base_font, rows, _, _ = self.original.layout(text)
++        font = ImageFont.truetype(self.font_ref["path"], base_font.size * self.factor)
++        draw = ImageDraw.Draw(Image.new("L", (1, 1)))
++        boxes = tuple(draw.textbbox((0, 0), row, font=font, stroke_width=self.stroke) for row in rows)
++        height = sum(box[3] - box[1] for box in boxes) + self.spacing * (len(boxes) - 1)
++        return font, rows, boxes, height
++
++    def draw(self, image, text, *, colour=None):
++        if not text:
++            return []
++        font, rows, boxes, height = self.layout(text)
++        left, top, right, bottom = self.box
++        draw = ImageDraw.Draw(image)
++        if panel := self.config.get("panel"):
++            draw.rounded_rectangle(self.box, radius=12 * self.factor, fill=panel)
++        y = top + (bottom - top - height) / 2
++        bounds = []
++        for row, bb in zip(rows, boxes):
++            x = left + (right - left - (bb[2] - bb[0])) / 2 - bb[0]
++            draw.text((x, y - bb[1]), row, font=font, fill=colour or self.colour,
++                      stroke_width=self.stroke, stroke_fill="#12111c")
++            bounds.append((x + bb[0], y, x + bb[2], y + bb[3] - bb[1]))
++            y += bb[3] - bb[1] + self.spacing
++        return bounds
++
++
++def _high_rich(appearance, factor):
++    """Copy bounded glyph effects and scale their geometric pixel dimensions."""
++    high = copy(appearance)
++    for prop, keys in (("stroke", ("width",)), ("bevel", ("depth",)),
++                       ("emboss", ("depth",)), ("inner", ("radius",)),
++                       ("outer", ("radius",)), ("shadow", ("dx", "dy", "blur"))):
++        data = dict(getattr(high, prop))
++        for key in keys:
++            data[key] *= factor
++        setattr(high, prop, data)
++    return high
++
++
++def supersampled_text(block, image, text, *, colour=None, active=None, completed=()):
++    """Supersample text only, not an entire 4K canvas for each subtitle call.
++
++    Cropping includes the bounded halo for shadows/glow. Return ordinary output
++    coordinate bounds for existing compositor/QA and word tracking.
++    """
++    if not text:
++        return []
++    factor = getattr(getattr(block.project, "output_quality", None), "vector_scale", 1)
++    if factor <= 1:
++        if block.rich is not None:
++            return block.rich.draw(image, block, text, colour=colour, active=active, completed=completed)
++        if active is not None:
++            from .word_timing import draw_highlighted_line
++            return draw_highlighted_line(block, image, text, active=active, completed=completed,
++                                         colour=block.config.get("word_colour", "#ffe082"),
++                                         completed_colour=block.config.get("completed_colour", "#9ad9d5"))
++        return block._draw_native(image, text, colour=colour)
++    left, top, right, bottom = block.box
++    halo = 16 + block.stroke
++    if block.rich is not None:
++        appearance = block.rich
++        halo = min(192, max(halo, appearance.outer["radius"] * 4,
++                            appearance.shadow["blur"] * 4 + max(abs(appearance.shadow["dx"]),
++                                                                  abs(appearance.shadow["dy"]))))
++    x0, y0 = max(0, math.floor(left - halo)), max(0, math.floor(top - halo))
++    x1, y1 = min(image.width, math.ceil(right + halo)), min(image.height, math.ceil(bottom + halo))
++    high = Image.new("RGBA", ((x1 - x0) * factor, (y1 - y0) * factor))
++    scaled = _ScaledText(block, factor, x0, y0)
++    if block.rich is not None:
++        bounds = _high_rich(block.rich, factor).draw(high, scaled, text, colour=colour,
++                                                     active=active, completed=completed)
++    elif active is not None:
++        from .word_timing import draw_highlighted_line
++        bounds = draw_highlighted_line(scaled, high, text, active=active, completed=completed,
++                                       colour=block.config.get("word_colour", "#ffe082"),
++                                       completed_colour=block.config.get("completed_colour", "#9ad9d5"))
++    else:
++        bounds = scaled.draw(high, text, colour=colour)
++    reduced = high.resize((x1-x0, y1-y0), Image.Resampling.LANCZOS)
++    image.alpha_composite(reduced, (x0, y0))
++    return [tuple(round((value / factor + (x0 if i % 2 == 0 else y0)), 3)
++                  for i, value in enumerate(rect)) for rect in bounds]
++
++
++def _interpolate_native_motion(value):
++    if isinstance(value, dict):
++        # Add it only for native procedural motion; never override explicit off,
++        # and never reinterpret recorded/rerecorded audio frame timing.
++        if value.get("kind") in {"named", "table", "match"}:
++            value.setdefault("interpolate", True)
++        for nested in value.values():
++            _interpolate_native_motion(nested)
++    elif isinstance(value, list):
++        for nested in value:
++            _interpolate_native_motion(nested)
++
++
++def _virtual_project(original, factor):
++    """Derive a private render-time project at higher FPS, without time stretch."""
++    virtual = copy(original)
++    virtual.data = deepcopy(original.data)
++    virtual.inputs = list(original.inputs)
++    virtual.fps = original.fps * factor
++    virtual.frame_count = math.ceil(original.duration * virtual.fps)
++    virtual.output_quality = original.output_quality.virtual_quality()
++    virtual._time_sampling_factor = factor
++    _interpolate_native_motion(virtual.data.get("layers", []))
++    _interpolate_native_motion(virtual.data.get("word_indicator", {}))
++    _interpolate_native_motion(virtual.data.get("post_effects", {}))
++    # Avoid applying historical encoded-frame shutter to each subframe. The
++    # source compositor integrates the shutter after these subframes if asked.
++    virtual.data.get("post_effects", {}).pop("temporal", None)
++    # Index-based animation times are expressed in original output frames;
++    # scale the time durations to keep the original seconds per transition.
++    indicator = virtual.data.get("word_indicator")
++    if isinstance(indicator, dict):
++        indicator["travel_frames"] = indicator.get("travel_frames", 8) * factor
++        particles = indicator.setdefault("particles", {})
++        particles["lifetime_frames"] = particles.get("lifetime_frames", 35) * factor
++        particles["speed"] = particles.get("speed", 1.7) / factor
++        particles["wind"] = particles.get("wind", 0) / (factor * factor)
++        particles["gravity"] = particles.get("gravity", 0) / (factor * factor)
++        for kind in ("on_word", "on_cue"):
++            profile = particles.setdefault(kind, {})
++            profile["duration_frames"] = profile.get("duration_frames", 12) * factor
++    for layer in virtual.data.get("layers", []):
++        if layer.get("type") == "rudiment":
++            layer["history_stride"] = min(120, layer.get("history_stride", 1) * factor)
++    # Lag and smoothing are measured in encoded-frame counts, not seconds.
++    # Maintain their original wall-clock duration for the high-FPS compositor.
++    def scaled_modulations(value):
++        if isinstance(value, dict):
++            for key, inner in value.items():
++                if key == "modulations" and isinstance(inner, list):
++                    for row in inner:
++                        if isinstance(row, dict):
++                            if "lag_frames" in row and type(row["lag_frames"]) is int:
++                                row["lag_frames"] = min(600, row["lag_frames"] * factor)
++                            original_smoothing = row.get("smoothing_frames", 0)
++                            original_stride = row.get("sample_stride", 1)
++                            if type(original_smoothing) is int and original_smoothing > 0:
++                                row["smoothing_frames"] = min(120, original_smoothing * factor)
++                                wanted_span = original_smoothing * original_stride * factor
++                                row["sample_stride"] = min(60, max(1, math.ceil(
++                                    wanted_span / row["smoothing_frames"])))
++                else:
++                    scaled_modulations(inner)
++        elif isinstance(value, list):
++            for inner in value:
++                scaled_modulations(inner)
++    scaled_modulations(virtual.data)
++    from .timeline import parse_lrc, parse_cue
++    from .word_timing import parse_word_lrc, word_frame_ledger, assign_words_to_lines
++    virtual.lyrics = virtual.ledger(parse_lrc(original.lyric_ref["path"])) if original.lyric_ref else []
++    if "cues" in original.data:
++        raw = virtual.ref(original.data["cues"])
++        reader = parse_cue if Path(raw["path"]).suffix.lower() == ".cue" else parse_lrc
++        events = reader(raw["path"]) if reader is parse_cue else reader(raw["path"], lyrics=False)
++        virtual.cues = virtual.ledger(events)
++    else:
++        virtual.cues = []
++    if original.word_ref:
++        virtual.words = word_frame_ledger(parse_word_lrc(original.word_ref["path"]),
++                                          start_sample=virtual.start_sample, end_sample=virtual.end_sample,
++                                          sample_rate=virtual.sample_rate, fps=virtual.fps,
++                                          repeats=virtual.repeats, frame_count=virtual.frame_count)
++        if virtual.words and virtual.lyrics:
++            assign_words_to_lines(virtual.words, virtual.lyrics)
++    else:
++        virtual.words = []
++    return virtual
++
++
++def temporal_supersample(compositor, frame):
++    """Integrate true source-clock subframes into an ordinary output frame.
++
++    Works at random-access frames, including word/cue events and variable BPM.
++    The optional projectM/Butterchurn engines remain at their native *output*
++    frame rate and are never invoked multiple times per encoded frame.
++    """
++    factor = compositor.output_quality.time_samples
++    if factor == 1:
++        raise ValueError("Temporal supersampling called with one sample")
++    virtual = getattr(compositor, "_temporal_virtual", None)
++    if virtual is None:
++        from .compositor import Compositor
++        project = _virtual_project(compositor.project, factor)
++        scene = compositor.scene
++        if scene is not None:
++            # Source clock remains fractional; original integer frame indices
++            # retain their meaning for trusted custom scene hooks.
++            from dataclasses import replace
++
++            def scene_adapter(image, context):
++                return scene(image, replace(context, frame=context.frame // factor))
++        else:
++            scene_adapter = None
++        virtual = Compositor(project, scene=scene_adapter, renderers=compositor.renderers)
++        compositor._temporal_virtual = virtual
++    images = []
++    for j in range(factor):
++        sample, _ = virtual.frame(min(frame * factor + j, virtual.project.frame_count - 1),
++                                  apply_quality=False)
++        images.append(sample)
++    # Source samples are genuinely different instants in the virtual clock.
++    combined = linear_shutter_composite(images, [1] * factor, strength=1)
++    compositor.extents.update(virtual.extents)
++    for word, status in virtual.text_states.items():
++        output_status = deepcopy(status)
++        if "first_frame" in output_status:
++            output_status["first_frame"] = output_status["first_frame"] // factor
++        compositor.text_states.setdefault(word, output_status)
++    compositor.post_pipeline.last_report = deepcopy(virtual.post_pipeline.last_report)
++    reports = deepcopy(virtual.frame_reports())
++    for report in reports.values():
++        if isinstance(report, dict) and "frame" in report:
++            report["subframe_index"] = report["frame"]
++            report["frame"] = frame
++    compositor._supersampled_reports = reports
++    return combined, compositor.context(frame)
+diff --git a/tests/test_default_antialias.py b/tests/test_default_antialias.py
+new file mode 100644
+--- /dev/null
++++ b/tests/test_default_antialias.py
+@@ -0,0 +1,94 @@
++"""Maximum-quality defaults and deliberate low-quality options."""
++import copy
++import os
++from pathlib import Path
++
++from PIL import Image, ImageDraw
++import pytest
++
++from framerudiments.output_quality import OutputQuality
++
++
++def image():
++    source = Image.new("RGB", (100, 74), "#09152c")
++    ImageDraw.Draw(source).polygon([(8, 9), (83, 15), (76, 64), (11, 58)], fill="#f4a27a")
++    return source
++
++
++def test_enabled_by_default_at_maximum_supported_settings():
++    obj = OutputQuality()
++    assert obj.enabled and obj.vector_scale == 4 and obj.time_samples == 8
++    assert obj.passes == 3 and obj.strength == 1
++    assert obj.evidence["spatial_scale"] == 4
++    assert obj.evidence["temporal_samples"] == 8
++    out = obj.apply(image())
++    assert out.mode == "RGB" and out.size == image().size
++    assert out.tobytes() != image().tobytes()
++    assert out.tobytes() == obj.apply(image()).tobytes()
++
++
++def test_explicit_lower_quality_and_pixel_art_opt_out():
++    low = OutputQuality({"spatial_scale": 1, "temporal_samples": 1, "antialias": 0})
++    assert (low.vector_scale, low.time_samples) == (1, 1)
++    assert low.apply(image()).tobytes() == image().tobytes()
++    off = OutputQuality({"enabled": False})
++    assert (off.vector_scale, off.time_samples) == (1, 1)
++    assert off.apply(image()).tobytes() == image().tobytes()
++    assert not off.evidence["enabled"]
++
++
++@pytest.mark.parametrize("bad", [
++    {"enabled": 0}, {"spatial_scale": 0}, {"spatial_scale": 5},
++    {"spatial_scale": 2.5}, {"temporal_samples": 0}, {"temporal_samples": 9},
++    {"temporal_samples": True}, {"antialias_passes": 4},
++    {"antialias": float("nan")}, {"other": "unknown"},
++])
++def test_invalid_or_unbounded_quality_fails_early(bad):
++    with pytest.raises((ValueError, TypeError)):
++        OutputQuality(bad)
++
++
++@pytest.fixture
++def demo(tmp_path):
++    font = os.environ.get("FRAMERUDIMENTS_TEST_FONT")
++    if not font or not Path(font).is_file():
++        pytest.skip("Native CI font is not installed")
++    from framerudiments.demo import create_demo
++    from framerudiments.project import Project
++    return Project.load(create_demo(tmp_path / "max-quality", font, width=160, height=240))
++
++
++def test_direct_compositor_uses_distinct_subframes_by_default(demo):
++    from framerudiments.compositor import Compositor
++    comp = Compositor(demo)
++    high, context = comp.frame(3)
++    assert context.frame == 3
++    assert comp._temporal_virtual.project.fps == 8 * demo.fps
++    assert high.mode == "RGB" and high.size == (160, 240)
++    replay, _ = comp.frame(3)
++    assert high.tobytes() == replay.tobytes()
++    assert comp.evidence()["render_quality"]["spatial_scale"] == 4
++
++
++def test_explicit_one_sample_does_not_build_high_fps_compositor(demo):
++    from framerudiments.project import Project
++    from framerudiments.compositor import Compositor
++    custom = Project({**copy.deepcopy(demo.data),
++                      "render_quality": {"spatial_scale": 1, "temporal_samples": 1,
++                                         "antialias": 0}}, demo.base)
++    comp = Compositor(custom)
++    comp.frame(3)
++    assert not hasattr(comp, "_temporal_virtual")
++
++
++def test_temporal_history_is_not_applied_to_each_subframe(demo):
++    from framerudiments.project import Project
++    from framerudiments.compositor import Compositor
++    config = dict(**copy.deepcopy(demo.data), render_quality={"spatial_scale": 2, "temporal_samples": 2})
++    config["post_effects"] = {"temporal": {"strength": .5, "samples": 2, "shutter_frames": 1}}
++    comp = Compositor(Project(config, demo.base))
++    a, _ = comp.frame(8)
++    comp.frame(2)
++    assert comp.frame(8)[0].tobytes() == a.tobytes()
++    assert comp.post_pipeline.last_report["temporal"]["source_frames"][-1] == 8
++    assert comp._temporal_virtual.post_pipeline.temporal is None
+diff --git a/tests/test_supersampling.py b/tests/test_supersampling.py
+new file mode 100644
+--- /dev/null
++++ b/tests/test_supersampling.py
+@@ -0,0 +1,138 @@
++"""True high-res glyph/vector rerasterisation and subframe source-clock QA."""
++from pathlib import Path
++from types import SimpleNamespace
++
++from PIL import Image, ImageDraw, ImageFont
++import pytest
++
++from framerudiments.output_quality import OutputQuality
++from framerudiments.super_sampling import supersampled_text, vector_viewport, _virtual_project
++
++
++class SimpleRenderer:
++    def __init__(self, size, style):
++        self.size = size
++        self.style = style
++        self.frame_report = None
++
++    def render(self, frame):
++        result = Image.new("RGBA", self.size)
++        d = ImageDraw.Draw(result)
++        x = self.size[0] / 3 + frame / 7
++        d.polygon([(x, 2), (x + 23, 25), (x - 13, self.size[1] - 3)], fill="#ff7656")
++        self.frame_report = {"native": frame}
++        return result
++
++
++class Registry:
++    def __init__(self):
++        self.requests = []
++
++    def create(self, name, size, style):
++        self.requests.append((name, size, style))
++        return SimpleRenderer(size, style), {"name": name}
++
++
++def test_vector_rerenders_at_four_times_true_physical_resolution():
++    r = Registry()
++    cache = {}
++    out, report = vector_viewport(r, "test-vector", (160, 92), {"line_width": 2}, 7, 4,
++                                  cache=cache)
++    assert r.requests[0][1] == (640, 368)
++    assert r.requests[0][2]["line_width"] == 8
++    assert out.size == (160, 92) and out.mode == "RGBA"
++    assert report["native"] == 7
++    same, _ = vector_viewport(r, "test-vector", (160, 92), {"line_width": 2}, 7, 4, cache=cache)
++    assert len(r.requests) == 1 and out.tobytes() == same.tobytes()
++    low, _ = vector_viewport(r, "test-vector", (160, 92), {"line_width": 2}, 7, 1)
++    assert low.tobytes() != out.tobytes()
++
++
++def _font():
++    import os
++    for path in (os.environ.get("FRAMERUDIMENTS_TEST_FONT"),
++                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "C:/Windows/Fonts/arial.ttf"):
++        if path and Path(path).is_file():
++            return path
++    pytest.skip("Test requires a real TTF/OTF font")
++
++
++class FontBlock:
++    def __init__(self, scale):
++        self.box = (12, 10, 236, 97)
++        self.maximum = 35
++        self.minimum = 35
++        self.stroke = 0
++        self.spacing = 3
++        self.font_ref = {"path": _font()}
++        self.project = SimpleNamespace(output_quality=OutputQuality({"spatial_scale": scale,
++                                                                    "temporal_samples": 1}))
++        self.config = {"colour": "white"}
++        self.colour = "#ffffff"
++        self.rich = None
++
++    def layout(self, text):
++        font = ImageFont.truetype(self.font_ref["path"], self.maximum)
++        box = ImageDraw.Draw(Image.new("RGBA", (1, 1))).textbbox((0, 0), text, font=font)
++        return font, (text,), (box,), box[3] - box[1]
++
++    def _draw_native(self, image, text, colour=None):
++        font, _, boxes, h = self.layout(text)
++        box = boxes[0]
++        x = self.box[0] + (self.box[2] - self.box[0] - (box[2] - box[0])) / 2 - box[0]
++        y = self.box[1] + (self.box[3] - self.box[1] - h) / 2
++        ImageDraw.Draw(image).text((x, y - box[1]), text, fill=colour or self.colour, font=font)
++        return [(x + box[0], y, x + box[2], y + h)]
++
++
++def test_text_supersamples_actual_typeface_outlines_and_limits_working_surface():
++    text = "Lyric motion"
++    high, low = Image.new("RGBA", (248, 112)), Image.new("RGBA", (248, 112))
++    result = supersampled_text(FontBlock(4), high, text)
++    supersampled_text(FontBlock(1), low, text)
++    assert result and high.getbbox() is not None
++    assert high.mode == "RGBA" and high.size == low.size
++    assert high.tobytes() != low.tobytes()
++    assert high.getpixel((0, 0))[3] == 0
++    assert high.tobytes() == (lambda other: (supersampled_text(FontBlock(4), other, text), other.tobytes())[1])(
++        Image.new("RGBA", high.size))
++
++
++def test_true_subframes_are_not_repeated_integer_frames(monkeypatch):
++    from framerudiments import super_sampling
++    from PIL import ImageDraw
++
++    class Fake:
++        def __init__(self, project, scene=None, renderers=None):
++            self.project = project
++            self.frames = []
++            self.extents, self.text_states = {}, {}
++            self.post_pipeline = SimpleNamespace(last_report={}, temporal=None)
++
++        def frame(self, frame, apply_quality=False):
++            self.frames.append(frame)
++            image = Image.new("RGB", (60, 36), "black")
++            ImageDraw.Draw(image).ellipse((2 + frame * 3, 5, 16 + frame * 3, 20), fill="white")
++            return image, SimpleNamespace(frame=frame)
++
++        def frame_reports(self):
++            return {}
++
++    made = []
++    def build(p, factor):
++        q = SimpleNamespace(fps=60 * factor, frame_count=100,
++                            data={"post_effects": {}}, output_quality=OutputQuality({"temporal_samples": 1}))
++        made.append(q)
++        return q
++    monkeypatch.setattr(super_sampling, "_virtual_project", build)
++    import framerudiments.compositor as compositor_mod
++    monkeypatch.setattr(compositor_mod, "Compositor", Fake)
++    outer = SimpleNamespace(output_quality=OutputQuality({"spatial_scale": 1}),
++                            project=SimpleNamespace(), scene=None, renderers=None,
++                            extents={}, text_states={}, post_pipeline=SimpleNamespace(last_report={}),
++                            context=lambda f: SimpleNamespace(frame=f))
++    result, ctx = super_sampling.temporal_supersample(outer, 1)
++    assert ctx.frame == 1 and result.size == (60, 36)
++    assert outer._temporal_virtual.frames == list(range(8, 16))
++    assert len(set(outer._temporal_virtual.frames)) == 8
++    assert result.tobytes() == super_sampling.temporal_supersample(outer, 1)[0].tobytes()
+diff --git a/scripts/generate_supersampling_gallery.py b/scripts/generate_supersampling_gallery.py
+new file mode 100644
+--- /dev/null
++++ b/scripts/generate_supersampling_gallery.py
+@@ -0,0 +1,114 @@
++"""Synthetic CI gallery: true high-res geometry versus true subframe samples.
++
++These are visual algorithm demonstrations; no real song recordings, STEM data
++or captured native motion are claimed by this gallery.
++"""
++import argparse
++import json
++import math
++import os
++from pathlib import Path
++
++from PIL import Image, ImageDraw, ImageFont
++
++from framerudiments.output_quality import OutputQuality
++from framerudiments.quality_effects import linear_shutter_composite
++
++MOMENTS = (10, 22, 35, 48)
++MODES = (
++    ("default-maximum", "Default maximum quality", 4, 8, True),
++    ("spatial-only-4x", "4× spatial, one time sample", 4, 1, True),
++    ("temporal-only-8x", "8× time, native spatial", 1, 8, True),
++    ("spatial-2x-temporal-4x", "Lowered 2× spatial + 4× time", 2, 4, True),
++    ("spatial-4x-temporal-4x", "4× spatial + 4× time", 4, 4, True),
++    ("temporal-4x-only", "Four source-time samples", 1, 4, True),
++    ("single-sample-with-aa", "Single sample and edge AA", 1, 1, True),
++    ("explicit-pixel-art", "Both disabled (original pixels)", 1, 1, False),
++)
++
++
++def _font(size):
++    choices = (os.environ.get("FRAMERUDIMENTS_TEST_FONT"),
++               "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
++               "C:/Windows/Fonts/arial.ttf")
++    for path in choices:
++        if path and Path(path).is_file():
++            return ImageFont.truetype(path, size)
++    raise FileNotFoundError("No test font: set FRAMERUDIMENTS_TEST_FONT")
++
++
++def _scene(time, spatial):
++    w, h = 480, 280
++    actual = Image.new("RGBA", (w * spatial, h * spatial), "#0b1729")
++    d = ImageDraw.Draw(actual)
++    s = spatial
++    # Moving vector object with a true subpixel centre; not a raster translation.
++    cx = (140 + 75 * math.sin(time * 4.5)) * s
++    cy = (154 + 32 * math.cos(time * 5.9)) * s
++    d.polygon(((cx - 55 * s, cy - 20 * s), (cx + 45 * s, cy - 55 * s),
++               (cx + 60 * s, cy + 43 * s), (cx - 26 * s, cy + 54 * s)), fill="#ffc566")
++    d.line([(8*s, (205+20*math.sin(time*6))*s), (468*s, (130-14*math.sin(time*3))*s)],
++           fill="#39dfeb", width=max(1, 2*s))
++    for i in range(15):
++        x = (283 + i*11) * s
++        y = (222 - (15+i*3 + 34*math.sin(i*.4+time*9))) * s
++        d.rectangle((x, y, x + 6*s, 243*s), fill="#72c8ff")
++    # FreeType hinting changes between sizes: font outlines genuinely rendered
++    # above output resolution (not enlarged afterward).
++    d.text((22*s, 21*s), "VECTOR + TIME", font=_font(30*s), fill="#e9f2ff",
++           stroke_width=max(1, s), stroke_fill="#1e8195")
++    d.text((22*s, 250*s), f"sample {time:05.3f}s", font=_font(15*s), fill="#9dd5d9")
++    return (actual.resize((w, h), Image.Resampling.LANCZOS)
++            if spatial > 1 else actual).convert("RGB")
++
++
++def _render(frame, spatial, temporal, enabled):
++    samples = [_scene((frame + j / temporal) / 60, spatial) for j in range(temporal)]
++    combined = linear_shutter_composite(samples, [1] * temporal, strength=1)
++    config = {"enabled": enabled, "spatial_scale": spatial,
++              "temporal_samples": temporal, "antialias": 1,
++              "antialias_passes": 3}
++    return OutputQuality(config).apply(combined)
++
++
++def build_site(site):
++    site = Path(site)
++    home = site / "index.html"
++    if not home.is_file():
++        raise ValueError("Generate the main visualisation gallery first")
++    root = site / "supersampling"
++    root.mkdir(parents=True, exist_ok=False)
++    for name, _, spatial, temporal, enabled in MODES:
++        folder = root / name
++        folder.mkdir()
++        for index, frame in enumerate(MOMENTS):
++            _render(frame, spatial, temporal, enabled).save(folder / f"{index}.png")
++    catalogue = dict(schema="framerudiments.synthetic-spatiotemporal-gallery.v1",
++                     synthetic=True, measured_audio=False, frames=list(MOMENTS),
++                     default=dict(enabled=True, spatial_scale=4, temporal_samples=8,
++                                  antialias_passes=3),
++                     scenes=[dict(name=n, label=l, spatial_scale=s, temporal_samples=t,
++                                  enabled=e) for n, l, s, t, e in MODES])
++    (root / "catalogue.json").write_text(json.dumps(catalogue, indent=2)+"\n", encoding="utf-8")
++    cards = "\n".join(f'<article><img alt="{label}" data-name="{name}" src="{name}/0.png">'
++                       f'<h2>{label}</h2><p>Spatial {spatial}× · Temporal {temporal}×'
++                       f' · {"AA on" if enabled else "AA off"}</p></article>'
++                       for name, label, spatial, temporal, enabled in MODES)
++    page = '''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>FrameRudiments: Spatiotemporal Supersampling</title><style>
++:root{color-scheme:dark}body{background:#081225;color:#eaf7ff;font:16px system-ui;max-width:1450px;padding:30px;margin:auto}a{color:#5ae3d7}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:20px}article{background:#14253e;border:1px solid #365878;border-radius:12px;padding:16px}img{display:block;width:100%;border-radius:8px}p{color:#b1cadb}input{width:260px;accent-color:#5ae3d7}</style></head><body>
++<a href="../index.html">← All visualisations</a><h1>Source-level spatial &amp; temporal supersampling</h1><p>The maximum-quality setting is the FrameRudiments default. Each comparison uses the same synthetic source-time motion curve with genuine source geometry rasterised at the specified spatial factor and a different number of fractional-timeline samples; this does not represent measured audio or pixel reconstruction of a raster sprite.</p>
++<label for="moment">Motion position <input id="moment" type="range" min="0" max="3" step="1" value="0"></label> <a href="catalogue.json">Configuration catalogue</a>
++<div class="grid">''' + cards + '''</div><script>document.getElementById('moment').addEventListener('input',e=>document.querySelectorAll('img[data-name]').forEach(img=>img.src=img.dataset.name+'/'+e.target.value+'.png'))</script></body></html>'''
++    (root / "index.html").write_text(page, encoding="utf-8")
++    source = home.read_text(encoding="utf-8")
++    link = '<p><a href="supersampling/index.html">High-resolution spatial and temporal supersampling →</a></p>'
++    if link not in source:
++        home.write_text(source.replace("</header>", link+"</header>"), encoding="utf-8")
++    return catalogue
++
++
++if __name__ == "__main__":
++    parser=argparse.ArgumentParser(description=__doc__)
++    parser.add_argument("--output", type=Path, required=True)
++    args=parser.parse_args()
++    print(f"Generated {len(build_site(args.output)['scenes'])} supersampling scenes")
+diff --git a/docs/spatiotemporal-supersampling.md b/docs/spatiotemporal-supersampling.md
+new file mode 100644
+--- /dev/null
++++ b/docs/spatiotemporal-supersampling.md
+@@ -0,0 +1,92 @@
++# Source-level spatial and temporal supersampling
++
++This release enables the **maximum supported quality without requiring a preset**:
++
++```json
++{
++  "render_quality": {
++    "enabled": true,
++    "spatial_scale": 4,
++    "temporal_samples": 8,
++    "antialias": 1,
++    "antialias_radius": 0.75,
++    "antialias_threshold": 0.04,
++    "antialias_passes": 3
++  }
++}
++```
++
++To **explicitly reduce** the cost of rendering: `spatial_scale` allows integers 1–4,
++`temporal_samples` allows integers 1–8; choose `2`/`4` for a balanced compromise,
++or `1`/`1` to disable those two supersampling methods. To retain a pixel-exact
++low-quality output, use `"render_quality": {"enabled": false}`; no inherited
++high-quality settings apply when this explicit switch is false. The old opt-in
++per-element `visual.antialias` remains independently configurable.
++
++## What is supersampled
++
++* **Fonts and text outlines:** Pinned TrueType/OpenType outlines are rasterized
++  at four times the output pixel density with the same line breaks as the final
++  subtitle box, including karaoke text and layered rich text effects (gradient,
++  bevel, emboss, glow, stroke and shadow), then reduced with Lanczos. Rendering
++  is cropped to a text box plus a halo to avoid materializing an entire 4K
++  canvas for each caption.
++* **Procedural vector Rudiment views:** Their source geometry is rendered into
++  a temporary four-times-larger viewport, then reduced with Lanczos. Bitmap
++  `sprite-*` renderers intentionally retain the original pinned PNG texels, so
++  crisp LCD and pixel art assets are never falsely treated as vector geometry.
++* **Legacy vector bars:** Retained as vector geometry; the finished-frame AA also
++  smooths their edges. Custom Python scene hooks and third-party raster images
++  are not automatically converted into high-resolution vector assets.
++* **Time:** A temporary internal compositor samples the actual pinned source
++  time, beat map and cue/LRC timeline eight times per encoded frame. The eight
++  RGB images are composited in *linear-light* colour space before any optional
++  Butterchurn/projectM stage. Native procedural DanceRudiments interpolate
++  their fractional phase unless explicitly configured not to; recordings keep
++  their original semantics. No optical flow or guessed missing music events.
++
++These are deliberately different from the older **temporal history shutter**,
++which combines *previous encoded frames* (and may be enabled independently).
++When both are enabled, each source frame in the historical shutter is computed
++from distinct subframes before the historical blend. At repeat boundaries, the
++original shutter still prevents history leaking from a previous excerpt.
++
++Word-indicator motion and particle timing use the same source timestamp ledger;
++their authored frame durations are scaled with the internal sampling rate so
++cue or lyric effects do not speed up by 8×. Unpinned assets and audio are never
++opened to estimate additional motion. Custom `scene(image, ctx)` hooks receive
++fractional `source_seconds` but their integer `frame` continues to refer to the
++original output-frame ordinal. Frame-index-only custom animation cannot become
++smoother without rewriting it to use continuous source time.
++
++## Processing order and QA
++
++For a conventional output frame:
++
++1. Draw text/vector elements in genuine high-resolution geometry; reduce them
++   to target pixels; draw pinned raster sprites at their authored resolution.
++2. Repeat the composition at distinct subframe source-clock positions and
++   integrate the samples in linear light.
++3. Optionally apply original-frame temporal history blur (if requested).
++4. Run any configured full-frame Butterchurn/projectM feedback **once** per
++   encoded frame; these engines are not sampled at 8× subframe FPS.
++5. Run final edge-aware raster AA (three passes), then emit QA stills/FFmpeg.
++
++The codec frame rate, audio, source hashes and event timestamps do not change.
++The plan/manifest records `render_quality` including its exact sample counts.
++
++**Performance:** the highest setting can consume roughly 8× more compositor
++work, plus up to 16× the pixel count for individual vector viewports and masked
++text. Rich gradients, image filters, large fonts and temporal-history processing
++can be considerably slower; total cost is workload dependent, not a guaranteed
++fixed multiplier. Reduce quality explicitly if render time or memory are
++unacceptable. High-sample settings are optional controls, but the maximum is
++now the default.
++
++## Generated gallery
++
++The CI demonstration at `/supersampling/` renders deterministic synthetic
++vector/text movement under eight quality combinations. It displays separate
++spatial and temporal comparisons and makes no claims about actual audio data.
++Native compositor regression tests also cover true variable-FPS sampling,
++backward frame seeking and screenshot-sized quality options.

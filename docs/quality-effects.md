@@ -1,6 +1,42 @@
 # High-quality anti-aliasing and motion blur
 
-FrameRudiments adds **opt-in, deterministic edge-aware anti-aliasing**, **subpixel directional motion blur** and a distinct **encoded-frame temporal shutter** to the existing `visual` / `post_effects` pipeline. Their parameters can be modulated by independent native DanceRudiments, using the source clock and bounded history already documented in [scoped post effects](scoped-post-effects.md). Existing projects remain byte-for-byte unchanged unless the new effects are enabled.
+FrameRudiments offers **opt-in per-element edge-aware anti-aliasing**, **subpixel directional motion blur** and a distinct **encoded-frame temporal shutter** in the `visual` / `post_effects` pipeline. Their parameters can be modulated by independent native DanceRudiments, using the source clock and bounded history already documented in [scoped post effects](scoped-post-effects.md). The *final output* additionally receives high-quality AA by default (a change in output pixels); disable `render_quality` to recover unfiltered output.
+
+## High-quality source-level spatial and temporal supersampling
+
+The **default** rendering quality is 4× high-resolution rasterisation for
+pinned TrueType/OpenType text, word-highlight masks and procedural-vector
+Rudiment viewports, followed by Lanczos downsampling. Bitmap sprite modes
+retain their verified source pixels rather than being incorrectly described
+as vector redraws. Other non-vector surfaces receive the final AA treatment.
+Motion is sampled eight times at different positions inside each target frame
+by an internal high-FPS compositor using the same pinned source-clock inputs.
+Native procedural motions interpolate fractional phases unless their motion
+config explicitly disables interpolation. The eight samples are averaged in
+linear light; they are **not** blended copies of one encoded frame. Source audio
+is never time-stretched, nor are variable-BPM maps or LRC times changed.
+Word-indicator frame-duration fields are translated to the higher internal
+sample rate, preserving their durations in seconds. Scene hooks that depend on
+integer frame indices see the original frame ordinal while fractional source
+seconds stay available for smooth custom movement. Optional GPU projectM and
+Butterchurn feedback still run once per encoded output frame, after the
+Pillow subframe blend, so GPU-only motion cannot be subframe sampled.
+
+```json
+{"render_quality": {"enabled": true, "spatial_scale": 4,
+                    "temporal_samples": 8, "antialias": 1,
+                    "antialias_radius": 0.75,
+                    "antialias_threshold": 0.04, "antialias_passes": 3}}
+```
+
+To deliberately reduce quality and rendering cost, set the two sample counts
+to 2 or 1, or use `{"render_quality":{"enabled":false}}` for unfiltered
+pixels. The maximum defaults have substantial CPU and memory cost (potentially
+many times a previous release). The final edge-aware filter does not undo
+badly aliased original bitmap assets. This is not optical-flow interpolation,
+and no unrecorded acoustic events are invented.
+
+See [spatiotemporal configuration and limits](spatiotemporal-supersampling.md).
 
 ## Three different effects, not interchangeable methods
 

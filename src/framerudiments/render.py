@@ -50,11 +50,13 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
         effects = EffectChain(p, compositor.effect_specs, ffmpeg, out) if compositor.effect_specs else None
         with (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
             for n in range(p.frame_count):
-                image, context = compositor.frame(n)
+                image, context = compositor.frame(n, apply_quality=False)
                 if effects:
                     if n in selected:
                         image.save(out / "qa" / f"composed-{n:08}.png")
                     image = effects.process(image, context)
+                # Exactly one final AA pass, after optional GPU effects.
+                image = compositor.output_quality.apply(image)
                 _analysis(analysis, compositor, context)
                 if n in selected:
                     image.save(out / "qa" / f"source-{n:08}.png")
@@ -85,11 +87,13 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
         with (out / "encode.log").open("wb") as log, (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log)
             for n in range(p.frame_count):
-                image, context = compositor.frame(n)
+                image, context = compositor.frame(n, apply_quality=False)
                 if effects:
                     if n in selected:
                         image.save(out / "qa" / f"composed-{n:08}.png")
                     image = effects.process(image, context)
+                # Exactly one final AA pass, after optional GPU effects.
+                image = compositor.output_quality.apply(image)
                 _analysis(analysis, compositor, context)
                 if n in selected:
                     image.save(out / "qa" / f"source-{n:08}.png")
