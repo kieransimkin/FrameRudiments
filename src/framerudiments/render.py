@@ -34,6 +34,11 @@ def _prepare(project, output, ffmpeg, ffprobe, scene, renderers):
     write_json(output / "plan.json", project.summary())
     write_json(output / "source-probe.json", source_probe)
     export_subtitles(project.lyrics, project.fps, project.frame_count, output, project.width, project.height)
+    if project.words:
+        from .word_timing import word_export_ledger
+        export_subtitles(word_export_ledger(project.words, project.lyrics), project.fps,
+                         project.frame_count, output, project.width, project.height,
+                         basename="word-captions")
     return project, output, ffmpeg, ffprobe, compositor
 
 

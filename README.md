@@ -35,6 +35,20 @@ PNG particles are optional, and the existing element- and frame-level post
 passes remain available. See [particle and smoke reference](docs/particle-smoke.md)
 and the [CI-generated synthetic gallery](https://kieransimkin.github.io/FrameRudiments/particles/).
 
+## Variable-tempo synchronisation and word subtitles
+
+FrameRudiments accepts a checksum-pinned `stemlab.beat-timeline.v1` in
+`clock.beat_timeline` for true piecewise BPM/beat phase at sample-frame anchors,
+matching StemLab and the opt-in DanceMoves variable-tempo API. Nominal/fixed
+BPM, beat grids, and fixed-tempo `beat_alignment` remain supported independently.
+Lyrics, cue timing and recorded Rudiments retain their source audio clock.
+A separate pinned `word_lyrics` LRC supports enhanced timestamps, per-word
+karaoke highlighting, progressive word colour and a distinct `word_captions`
+lane; line captions remain available through `lyrics`. Both per-line and
+per-word subtitle exports are generated with the same encoded frame ledger.
+See [variable-tempo and word LRC guide](docs/variable-bpm-word-subtitles.md)
+and the [synthetic public demo](https://kieransimkin.github.io/FrameRudiments/timing/).
+
 ## Install and run
 
 Python 3.11+ and FFmpeg with libx264/AAC are required. Install the package into

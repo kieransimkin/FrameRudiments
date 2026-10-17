@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from functools import lru_cache
 import math
 
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageColor, ImageDraw, ImageFont, ImageOps
 
 from .effects import alpha_scaled, transformed_bounds, within, directional_trail, atlas_cell
 from .io import fields, number, integer, rectangle
@@ -11,6 +11,7 @@ from .rudiment_renderers import RudimentLayer, default_renderers
 from .particle_engine import ParticleEmitter
 from .motion import Motion
 from .timeline import EventTrack
+from .word_timing import WordTrack, draw_highlighted_line
 from .visualisers import effect_specs
 from .scoped_effects import CompositingEffects
 
@@ -23,12 +24,14 @@ class FrameContext:
     beat: float
     lyric: dict | None
     cue: dict | None
+    word: dict | None = None
 
 
 class TextBlock:
     def __init__(self, project, config, *, label):
         fields(config, {"box", "font_size", "min_font_size", "colour", "panel", "stroke", "mode",
-                        "line_spacing", "neighbour_colour"}, label)
+                        "line_spacing", "neighbour_colour", "word_mode", "word_colour",
+                        "completed_colour"}, label)
         self.project, self.config, self.label = project, config, label
         self.box = rectangle(config["box"], label, project.width, project.height)
         self.maximum = integer(config.get("font_size", 60), "font size", minimum=1, maximum=512)
@@ -42,6 +45,16 @@ class TextBlock:
         self.mode = config.get("mode", "current")
         if self.mode not in {"current", "neighbours"}:
             raise ValueError("Caption mode must be current or neighbours")
+        self.word_mode = config.get("word_mode", "off")
+        if self.word_mode not in {"off", "highlight", "progressive", "current"}:
+            raise ValueError("word_mode must be off/highlight/progressive/current")
+        if self.word_mode != "off" and self.mode == "neighbours":
+            raise ValueError("Word highlighting is only supported with captions.mode=current")
+        for key in ("word_colour", "completed_colour"):
+            value = config.get(key, "#ffe082" if key == "word_colour" else "#9ad9d5")
+            if not isinstance(value, str):
+                raise ValueError(f"{key} must be a CSS colour")
+            ImageColor.getcolor(value, "RGBA")
 
     @lru_cache(maxsize=256)
     def layout(self, text):
@@ -206,6 +219,7 @@ class Compositor:
             self.background.alpha_composite(source, ((project.width - source.width) // 2,
                                                        (project.height - source.height) // 2))
         self.lyrics, self.cues = EventTrack(project.lyrics), EventTrack(project.cues)
+        self.words = WordTrack(project.words) if project.words else None
         self.renderers = default_renderers() if renderers is None else renderers
         self.layers = [
             RudimentLayer(project, cfg, self.renderers, self.context)
@@ -217,7 +231,13 @@ class Compositor:
         ids = [x.id for x in self.layers]
         if len(set(ids)) != len(ids):
             raise ValueError("Layer ids must be unique")
-        self.caption = TextBlock(project, project.data["captions"], label="captions") if "lyrics" in project.data else None
+        caption_config = dict(project.data.get("captions", {}))
+        if project.word_ref and caption_config and "word_mode" not in caption_config:
+            caption_config["word_mode"] = "highlight" if project.lyrics else "current"
+        self.caption = TextBlock(project, caption_config, label="captions") if caption_config and (
+            "lyrics" in project.data or project.word_ref) else None
+        self.word_caption = (TextBlock(project, project.data["word_captions"], label="word captions")
+                             if "word_captions" in project.data else None)
         self.lyric_art = {}
         self.lyric_art_fallback = "text"
         if art := project.data.get("lyric_art"):
@@ -247,13 +267,33 @@ class Compositor:
             targets.add("scene")
         if self.caption:
             targets.add("caption")
+        if self.word_caption:
+            targets.add("word-caption")
         self.post_pipeline = CompositingEffects(project, project.data.get("post_effects", {}),
                                                 self.context, valid_elements=targets)
 
     def context(self, frame):
         p = self.project
+        lyric = self.lyrics.at(frame)
+        word = self.words.at(frame, lyric if p.lyrics else None) if self.words else None
         return FrameContext(frame, frame / p.fps, p.source_time(frame), p.continuous_beat(frame),
-                            self.lyrics.at(frame), self.cues.at(frame))
+                            lyric, self.cues.at(frame), word)
+
+    def _caption_draw(self, image, text, ctx):
+        if not self.words or self.caption.word_mode == "off":
+            return self.caption.draw(image, text)
+        state = self.words.state(ctx.frame, ctx.lyric if self.project.lyrics else None)
+        if self.caption.word_mode == "current":
+            return self.caption.draw(image, state["text"])
+        return draw_highlighted_line(
+            self.caption, image, text, active=state["active"],
+            completed=state["completed"] if self.caption.word_mode == "progressive" else (),
+            colour=self.caption.config.get("word_colour", "#ffe082"),
+            completed_colour=self.caption.config.get("completed_colour", "#9ad9d5"))
+
+    def _word_caption_draw(self, image, ctx):
+        state = self.words.state(ctx.frame, ctx.lyric if self.project.lyrics else None)
+        return self.word_caption.draw(image, state["text"])
 
     def _frame_with_post_effects(self, ctx):
         """Render isolated RGBA elements, then the final frame, in draw order.
@@ -320,11 +360,17 @@ class Compositor:
                                   after["text"] if after else ""))
             if not art_layer:
                 def draw_caption(canvas):
-                    return self.caption.draw(canvas, text) or None
+                    return self._caption_draw(canvas, text, ctx) or None
                 bounds = paint("caption", draw_caption)
                 if bounds:
                     text_bounds.append(bounds)
+            if self.word_caption and self.words:
+                bounds = paint("word-caption", lambda canvas: self._word_caption_draw(canvas, ctx) or None)
+                if bounds:
+                    text_bounds.append(bounds)
             self.text_states.setdefault(text, dict(first_frame=ctx.frame, bounds=text_bounds))
+        elif self.word_caption and self.words:
+            paint("word-caption", lambda canvas: self._word_caption_draw(canvas, ctx) or None)
 
         return pipeline.apply_frame(image, ctx)
 
@@ -366,8 +412,12 @@ class Compositor:
                 text = "\n".join((before["text"] if before else "", current["text"] if current else "",
                                   after["text"] if after else ""))
             if not art_layer:
-                text_bounds.extend(self.caption.draw(image, text))
+                text_bounds.extend(self._caption_draw(image, text, ctx))
+            if self.word_caption and self.words:
+                text_bounds.extend(self._word_caption_draw(image, ctx))
             self.text_states.setdefault(text, dict(first_frame=frame, bounds=text_bounds))
+        elif self.word_caption and self.words:
+            self._word_caption_draw(image, ctx)
         return image.convert("RGB"), ctx
 
     def frame_reports(self):
@@ -385,4 +435,7 @@ class Compositor:
                        if isinstance(x, ParticleEmitter)}} if any(isinstance(x, ParticleEmitter)
                        for x in self.layers) else {}),
                     custom_scene=bool(self.scene),
+                    **({"word_subtitles": {"enabled": True, "count": len(self.project.words),
+                       "highlight_mode": self.caption.word_mode if self.caption else "off",
+                       "separate_lane": self.word_caption is not None}} if self.words else {}),
                     **({"post_effects": self.post_pipeline.evidence} if self.post_pipeline.enabled else {}))

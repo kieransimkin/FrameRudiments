@@ -100,7 +100,7 @@ def build_site(output):
     site.mkdir(parents=True, exist_ok=False)
     cues = site / "synthetic-cues.lrc"
     cues.write_text("[00:00.50][SECTION: DROP 1]\n[00:01.50][DROP: FINAL]\n", encoding="utf-8")
-    reference = {"path": str(cues), "sha256": sha256(cues)}
+    reference = {"path": cues.name, "sha256": sha256(cues)}
     project = SyntheticProject(site)
     rows = []
     for name, kind, emission, description, parameters in SCENES:

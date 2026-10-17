@@ -124,6 +124,19 @@ DanceRudiment modulators can target validated numeric `style.*` or `visual.*`
 settings. See [particle and smoke](particle-smoke.md) for the full schema,
 selection patterns, repeat/excerpt behaviour and safety limits.
 
+## Variable tempo and dual LRC subtitle sources
+
+`clock.beat_timeline` is a pinned `stemlab.beat-timeline.v1` file: beat/sample
+anchors control procedural phase with local interval BPM and fractional pips,
+but must not be combined with `beat_alignment`, `beat_grid` or `origin`.
+A supplied `bpm` is a display hint, not the effective rhythm.
+`lyrics` remains the per-line LRC and `word_lyrics` is the optional,
+independently hashed per-word LRC. `captions.word_mode` may be `off`,
+`highlight`, `progressive` or `current`; the default with both files
+is `highlight`. `word_captions` is an independent text-block configuration
+for a second, simultaneously rendered word-only subtitle lane.
+See [variable BPM/word LRC guide](variable-bpm-word-subtitles.md).
+
 ## Optional full-frame effects
 
 The top-level `effects` list is additive to v1. See [visualisers.md](visualisers.md)
