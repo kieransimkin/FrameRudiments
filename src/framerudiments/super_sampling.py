@@ -266,16 +266,24 @@ def temporal_supersample(compositor, frame):
             # Source clock remains fractional; original integer frame indices
             # retain their meaning for trusted custom scene hooks.
             from dataclasses import replace
-            scene_cache = {"frame": None, "pixels": None}
+            from collections import OrderedDict
+            # Shutter lookback revisits earlier encoded frames. Preserve a
+            # bounded history to avoid invoking stateful hooks again.
+            scene_cache = OrderedDict()
 
             def scene_adapter(image, context):
                 encoded = context.frame // factor
-                if scene_cache["frame"] != encoded:
-                    # Trusted scene hooks own encoded frames, not high-FPS samples.
-                    # Never invoke a stateful hook eight times for one output frame.
-                    scene_cache["pixels"] = scene(image, replace(context, frame=encoded)).copy()
-                    scene_cache["frame"] = encoded
-                return scene_cache["pixels"].copy()
+                if encoded not in scene_cache:
+                    # Trusted hooks own encoded frames, not subframes.
+                    result = scene(image, replace(context, frame=encoded))
+                    if not isinstance(result, Image.Image) or result.mode != "RGBA" or result.size != image.size:
+                        raise ValueError("Custom scene hook must return frame-sized RGBA")
+                    scene_cache[encoded] = result.copy()
+                    if len(scene_cache) > 32:
+                        scene_cache.popitem(last=False)
+                else:
+                    scene_cache.move_to_end(encoded)
+                return scene_cache[encoded].copy()
         else:
             scene_adapter = None
         virtual = Compositor(project, scene=scene_adapter, renderers=compositor.renderers)
