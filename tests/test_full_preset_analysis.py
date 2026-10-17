@@ -1,7 +1,6 @@
 """Offline regression coverage for the resumable full-preset PrismMoves runner."""
 
 import importlib.util
-import json
 from pathlib import Path
 import sys
 from types import SimpleNamespace
