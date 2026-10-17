@@ -14,6 +14,7 @@ dependencies = ["Pillow>=10", "dancerudiments>=0.3.0,<0.4"]
 
 [project.optional-dependencies]
 projectm = ["glfw==2.10.2", "PyOpenGL==3.1.10"]
+gpu = ["moderngl>=5.11,<6", "numpy>=1.26"]
 dev = ["pytest>=8", "build>=1.2", "ruff>=0.9", "twine>=6"]
 
 [project.urls]

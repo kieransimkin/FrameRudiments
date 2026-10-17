@@ -155,3 +155,10 @@ redirection. Run `python scripts/validate_patch.py change.patch --base-ref main
 --expected-sha <40-character-SHA>` on that exact commit before distribution.
 This validation guarantees clean application, not functional correctness;
 CI and renderer tests are still required. If `main` moves, rebuild the patch.
+
+Historical `.patch` files in this repository are text artifacts, not executable
+source. `.gitattributes` marks them `-whitespace` so patch-validation does not
+mistake significant diff formatting for accidental Python trailing whitespace.
+Do not commit newly downloaded scratch patches or repair scripts to `main`.
+Always compare gallery counts with `default_renderers().names`, never fixed
+numbers that become stale when adding new renderers.

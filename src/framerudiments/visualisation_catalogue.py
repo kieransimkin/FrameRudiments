@@ -271,7 +271,16 @@ SOLID_SPATIAL_VIEWS = tuple(
     )
     for shape in ("torus", "sphere", "terrain")
 )
+MUSIC_SPATIAL_VIEWS = tuple(
+    ViewSpec(
+        "spatial-music-" + shape,
+        "motion",
+        "Native-motion-deformed 3D mesh with optional calibrated FFT terrain and atmospheric materials",
+        "CPU/OpenGL music-reactive geometry",
+    )
+    for shape in ("torus", "sphere", "terrain")
+)
 ALL_VIEWS = (SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS
-             + SPRITE_VIEWS + SPATIAL_VIEWS + SOLID_SPATIAL_VIEWS)
+             + SPRITE_VIEWS + SPATIAL_VIEWS + SOLID_SPATIAL_VIEWS + MUSIC_SPATIAL_VIEWS)
 BY_NAME = {v.name: v for v in ALL_VIEWS}
 assert len(BY_NAME) == len(ALL_VIEWS)

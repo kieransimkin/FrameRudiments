@@ -58,6 +58,10 @@ STYLE_INTEGERS = {
     "sprite_pixel_size",
     "sprite_outline",
     "sprite_palette_shift",
+    "texture_octaves",
+    "erosion_iterations",
+    "volumetric_steps",
+    "shadow_map_size",
 }
 GRADIENT_TARGET_ALIASES = {
     "gradient.phase": "visual.gradient_phase",

@@ -2,10 +2,11 @@
 
 FrameRudiments offers **161 named built-in Rudiment renderers**: the five
 original views, 36 advanced plots, 60 annular modes and 60 additional effects.
-An additional 52 sprite-backed modes and six projected 3D modes (three
-wireframes, three solid depth-buffered meshes) are also registered. The registry
-is authoritative for the full renderer count. This catalogue documents techniques from
-oscilloscopes, analogue spectrum analysers, classic Winamp-era visualisers,
+An additional 52 sprite-backed modes, six projected 3D modes (wireframes and
+solid depth-buffered meshes), and three music-reactive 3D mesh modes are also
+registered. The registry is authoritative for the full renderer count.
+This catalogue documents techniques from oscilloscopes, analogue spectrum
+analysers, classic Winamp-era visualisers,
 audio editors, scientific sonograms and modern time-frequency plotting tools.
 Run `framerudiments renderers` for the authoritative registry and consult the
 [CI-generated gallery](https://kieransimkin.github.io/FrameRudiments/) for

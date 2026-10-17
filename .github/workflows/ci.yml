@@ -86,12 +86,13 @@ jobs:
       - name: Native and headless rendering dependencies
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg fonts-dejavu-core libgl1-mesa-dev libglfw3 xvfb xauth ninja-build
+          sudo apt-get install -y ffmpeg fonts-dejavu-core libgl1-mesa-dev libgl1-mesa-dri libegl1 libglfw3 xvfb xauth ninja-build
           echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_FFMPEG=$(command -v ffmpeg)" >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_BROWSER=$(command -v google-chrome)" >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_BUTTERCHURN_RUNTIME=$RUNNER_TEMP/butterchurn" >> "$GITHUB_ENV"
-      - run: python -m pip install -e '.[dev,projectm]' numpy
+          echo "LIBGL_ALWAYS_SOFTWARE=1" >> "$GITHUB_ENV"
+      - run: python -m pip install -e '.[dev,projectm,gpu]'
       - name: Pinned released PrismMoves and PixelCue analysis APIs
         run: |
           python - <<'PY'

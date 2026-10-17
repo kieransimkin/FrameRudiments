@@ -93,6 +93,16 @@ motion paths and can feed existing Butterchurn/projectM compositing chains.
 They are CPU rasterisers, not GPU mesh engines.
 See the [3D rendering guide](docs/solid-spatial-renderers.md).
 
+Three opt-in `spatial-music-*` modes add music-reactive mesh deformation,
+procedural rock/ice materials, erosion, normal/bump effects, and an optional
+ModernGL offscreen rasteriser with depth-tested shadows and single-scattering
+volumetric lighting. `spatial-music-terrain` can generate new rows from a
+checksum-pinned calibrated StemLab Fourier recording's history with
+`style.terrain_source: "fft"`. Existing DanceRudiments drivers can modulate
+mesh, camera, material, lighting and atmospheric properties. The CPU path
+remains deterministic and works without GPU dependencies.
+See [music-reactive 3D](docs/music-reactive-3d.md) for integration and limits.
+
 ## Install and run
 
 Python 3.11+ and FFmpeg with libx264/AAC are required. Install the package into

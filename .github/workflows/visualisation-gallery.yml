@@ -42,6 +42,10 @@ jobs:
         run: python -m pytest -q tests/test_spatial_renderers.py
       - name: Check solid 3D meshes, depth, and fog
         run: python -m pytest -q tests/test_solid_spatial_renderers.py tests/test_solid_spatial_integration.py
+      - name: Check music-reactive mesh, FFT terrain, glaciation and material regression tests
+        run: python -m pytest -q tests/test_music_spatial_renderers.py
+      - name: Lint new 3D features and integration tests
+        run: ruff check src/framerudiments/music_spatial_renderers.py src/framerudiments/terrain_field.py src/framerudiments/gpu_spatial_backend.py tests/test_music_spatial_renderers.py integration/test_music_spatial_gpu.py
       - name: Lint solid 3D implementation and tests
         run: ruff check src/framerudiments/solid_spatial_renderers.py tests/test_solid_spatial_renderers.py tests/test_solid_spatial_integration.py
       - name: Lint gallery and renderer implementation
@@ -71,10 +75,11 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
+          from framerudiments.rudiment_renderers import default_renderers
           p = Path('_site')
           data = json.loads((p / 'catalogue.json').read_text())
           assert data['synthetic_test_data'] and data['not_audio_measurements']
-          assert len(data['views']) == 213
+          assert len(data['views']) == len(default_renderers().names)
           assert len(data['style_lab']) == 20
           for item in data['style_lab']:
               assert item['native_drivers'] == ['circle', 'bounce']

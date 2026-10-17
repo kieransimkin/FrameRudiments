@@ -429,6 +429,9 @@ def default_renderers():
     from .solid_spatial_renderers import register_solid_spatial_renderers
 
     register_solid_spatial_renderers(registry)
+    from .music_spatial_renderers import register_music_spatial_renderers
+
+    register_music_spatial_renderers(registry)
     return registry
 
 
@@ -512,6 +515,13 @@ class RudimentLayer:
             and cfg["renderer"].startswith(
                 ("spectrum-", "spectrogram-", "sprite-spectrum-", "sprite-spectrogram-")
             )
+        )
+        style_config = cfg.get("style", {})
+        spectral_view = spectral_view or (
+            isinstance(cfg["renderer"], str)
+            and cfg["renderer"].startswith("spatial-music-")
+            and isinstance(style_config, dict)
+            and (style_config.get("terrain_source") == "fft" or style_config.get("spectral_deform") is True)
         )
         self.history_frames = integer(
             cfg.get("history_frames", 256 if spectral_view else 64), "history frames", minimum=1, maximum=512
