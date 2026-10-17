@@ -262,6 +262,16 @@ SPATIAL_VIEWS = tuple(
     )
     for shape in ("torus", "sphere", "terrain")
 )
-ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS + SPRITE_VIEWS + SPATIAL_VIEWS
+SOLID_SPATIAL_VIEWS = tuple(
+    ViewSpec(
+        "spatial-solid-" + shape,
+        "motion",
+        "Depth-tested 3D solid mesh with directional lighting and bounded volume fog",
+        "CPU depth-buffered 3D geometry",
+    )
+    for shape in ("torus", "sphere", "terrain")
+)
+ALL_VIEWS = (SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS
+             + SPRITE_VIEWS + SPATIAL_VIEWS + SOLID_SPATIAL_VIEWS)
 BY_NAME = {v.name: v for v in ALL_VIEWS}
 assert len(BY_NAME) == len(ALL_VIEWS)

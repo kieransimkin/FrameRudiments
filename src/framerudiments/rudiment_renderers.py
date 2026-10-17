@@ -426,6 +426,9 @@ def default_renderers():
     from .spatial_renderers import register_spatial_renderers
 
     register_spatial_renderers(registry)
+    from .solid_spatial_renderers import register_solid_spatial_renderers
+
+    register_solid_spatial_renderers(registry)
     return registry
 
 

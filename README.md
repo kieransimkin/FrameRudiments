@@ -84,6 +84,15 @@ Rudiment layers use the same routing policy. Existing projects remain
 unchanged. [Configuration and examples](docs/visualiser-routing.md) ·
 [CI comparisons](https://kieransimkin.github.io/FrameRudiments/routing/).
 
+## Solid 3D meshes and atmospheric rendering
+
+Three additional `spatial-solid-*` viewport modes (torus, sphere and terrain)
+provide per-pixel Z-buffered geometry, roughness/metallic direct lighting and
+depth-terminated procedural fog. They use the normal StemLab/DanceRudiments
+motion paths and can feed existing Butterchurn/projectM compositing chains.
+They are CPU rasterisers, not GPU mesh engines.
+See the [3D rendering guide](docs/solid-spatial-renderers.md).
+
 ## Install and run
 
 Python 3.11+ and FFmpeg with libx264/AAC are required. Install the package into

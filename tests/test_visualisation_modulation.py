@@ -29,7 +29,7 @@ def test_every_circular_view_is_registered_and_has_independent_output():
     from framerudiments.visualisation_catalogue import ALL_VIEWS
 
     names = default_renderers().names
-    assert len(names) == 213
+    assert len(names) == len(ALL_VIEWS) + 5
     assert len(names) == len(set(names))
     assert len(CIRCULAR_VIEWS) == 60
     assert set(spec.name for spec in ALL_VIEWS).issubset(names)
@@ -222,12 +222,18 @@ def test_circular_style_parameters_affect_rendered_geometry():
         r.create("spectrum-annular-bars", (320, 240), {"inner_radius": 0.8, "outer_radius": 0.3})
 
 
-def test_gallery_can_generate_213_distinct_renderer_previews():
+def test_gallery_manifest_tracks_renderer_catalogue_growth():
     # The existing gallery test verifies counts + every PNG. Avoid generating
     # hundreds of 480x270 images twice in every test run.
     from framerudiments.visualisation_catalogue import ALL_VIEWS
 
-    assert len(ALL_VIEWS) == 208
+    assert len(ALL_VIEWS) == len({spec.name for spec in ALL_VIEWS})
+    assert set(default_renderers().names) == {
+        "particles", "bars", "waveform", "path", "spectrum"
+    } | {spec.name for spec in ALL_VIEWS}
+    assert {"spatial-solid-torus", "spatial-solid-sphere", "spatial-solid-terrain"}.issubset(
+        {spec.name for spec in ALL_VIEWS}
+    )
 
 
 def test_native_source_drives_layer_modulation_in_random_access_compositor(tmp_path):

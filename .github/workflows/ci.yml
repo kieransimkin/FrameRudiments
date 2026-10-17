@@ -8,6 +8,34 @@ on:
 permissions:
   contents: read
 jobs:
+  patch-contract:
+    name: Verified git-apply patch
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Generate and verify native Git diff against exact base
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == 'pull_request' ]]; then
+            base=$(git merge-base HEAD '${{ github.event.pull_request.base.sha }}')
+          else
+            base=$(git rev-parse HEAD^)
+          fi
+          git diff --binary "$base" HEAD --output="$RUNNER_TEMP/verified-change.patch"
+          python scripts/validate_patch.py "$RUNNER_TEMP/verified-change.patch" \
+            --base-ref "$base" --expected-sha "$base"
+          git diff --check "$base" HEAD
+      - name: Upload verified patch
+        uses: actions/upload-artifact@v6
+        with:
+          name: verified-git-apply-patch
+          path: ${{ runner.temp }}/verified-change.patch
   render-tests:
     strategy:
       fail-fast: false
@@ -36,6 +64,8 @@ jobs:
           "FRAMERUDIMENTS_FFMPEG=$((Get-Command ffmpeg).Source)" >> $env:GITHUB_ENV
       - run: python -m pip install -e '.[dev]'
       - run: ruff check .
+      - name: Verify patch validation workflow contract
+        run: python -m pytest -q tests/test_patch_validation.py
       - run: python -m pytest -q --junitxml=test-results.xml
       - name: No skipped rendering checks
         run: python -c "import xml.etree.ElementTree as E; r=E.parse('test-results.xml'); assert not r.findall('.//skipped')"

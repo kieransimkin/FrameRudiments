@@ -20,7 +20,7 @@ from generate_visualisation_gallery import fixture  # noqa: E402
 def test_registry_has_independent_sprite_and_vector_names():
     registry = default_renderers()
     names = registry.names
-    assert len(names) == len(set(names)) == 213
+    assert len(names) == len(set(names)) == len(ALL_VIEWS) + 5
     assert len(SPRITE_SPECS) == 52
     assert set(name for name, *_ in SPRITE_SPECS).issubset(names)
     assert {"spectrum", "waveform", "spectrogram-linear", "spectrum-annular-bars"}.issubset(names)

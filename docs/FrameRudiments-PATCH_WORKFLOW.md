@@ -139,3 +139,19 @@ actual source and feature requirements.
 - Compositing masks, stage-routing and scenes have isolated and combined tests.
 - The Ubuntu/Windows and supported Python-version jobs complete successfully.
 - README/feature documentation matches **implemented and verified** behavior.
+
+## Required validation for future patches
+
+The repository's `patch-contract` CI job exports a **single Git-native diff**
+against its actual commit parent (or PR merge base), validates it in a detached
+worktree using `scripts/validate_patch.py`, and publishes the tested patch as
+`verified-git-apply-patch`. The validator is covered by
+`tests/test_patch_validation.py` on Windows and Linux.
+
+**For a patch intended for the recipient's current `main`:** generate it in a
+full clone of *that exact* `main` commit, not using temporary source excerpts.
+On Windows, use `git diff --binary --output=change.patch` rather than PowerShell
+redirection. Run `python scripts/validate_patch.py change.patch --base-ref main
+--expected-sha <40-character-SHA>` on that exact commit before distribution.
+This validation guarantees clean application, not functional correctness;
+CI and renderer tests are still required. If `main` moves, rebuild the patch.
