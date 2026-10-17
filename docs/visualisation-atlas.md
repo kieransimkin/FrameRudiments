@@ -1,7 +1,7 @@
 # Visualisation Atlas: researched display families and implementation map
 
-FrameRudiments offers **101 named built-in Rudiment renderers** (the original
-five, the first 36 advanced views and **60 new circular/annular modes**). This catalogue documents techniques from
+FrameRudiments offers **161 named built-in Rudiment renderers**: the five
+original views, 36 advanced plots, 60 annular modes and 60 additional effects. This catalogue documents techniques from
 oscilloscopes, analogue spectrum analysers, classic Winamp-era visualisers,
 audio editors, scientific sonograms and modern time-frequency plotting tools.
 Run `framerudiments renderers` for the authoritative registry and consult the
@@ -25,8 +25,15 @@ See the [Annular and Modulation reference](annular-modulation.md) for the full
 spatial and amplitude-based colour mapping, and up to 32 independent native
 DanceRudiment modulators per layer. Each modulator can drive renderer geometry
 or shared colour/image properties at the precise native source/frame time. The
-CI gallery includes 101 renderer panels and 12 additional native-modulated
+CI gallery includes 161 renderer panels and 20 additional native-modulated
 colour demonstration panels; all spectral inputs remain synthetic test values.
+
+## Further expansion: 60 spectrum/heatmap/oscilloscope visualisations
+
+See the [Expanded Rendering Effects guide](expanded-effects.md) for all 60 new
+named modes, optional CRT/dither/grain/chromatic treatments and modulation
+examples. Existing annular views remain separately configurable. This expansion
+changes presentation only: no new FFT, inferred phase or stereo analysis.
 
 ## Supported views: spectrum and spectral history
 

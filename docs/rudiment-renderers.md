@@ -1,11 +1,13 @@
 # Modular rudiment renderers
 
 Use one motion source with different visual renderers, or layer several views
-of the same source alongside sprites and lyrics. There are now **101
+of the same source alongside sprites and lyrics. There are now **161
 built-ins**: the original five, the first 36 spectrum/spectrogram/oscilloscope
 views, and 60 new annular/circular variants with shared gradient colour and
 native DanceRudiment parameter modulation. See the complete
-[annular/gradient/modulation guide](annular-modulation.md).
+[annular/gradient/modulation guide](annular-modulation.md), and 60 extra
+spectral displays, spectrograms and waveform effects documented in
+[expanded effects](expanded-effects.md).
 See the [Visualisation Atlas](visualisation-atlas.md) for the comprehensive
 catalogue, input-contract limitations and public GitHub Pages test gallery.
 List them with:

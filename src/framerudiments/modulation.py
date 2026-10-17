@@ -14,7 +14,8 @@ CURVES = {"linear", "smoothstep", "ease-in", "ease-out", "sine", "square", "cubi
           "absolute", "steps", "threshold", "triangle", "bell"}
 BLENDS = {"set", "add", "multiply", "min", "max"}
 STYLE_INTEGERS = {"line_width", "count", "trail", "lag", "seed", "font_size", "peak_count",
-                  "min_peak_distance", "history_limit", "led_segments", "rings", "axis", "fill_alpha", "spokes", "sides"}
+                  "min_peak_distance", "history_limit", "led_segments", "rings", "axis", "fill_alpha", "spokes", "sides",
+                  "segments", "quantize", "stride"}
 GRADIENT_TARGET_ALIASES = {"gradient.phase": "visual.gradient_phase",
                            "gradient.mix": "visual.gradient_mix",
                            "gradient.cycles": "visual.gradient_cycles"}

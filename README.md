@@ -242,7 +242,7 @@ for pinned packs, licences, runtime setup, resume and interpretation limits.
 
 ## Visualisation Atlas and public gallery
 
-FrameRudiments now exposes **101 deterministic built-in Rudiment renderers**,
+FrameRudiments now exposes **161 deterministic built-in Rudiment renderers**,
 including spectral waterfall, spectrogram heatmap (linear/log/mel/Bark/ERB
 **axis remappings**, not newly computed filterbanks), radial FFT-band views,
 and oscilloscope-inspired motion traces. All spectrum renderers require pinned,
@@ -253,7 +253,7 @@ calibrated StemLab Fourier evidence; motion traces are not raw PCM audio.
 [comprehensive method catalogue](docs/visualisation-atlas.md). Each PR checks
 and generates every mode; main deploys an interactive searchable gallery with
 four reproducible **synthetic** frames per mode. It now also publishes
-**12 annotated native DanceRudiment colour/geometry modulation scenes**.
+**20 annotated native DanceRudiment colour/geometry modulation scenes**.
 
 New options include continuous/inward/bipolar/segmented circular spectrum bars,
 polar time-frequency heatmaps, annular and spiral waveform plots, custom gradient
@@ -262,5 +262,13 @@ stops, 16 built-in colour palettes, glow/hue/rotation/scale effects and up to
 validated numeric renderer style parameter. All modulation evidence keeps its
 pinned/native input identity. See [all 60 new modes, gradient controls and
 modulation examples](docs/annular-modulation.md).
+
+The next generation adds **60 additional display families**: spectrum LED matrices,
+cityscapes, ridgetrails and half-circle analysers; time-frequency voxel terrain,
+hexagonal mosaics and slit scans; and native-value CRT, triggered, braided and
+polar oscilloscope modes. Opt-in deterministic image treatments include scanlines,
+pixelation, grain, vignette, edge highlights, halftone, chromatic separation,
+solarisation and glitches. All these visual controls can be driven by
+source-clocked DanceRudiments. See [expanded effects reference](docs/expanded-effects.md).
 
 Enable Settings → Pages → GitHub Actions as the repository publication source.

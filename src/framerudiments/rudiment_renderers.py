@@ -329,6 +329,8 @@ def default_renderers():
     register_extended_renderers(registry)
     from .circular_renderers import register_circular_renderers
     register_circular_renderers(registry)
+    from .effect_renderers import register_effect_renderers
+    register_effect_renderers(registry)
     return registry
 
 

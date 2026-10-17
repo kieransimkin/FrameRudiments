@@ -11,7 +11,7 @@ from PIL import ImageDraw
 from .io import integer, number
 from .rudiment_renderers import _Viewport
 from .spectrum import analyse_spectrum, peak_indices
-from .visualisation_catalogue import ALL_VIEWS
+from .visualisation_catalogue import SPECTRAL_VIEWS, MOTION_VIEWS
 
 
 def _clamp(value):
@@ -397,7 +397,7 @@ class AdvancedWaveformRenderer(_Viewport):
 
 def register_extended_renderers(registry):
     """Renderers are explicit, locally registered and source-hashed by registry."""
-    for spec in ALL_VIEWS:
+    for spec in (*SPECTRAL_VIEWS, *MOTION_VIEWS):
         if spec.family == "motion":
             def factory(size, style, mode=spec.name):
                 return AdvancedWaveformRenderer(size, style, mode)

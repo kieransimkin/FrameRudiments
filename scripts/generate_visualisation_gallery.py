@@ -43,6 +43,14 @@ STYLE_LAB = (
     ("synthwave-ribbon", "waveform-annular-ribbon", "synthwave", "vertical", "motion"),
     ("copper-oscilloscope", "waveform-oscilloscope", "copper", "horizontal", "motion"),
     ("aurora-classic", "spectrum", "aurora", "vertical", "spectrum"),
+    ("crt-equalizer", "spectrum-led-matrix", "neon", "vertical", "spectrum"),
+    ("city-lights", "spectrum-cityscape", "fire", "angular", "spectrum"),
+    ("isometric-terrain", "spectrogram-isometric-terrain", "ocean", "diagonal", "spectrogram"),
+    ("voxel-spectrum", "spectrogram-voxel-city", "synthwave", "vertical", "spectrogram"),
+    ("phosphor-scope", "waveform-phosphor", "ice", "horizontal", "motion"),
+    ("butterfly-scope", "waveform-butterfly", "pastel", "angular", "motion"),
+    ("spectrogram-mosaic", "spectrogram-pixel-mosaic", "viridis-inspired", "checker", "spectrogram"),
+    ("pulse-staircase", "waveform-signal-staircase", "sunset", "vertical", "motion"),
 )
 
 
@@ -73,6 +81,22 @@ def build_style_lab(output, registry):
         visual = {"palette": palette_name,
                   "gradient": {"mode": gradient_mode, "stops": palette_name,
                                "space": "hsv", "blend": "replace", "wrap": "repeat"}}
+        new_fx = {
+            "crt-equalizer": ("scanlines", [.18, .72]),
+            "city-lights": ("vignette", [.15, .8]),
+            "isometric-terrain": ("grain", [.04, .35]),
+            "voxel-spectrum": ("chromatic_shift", [0, 5]),
+            "phosphor-scope": ("edge_mix", [.02, .6]),
+            "butterfly-scope": ("halftone", [.02, .7]),
+            "spectrogram-mosaic": ("dither", [.02, .7]),
+            "pulse-staircase": ("solarize", [.05, .9]),
+        }
+        if name in new_fx:
+            field, interval = new_fx[name]
+            controls.append(dict(id="native-post-fx", motion={"kind": "named", "pattern": "bounce"},
+                                 axis="x", target=f"visual.{field}", range=interval,
+                                 curve="smoothstep"))
+            mods = RudimentModulations(project, controls, style_lab_frame)
         root = output / "lab" / name
         root.mkdir(parents=True, exist_ok=True)
         samples = []
@@ -205,7 +229,7 @@ footer>div{max-width:1280px;margin:auto} .notice{border-left:3px solid #f8c477;p
 <label for="frame">Time <input id="frame" type="range" min="0" max="3" value="3" step="1"><output id="frame-label">4 / 4</output></label>
 <button id="play" type="button" aria-pressed="false">Play samples</button><small id="count" aria-live="polite"></small>
 </div></div><main><section class="style-lab"><h2>Colour &amp; DanceRudiment modulation lab</h2>
-<p class="intro">Twelve additional visual tests combine shared gradients, palettes, native
+<p class="intro">Twenty additional visual tests combine shared gradients, palettes, native
 DanceRudiments circle/bounce movements and independently modulated geometry and
 colour. Spectrum input remains invented numeric test data, not measured audio.
 The playback control above scrubs the exact native-driver frames.</p>
