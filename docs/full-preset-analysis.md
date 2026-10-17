@@ -84,7 +84,11 @@ FrameRudiments procedural renderer registry (which has its own CI atlas).
 
 The default semantic analysis requests **every PixelCue visual-analysis
 adapter**: CLIP, DINOv2, BLIP and Tesseract OCR, plus the lightweight
-`smolvlm-256m` tagger. PrismMoves saves measured colour/texture/composition
+`smolvlm-256m` tagger **by default**. No extra flag is needed: the PowerShell
+launcher downloads/verifies its weights before running any presets and enables
+`--pixelcue-models smolvlm-256m --allow-download` for semantic analysis. It
+stores the tagger entirely in `FrameRudiments/models/smolvlm-256m/`.
+PrismMoves saves measured colour/texture/composition
 statistics, an evidence-labelled BLIP caption hypothesis, ranked CLIP prompt
 hypotheses, optional OCR text, and model-dependent keywords. DINOv2 embeddings
 are retained in compressed evidence for future comparison, not converted into
@@ -98,8 +102,13 @@ Face, Torch, pip and uv caches are redirected to the project-local model tree.
 
 `-AllVLMs` additionally asks PixelCue to run all five supported VLM taggers,
 including the much larger JoyCaption model. This can require substantial disk
-space, RAM/VRAM and time; it is **not** the default. Use `-NoVLM` to omit the
-VLM tagger while retaining CLIP/DINOv2/BLIP/OCR. `-Device cuda` selects CUDA
+space, RAM/VRAM and time; it is **not** the default. Choose a different
+single tagger with `-PixelCueTagger smolvlm2-500m`, or use `-NoPixelCueTagging`
+(alias: `-NoVLM`) to omit VLM tags while retaining CLIP/DINOv2/BLIP/OCR.
+The default tagger is also predownloaded by `-InstallOnly`. A run started with
+PixelCue tags stays resumable using the unchanged `smolvlm-256m` setting; if
+you switch tagging models or disable tags, the immutable experiment signature
+requires a new output directory. `-Device cuda` selects CUDA
 for models whose framework supports it. The normal default is CPU so it does
 not falsely assume a CUDA-enabled PyTorch wheel is present.
 
@@ -114,7 +123,7 @@ FrameRudiments/
   models/                              # project-owned, Git ignored
     .venv-render/ .venv-analysis/       # isolated Python versions and dependencies
     clip/ dinov2/ blip/                 # pretrained checked model snapshots
-    smolvlm-256m/ ...                   # VLM weights, when requested
+    smolvlm-256m/ ...                   # Default PixelCue tagging weights
     tesseract/eng.traineddata           # OCR trained data
     .cache/                             # HF/Torch/pip/uv caches
     release-wheels/ preset-archives/    # checksum-pinned downloads

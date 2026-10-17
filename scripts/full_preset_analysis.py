@@ -417,10 +417,14 @@ def publish_record(out: Path, preset: dict, signature: str, captures: dict,
     if error:
         text += ["", "## Error receipt", f"`{error[:300]}`"]
     write_atomic(out / "reports" / f"{key}.md", ("\n".join(text) + "\n").encode("utf-8"))
+    # Tags remain model hypotheses, but they are genuinely useful for finding
+    # presets with similar motifs/materials in the full searchable catalogue.
+    tags = list(dict.fromkeys(str(tag)[:80] for tag in (semantic or {}).get("tags", [])
+                              if str(tag).strip()))[:48]
     row = {"id": preset["id"], "name": preset["name"], "engine": preset["engine"],
            "source_pack": preset.get("source_pack"), "key": key, "status": status,
            "preview": preview_name, "preview_sha256": preview_sha256,
-           "caption": main_caption[:400],
+           "caption": main_caption[:400], "tags": tags,
            "report_sha256": file_digest(out / "reports" / f"{key}.json")}
     return row
 
@@ -441,9 +445,12 @@ def update_index(out: Path, rows: list[dict], *, total: int, signature: str) -> 
     for row in index["entries"]:
         image = (f'<img loading="lazy" src="{html.escape(row["preview"])}" alt="Preset sample">'
                  if row["preview"] else '<div class="missing">No capture</div>')
-        cards.append(f'<article data-search="{html.escape((row["name"]+" "+row["engine"]+" "+row["id"]).lower(), quote=True)}">'
+        terms = " ".join((row["name"], row["engine"], row["id"], *row.get("tags", []))).lower()
+        visible_tags = ", ".join(row.get("tags", [])[:12])
+        cards.append(f'<article data-search="{html.escape(terms, quote=True)}">'
                      f'{image}<h2>{html.escape(row["name"])}</h2><p>{html.escape(row["engine"])} · '
                      f'{html.escape(row["status"])}</p><p>{html.escape(row["caption"])}</p>'
+                     f'<p class="tags">Tags (model hypotheses): {html.escape(visible_tags)}</p>'
                      f'<a href="reports/{row["key"]}.md">Evidence</a></article>')
     document = '''<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>FrameRudiments full visualisation preset atlas</title>
 <style>body{font:15px system-ui;background:#0d1220;color:#eaf3fa;margin:24px auto;max-width:1480px;padding:0 24px}input{padding:12px;width:min(100%,600px)}main{display:grid;grid-template-columns:repeat(auto-fill,minmax(216px,1fr));gap:16px;margin-top:20px}article{border:1px solid #33465d;background:#172335;border-radius:9px;padding:13px;overflow:hidden}img{width:100%;aspect-ratio:4/3;object-fit:contain;background:#0b1424}h2{font-size:16px}p{line-height:1.35}a{color:#9bcdff}.missing{height:150px;color:#b9a8a8}</style>
@@ -492,6 +499,9 @@ def existing_rows(out: Path, signature: str) -> dict[str, dict]:
             "interrupted": incomplete,
             "caption": next(iter((item.get("semantic") or {}).get("caption_hypotheses", [])),
                             "No completed model caption")[:400],
+            "tags": list(dict.fromkeys(str(tag)[:80]
+                                        for tag in (item.get("semantic") or {}).get("tags", [])
+                                        if str(tag).strip()))[:48],
             "report_sha256": file_digest(file),
         }
     return rows

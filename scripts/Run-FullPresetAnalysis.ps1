@@ -27,8 +27,10 @@ param(
     [switch]$RetryFailed,
     [switch]$CommitWhenComplete,
     [switch]$FullConditions,
-    [switch]$NoVLM,
+    [Alias('NoPixelCueTagging')][switch]$NoVLM,
     [switch]$AllVLMs,
+    [ValidateSet('smolvlm-256m','smolvlm-500m','smolvlm2-256m','smolvlm2-500m','joycaption')]
+    [string]$PixelCueTagger = 'smolvlm-256m',
     [ValidateSet('cpu','cuda','mps')][string]$Device = 'cpu',
     [ValidateRange(64,2048)][int]$SemanticEdge = 384,
     [ValidateRange(1,8)][int]$SemanticImages = 1,
@@ -140,6 +142,23 @@ if ($Status -or $Verify) {
 }
 
 if ($NoVLM -and $AllVLMs) { throw 'Cannot combine -NoVLM and -AllVLMs.' }
+if (($NoVLM -or $AllVLMs) -and $PSBoundParameters.ContainsKey('PixelCueTagger')) {
+    throw 'Choose -PixelCueTagger, -AllVLMs, or -NoPixelCueTagging, not a combination.'
+}
+# Default is ON: lightweight PixelCue SmolVLM tags for every analysed preset.
+$taggers = @()
+if ($AllVLMs) {
+    $taggers = @('joycaption','smolvlm-256m','smolvlm-500m','smolvlm2-256m','smolvlm2-500m')
+}
+elseif (-not $NoVLM) {
+    $taggers = @($PixelCueTagger)
+}
+if ($taggers.Count) {
+    Write-Host ('PixelCue tagging enabled: ' + ($taggers -join ', ')) -ForegroundColor Cyan
+}
+else {
+    Write-Host 'PixelCue tagging disabled; other visual analysis models remain enabled.' -ForegroundColor Yellow
+}
 
 if (-not $SkipSetup) {
     $uv = Find-Executable -Names @('uv.exe','uv') -KnownPaths @(
@@ -202,6 +221,14 @@ if (-not $SkipSetup) {
     })
     if ($missingProfiles.Count -gt 0) {
         Invoke-Checked $analysisPython (@('-m','pixelcue.visual_models') + $missingProfiles + @('--models-dir',$models))
+    }
+
+    # Pre-download and verify PixelCue tagging weights before an expensive
+    # catalogue sweep. The helper rejects any model directory outside models/.
+    if ($taggers.Count -gt 0) {
+        Write-Host 'Preparing project-local PixelCue tagging checkpoints...' -ForegroundColor Cyan
+        $prepare = Join-Path $PSScriptRoot 'prepare_pixelcue_taggers.py'
+        Invoke-Checked $analysisPython (@($prepare,'--models-dir',$models,'--taggers') + $taggers)
     }
 
     $tesseract = Find-Executable -Names @('tesseract.exe','tesseract') -KnownPaths @(
@@ -295,14 +322,11 @@ if ($Limit -gt 0) { $argsList += @('--limit',[string]$Limit) }
 if ($RetryFailed) { $argsList += '--retry-failed' }
 if ($CommitWhenComplete) { $argsList += '--commit' }
 if ($FullConditions) { $argsList += @('--images','cover-lyrics','colour-bars','grid-rings','text-card') }
-if ($NoVLM) {
-    # argparse's nargs=* accepts an empty keyword-model list at end of arguments.
-    $argsList += '--keyword-models'
-}
-elseif ($AllVLMs) {
-    $argsList += @('--keyword-models','joycaption','smolvlm-256m','smolvlm-500m',
-                   'smolvlm2-256m','smolvlm2-500m')
-}
+# Always pass the selected PixelCue taggers explicitly. Without an opt-out,
+# the lightweight tagger is enabled, including on resumed runs. Keeping this
+# argument stable preserves the existing experiment signature on resume.
+$argsList += '--keyword-models'
+$argsList += $taggers
 Write-Host "FrameRudiments full preset analysis; resumable output: $output" -ForegroundColor Cyan
 & $renderPython @argsList
 $exitCode = $LASTEXITCODE

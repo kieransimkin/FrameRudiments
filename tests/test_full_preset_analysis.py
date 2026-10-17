@@ -330,3 +330,68 @@ def test_python_entrypoint_help_uses_only_standard_library():
     assert result.returncode == 0
     assert "install-library" in result.stdout
     assert "--checkpoint-every" in result.stdout
+
+
+def test_pixelcue_tagging_is_enabled_by_default():
+    assert RUNNER.DEFAULT_VLM == ("smolvlm-256m",)
+    assert "pixelcue-tagger:" + RUNNER.DEFAULT_VLM[0] == "pixelcue-tagger:smolvlm-256m"
+
+
+def test_pixelcue_model_setup_stays_project_local(tmp_path, monkeypatch):
+    import importlib.util
+
+    path = SOURCE.with_name("prepare_pixelcue_taggers.py")
+    spec = importlib.util.spec_from_file_location("prepare_pixelcue_taggers", path)
+    installer = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(installer)
+    monkeypatch.setenv("PIXELCUE_MODEL_DIR", str(tmp_path / "external-old-override"))
+
+    made = []
+
+    class FakeTagger:
+        def __init__(self, directory):
+            self.model_dir = directory
+
+        def ensure_downloaded(self):
+            made.append(self.model_dir)
+            self.model_dir.mkdir(parents=True, exist_ok=True)
+            return self.model_dir
+
+    root = tmp_path / "models"
+    selected = installer.prepare_taggers(root, ["smolvlm-256m", "smolvlm-256m"],
+                                          factory=lambda name: FakeTagger(root / name))
+    assert selected == [root / "smolvlm-256m"]
+    assert made == selected
+    assert "PIXELCUE_MODEL_DIR" not in installer.os.environ
+    assert installer.os.environ["PIXELCUE_MODELS_DIR"] == str(root)
+
+    def escaping(name):
+        return FakeTagger(tmp_path / "external")
+
+    with pytest.raises(ValueError, match="outside"):
+        installer.prepare_taggers(root, ["smolvlm-256m"], factory=escaping)
+    with pytest.raises(ValueError, match="supported"):
+        installer.prepare_taggers(root, ["untrusted-vlm"], factory=escaping)
+
+
+def test_pixelcue_tags_are_searchable_and_html_escaped(tmp_path, monkeypatch):
+    monkeypatch.setattr(RUNNER, "ROOT", tmp_path)
+    monkeypatch.setattr(RUNNER, "MODELS", tmp_path / "models")
+    out = RUNNER.ensure_workspace(tmp_path / "visualiser-analysis" / "full-catalogue")
+    preset = {"id": "projectm:tag-test", "name": "Interesting visualiser", "engine": "projectm",
+              "preset": {"sha256": "a" * 64}}
+    captures = {"state": "captured", "complete": True, "conditions": []}
+    numerical = {"state": "completed", "measured_response_ranges": {}}
+    semantic = {"status": "completed", "models": [{"name": "pixelcue-tagger:smolvlm-256m", "status": "completed"}],
+                "caption_hypotheses": ["Spinning lights"], "tags": ["neon tunnel", "<script>alert(1)</script>"]}
+    row = RUNNER.publish_record(out, preset, "sig", captures, numerical, semantic,
+                                required_models=("pixelcue-tagger:smolvlm-256m",))
+    assert row["tags"] == ["neon tunnel", "<script>alert(1)</script>"]
+    RUNNER.update_index(out, [row], total=1, signature="sig")
+    page = (out / "index.html").read_text(encoding="utf-8")
+    assert "neon tunnel" in page
+    assert 'data-search="interesting visualiser projectm projectm:tag-test neon tunnel' in page
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in page
+    assert "<script>alert(1)</script>" not in page
+    restored = RUNNER.existing_rows(out, "sig")
+    assert restored[preset["id"]]["tags"] == row["tags"]
