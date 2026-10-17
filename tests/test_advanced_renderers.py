@@ -18,7 +18,7 @@ def test_every_new_renderer_is_deterministic_and_uses_its_source(spec):
     registry = default_renderers()
     renderer, identity = registry.create(spec.name, (320, 210), {"background": "#142238"})
     assert identity["source"]["sha256"]
-    assert identity["source"]["path"].endswith(("advanced_renderers.py", "circular_renderers.py", "effect_renderers.py"))
+    assert identity["source"]["path"].endswith(("advanced_renderers.py", "circular_renderers.py", "effect_renderers.py", "sprite_renderers.py"))
     frame = fixture(95, spectral=spec.family != "motion")
     result = renderer.render(frame)
     assert result.mode == "RGBA" and result.size == (320, 210)

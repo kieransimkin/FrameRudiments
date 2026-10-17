@@ -10,6 +10,11 @@ spectral displays, spectrograms and waveform effects documented in
 [expanded effects](expanded-effects.md).
 See the [Visualisation Atlas](visualisation-atlas.md) for the comprehensive
 catalogue, input-contract limitations and public GitHub Pages test gallery.
+All **161 existing vector renderer identifiers** remain usable as before. An additional
+**52 sprite-backed renderer names** use packaged or custom SHA-pinned PNG atlases;
+the LCD/LED segmented spectrum views use real calibrated StemLab bands.
+See [sprite visualisations](sprite-visualisations.md) for examples and style controls.
+
 List them with:
 
 ```sh

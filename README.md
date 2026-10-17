@@ -271,6 +271,26 @@ pixelation, grain, vignette, edge highlights, halftone, chromatic separation,
 solarisation and glitches. All these visual controls can be driven by
 source-clocked DanceRudiments. See [expanded effects reference](docs/expanded-effects.md).
 
+## Image-backed Rudiment renderers: 52 additional options
+
+FrameRudiments now offers **213 built-in Rudiment renderers**: the existing 161 vector
+options remain registered and unchanged, and 52 sprite-rendered spectrum,
+spectrogram, waveform and movement alternatives can be selected independently.
+The package bundles **17 PNG sprite atlas themes** (1,088 tiles), including 64
+transparent image-generated neon motifs and 1,024 procedurally generated LCD,
+LED, VFD, crystal, glass, retro-pixel, flame and other tiles. Pinned custom
+PNG atlases, animated cell selection and the existing DanceRudiment geometry/
+colour modulation and per-element/full-frame post effects are supported.
+
+[Explore vector and sprite comparisons](https://kieransimkin.github.io/FrameRudiments/sprites/)
+and see the [full sprite renderer reference](docs/sprite-visualisations.md).
+There are also 40 new per-sprite numeric controls (including size, rotation,
+colour channels, jitter, glow and animation speed) and validated native-driven
+categorical theme, shape and palette choices. The 16 new modulation lab
+scenes show these controls at four encoded-frame moments.
+
+The demo images are synthetic, not measured audio.
+
 Enable Settings → Pages → GitHub Actions as the repository publication source.
 
 ## Per-element and full-frame post-render effects

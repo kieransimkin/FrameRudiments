@@ -14,10 +14,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
 from generate_visualisation_gallery import fixture  # noqa: E402
 
 
-def test_all_161_names_register_without_collisions():
+def test_all_213_names_register_without_collisions():
     registry = default_renderers()
     names = registry.names
-    assert len(names) == len(set(names)) == 161
+    assert len(names) == len(set(names)) == 213
     assert len(EFFECT_VIEWS) == 60
     assert set(names) == {"particles", "bars", "waveform", "path", "spectrum"} | {x.name for x in ALL_VIEWS}
     # Regression for the original CI cascade: circular modes must never be

@@ -15,7 +15,10 @@ CURVES = {"linear", "smoothstep", "ease-in", "ease-out", "sine", "square", "cubi
 BLENDS = {"set", "add", "multiply", "min", "max"}
 STYLE_INTEGERS = {"line_width", "count", "trail", "lag", "seed", "font_size", "peak_count",
                   "min_peak_distance", "history_limit", "led_segments", "rings", "axis", "fill_alpha", "spokes", "sides",
-                  "segments", "quantize", "stride"}
+                  "segments", "quantize", "stride", "sprite_size", "sprite_index", "segment_count",
+                  "bin_stride", "sample_stride", "sprite_columns", "sprite_rows",
+                  "animation_frames", "animation_stride", "max_stamps", "sprite_pixel_size",
+                  "sprite_outline", "sprite_palette_shift"}
 GRADIENT_TARGET_ALIASES = {"gradient.phase": "visual.gradient_phase",
                            "gradient.mix": "visual.gradient_mix",
                            "gradient.cycles": "visual.gradient_cycles"}

@@ -40,6 +40,7 @@ def main(argv=None):
     profiling.add_argument("--model", action="append", choices=("clip", "dinov2", "blip", "ocr"), default=[])
     profiling.add_argument("--max-edge", type=int, default=256)
     commands.add_parser("renderers", help="List available built-in rudiment renderers")
+    commands.add_parser("sprites", help="List installed sprite atlases and their checksums")
     demo = commands.add_parser("demo", help="Create a synthetic audio/image/recording project")
     demo.add_argument("directory")
     demo_views = demo.add_mutually_exclusive_group()
@@ -96,6 +97,9 @@ def main(argv=None):
                 return 2
         elif args.command == "renderers":
             print(json.dumps(default_renderers().names))
+        elif args.command == "sprites":
+            from .sprite_renderers import _manifest
+            print(json.dumps(_manifest()["themes"], sort_keys=True))
         elif args.command == "plan":
             output = __import__("pathlib").Path(args.output)
             if output.exists():

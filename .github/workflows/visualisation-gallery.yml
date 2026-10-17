@@ -29,13 +29,15 @@ jobs:
       - name: Install distribution and test tooling
         run: python -m pip install -e '.[dev]'
       - name: Validate all visualisation modes and deterministic output
-        run: python -m pytest -q tests/test_advanced_renderers.py tests/test_visualisation_modulation.py tests/test_effect_batch.py tests/test_scoped_effects.py
+        run: python -m pytest -q tests/test_advanced_renderers.py tests/test_visualisation_modulation.py tests/test_effect_batch.py tests/test_scoped_effects.py tests/test_sprite_renderers.py
       - name: Lint gallery and renderer implementation
-        run: ruff check scripts/generate_visualisation_gallery.py src/framerudiments/advanced_renderers.py src/framerudiments/circular_renderers.py src/framerudiments/visualisation_catalogue.py src/framerudiments/visual_style.py src/framerudiments/modulation.py src/framerudiments/effect_catalogue.py src/framerudiments/effect_renderers.py src/framerudiments/post_effects.py src/framerudiments/scoped_effects.py scripts/generate_post_effect_gallery.py tests/test_advanced_renderers.py tests/test_visualisation_modulation.py tests/test_effect_batch.py tests/test_scoped_effects.py
+        run: ruff check scripts/generate_visualisation_gallery.py src/framerudiments/advanced_renderers.py src/framerudiments/circular_renderers.py src/framerudiments/visualisation_catalogue.py src/framerudiments/visual_style.py src/framerudiments/modulation.py src/framerudiments/effect_catalogue.py src/framerudiments/effect_renderers.py src/framerudiments/post_effects.py src/framerudiments/scoped_effects.py scripts/generate_post_effect_gallery.py tests/test_advanced_renderers.py tests/test_visualisation_modulation.py tests/test_effect_batch.py tests/test_scoped_effects.py tests/test_sprite_renderers.py src/framerudiments/sprite_renderers.py src/framerudiments/sprite_catalogue.py scripts/generate_sprite_gallery.py scripts/build_sprite_assets.py
       - name: Render complete gallery from synthetic display fixtures
         run: python scripts/generate_visualisation_gallery.py --output _site
       - name: Generate isolated element and full-frame effects gallery
         run: python scripts/generate_post_effect_gallery.py --output _site
+      - name: Generate sprite and vector comparison gallery
+        run: python scripts/generate_sprite_gallery.py --output _site
       - name: Validate generated site and image count
         run: |
           python - <<'PY'
@@ -44,7 +46,7 @@ jobs:
           p = Path('_site')
           data = json.loads((p / 'catalogue.json').read_text())
           assert data['synthetic_test_data'] and data['not_audio_measurements']
-          assert len(data['views']) == 161
+          assert len(data['views']) == 213
           assert len(data['style_lab']) == 20
           for item in data['style_lab']:
               assert item['native_drivers'] == ['circle', 'bounce']
@@ -53,6 +55,12 @@ jobs:
           assert (p / 'scopes/index.html').is_file()
           assert (p / 'scopes/examples.json').is_file()
           assert len(list((p / 'scopes').glob('*/*.png'))) == 24
+          sprites = json.loads((p / 'sprites/catalogue.json').read_text())
+          assert sprites['sprite_renderer_count'] == 52 and sprites['themes'] == 17
+          assert len(list((p / 'sprites/themes').glob('*/*.png'))) == 136
+          assert len(list((p / 'sprites/atlases').glob('*.png'))) == 17
+          assert len(sprites['modulation_scenes']) == 16
+          assert len(list((p / 'sprites/modulation').glob('*/*.png'))) == 64
           for row in data['views']:
               assert all((p / 'images' / row['name'] / f'{i}.png').is_file() for i in range(len(data['frames'])))
           PY
