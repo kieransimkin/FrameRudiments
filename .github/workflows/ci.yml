@@ -112,18 +112,44 @@ jobs:
       - name: Select exact pinned native library
         run: |
           echo "FRAMERUDIMENTS_PROJECTM_LIBRARY=$(find "$RUNNER_TEMP/projectm/install" -name 'libprojectM-4.so' -print -quit)" >> "$GITHUB_ENV"
-      - name: Actual engines, shaders, glyph feedback, animated sprites, chain and encoded QA
+      # The standalone ModernGL EGL tests passed, but a following GLFW/projectM
+      # GLXMakeCurrent aborted Xlib with BadAccess in the same Python process.
+      # Run both suites in separate interpreters and fresh Xvfb sessions.
+      # This is isolation, not a skip, fallback or replacement for GPU testing.
+      - name: Native OpenGL mesh, shadow and volume acceptance (isolated EGL session)
         shell: bash
         run: |
-          set -o pipefail
-          xvfb-run -a python -X faulthandler -m pytest -vv -s integration \
+          set -euo pipefail
+          xvfb-run -a python -X faulthandler -m pytest -vv -s \
+            integration/test_music_spatial_gpu.py \
+            --junitxml=gpu-mesh-results.xml 2>&1 | tee gpu-mesh-console.log
+      - name: Butterchurn, projectM, profiling and encoded QA (fresh GLX session)
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a python -X faulthandler -m pytest -vv -s \
+            integration --ignore=integration/test_music_spatial_gpu.py \
             --junitxml=gpu-results.xml 2>&1 | tee gpu-console.log
-      - name: No skipped engine checks
-        run: python -c "import xml.etree.ElementTree as E; r=E.parse('gpu-results.xml'); assert not r.findall('.//skipped')"
+      - name: Verify both GPU suites ran without skipped tests
+        run: |
+          python - <<'PYTEST'
+          import xml.etree.ElementTree as ET
+
+          for name in ('gpu-mesh-results.xml', 'gpu-results.xml'):
+              root = ET.parse(name).getroot()
+              count = len(root.findall('.//testcase'))
+              if not count:
+                  raise SystemExit(f'{name}: no tests collected')
+              if root.findall('.//skipped'):
+                  raise SystemExit(f'{name}: GPU tests must not be skipped')
+              print(f'{name}: {count} tests, none skipped')
+          PYTEST
       - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: visualiser-acceptance
           path: |
+            gpu-mesh-results.xml
+            gpu-mesh-console.log
             gpu-results.xml
             gpu-console.log
