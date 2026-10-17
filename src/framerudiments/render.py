@@ -140,9 +140,13 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
 
 def _analysis(handle, compositor, context):
     reports = compositor.frame_reports()
-    if reports:
-        handle.write(json.dumps(dict(schema="framerudiments.rudiment-analysis-frame.v1", frame=context.frame, source_seconds=context.source_seconds,
-                                     output_seconds=context.output_seconds, layers=reports), allow_nan=False) + "\n")
+    post = compositor.post_effect_reports()
+    if reports or post:
+        entry = dict(schema="framerudiments.rudiment-analysis-frame.v1", frame=context.frame,
+                     source_seconds=context.source_seconds, output_seconds=context.output_seconds, layers=reports)
+        if post:
+            entry["post_effects"] = post
+        handle.write(json.dumps(entry, allow_nan=False) + "\n")
 
 
 def _sidecar(output):

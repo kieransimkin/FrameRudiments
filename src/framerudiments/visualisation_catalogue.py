@@ -1,5 +1,6 @@
 """Auditable visualisation presets; display axes are not a replacement for DSP."""
 from dataclasses import dataclass
+from .effect_catalogue import EFFECT_SPECS
 
 
 @dataclass(frozen=True)
@@ -130,7 +131,6 @@ CIRCULAR_VIEWS = (
                 "Two native Rudiment dimensions mapped into annular angle and radius",
                 "polar XY oscilloscope"),)
 )
-from .effect_catalogue import EFFECT_SPECS
 EFFECT_VIEWS = tuple(ViewSpec(*spec) for spec in EFFECT_SPECS)
 ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS
 BY_NAME = {v.name: v for v in ALL_VIEWS}

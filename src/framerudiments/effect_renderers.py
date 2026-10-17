@@ -130,12 +130,12 @@ class EffectRenderer(_Viewport):
     def _grid(self, draw, area, *, count=4):
         if not self.grid:
             return
-        l, t, r, b = area
+        left, t, r, b = area
         for j in range(count+1):
-            x = l + (r-l) * j / count
+            x = left + (r-left) * j / count
             y = t + (b-t) * j / count
             draw.line((x, t, x, b), fill=(64, 84, 106, 100))
-            draw.line((l, y, r, y), fill=(64, 84, 106, 100))
+            draw.line((left, y, r, y), fill=(64, 84, 106, 100))
 
     def _spectrum(self, draw, frame, area):
         # Analysis is strictly the existing shared calibrated StemLab-band path.
@@ -149,15 +149,15 @@ class EffectRenderer(_Viewport):
         if not n:
             raise ValueError("No calibrated bands to display")
         mode = self.mode.removeprefix("spectrum-")
-        l, t, r, b = area
-        w, h = r - l, b - t
+        left, t, r, b = area
+        w, h = r - left, b - t
         cell = w / n
-        mid = (l + r) / 2
-        points = [(l + (i+.5)*cell, b - v*h) for i, v in enumerate(levels)]
+        mid = (left + r) / 2
+        points = [(left + (i+.5)*cell, b - v*h) for i, v in enumerate(levels)]
         self._grid(draw, area)
         if mode in {"cityscape", "capsules", "outline-blocks", "gel-bars", "thermometer", "partition"}:
             for i, v in enumerate(levels):
-                x0, x1 = l+i*cell+self.gap*cell/2, l+(i+1)*cell-self.gap*cell/2
+                x0, x1 = left+i*cell+self.gap*cell/2, left+(i+1)*cell-self.gap*cell/2
                 y = b - h*v
                 ink = self._ink(i, v)
                 if mode == "cityscape":
@@ -181,7 +181,7 @@ class EffectRenderer(_Viewport):
                     draw.rectangle((xmid, t, x1, b), fill=self._ink(i+1, v, alpha=35))
         elif mode in {"led-matrix", "bead-stacks", "dash-grid"}:
             for i, v in enumerate(levels):
-                x = l + (i+.5)*cell
+                x = left + (i+.5)*cell
                 for j in range(self.segments):
                     threshold = (j+.5)/self.segments
                     if threshold > v:
@@ -221,11 +221,11 @@ class EffectRenderer(_Viewport):
             for j, row in enumerate(history):
                 f = (j+1)/len(history)
                 age_alpha = round(255 * ((1-self.decay) + self.decay * f))
-                pts = [(l+(i+.5)*cell,
+                pts = [(left+(i+.5)*cell,
                         b - h*(.8 if mode=="wave-fence" else 1)*v -
                         (1-f)*h*self.perspective*.5) for i,v in enumerate(row)]
                 if mode == "mountain-range":
-                    draw.polygon([(l,b),*pts,(r,b)],fill=self._ink(j,.5,alpha=round(age_alpha*.35)))
+                    draw.polygon([(left,b),*pts,(r,b)],fill=self._ink(j,.5,alpha=round(age_alpha*.35)))
                 elif mode == "ribbon-stack":
                     draw.line(pts,fill=self._ink(j,1,alpha=age_alpha),width=max(1,self.line_width))
                 elif mode == "braided-lines":
@@ -248,7 +248,7 @@ class EffectRenderer(_Viewport):
         elif mode in {"band-delta", "band-variance", "energy-tiles"}:
             previous = rows[-2] if len(rows)>1 else rows[-1]
             for i,v in enumerate(levels):
-                x0,x1=l+i*cell+self.gap*cell/2,l+(i+1)*cell-self.gap*cell/2
+                x0,x1=left+i*cell+self.gap*cell/2,left+(i+1)*cell-self.gap*cell/2
                 if mode == "band-delta":
                     delta = v-previous[i]
                     y=(t+b)/2
@@ -284,15 +284,15 @@ class EffectRenderer(_Viewport):
         if not rows:
             return
         mode=self.mode.removeprefix("spectrogram-")
-        l,t,r,b=area
-        w,h=r-l,b-t
+        left,t,r,b=area
+        w,h=r-left,b-t
         nt,nf=len(rows),len(rows[-1])
         cellw=w/nt
         cellh=h/nf
         if self.reverse:
             rows=list(reversed(rows))
         for time, row in enumerate(rows):
-            x0,x1=l+time*cellw,l+(time+1)*cellw
+            x0,x1=left+time*cellw,left+(time+1)*cellw
             for band,v in enumerate(row):
                 y0,y1=b-(band+1)*cellh,b-band*cellh
                 if v<self.threshold and mode not in {"negative", "quilt", "isobands"}:
@@ -335,11 +335,11 @@ class EffectRenderer(_Viewport):
                 elif mode == "tunnel":
                     if band%3==0 and time%2==0:
                         shrink=(1-time/max(1,nt))*w*.36
-                        draw.rectangle((l+shrink,t+shrink*h/max(1,w),r-shrink,b-shrink*h/max(1,w)),
+                        draw.rectangle((left+shrink,t+shrink*h/max(1,w),r-shrink,b-shrink*h/max(1,w)),
                                        outline=ink,width=self.line_width)
                 elif mode == "record-grooves":
                     if band%2==0:
-                        cx,cy=(l+r)/2,(t+b)/2
+                        cx,cy=(left+r)/2,(t+b)/2
                         radius=min(w,h)*(.1+.4*time/max(1,nt-1))
                         draw.arc((cx-radius,cy-radius,cx+radius,cy+radius),
                                  band*5,band*5+max(10,120*v),fill=ink,width=self.line_width)
@@ -367,8 +367,8 @@ class EffectRenderer(_Viewport):
         if self.axis>=len(frame.values):
             raise ValueError("Selected motion effect axis is unavailable")
         mode=self.mode.removeprefix("waveform-")
-        l,t,r,b=area
-        w,h=r-l,b-t
+        left,t,r,b=area
+        w,h=r-left,b-t
         n=len(history)
         if not n:
             raise ValueError("No source-clocked rudiment history")
@@ -380,15 +380,15 @@ class EffectRenderer(_Viewport):
         if self.quantize>1:
             values=[round(v*(self.quantize-1))/(self.quantize-1) for v in values]
         mid=(t+b)/2
-        pts=[(l+w*i/max(1,n-1),mid-v*h*.46) for i,v in enumerate(values)]
+        pts=[(left+w*i/max(1,n-1),mid-v*h*.46) for i,v in enumerate(values)]
         self._grid(draw,area)
         if self.baseline:
-            draw.line((l,mid,r,mid),fill=(110,132,162,140))
+            draw.line((left,mid,r,mid),fill=(110,132,162,140))
         if mode in {"phosphor", "echo", "horizon", "heat-ribbon", "channel-braid", "butterfly", "dna-helix"}:
             other=[row.values[(self.axis+1)%len(frame.values)] for row in history]
             if self.reverse:
                 other=list(reversed(other))
-            pts2=[(l+w*i/max(1,n-1),mid-v*self.gain*h*.42) for i,v in enumerate(other)]
+            pts2=[(left+w*i/max(1,n-1),mid-v*self.gain*h*.42) for i,v in enumerate(other)]
             if mode=="phosphor":
                 for j in range(1,n):
                     alpha=round(255*((1-self.decay)+self.decay*j/n))
@@ -397,13 +397,14 @@ class EffectRenderer(_Viewport):
                 for echo in range(4,0,-1):
                     shift=echo*h*.035
                     draw.line([(x,y+shift) for x,y in pts],fill=self._ink(echo,alpha=round(180/(echo+1))),width=self.line_width)
-                if n>1:draw.line(pts,fill=self._ink(0),width=self.line_width)
+                if n>1:
+                    draw.line(pts,fill=self._ink(0),width=self.line_width)
             elif mode=="horizon":
                 for echo in range(4):
                     shift=echo*h*.1
                     draw.line([(x,y+shift) for x,y in pts],fill=self._ink(echo,alpha=190-echo*38),width=self.line_width)
             elif mode=="heat-ribbon":
-                draw.polygon([(l,mid),*pts,(r,mid)],fill=self._ink(0,alpha=110))
+                draw.polygon([(left,mid),*pts,(r,mid)],fill=self._ink(0,alpha=110))
                 for j in range(1,n):
                     draw.line((pts[j-1],pts[j]),fill=self._ink(j,abs(values[j]),alpha=255),width=self.line_width)
             elif mode=="channel-braid":
@@ -426,11 +427,12 @@ class EffectRenderer(_Viewport):
                 if crossings:
                     cut=crossings[0]
                     trail=values[cut:]
-                    pts=[(l+w*i/max(1,len(trail)-1),mid-v*h*.46) for i,v in enumerate(trail)]
+                    pts=[(left+w*i/max(1,len(trail)-1),mid-v*h*.46) for i,v in enumerate(trail)]
                 draw.line(pts,fill=self._ink(0),width=self.line_width)
             elif mode=="vertical-scope":
                 p2=[(mid+v*w*.46,t+h*i/max(1,n-1)) for i,v in enumerate(values)]
-                if len(p2)>1:draw.line(p2,fill=self._ink(0),width=self.line_width)
+                if len(p2)>1:
+                    draw.line(p2,fill=self._ink(0),width=self.line_width)
             elif mode=="signal-staircase":
                 for i in range(1,n):
                     draw.line((pts[i-1][0],pts[i-1][1],pts[i][0],pts[i-1][1],pts[i][0],pts[i][1]),
@@ -453,7 +455,7 @@ class EffectRenderer(_Viewport):
                         width=max(1,w/n*(1-self.gap))
                         draw.rectangle((x-width*.5,min(mid,y),x+width*.5,max(mid,y)),fill=ink)
         elif mode in {"spiral-trace", "polar-radar"}:
-            cx,cy=(l+r)/2,(t+b)/2
+            cx,cy=(left+r)/2,(t+b)/2
             outer=min(w,h)*.48
             coords=[]
             for i,v in enumerate(values):
@@ -461,7 +463,8 @@ class EffectRenderer(_Viewport):
                 theta=-math.pi/2+frac*math.tau*(2.8 if mode=="spiral-trace" else 1)
                 radius=outer*((.12+.7*frac) if mode=="spiral-trace" else (.48+.42*v))
                 coords.append((cx+math.cos(theta)*radius,cy+math.sin(theta)*radius))
-            if len(coords)>1:draw.line(coords,fill=self._ink(0),width=self.line_width)
+            if len(coords)>1:
+                draw.line(coords,fill=self._ink(0),width=self.line_width)
             if mode=="polar-radar":
                 for i in range(0,n,max(1,n//20)):
                     draw.line((cx,cy,*coords[i]),fill=self._ink(i,alpha=round(130*i/n)))
@@ -469,7 +472,7 @@ class EffectRenderer(_Viewport):
             if len(frame.values)<2:
                 raise ValueError("Phase trails require two Rudiment axes")
             for i,row in enumerate(history):
-                x=l+w*(row.values[0]+1)/2
+                x=left+w*(row.values[0]+1)/2
                 y=t+h*(1-row.values[1])/2
                 radius=min(self.bead_radius,3)
                 draw.ellipse((x-radius,y-radius,x+radius,y+radius),
