@@ -52,7 +52,7 @@ def vector_viewport(renderer_registry, name, size, style, frame, scale, project=
             cache[key] = high
     source = high.render(frame)
     if not isinstance(source, Image.Image) or source.mode != "RGBA" or source.size != scaled_size:
-        raise ValueError("Supersampled vector must render a full-size RGBA viewport")
+        raise ValueError("Supersampled vector must return viewport-sized RGBA image")
     return source.resize(size, Image.Resampling.LANCZOS), getattr(high, "frame_report", None)
 
 
@@ -266,18 +266,40 @@ def temporal_supersample(compositor, frame):
             # Source clock remains fractional; original integer frame indices
             # retain their meaning for trusted custom scene hooks.
             from dataclasses import replace
+            scene_cache = {"frame": None, "pixels": None}
 
             def scene_adapter(image, context):
-                return scene(image, replace(context, frame=context.frame // factor))
+                encoded = context.frame // factor
+                if scene_cache["frame"] != encoded:
+                    # Trusted scene hooks own encoded frames, not high-FPS samples.
+                    # Never invoke a stateful hook eight times for one output frame.
+                    scene_cache["pixels"] = scene(image, replace(context, frame=encoded)).copy()
+                    scene_cache["frame"] = encoded
+                return scene_cache["pixels"].copy()
         else:
             scene_adapter = None
         virtual = Compositor(project, scene=scene_adapter, renderers=compositor.renderers)
         compositor._temporal_virtual = virtual
     images = []
+    route_averages = {}
+    route_keys = (compositor.visualiser_routing.available
+                  if getattr(compositor, "visualiser_routing", None) is not None else ())
     for j in range(factor):
         sample, _ = virtual.frame(min(frame * factor + j, virtual.project.frame_count - 1),
                                   apply_quality=False)
         images.append(sample)
+        if route_keys:
+            parts = dict(virtual._route_parts)
+            for key in route_keys:
+                value = parts.get(key)
+                if value is None:
+                    value = Image.new("RGBA", sample.size)
+                value = value.convert("RGBa")
+                route_averages[key] = (value if j == 0 else
+                    Image.blend(route_averages[key], value, 1 / (j + 1)))
+    if route_keys:
+        compositor._route_parts = [(key, route_averages[key].convert("RGBA"))
+                                   for key in route_keys]
     # Source samples are genuinely different instants in the virtual clock.
     combined = linear_shutter_composite(images, [1] * factor, strength=1)
     compositor.extents.update(virtual.extents)

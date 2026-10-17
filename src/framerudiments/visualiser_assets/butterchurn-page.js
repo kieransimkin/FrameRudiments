@@ -54,7 +54,7 @@ async function initialise(config) {
     uv=p; gl_Position=vec4(p*2.0-1.0,0.0,1.0); }`);
   const fragment = shader(gl.FRAGMENT_SHADER, `#version 300 es
     precision highp float; in vec2 uv; uniform sampler2D source; uniform float amount;
-    out vec4 colour; void main(){ colour=vec4(texture(source,uv).rgb,amount); }`);
+    out vec4 colour; void main(){ vec4 pixel=texture(source,uv); colour=vec4(pixel.rgb,pixel.a*amount); }`);
   const program = gl.createProgram(); gl.attachShader(program, vertex); gl.attachShader(program, fragment); gl.linkProgram(program);
   if (errors.length) throw new Error(errors.join('\n'));
   const vao = gl.createVertexArray(), texture = gl.createTexture();

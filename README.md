@@ -74,6 +74,16 @@ Explicitly lower them with `render_quality.spatial_scale` (1–4),
 Full-quality rendering can be much slower; read the
 [spatiotemporal sampling guide](docs/spatiotemporal-supersampling.md).
 
+## Layer-selective Butterchurn/projectM feedback
+
+Each composited element can feed the GPU visualisers continuously, only
+during a bounded window measured in **64-pip source-clock beats**, or not at
+all. Independently, an element can render cleanly over the last stage.
+Word captions, lyric sprites, particle emitters, backgrounds and normal
+Rudiment layers use the same routing policy. Existing projects remain
+unchanged. [Configuration and examples](docs/visualiser-routing.md) ·
+[CI comparisons](https://kieransimkin.github.io/FrameRudiments/routing/).
+
 ## Install and run
 
 Python 3.11+ and FFmpeg with libx264/AAC are required. Install the package into

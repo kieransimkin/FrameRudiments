@@ -163,10 +163,11 @@ class ButterchurnBackend:
 
 
 class EffectChain:
-    def __init__(self, project, specs, ffmpeg, output, *, factories=None):
+    def __init__(self, project, specs, ffmpeg, output, *, factories=None, routing=None):
         self.backends, self.next_frame, self.audio = [], 0, None
         self.closed = False
         self.specs = specs
+        self.routing = routing
         if factories is None:
             from .projectm_backend import ProjectMBackend
             factories = dict(butterchurn=ButterchurnBackend, projectm=ProjectMBackend)
@@ -180,20 +181,30 @@ class EffectChain:
             self.close()
             raise
 
-    def process(self, image, context):
+    def process(self, image, context, *, isolated_layers=None):
         if context.frame != self.next_frame:
             raise ValueError("MilkDrop feedback requires sequential frames from zero; recreate and replay to seek")
+        overlay = None
+        if self.routing is not None:
+            if isolated_layers is None:
+                raise ValueError("Routed visualisers require the isolated compositor surfaces")
+            image, overlay = self.routing.route(context, isolated_layers)
         pcm = self.audio.at(context.frame)
         for backend in self.backends:
             image = backend.process(image, context, pcm)
             if image.size != (self.audio.project.width, self.audio.project.height) or image.mode != "RGBA":
                 raise ValueError("Visualiser must return frame-sized RGBA")
         self.next_frame += 1
+        if overlay is not None:
+            final = image.convert("RGBA")
+            final.alpha_composite(overlay)
+            image = final
         return image.convert("RGB")
 
     def evidence(self):
         return dict(stage="after scene, layers, identity, captions and lyric art; before encoding",
                     sequential_frames=self.next_frame, pcm=self.audio.evidence,
+                    routing=self.routing.evidence if self.routing is not None else None,
                     stages=[dict(spec, runtime=backend.evidence) for spec, backend in zip(self.specs, self.backends)],
                     limits="GPU/driver and engine noise can vary; not a cross-platform bit-exact contract. Text bounds refer to pre-effect composition.")
 

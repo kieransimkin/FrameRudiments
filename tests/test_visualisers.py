@@ -18,7 +18,10 @@ def project(tmp_path):
     data = read_json(path)
     data["audio"].update(start_sample=12000, end_sample=36000, repeats=2, fade_seconds=0)
     write_json(path, data)
-    return Project.load(path)
+    from framerudiments.output_quality import OutputQuality
+    result = Project.load(path)
+    result.output_quality = OutputQuality({"enabled": False})
+    return result
 
 
 @pytest.mark.parametrize("bad", [None, {}, [dict(id="x", engine="wrong")],
