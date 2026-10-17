@@ -324,6 +324,9 @@ class Compositor:
         return pipeline.apply_frame(image, ctx)
 
     def frame(self, frame):
+        if self.post_pipeline.temporal is not None and not getattr(self, "_temporal_sampling", False):
+            from .quality_effects import render_temporal_frame
+            return render_temporal_frame(self, frame)
         ctx = self.context(frame)
         if self.post_pipeline.enabled:
             # Final-frame opacity/rotation may leave transparent pixels. The

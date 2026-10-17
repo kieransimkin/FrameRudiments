@@ -140,8 +140,9 @@ def build_site(output):
         style = dict(sprite_theme=theme, sprite_size=15, background="#10213a",
                      animation_frames=6, segment_count=14)
         visual = {}
-        context_at = lambda n: SimpleNamespace(frame=n, output_seconds=n / 60,
-            source_seconds=n / 60, beat=n / 30, lyric=None, cue=None)
+        def context_at(n):
+            return SimpleNamespace(frame=n, output_seconds=n / 60,
+                                   source_seconds=n / 60, beat=n / 30, lyric=None, cue=None)
         mods = SpriteModulations(project, list(drivers), context_at, base_style=style, base_visual=visual)
         project.inputs.extend(mods.files)
         samples = []

@@ -149,3 +149,7 @@ The GitHub Pages workflow includes a linked **Scopes** test page with six
 synthetic scenes, four deterministic sample moments each, and the exact
 configuration used. These are geometry and pipeline tests, not perceptual
 approval or claims about actual song acoustics.
+
+## High-quality anti-aliasing and motion blur
+
+The new `visual.antialias` and `visual.motion_blur` controls can be applied to individual elements or the finished frame and modulated with native DanceRudiments. `post_effects.temporal` separately integrates observed past encoded frames with a bounded historical shutter; see [quality effects](quality-effects.md) for safe settings, constraints, and the CI gallery.

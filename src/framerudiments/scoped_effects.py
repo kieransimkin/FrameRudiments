@@ -12,6 +12,7 @@ from PIL import Image
 from .io import fields, integer, number
 from .modulation import RudimentModulations
 from .visual_style import VisualStyle
+from .quality_effects import TemporalShutter
 
 MAX_STAGES = 16
 MAX_TARGETS = 256
@@ -194,7 +195,7 @@ class CompositingEffects:
     """
 
     def __init__(self, project, config, context_at, *, valid_elements):
-        fields(config, {"all_elements", "elements", "frame"}, "post_effects")
+        fields(config, {"all_elements", "elements", "frame", "temporal"}, "post_effects")
         elements = config.get("elements", {})
         if not isinstance(elements, dict) or len(elements) > MAX_TARGETS:
             raise ValueError("post_effects.elements must be an object with <=256 targets")
@@ -214,14 +215,20 @@ class CompositingEffects:
         self.all_elements = build(config.get("all_elements", []), "all_elements")
         self.elements = {key: build(value, f"elements.{key}") for key, value in elements.items()}
         self.frame = build(config.get("frame", []), "frame")
-        self.enabled = bool(self.all_elements or self.frame or any(self.elements.values()))
+        self.temporal = (TemporalShutter(project, config["temporal"], context_at)
+                         if "temporal" in config else None)
+        self.enabled = bool(self.all_elements or self.frame or any(self.elements.values())
+                            or self.temporal is not None)
         stages = [*self.all_elements, *self.frame, *(stage for value in self.elements.values() for stage in value)]
         self.files = [ref for stage in stages for ref in stage.files]
+        if self.temporal is not None:
+            self.files.extend(self.temporal.files)
         project.inputs.extend(self.files)
         self.evidence = dict(order="background, scene, layers, identity, caption/art; then frame; then GPU effects",
                              all_elements=[stage.evidence for stage in self.all_elements],
                              elements={key: [stage.evidence for stage in stages] for key, stages in self.elements.items()},
-                             frame=[stage.evidence for stage in self.frame])
+                             frame=[stage.evidence for stage in self.frame],
+                             temporal=self.temporal.evidence if self.temporal else None)
         self.last_report = {}
 
     def begin(self):

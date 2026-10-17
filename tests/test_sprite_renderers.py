@@ -218,7 +218,8 @@ def test_sprite_modulation_ranges_and_untrusted_choice_targets_are_rejected():
         with pytest.raises(ValueError):
             SpriteRenderer((280, 180), {field: upper + 1}, "sprite-spectrum-lcd")
     project = SimpleNamespace(base=Path("."), clock=SimpleNamespace(beat_at=lambda value: value * 2), inputs=[])
-    context = lambda n: SimpleNamespace(frame=n, output_seconds=n / 60, source_seconds=n / 60, beat=n / 30)
+    def context(n):
+        return SimpleNamespace(frame=n, output_seconds=n / 60, source_seconds=n / 60, beat=n / 30)
     motion = {"kind": "named", "pattern": "circle"}
     with pytest.raises(ValueError, match="categorical"):
         SpriteModulations(project, [{"target": "style.sprite_asset", "choices": ["a", "b"],
@@ -238,7 +239,8 @@ def test_native_sources_modulate_geometry_colour_texture_and_theme(tmp_path):
     if not font:
         pytest.skip("Requires the CI-pinned render font")
     project = Project.load(create_demo(tmp_path / "sprite-mod-demo", font, width=360, height=640))
-    pattern = lambda name: {"kind": "named", "pattern": name}
+    def pattern(name):
+        return {"kind": "named", "pattern": name}
     project.data["layers"] = [{
         "id": "animated-tiles", "type": "rudiment", "renderer": "sprite-waveform-dots",
         "bounds": [20, 270, 340, 590], "motion": pattern("circle"), "history_frames": 90,
