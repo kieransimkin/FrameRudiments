@@ -134,3 +134,7 @@ Playback is user-controlled; no automatic media playback is required.
 
 Generated vector illustration of the processing order. The comparison above
 and linked video are captured renderer output; the diagram is explanatory.
+
+## High-quality anti-aliasing and motion blur
+
+The new `visual.antialias` and `visual.motion_blur` controls can be applied to individual elements or the finished frame and modulated with native DanceRudiments. `post_effects.temporal` separately integrates observed past encoded frames with a bounded historical shutter; see [quality effects](quality-effects.md) for safe settings, constraints, and the CI gallery.

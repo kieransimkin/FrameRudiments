@@ -305,3 +305,9 @@ passes cannot recolour already composited neighbours, while a frame pass can
 act on everything. These stages run before the existing optional
 Butterchurn/projectM feedback chain. See the [compositor effects reference](docs/scoped-post-effects.md)
 and the [public scopes gallery](https://kieransimkin.github.io/FrameRudiments/scopes/).
+
+## High-quality antialiasing and motion blur
+
+Opt-in edge-aware antialiasing and premultiplied-alpha directional blur now work in Rudiment `visual` settings and independent per-element or whole-frame `post_effects` stages. Both accept native DanceRudiment modulation of all numeric settings, including direction, shutter distance, samples, strength, thresholds, radius and falloff. A separate `post_effects.temporal` shutter recomposes actual observed encoded frames in linear-light RGB, bounded to the current source repeat. It does not invent subframes or optical flow.
+
+The [CI-generated AA and motion-blur comparison gallery](https://kieransimkin.github.io/FrameRudiments/quality/) combines four existing visualiser modes with nine quality-effect configurations, four observed moments each, and machine-readable parameters. See [the quality-effects guide](docs/quality-effects.md).

@@ -10,6 +10,7 @@ from PIL import Image, ImageColor, ImageFilter
 
 from .io import fields, number, integer
 from .post_effects import POST_RANGES, apply_post_effects
+from .quality_effects import QUALITY_RANGES, apply_quality_effects
 
 
 PALETTES = {
@@ -53,6 +54,7 @@ VISUAL_RANGES = {
     "gradient_cycles": (.01, 32, 1),
 }
 VISUAL_RANGES.update(POST_RANGES)
+VISUAL_RANGES.update(QUALITY_RANGES)
 _GRADIENT_MODES = {"horizontal", "vertical", "diagonal", "anti-diagonal", "radial",
                    "angular", "diamond", "wave", "checker", "level", "frequency", "time"}
 
@@ -241,7 +243,7 @@ class VisualStyle:
                  or self.brightness != 1 or self.contrast != 1 or self.gamma != 1
                  or self.threshold or self.posterize >= 2 or self.opacity != 1)
         if not grade:
-            return apply_post_effects(image, self)
+            return apply_quality_effects(apply_post_effects(image, self), self)
         pixels = image.load()
         w, h = image.size
         # RGB results are memoised for nonspatial grading. Gradients preserve
@@ -261,4 +263,4 @@ class VisualStyle:
                 if key not in cache:
                     cache[key] = self._colour((r, g, b), self._gradient_at(u) if self.gradient_mode else None)
                 pixels[x, y] = (*cache[key], round(a * self.opacity))
-        return apply_post_effects(image, self)
+        return apply_quality_effects(apply_post_effects(image, self), self)
