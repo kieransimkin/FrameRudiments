@@ -1,6 +1,7 @@
 """Export the same frame ledger used by the raster captions."""
 from html import escape
 from pathlib import Path
+import re
 from .timeline import half_up
 from fractions import Fraction
 
@@ -25,12 +26,14 @@ def stamp(frame, fps, *, ass=False):
             f"{hours:02}:{minutes:02}:{seconds:02},{fraction:03}")
 
 
-def export_subtitles(events, fps, frame_count, directory, width, height):
+def export_subtitles(events, fps, frame_count, directory, width, height, *, basename="captions"):
+    if not isinstance(basename, str) or not re.fullmatch(r"[a-z][a-z0-9-]{0,60}", basename):
+        raise ValueError("Invalid subtitle export name")
     directory = Path(directory)
     rows = list(intervals(events, frame_count))
     srt = "\n\n".join(f"{i}\n{stamp(a, fps)} --> {stamp(b, fps)}\n{escape(text)}"
                          for i, (a, b, text) in enumerate(rows, 1))
-    (directory / "captions.srt").write_text(srt + "\n", encoding="utf-8")
+    (directory / f"{basename}.srt").write_text(srt + "\n", encoding="utf-8")
     header = (f"[Script Info]\nScriptType: v4.00+\nPlayResX: {width}\nPlayResY: {height}\n"
               "\n[V4+ Styles]\nFormat: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, "
               "OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, "
@@ -42,4 +45,4 @@ def export_subtitles(events, fps, frame_count, directory, width, height):
         # Strip ASS override delimiters; text is never interpreted as executable styling.
         inert = text.replace("\\", "\\\\").replace("{", "\\{").replace("}", "\\}").replace("\n", "\\N")
         lines.append(f"Dialogue: 0,{stamp(a, fps, ass=True)},{stamp(b, fps, ass=True)},Default,,0,0,0,,{inert}")
-    (directory / "captions.ass").write_text(header + "\n".join(lines) + "\n", encoding="utf-8")
+    (directory / f"{basename}.ass").write_text(header + "\n".join(lines) + "\n", encoding="utf-8")
