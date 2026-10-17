@@ -49,6 +49,17 @@ per-word subtitle exports are generated with the same encoded frame ledger.
 See [variable-tempo and word LRC guide](docs/variable-bpm-word-subtitles.md)
 and the [synthetic public demo](https://kieransimkin.github.io/FrameRudiments/timing/).
 
+## Rich lyric typography and word-following particle sprites
+
+Caption blocks and identity titles optionally accept checksum-pinned `font` overrides and
+`effects` for stroked, bevelled, embossed, multi-stop gradient, inner/outer glow, and shadowed
+text. Existing plain text remains untouched unless configured. Set `word_indicator` for a
+native 1-dimensional DanceRudiment-driven bouncing sprite that tracks the active word of
+the full line. Its particle field can be continuous, word/cue-triggered, or hybrid;
+trigger windows independently change colour, density, size, glow and burst count.
+See [rich lyric reference](docs/rich-lyric-effects.md) and the
+[CI-generated demo](https://kieransimkin.github.io/FrameRudiments/rich-lyrics/).
+
 ## Install and run
 
 Python 3.11+ and FFmpeg with libx264/AAC are required. Install the package into

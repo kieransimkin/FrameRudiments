@@ -12,6 +12,8 @@ from .particle_engine import ParticleEmitter
 from .motion import Motion
 from .timeline import EventTrack
 from .word_timing import WordTrack, draw_highlighted_line
+from .rich_subtitles import RichTextAppearance
+from .lyric_indicator import WordIndicator
 from .visualisers import effect_specs
 from .scoped_effects import CompositingEffects
 
@@ -31,7 +33,7 @@ class TextBlock:
     def __init__(self, project, config, *, label):
         fields(config, {"box", "font_size", "min_font_size", "colour", "panel", "stroke", "mode",
                         "line_spacing", "neighbour_colour", "word_mode", "word_colour",
-                        "completed_colour"}, label)
+                        "completed_colour", "font", "effects"}, label)
         self.project, self.config, self.label = project, config, label
         self.box = rectangle(config["box"], label, project.width, project.height)
         self.maximum = integer(config.get("font_size", 60), "font size", minimum=1, maximum=512)
@@ -39,8 +41,10 @@ class TextBlock:
                                maximum=self.maximum)
         self.spacing = integer(config.get("line_spacing", 8), "line spacing", maximum=512)
         self.stroke = integer(config.get("stroke", 1), "text stroke", maximum=20)
-        if not project.font_ref:
-            raise ValueError("Text needs an explicit font")
+        self.font_ref = project.ref(config["font"]) if "font" in config else project.font_ref
+        if not self.font_ref:
+            raise ValueError("Text needs an explicit pinned font")
+        self.rich = RichTextAppearance(config["effects"]) if "effects" in config else None
         self.colour = config.get("colour", "#f5eddf")
         self.mode = config.get("mode", "current")
         if self.mode not in {"current", "neighbours"}:
@@ -61,7 +65,7 @@ class TextBlock:
         draw = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
         left, top, right, bottom = self.box
         for size in range(self.maximum, self.minimum - 1, -1):
-            font = ImageFont.truetype(self.project.font_ref["path"], size)
+            font = ImageFont.truetype(self.font_ref["path"], size)
             rows = []
             for paragraph in text.split("\n"):
                 line = ""
@@ -83,6 +87,8 @@ class TextBlock:
     def draw(self, image, text, *, colour=None):
         if not text:
             return []
+        if self.rich is not None:
+            return self.rich.draw(image, self, text, colour=colour)
         font, rows, boxes, height = self.layout(text)
         left, top, right, bottom = self.box
         draw = ImageDraw.Draw(image)
@@ -238,6 +244,8 @@ class Compositor:
             "lyrics" in project.data or project.word_ref) else None
         self.word_caption = (TextBlock(project, project.data["word_captions"], label="word captions")
                              if "word_captions" in project.data else None)
+        self.word_indicator = (WordIndicator(project, project.data["word_indicator"], self.context, self.caption)
+                               if "word_indicator" in project.data else None)
         self.lyric_art = {}
         self.lyric_art_fallback = "text"
         if art := project.data.get("lyric_art"):
@@ -269,6 +277,8 @@ class Compositor:
             targets.add("caption")
         if self.word_caption:
             targets.add("word-caption")
+        if self.word_indicator:
+            targets.add("word-indicator")
         self.post_pipeline = CompositingEffects(project, project.data.get("post_effects", {}),
                                                 self.context, valid_elements=targets)
 
@@ -285,6 +295,10 @@ class Compositor:
         state = self.words.state(ctx.frame, ctx.lyric if self.project.lyrics else None)
         if self.caption.word_mode == "current":
             return self.caption.draw(image, state["text"])
+        if self.caption.rich is not None:
+            return self.caption.rich.draw(
+                image, self.caption, text, active=state["active"],
+                completed=state["completed"] if self.caption.word_mode == "progressive" else ())
         return draw_highlighted_line(
             self.caption, image, text, active=state["active"],
             completed=state["completed"] if self.caption.word_mode == "progressive" else (),
@@ -358,10 +372,14 @@ class Compositor:
                 before, current, after = self.lyrics.neighbours(ctx.frame)
                 text = "\n".join((before["text"] if before else "", current["text"] if current else "",
                                   after["text"] if after else ""))
-            if not art_layer:
+            if not art_layer or self.word_indicator:
                 def draw_caption(canvas):
                     return self._caption_draw(canvas, text, ctx) or None
                 bounds = paint("caption", draw_caption)
+                if bounds:
+                    text_bounds.append(bounds)
+            if self.word_indicator:
+                bounds = paint("word-indicator", lambda canvas: self.word_indicator.draw(canvas, ctx))
                 if bounds:
                     text_bounds.append(bounds)
             if self.word_caption and self.words:
@@ -411,8 +429,10 @@ class Compositor:
                 before, current, after = self.lyrics.neighbours(frame)
                 text = "\n".join((before["text"] if before else "", current["text"] if current else "",
                                   after["text"] if after else ""))
-            if not art_layer:
+            if not art_layer or self.word_indicator:
                 text_bounds.extend(self._caption_draw(image, text, ctx))
+            if self.word_indicator:
+                self.word_indicator.draw(image, ctx)
             if self.word_caption and self.words:
                 text_bounds.extend(self._word_caption_draw(image, ctx))
             self.text_states.setdefault(text, dict(first_frame=frame, bounds=text_bounds))
@@ -421,8 +441,11 @@ class Compositor:
         return image.convert("RGB"), ctx
 
     def frame_reports(self):
-        return {layer.id: layer.frame_report for layer in self.layers
-                if isinstance(layer, (RudimentLayer, ParticleEmitter)) and layer.frame_report is not None}
+        reports = {layer.id: layer.frame_report for layer in self.layers
+                   if isinstance(layer, (RudimentLayer, ParticleEmitter)) and layer.frame_report is not None}
+        if self.word_indicator and self.word_indicator.frame_report is not None:
+            reports["word-indicator"] = self.word_indicator.frame_report
+        return reports
 
     def post_effect_reports(self):
         return dict(self.post_pipeline.last_report) if self.post_pipeline.enabled else {}
@@ -435,6 +458,7 @@ class Compositor:
                        if isinstance(x, ParticleEmitter)}} if any(isinstance(x, ParticleEmitter)
                        for x in self.layers) else {}),
                     custom_scene=bool(self.scene),
+                    **({"word_indicator": self.word_indicator.evidence} if self.word_indicator else {}),
                     **({"word_subtitles": {"enabled": True, "count": len(self.project.words),
                        "highlight_mode": self.caption.word_mode if self.caption else "off",
                        "separate_lane": self.word_caption is not None}} if self.words else {}),

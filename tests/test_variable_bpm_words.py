@@ -153,7 +153,6 @@ def test_karaoke_overlay_uses_existing_textblock_layout():
     font_file = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
     if not Path(font_file).exists():
         pytest.skip("Needs DejaVuSans for precise visual regression")
-    from types import SimpleNamespace
     from PIL import ImageDraw
     class Block:
         def __init__(self):

@@ -22,7 +22,7 @@ class Project:
         fields(data, {"schema", "title", "artist", "purpose", "width", "height", "fps", "fps_reason",
                       "audio", "clock", "font", "lyrics", "cues", "background", "layers", "captions",
                       "identity", "effects", "post_effects", "stemlab_loop", "notes", "lyric_art", "canonical_lyrics",
-                      "word_lyrics", "word_captions"}, "project")
+                      "word_lyrics", "word_captions", "word_indicator"}, "project")
         if data.get("schema") != "framerudiments.project.v1":
             raise ValueError("Expected framerudiments.project.v1")
         self.width = integer(data.get("width", 1080), "width", minimum=16, maximum=7680)
@@ -114,6 +114,8 @@ class Project:
                     frame_count=self.frame_count) if self.word_ref else [])
         if self.words and self.lyrics:
             assign_words_to_lines(self.words, self.lyrics)
+        if "word_indicator" in data and (not self.word_ref or not self.lyric_ref or not data.get("captions")):
+            raise ValueError("word_indicator requires lyrics, word_lyrics and full-line captions")
         if "word_captions" in data and not self.word_ref:
             raise ValueError("word_captions requires word_lyrics")
         if data.get("captions", {}).get("word_mode", "off") != "off" and not self.word_ref:
