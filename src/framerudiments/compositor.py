@@ -8,6 +8,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 from .effects import alpha_scaled, transformed_bounds, within, directional_trail, atlas_cell
 from .io import fields, number, integer, rectangle
 from .rudiment_renderers import RudimentLayer, default_renderers
+from .particle_engine import ParticleEmitter
 from .motion import Motion
 from .timeline import EventTrack
 from .visualisers import effect_specs
@@ -206,9 +207,13 @@ class Compositor:
                                                        (project.height - source.height) // 2))
         self.lyrics, self.cues = EventTrack(project.lyrics), EventTrack(project.cues)
         self.renderers = default_renderers() if renderers is None else renderers
-        self.layers = [RudimentLayer(project, cfg, self.renderers, self.context)
-                       if cfg.get("type") == "rudiment" else Sprite(project, cfg)
-                       for cfg in project.data.get("layers", [])]
+        self.layers = [
+            RudimentLayer(project, cfg, self.renderers, self.context)
+            if cfg.get("type") == "rudiment" else
+            ParticleEmitter(project, cfg, self.context)
+            if cfg.get("type") == "emitter" else Sprite(project, cfg)
+            for cfg in project.data.get("layers", [])
+        ]
         ids = [x.id for x in self.layers]
         if len(set(ids)) != len(ids):
             raise ValueError("Layer ids must be unique")
@@ -367,7 +372,7 @@ class Compositor:
 
     def frame_reports(self):
         return {layer.id: layer.frame_report for layer in self.layers
-                if isinstance(layer, RudimentLayer) and layer.frame_report is not None}
+                if isinstance(layer, (RudimentLayer, ParticleEmitter)) and layer.frame_report is not None}
 
     def post_effect_reports(self):
         return dict(self.post_pipeline.last_report) if self.post_pipeline.enabled else {}
@@ -376,5 +381,8 @@ class Compositor:
         return dict(transformed_alpha_extents=self.extents, text_states=self.text_states,
                     motions={x.id: x.motion.evidence for x in [*self.layers, *self.lyric_art.values()] if x.motion},
                     rudiment_renderers={x.id: x.evidence for x in self.layers if isinstance(x, RudimentLayer)},
+                    **({"emitters": {x.id: x.evidence for x in self.layers
+                       if isinstance(x, ParticleEmitter)}} if any(isinstance(x, ParticleEmitter)
+                       for x in self.layers) else {}),
                     custom_scene=bool(self.scene),
                     **({"post_effects": self.post_pipeline.evidence} if self.post_pipeline.enabled else {}))

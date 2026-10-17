@@ -113,6 +113,17 @@ states, radial layouts, deterministic animation-cell selection and native
 DanceRudiment modulation of numeric style properties. See
 [sprite visualisations](sprite-visualisations.md).
 
+## Particle and smoke emitters
+
+`layers` may include `{ "type": "emitter", "id": "haze", "kind": "smoke", ... }`.
+Emission modes are `continuous`, `cue` and `hybrid`. Cue `.lrc` files use
+DanceMoves/StemLab source-time labels; `.json` accepts DanceMoves cue objects
+or StemLab cue-snap/cue-generate reports. Optional custom particle PNGs and cue
+files must use ordinary `{path, sha256}` file references. Independent native
+DanceRudiment modulators can target validated numeric `style.*` or `visual.*`
+settings. See [particle and smoke](particle-smoke.md) for the full schema,
+selection patterns, repeat/excerpt behaviour and safety limits.
+
 ## Optional full-frame effects
 
 The top-level `effects` list is additive to v1. See [visualisers.md](visualisers.md)

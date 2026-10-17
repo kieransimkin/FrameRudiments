@@ -23,6 +23,18 @@ Silly Sausage Britain and Moderate or Good renderers. Release-specific artwork,
 scene layouts and creative decisions belong in project files or Python scene
 hooks. Historical render scripts and approved outputs remain preserved.
 
+## Particle and smoke emitters
+
+A new deterministic `type: "emitter"` layer provides continuous smoke,
+sparks, embers, snow, rain, confetti and cue-triggered bursts, driven by
+independent DanceRudiments. Pinned DanceMoves/StemLab `.lrc`, `.cue`, or
+versioned `.json` timing files can trigger one-shot explosions; `hybrid`
+mode combines these with constant emission. Every parameter in the engine's
+numeric style table supports native `style.*` modulation. Pinned transparent
+PNG particles are optional, and the existing element- and frame-level post
+passes remain available. See [particle and smoke reference](docs/particle-smoke.md)
+and the [CI-generated synthetic gallery](https://kieransimkin.github.io/FrameRudiments/particles/).
+
 ## Install and run
 
 Python 3.11+ and FFmpeg with libx264/AAC are required. Install the package into
