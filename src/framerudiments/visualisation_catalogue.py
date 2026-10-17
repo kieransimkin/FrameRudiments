@@ -1,6 +1,7 @@
 """Auditable visualisation presets; display axes are not a replacement for DSP."""
 from dataclasses import dataclass
 from .effect_catalogue import EFFECT_SPECS
+from .sprite_catalogue import SPRITE_SPECS
 
 
 @dataclass(frozen=True)
@@ -132,6 +133,7 @@ CIRCULAR_VIEWS = (
                 "polar XY oscilloscope"),)
 )
 EFFECT_VIEWS = tuple(ViewSpec(*spec) for spec in EFFECT_SPECS)
-ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS
+SPRITE_VIEWS = tuple(ViewSpec(*spec) for spec in SPRITE_SPECS)
+ALL_VIEWS = SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS + SPRITE_VIEWS
 BY_NAME = {v.name: v for v in ALL_VIEWS}
 assert len(BY_NAME) == len(ALL_VIEWS)

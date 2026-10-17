@@ -104,6 +104,15 @@ Stages run before the optional full-frame Butterchurn/projectM `effects` chain.
 The original compositor pixel path remains unchanged when no post effects are
 configured.
 
+## Bitmap and sprite-backed Rudiment renderers
+
+All existing renderer names still select vectors. The 52 new `sprite-*` names
+render transparent PNG atlas tiles rather than Pillow vector primitives, with
+LCD segment options, custom `style.sprite_asset` SHA-pinned files, on/off segment
+states, radial layouts, deterministic animation-cell selection and native
+DanceRudiment modulation of numeric style properties. See
+[sprite visualisations](sprite-visualisations.md).
+
 ## Optional full-frame effects
 
 The top-level `effects` list is additive to v1. See [visualisers.md](visualisers.md)

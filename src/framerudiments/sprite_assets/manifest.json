@@ -1,0 +1,104 @@
+{
+  "schema": "framerudiments.sprite-atlas.v1",
+  "tile_size": 96,
+  "columns": 8,
+  "rows": 8,
+  "rows_meaning": [
+    "horizontal-segment",
+    "led-dot",
+    "vertical-tube",
+    "crystal",
+    "star-icon",
+    "photon",
+    "pixel-block",
+    "flame-petal"
+  ],
+  "themes": {
+    "lcd": {
+      "file": "lcd.png",
+      "sha256": "0b899ad24ea639ec86a7731118720cec68a64f288c50b39ae3a596ae876a2b2d",
+      "generated": false
+    },
+    "lcd-green": {
+      "file": "lcd-green.png",
+      "sha256": "2d9b9491e08d0e8cc35f3d891251742860473b9867ca1011f123b88dead73243",
+      "generated": false
+    },
+    "lcd-amber": {
+      "file": "lcd-amber.png",
+      "sha256": "dfaf23a923ab05891453f03da87244be1cc3bd0c617ef1a8b2cb1f4d570436ed",
+      "generated": false
+    },
+    "led": {
+      "file": "led.png",
+      "sha256": "ae40562cb9d8c800404fc41b72ae8e4554df80c686d6f66e32ad4810fa2d03bb",
+      "generated": false
+    },
+    "vfd": {
+      "file": "vfd.png",
+      "sha256": "ae40562cb9d8c800404fc41b72ae8e4554df80c686d6f66e32ad4810fa2d03bb",
+      "generated": false
+    },
+    "arcade": {
+      "file": "arcade.png",
+      "sha256": "c44328561110a9c98d248259cec54f42b544f9773aa210ad06e7aa49fde15b27",
+      "generated": false
+    },
+    "neon": {
+      "file": "neon.png",
+      "sha256": "ae40562cb9d8c800404fc41b72ae8e4554df80c686d6f66e32ad4810fa2d03bb",
+      "generated": false
+    },
+    "glass": {
+      "file": "glass.png",
+      "sha256": "d362762c552d27ad65487b25821b8185511158fd31a76a3997aeb6bb5ea356c7",
+      "generated": false
+    },
+    "metal": {
+      "file": "metal.png",
+      "sha256": "61b2593b70b5904c481947dad427b68347b47f661c9a9cc38cde865c96875021",
+      "generated": false
+    },
+    "crystal": {
+      "file": "crystal.png",
+      "sha256": "a94bb82e1bec5b33fa23136f6ff22e0a107886d22375da830c720582402955ff",
+      "generated": false
+    },
+    "pixel": {
+      "file": "pixel.png",
+      "sha256": "8d659e7c556bfd8da2935aee82b560c29b0cae6f0579b91a130d3e6689c9d9db",
+      "generated": false
+    },
+    "hud": {
+      "file": "hud.png",
+      "sha256": "2c2368594ee681869cc1955998e38d5982154209860943132f6463264b48c528",
+      "generated": false
+    },
+    "plasma": {
+      "file": "plasma.png",
+      "sha256": "ae40562cb9d8c800404fc41b72ae8e4554df80c686d6f66e32ad4810fa2d03bb",
+      "generated": false
+    },
+    "fire": {
+      "file": "fire.png",
+      "sha256": "cb0940dc22dda4b0b0ed8936b9820196a2ab9f33456629760c207839309d01af",
+      "generated": false
+    },
+    "ice": {
+      "file": "ice.png",
+      "sha256": "31e93bd6ba878f7bafb67e6f62c347c7f76d2bf39ec3a10dcc9303e3e1d208b8",
+      "generated": false
+    },
+    "mono": {
+      "file": "mono.png",
+      "sha256": "0f91781c14da45261c7dc02d269493179721bf81f4276b646975b0df0b6b6a84",
+      "generated": false
+    },
+    "generated-neon": {
+      "file": "generated-neon.png",
+      "sha256": "3e077af675e6724e850f85d70087f0c80593b5572de2fe48166fe976d818ed07",
+      "generated": true,
+      "source": "OpenAI image-generated transparent 8x8 sprite art (bundled)"
+    }
+  }
+}

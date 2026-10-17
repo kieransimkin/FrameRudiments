@@ -331,6 +331,8 @@ def default_renderers():
     register_circular_renderers(registry)
     from .effect_renderers import register_effect_renderers
     register_effect_renderers(registry)
+    from .sprite_renderers import register_sprite_renderers
+    register_sprite_renderers(registry)
     return registry
 
 
@@ -364,7 +366,7 @@ class RudimentLayer:
             self.axes.append(integer(index, "rudiment axis", maximum=len(dimensions) - 1))
         self.dimensions = tuple(dimensions[index] for index in self.axes)
         spectral_view = cfg["renderer"] == "spectrum" or (
-            isinstance(cfg["renderer"], str) and cfg["renderer"].startswith(("spectrum-", "spectrogram-")))
+            isinstance(cfg["renderer"], str) and cfg["renderer"].startswith(("spectrum-", "spectrogram-", "sprite-spectrum-", "sprite-spectrogram-")))
         self.history_frames = integer(cfg.get("history_frames", 256 if spectral_view else 64), "history frames", minimum=1, maximum=512)
         self.history_stride = integer(cfg.get("history_stride", 1), "history stride", minimum=1, maximum=120)
         from .visual_style import VisualStyle
@@ -380,7 +382,12 @@ class RudimentLayer:
         if self.visual_template.palette is not None:
             self.base_style["colours"] = ["#{:02x}{:02x}{:02x}{:02x}".format(*colour)
                                           for colour in self.visual_template.palette]
-        self.modulations = RudimentModulations(project, cfg.get("modulations", []), context_at)
+        if self._renderer_name.startswith("sprite-"):
+            from .sprite_renderers import SpriteModulations
+            self.modulations = SpriteModulations(project, cfg.get("modulations", []), context_at,
+                                                 base_style=self.base_style, base_visual=self.visual_config)
+        else:
+            self.modulations = RudimentModulations(project, cfg.get("modulations", []), context_at)
         project.inputs.extend(self.modulations.files)
         self._styled_renderers = {}
         self.renderer, identity = registry.create(cfg["renderer"], self._size, self.base_style)

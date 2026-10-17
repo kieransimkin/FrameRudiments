@@ -39,4 +39,4 @@ line-length = 110
 select = ["E4", "E7", "E9", "F"]
 
 [tool.setuptools.package-data]
-framerudiments = ["visualiser_assets/*"]
+framerudiments = ["visualiser_assets/*", "sprite_assets/*.png", "sprite_assets/*.json"]

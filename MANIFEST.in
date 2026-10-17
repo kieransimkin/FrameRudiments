@@ -7,3 +7,4 @@ recursive-include integration *.py
 prune models
 
 recursive-include scripts *.py
+recursive-include src/framerudiments/sprite_assets *.png *.json
