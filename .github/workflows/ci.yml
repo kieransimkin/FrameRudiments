@@ -113,11 +113,17 @@ jobs:
         run: |
           echo "FRAMERUDIMENTS_PROJECTM_LIBRARY=$(find "$RUNNER_TEMP/projectm/install" -name 'libprojectM-4.so' -print -quit)" >> "$GITHUB_ENV"
       - name: Actual engines, shaders, glyph feedback, animated sprites, chain and encoded QA
-        run: xvfb-run -a python -m pytest -q integration --junitxml=gpu-results.xml
+        shell: bash
+        run: |
+          set -o pipefail
+          xvfb-run -a python -X faulthandler -m pytest -vv -s integration \
+            --junitxml=gpu-results.xml 2>&1 | tee gpu-console.log
       - name: No skipped engine checks
         run: python -c "import xml.etree.ElementTree as E; r=E.parse('gpu-results.xml'); assert not r.findall('.//skipped')"
       - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: visualiser-acceptance
-          path: gpu-results.xml
+          path: |
+            gpu-results.xml
+            gpu-console.log

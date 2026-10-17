@@ -1,0 +1,26 @@
+{
+  "name": "framerudiments-authoring",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Local-only FrameRudiments visual authoring frontend using react-timeline-sequence",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "test": "node --experimental-strip-types --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "build": "vite build && tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "react-timeline-sequence": "0.4.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.16",
+    "@types/react-dom": "19.1.9",
+    "@vitejs/plugin-react": "5.0.4",
+    "typescript": "5.9.3",
+    "vite": "7.1.9"
+  },
+  "engines": {"node": ">=22"}
+}

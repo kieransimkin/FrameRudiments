@@ -1,0 +1,44 @@
+name: FrameRudiments authoring / shared timeline
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  authoring-backend:
+    name: Local authoring safety / Python ${{ matrix.python }} (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e '.[dev]'
+      - run: ruff check scripts/authoring_preview.py tests/test_authoring_preview.py
+      - run: python -m pytest -q tests/test_authoring_preview.py
+  shared-timeline-frontend:
+    name: React Timeline Sequence authoring / Node 24
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+      - name: Install exact declared React and released timeline versions
+        run: npm --prefix authoring install --no-audit --no-fund
+      - name: Verify published shared timeline component version
+        run: node -e "const p=require('./authoring/node_modules/react-timeline-sequence/package.json');if(p.version!=='0.4.0')process.exit(1)"
+      - run: npm --prefix authoring test
+      - run: npm --prefix authoring run typecheck
+      - run: npm --prefix authoring run build
+      - uses: actions/upload-artifact@v6
+        with:
+          name: framerudiments-authoring-local-ui
+          path: authoring/dist/

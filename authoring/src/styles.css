@@ -1,0 +1,27 @@
+:root{color-scheme:dark;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:#0b1320;color:#edf2f7}
+*{box-sizing:border-box}body{margin:0}button,input,select{font:inherit}button{cursor:pointer;border-radius:6px;padding:.48rem .74rem;color:#e0eeff;background:#203049;border:1px solid #3c5273}
+button:hover:not(:disabled){background:#344c73}button:disabled{opacity:.45;cursor:not-allowed}button.primary{background:#327b89;border-color:#58a8b6;font-weight:700}
+input,select{color:#ecf3ff;background:#151e30;border:1px solid #344661;padding:.42rem;max-width:100%;border-radius:4px}
+a{color:#8bddeb}p{color:#b3c1d6;line-height:1.5;font-size:.9rem}label{display:flex;flex-direction:column;gap:.3rem;font-size:.8rem;color:#bbcae1;margin:.5rem 0}
+label:has(input[type=checkbox]){flex-direction:row;align-items:center}
+.fr-app{display:flex;flex-direction:column;height:100vh;min-height:590px;overflow:hidden}
+.fr-top{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.85rem 1.2rem;border-bottom:1px solid #30415c;background:#101e31}
+.fr-top h1{font-weight:650;font-size:1.25rem;margin:.06rem 0}.fr-top small{color:#69bfc9;text-transform:uppercase;letter-spacing:.16em;font-weight:650}
+.fr-actions{display:flex;gap:.5rem;flex-wrap:wrap}.fr-columns{display:grid;grid-template-columns:minmax(420px,1fr) 330px;flex:1;min-height:0}
+.fr-center{display:flex;flex-direction:column;min-height:0;min-width:0;background:#0d1728}.fr-preview-head{display:flex;align-items:center;gap:1rem;justify-content:space-between;padding:.45rem .85rem;border-bottom:1px solid #2e4561}.fr-preview-head label{flex-direction:row;align-items:center;margin:0}
+.fr-preview{min-height:140px;flex:0 1 36%;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse at center,#1d2d49,#090e1b)}
+.fr-canvas{height:100%;display:flex;align-items:center;justify-content:center}.fr-canvas img{display:block;max-width:100%;max-height:100%;object-fit:contain;box-shadow:0 4px 40px #000a}
+.fr-transport-extra{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;padding:.3rem .8rem;color:#a8bed4;font-size:.78rem}.fr-transport-extra label{flex-direction:row;align-items:center;margin:0}
+.fr-timeline{min-height:230px;flex:1;overflow:hidden;border-top:1px solid #304664}.fr-timeline .rts-sequence{height:100%;--rts-accent:#6ed8cb;--rts-playhead:#f0ab65}
+.fr-side{overflow-y:auto;border-left:1px solid #354a68;background:#121e30}.fr-side section{padding:.85rem 1rem;border-bottom:1px solid #293c55}.fr-side h2{margin:.08rem 0;font-size:1rem;font-weight:660;color:#e8f6ff}
+.fr-side .fr-grid-row{display:grid;grid-template-columns:1fr 1fr;gap:.3rem}.fr-grid-row>label:last-child:nth-child(3){grid-column:span 2}
+.fr-graph{display:flex;flex-direction:column;gap:.26rem;max-height:260px;overflow:auto}.fr-graph .fr-node-title{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:#779eb2}
+.fr-node{text-align:left;display:flex;align-items:center;justify-content:space-between;padding:.4rem .5rem;background:#243553;border:1px solid #3c5576;border-radius:5px;font-size:.85rem}
+.fr-node small{color:#a6bbc9}.fr-node.chosen{outline:2px solid #62d8d2}.fr-fx{background:#25434a}.fr-out{background:#354456;justify-content:center}.fr-arrow{text-align:center;color:#83adbb;font-size:.72rem}
+.fr-keys{margin:.5rem 0;display:grid;gap:.4rem}.fr-keys button{font-size:.71rem;margin:.1rem;padding:.18rem}
+.fr-alert{background:#572d30;color:#ffe2e1;padding:.5rem 1rem}.fr-alert button{float:right}.fr-note{background:#1a4851;color:#e7ffff;padding:.3rem 1rem}
+.fr-footer{font-size:.7rem;padding:.4rem 1rem;color:#7795ae;border-top:1px solid #293c55;background:#111c2c}.fr-empty{flex:1;text-align:center;padding:3rem}
+.fr-keyframe{background:#3d6370}
+@media(max-width:1040px){.fr-columns{grid-template-columns:minmax(320px,1fr)}.fr-side{max-height:36vh;border-top:1px solid #354a68;border-left:0}.fr-preview{flex:0 1 35%}}
+
+.fr-preview-head .fr-scrub{flex:1;min-width:120px}.fr-preview-head .fr-scrub input{width:100%}.fr-stage-controls{grid-column:1/-1;padding:.4rem;background:#213348;border-radius:5px}
