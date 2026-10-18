@@ -56,7 +56,8 @@ def test_old_cmake_with_only_vs2026_reports_upgrade_not_wrong_generator():
 
 
 def test_ninja_needs_real_compiler_environment():
-    which = lambda x: {"gcc.exe": "gcc.exe", "g++.exe": "g++.exe"}.get(x)
+    def which(x):
+        return {"gcc.exe": "gcc.exe", "g++.exe": "g++.exe"}.get(x)
     assert SELECTOR.ninja_compiler_ready(which, env={})
     assert not SELECTOR.ninja_compiler_ready(lambda x: "cl.exe" if x == "cl.exe" else None,
                                              env={})

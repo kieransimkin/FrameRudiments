@@ -33,8 +33,30 @@ Preview a small initial sample without changing the final experiment settings:
 ```
 
 The first command creates the same experiment and processes only five pending
-presets. The final command continues with all remaining presets. For failed
-captures or model inferences, run:
+presets. The final command continues with all remaining presets. **Preset selection
+is randomized independently for every invocation:** the queue alternates a random
+remaining projectM preset and a random remaining Butterchurn preset, including
+across pilot runs and resumes. Which engine starts is randomized too. Once one
+engine's pool is exhausted, the other continues on its own. This does not change
+the stable preset IDs, experimental conditions, hashes, or searchable atlas order;
+previously completed presets are never repeated unless explicitly reanalysed.
+
+To reproduce a particular random order for the same *remaining* pool, specify
+an explicit unsigned 64-bit seed:
+
+```powershell
+.\scripts\Run-FullPresetAnalysis.ps1 -Limit 5 -OrderSeed 20261018
+```
+
+Without `-OrderSeed` the script generates a fresh seed and shuffles the pending
+work every time. The exact ordered IDs, engine counts and seed are saved for
+inspection under the ignored `visualiser-analysis/full-catalogue/_work/schedules/`
+folder, not inside Git-tracked semantic receipts. The seed intentionally is not
+part of the immutable experiment signature, so resequencing work cannot invalidate
+already completed PrismMoves/PixelCue analyses. A new seed applied to a partially
+completed run shuffles **only the unprocessed work**; it does not replay the entire
+catalogue or rewrite published report contents. For failed captures or model
+inferences, run:
 
 ```powershell
 .\scripts\Run-FullPresetAnalysis.ps1 -SkipSetup -RetryFailed
@@ -66,12 +88,43 @@ times, image conditions or model set, choose a **new output folder** via the
 Python runner (or archive the old run before restarting). The script refuses
 to overwrite an existing run with incompatible settings.
 
-The default tests each preset under **four controlled conditions**: cover and
-lyrics versus a geometric calibration card, each with programme or silence
-PCM. It captures at 0, 0.5 and 1.5 output seconds; every preceding feedback
-frame is rendered sequentially. `-FullConditions` uses all four image families
-for eight conditions per sample. With more than one project in your supplied
-suite the condition count scales proportionally.
+The default now tests **all four input families** (album artwork/lyrics,
+colour bars, grid/rings and text card), with both programme audio and silence.
+At output seconds **0, 0.5, 1.5 and 3.0** this gives **32 distinct capture
+slots per preset per sample**; the renderer still advances every preceding
+feedback frame rather than jumping between snapshots. Actual source artwork
+is used when you provide an authenticated `-Suite` or explicitly selected
+`-ArtworkDirectory`. Without those options, the cover is **synthetic** and
+cannot establish behaviour on a real album; never label generated artwork
+as an artist-supplied cover.
+
+Every successful captured output frame is analysed by PrismMoves via PixelCue
+by default, including captions, CLIP material/light/tone prompts, OCR,
+SmolVLM tags and measured colour/texture/composition statistics. Identical
+PNG bytes are analysed once with all source conditions and timestamps retained.
+A positive `-SemanticImages N` opts into a balanced, *explicitly incomplete*
+model-inference sample when cost is prohibitive: the selection alternates
+condition families, not just the latest cover frame. Regardless of that
+optional semantic sampling, **all** captured input/output pairs are still
+analysed for numerical change. Batched inference keeps each PrismMoves CLI
+request within its supported image count, and interrupted batches can resume.
+
+Each preset report combines input-specific response measurements, temporal
+changes, programme-versus-silence controls, repeated visual descriptions and
+clearly labelled model interpretations. The generated contact sheets show the
+actual output images for every captured condition/time alongside their labels,
+instead of presenting a single image as the whole experiment.
+
+`-Intervals 0,0.5,1.5,3` overrides the default sampling seconds, and
+`-FullConditions` remains a compatible alias for the default complete image
+set. More input projects multiply the experiment conditions and runtime. The
+new full-coverage defaults are a *different experiment* from the original
+five-preset pilot (two images, three times and one semantic frame): use
+`-UpgradeCoverage` to archive the previous pilot under ignored `_work/` and
+start full-coverage profiling. **No earlier data is silently overwritten**.
+Original pilot captures are retained in the archive, but a changed experiment
+needs fresh, comparable measurements; existing old reports cannot simply be
+marked as complete under the expanded protocol.
 
 The sweep covers **every SHA-256-deduplicated Butterchurn/projectM preset** in
 all six pinned upstream packs, plus the six built-in Butterchurn/projectM
@@ -134,7 +187,8 @@ FrameRudiments/
     reports/<stable-id>.json           # per-preset measured/narrative evidence
     reports/<stable-id>.md             # readable visual description/summary
     reports/<stable-id>.pixelcue.json.gz  # full PrismMoves/PixelCue semantic receipts
-    previews/<stable-id>.webp          # one representative renderer capture
+    previews/<stable-id>.webp          # contact sheet of labelled captures per condition
+    _work/schedules/*.json             # ignored: per-invocation random order and seed
     _work/                             # ignored: raw PNGs, intermediate reports, logs
     .gitignore                         # protects raw/incomplete work from accidental Git add
 ```

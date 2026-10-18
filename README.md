@@ -14,6 +14,17 @@ A quick pilot is `./scripts/Run-FullPresetAnalysis.ps1 -Limit 5`; rerun without
 `-Limit` to continue all remaining presets. The complete catalogue includes
 explicit partial/failure receipts for presets that cannot render.
 
+The full analysis evaluates all four image families (album/lyric input, colour
+bars, grid/rings and text card), music and silence, and frames at 0, 0.5, 1.5
+and 3 seconds. PixelCue and PrismMoves examine every captured output by
+default, and each preset gets labelled contact sheets plus an evidence-linked
+summary across the input conditions and time points. The processing queue
+alternates randomly selected projectM and Butterchurn presets, using a fresh
+shuffle of unprocessed entries each invocation. `-OrderSeed 20261018` optionally
+reproduces the order; receipts are saved under ignored `_work/schedules/`.
+Existing five-preset pilots using the older, narrower protocol need an explicit
+`-UpgradeCoverage` to archive earlier results before rerunning the fuller test.
+
 All model weights, runtimes and caches live in **project-local `models/`**
 (Git ignored). All generated results live under
 **`visualiser-analysis/full-catalogue/`** (commit the curated reports when ready;

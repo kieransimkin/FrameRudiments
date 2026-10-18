@@ -7,6 +7,8 @@ Single-command, resumable PrismMoves/PixelCue analysis of EVERY FrameRudiments p
 .EXAMPLE
 .\scripts\Run-FullPresetAnalysis.ps1 -Limit 5
 .EXAMPLE
+.\scripts\Run-FullPresetAnalysis.ps1 -ArtworkDirectory 'Z:\My Songs\Covers' -UpgradeCoverage -Limit 5
+.EXAMPLE
 .\scripts\Run-FullPresetAnalysis.ps1 -Status
 .EXAMPLE
 .\scripts\Run-FullPresetAnalysis.ps1 -RetryFailed -CommitWhenComplete
@@ -18,8 +20,13 @@ The sweep can take days. Rerunning the same command safely resumes it.
 [CmdletBinding()]
 param(
     [string]$Suite,
+    [string]$ArtworkDirectory,
     [string]$Font,
+    [double[]]$Intervals = @(0.0, 0.5, 1.5, 3.0),
+    [switch]$UpgradeCoverage,
     [ValidateRange(0,2147483647)][int]$Limit = 0,
+    # Omit for a fresh random order every invocation; supply to replay an order.
+    [UInt64]$OrderSeed = 0,
     [switch]$Status,
     [switch]$Verify,
     [switch]$InstallOnly,
@@ -33,7 +40,8 @@ param(
     [string]$PixelCueTagger = 'smolvlm-256m',
     [ValidateSet('cpu','cuda','mps')][string]$Device = 'cpu',
     [ValidateRange(64,2048)][int]$SemanticEdge = 384,
-    [ValidateRange(1,8)][int]$SemanticImages = 1,
+    # 0 means all output images; sampled mode is an explicit performance trade-off.
+    [ValidateRange(0,10000)][int]$SemanticImages = 0,
     [ValidateRange(1,1000)][int]$CheckpointEvery = 25,
     [switch]$RequireAllSuccessful,
     [ValidateRange(1,86400)][int]$CaptureTimeout = 1800,
@@ -361,11 +369,20 @@ $argsList = @($pythonScript,'run','--output',$output,'--catalogue',$catalogue,
     '--capture-timeout',[string]$CaptureTimeout,
     '--analysis-timeout',[string]$AnalysisTimeout,
     '--semantic-timeout',[string]$SemanticTimeout)
+# Preserve exact output seconds rather than relying on a single thumbnail per preset.
+$argsList += '--intervals'
+$argsList += @($Intervals | ForEach-Object { $_.ToString([System.Globalization.CultureInfo]::InvariantCulture) })
 if ($Suite) { $argsList += @('--suite',(Resolve-Path $Suite).Path) }
+if ($ArtworkDirectory) { $argsList += @('--artwork-directory',(Resolve-Path $ArtworkDirectory).Path) }
+if ($UpgradeCoverage) { $argsList += '--upgrade-coverage' }
 if ($Font) { $argsList += @('--font',(Resolve-Path $Font).Path) }
 if ($Limit -gt 0) { $argsList += @('--limit',[string]$Limit) }
+if ($PSBoundParameters.ContainsKey('OrderSeed')) {
+    $argsList += @('--order-seed', $OrderSeed.ToString([System.Globalization.CultureInfo]::InvariantCulture))
+}
 if ($RetryFailed) { $argsList += '--retry-failed' }
 if ($CommitWhenComplete) { $argsList += '--commit' }
+# All four image families are now the default. Keep -FullConditions compatible.
 if ($FullConditions) { $argsList += @('--images','cover-lyrics','colour-bars','grid-rings','text-card') }
 # Always pass the selected PixelCue taggers explicitly. Without an opt-out,
 # the lightweight tagger is enabled, including on resumed runs. Keeping this
