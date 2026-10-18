@@ -88,16 +88,53 @@ function Invoke-Checked {
 function Find-Executable {
     param([string[]]$Names, [string[]]$KnownPaths = @())
     foreach ($name in $Names) {
-        $cmd = Get-Command $name -ErrorAction SilentlyContinue
-        if ($cmd) { return $cmd.Source }
+        if ([string]::IsNullOrWhiteSpace($name)) { continue }
+        # An alias or function may have a blank Source; accept real applications only.
+        foreach ($command in @(Get-Command -Name $name -CommandType Application -ErrorAction SilentlyContinue)) {
+            if ($command -and -not [string]::IsNullOrWhiteSpace($command.Source) -and
+                (Test-Path -LiteralPath $command.Source -PathType Leaf)) {
+                return [string]$command.Source
+            }
+        }
     }
     foreach ($path in $KnownPaths) {
-        if ($path -and (Test-Path $path)) {
-            $env:PATH = (Split-Path $path -Parent) + [IO.Path]::PathSeparator + $env:PATH
-            return $path
+        if (-not [string]::IsNullOrWhiteSpace($path) -and
+            (Test-Path -LiteralPath $path -PathType Leaf)) {
+            $env:PATH = (Split-Path -LiteralPath $path -Parent) + [IO.Path]::PathSeparator + $env:PATH
+            return [string]$path
         }
     }
     return $null
+}
+
+function Get-TesseractKnownPaths {
+    # Winget may install system-wide or per-user, without updating this shell's PATH.
+    foreach ($root in @($env:ProgramFiles, ${env:ProgramFiles(x86)})) {
+        if (-not [string]::IsNullOrWhiteSpace($root)) {
+            Join-Path -Path $root -ChildPath 'Tesseract-OCR/tesseract.exe'
+        }
+    }
+    if (-not [string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+        Join-Path -Path $env:LOCALAPPDATA -ChildPath 'Programs/Tesseract-OCR/tesseract.exe'
+        Join-Path -Path $env:LOCALAPPDATA -ChildPath 'Microsoft/WinGet/Links/tesseract.exe'
+    }
+    # Respect a custom installation location recorded by the OCR installer.
+    foreach ($registryRoot in @(
+        'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*',
+        'HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*'
+    )) {
+        foreach ($entry in @(Get-ItemProperty -Path $registryRoot -ErrorAction SilentlyContinue)) {
+            # Some uninstall entries lack these properties; StrictMode forbids
+            # accessing a missing member, even for an unrelated application.
+            if ($entry -and $entry.PSObject.Properties['DisplayName'] -and
+                $entry.PSObject.Properties['InstallLocation'] -and
+                $entry.DisplayName -like '*Tesseract*' -and
+                -not [string]::IsNullOrWhiteSpace($entry.InstallLocation)) {
+                Join-Path -Path $entry.InstallLocation -ChildPath 'tesseract.exe'
+            }
+        }
+    }
 }
 function Require-WindowsTool {
     param([string]$Name, [string[]]$Binaries, [string]$WingetId,
@@ -107,11 +144,19 @@ function Require-WindowsTool {
     $winget = Find-Executable -Names @('winget.exe','winget')
     if (-not $winget) { throw "$Name is not installed. Install $WingetId and rerun this script." }
     Write-Host "Installing required $Name using winget ($WingetId)..." -ForegroundColor Yellow
-    & $winget install --id $WingetId --exact --accept-source-agreements --accept-package-agreements --silent
+    # PowerShell functions emit native stdout as return values. Without Out-Host,
+    # winget progress/blank lines are captured alongside the executable path and
+    # the caller's Split-Path can fail with 'Path is an empty string'.
+    & $winget install --id $WingetId --exact --accept-source-agreements --accept-package-agreements --silent | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "winget could not install $Name ($WingetId)." }
+    # The installer's registry/PATH entries may have appeared only during this call.
+    if ($Name -eq 'Tesseract OCR') { $KnownPaths = @(Get-TesseractKnownPaths) }
     $value = Find-Executable -Names $Binaries -KnownPaths $KnownPaths
-    if (-not $value) { throw "$Name was installed but is not on PATH yet. Restart PowerShell and rerun." }
-    return $value
+    if (-not $value) { throw "$Name was installed but its executable was not found. Check the installation location and rerun; existing models are preserved." }
+    if ($value -isnot [string] -or -not (Test-Path -LiteralPath $value -PathType Leaf)) {
+        throw "$Name discovery did not return exactly one executable path."
+    }
+    return [string]$value
 }
 function Download-PinnedWheel {
     param([string]$Url, [string]$Name, [string]$Sha256, [string]$Directory)
@@ -231,18 +276,20 @@ if (-not $SkipSetup) {
         Invoke-Checked $analysisPython (@($prepare,'--models-dir',$models,'--taggers') + $taggers)
     }
 
-    $tesseract = Find-Executable -Names @('tesseract.exe','tesseract') -KnownPaths @(
-        "$env:PROGRAMFILES\Tesseract-OCR\tesseract.exe"
-    )
+    $tesseractPaths = @(Get-TesseractKnownPaths)
+    $tesseract = Find-Executable -Names @('tesseract.exe','tesseract') -KnownPaths $tesseractPaths
     if (-not $tesseract) {
         $tesseract = Require-WindowsTool -Name 'Tesseract OCR' -Binaries @('tesseract.exe') `
             -WingetId 'UB-Mannheim.TesseractOCR' `
-            -KnownPaths @((Join-Path $env:PROGRAMFILES 'Tesseract-OCR/tesseract.exe'))
+            -KnownPaths $tesseractPaths
     }
-    $env:PATH = (Split-Path $tesseract -Parent) + [IO.Path]::PathSeparator + $env:PATH
+    if ($tesseract -isnot [string] -or -not (Test-Path -LiteralPath $tesseract -PathType Leaf)) {
+        throw 'Tesseract detection returned an invalid executable path; existing model downloads are safe.'
+    }
+    $env:PATH = (Split-Path -LiteralPath $tesseract -Parent) + [IO.Path]::PathSeparator + $env:PATH
     $trained = Join-Path $env:TESSDATA_PREFIX 'eng.traineddata'
     if (-not (Test-Path $trained)) {
-        $source = Join-Path (Split-Path $tesseract -Parent) 'tessdata/eng.traineddata'
+        $source = Join-Path (Split-Path -LiteralPath $tesseract -Parent) 'tessdata/eng.traineddata'
         if (-not (Test-Path $source)) { throw "English OCR model missing next to Tesseract: $source" }
         Copy-Item $source $trained
     }
@@ -297,10 +344,9 @@ else {
     $ff = Find-Executable -Names @('ffmpeg.exe','ffmpeg')
     if (-not $ff) { throw 'FFmpeg unavailable.' }
     $env:FRAMERUDIMENTS_FFMPEG = $ff
-    $ocr = Find-Executable -Names @('tesseract.exe','tesseract') -KnownPaths @(
-        (Join-Path $env:PROGRAMFILES 'Tesseract-OCR/tesseract.exe'))
+    $ocr = Find-Executable -Names @('tesseract.exe','tesseract') -KnownPaths @(Get-TesseractKnownPaths)
     if (-not $ocr) { throw 'Tesseract is missing. Re-run without -SkipSetup.' }
-    $env:PATH = (Split-Path $ocr -Parent) + [IO.Path]::PathSeparator + $env:PATH
+    $env:PATH = (Split-Path -LiteralPath $ocr -Parent) + [IO.Path]::PathSeparator + $env:PATH
     if (-not (Test-Path (Join-Path $env:TESSDATA_PREFIX 'eng.traineddata'))) {
         throw 'Project-local OCR trained-data missing. Re-run without -SkipSetup.'
     }

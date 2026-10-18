@@ -394,3 +394,24 @@ def test_pixelcue_tags_are_searchable_and_html_escaped(tmp_path, monkeypatch):
     assert "<script>alert(1)</script>" not in page
     restored = RUNNER.existing_rows(out, "sig")
     assert restored[preset["id"]]["tags"] == row["tags"]
+
+
+def test_windows_bootstrap_keeps_winget_install_logs_out_of_return_values():
+    """A native winget command must not contaminate the returned executable path."""
+    launcher = (SOURCE.parent / "Run-FullPresetAnalysis.ps1").read_text(encoding="utf-8")
+    assert "--accept-package-agreements --silent | Out-Host" in launcher
+    assert "if ($Name -eq 'Tesseract OCR') { $KnownPaths = @(Get-TesseractKnownPaths) }" in launcher
+    assert "$value -isnot [string]" in launcher
+    assert "Test-Path -LiteralPath $value -PathType Leaf" in launcher
+
+
+def test_windows_tesseract_bootstrap_discovers_per_user_and_system_installs():
+    """A terminal opened before winget installed OCR may have a stale PATH."""
+    launcher = (SOURCE.parent / "Run-FullPresetAnalysis.ps1").read_text(encoding="utf-8")
+    assert "function Get-TesseractKnownPaths" in launcher
+    assert "Programs/Tesseract-OCR/tesseract.exe" in launcher
+    assert "Tesseract-OCR/tesseract.exe" in launcher
+    assert "Join-Path -Path $entry.InstallLocation -ChildPath 'tesseract.exe'" in launcher
+    assert "-KnownPaths $tesseractPaths" in launcher
+    assert "-KnownPaths @(Get-TesseractKnownPaths)" in launcher
+    assert "(Split-Path -LiteralPath $tesseract -Parent)" in launcher
