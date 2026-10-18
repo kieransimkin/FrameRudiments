@@ -432,6 +432,9 @@ def default_renderers():
     from .music_spatial_renderers import register_music_spatial_renderers
 
     register_music_spatial_renderers(registry)
+    from .rangoli_renderer import RangoliRenderer
+
+    registry.register("rangoli", RangoliRenderer)
     return registry
 
 

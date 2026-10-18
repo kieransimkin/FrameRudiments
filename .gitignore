@@ -9,6 +9,7 @@ dist/
 *.mp4
 *.wav
 !docs/media/beat-alignment.mp4
+!docs/media/rangoli.mp4
 local/
 
 # Project-owned model weights and framework caches

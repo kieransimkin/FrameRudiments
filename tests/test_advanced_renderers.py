@@ -28,6 +28,7 @@ def test_every_new_renderer_is_deterministic_and_uses_its_source(spec):
             "spatial_renderers.py",
             "solid_spatial_renderers.py",
             "music_spatial_renderers.py",
+            "rangoli_renderer.py",
         )
     )
     frame = fixture(95, spectral=spec.family != "motion")

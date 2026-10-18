@@ -11,6 +11,34 @@ from dancerudiments_authoring.recording import Recording, RecordingClock, write_
 from .io import sha256, write_json
 
 
+def create_rangoli_demo(directory, font, *, width=640, height=360):
+    """Synthetic native petals with pinned text and independent scale/spin axes."""
+    import json
+
+    path = create_demo(directory, font, width=width, height=height)
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["render_quality"] = dict(spatial_scale=4, temporal_samples=2)
+    data["layers"] = []
+    for i, radius in enumerate((.60, .33)):
+        data["layers"].append(dict(
+            id=f"petals-{i}", type="rudiment", renderer="rangoli",
+            bounds=[round(width*.25), round(height*.16), round(width*.75), round(height*.81)],
+            history_frames=1,
+            motion=dict(kind="named", pattern="circle", rate=.5 if i else .25),
+            style=dict(radius=radius, petals=16, scale_axis=0, rotation_axis=1,
+                       scale_gain=.3, rotation_gain=90 if i else -45,
+                       angle=i*11.25, fill="#dd339955" if i else "#33bbcc44",
+                       outline="#fff1cc" if i else "#ffcf66"),
+        ))
+    data["identity"] = [dict(text="Native petal rings", style=dict(
+        box=[12, 6, width-12, round(height*.15)], font_size=round(height*.075),
+        min_font_size=12, colour="#fff1cc", stroke=1))]
+    data["captions"].update(box=[12, round(height*.83), width-12, height-8],
+                             font_size=round(height*.065), min_font_size=12)
+    write_json(path, data)
+    return path
+
+
 def create_demo(directory, font, *, width=360, height=640):
     directory = Path(directory).resolve()
     directory.mkdir(parents=True, exist_ok=False)

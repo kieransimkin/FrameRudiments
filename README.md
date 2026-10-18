@@ -1,5 +1,15 @@
 # FrameRudiments
 
+## Native rangoli drawing and clean projectM backgrounds
+
+Stack independent `rangoli` Bezier-petal rings over retained native bass/treble
+recordings. Smooth floating-point geometry uses the existing high-quality font
+and vector rasterizer; the established projectM routing keeps petals and lyrics
+clean above an audio-reactive background. No private song assets are bundled.
+See [configuration, limits and actual video](docs/rangoli.md).
+
+![Actual synthetic FrameRudiments rangoli and font example](docs/media/rangoli.png)
+
 ## Controlled sound-response analysis
 
 The new `scripts/Run-ControlledPresetAnalysis.ps1` tests **zero image feed**, silence,

@@ -4,7 +4,7 @@ import sys
 import subprocess
 
 from . import __version__
-from .demo import create_demo, create_rudiment_demo, create_spectrum_demo
+from .demo import create_demo, create_rudiment_demo, create_spectrum_demo, create_rangoli_demo
 from .io import write_json
 from .project import Project
 from .rudiment_renderers import default_renderers
@@ -53,6 +53,7 @@ def main(argv=None):
     demo = commands.add_parser("demo", help="Create a synthetic audio/image/recording project")
     demo.add_argument("directory")
     demo_views = demo.add_mutually_exclusive_group()
+    demo_views.add_argument("--rangoli", action="store_true", help="Native Bezier petal rings and high-quality text")
     demo_views.add_argument(
         "--spectrum",
         action="store_true",
@@ -82,7 +83,9 @@ def main(argv=None):
     try:
         if args.command == "demo":
             factory = (
-                create_spectrum_demo
+                create_rangoli_demo
+                if args.rangoli
+                else create_spectrum_demo
                 if args.spectrum
                 else create_rudiment_demo
                 if args.rudiments
