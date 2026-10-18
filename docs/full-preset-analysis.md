@@ -64,6 +64,46 @@ inferences, run:
 
 Inspect the logs and correct missing prerequisites before retrying.
 
+### Live progress and previews (including long CPU model runs)
+
+The runner writes an **atomic, ignored** `_work/current-job.json` heartbeat
+while each native renderer, numerical comparison or PixelCue/PrismMoves batch
+is active. A second PowerShell window can inspect it without stopping the sweep:
+
+```powershell
+.\scripts\Run-FullPresetAnalysis.ps1 -Status
+Get-Content .\visualiser-analysis\full-catalogue\_work\current-job.json
+Get-ChildItem .\visualiser-analysis\full-catalogue\_work\jobs -Filter capture.log -Recurse |
+  Sort-Object LastWriteTime -Descending | Select-Object -First 3 FullName,LastWriteTime
+```
+
+The `log` key in the progress receipt points to the active stage's **full
+local log**. Failed projectM shaders are reported per condition and receive a
+`partial` receipt; if no frames render, there is no costly model analysis of an
+empty input. Failed presets can be retried with `-RetryFailed` after correcting
+runtime problems; other presets continue independently.
+
+**Preview contact sheets are written progressively**, starting when the first
+condition has finished rendering and its output hashes have been recorded.
+They are refreshed as more valid conditions complete, and remain visible while
+numerical and neural analyses run. An empty `previews/` folder means no valid
+frames have been recorded for the active experiment yet; inspect its capture
+log rather than assuming a model download failed. These provisional thumbnails
+are **not** evidence of completed semantic analysis. Per-preset reports and
+searchable index rows are published only after the corresponding analysis attempt
+has ended, and only then can a preset be marked `complete`.
+
+The default full matrix uses four image families, programme/silence audio and
+four capture times, potentially **32 output frames per preset**, with up to
+four neural adapters and an optional tagger analysing those frames. **CPU-only
+semantics can take a long time.** Avoid assuming the process has hung simply
+because a batch is slow: inspect the heartbeat, active log and CPU use.
+`-CaptureTimeout`, `-AnalysisTimeout` and `-SemanticTimeout` can be increased on
+reruns without changing the experiment's pinned input configuration. To opt into
+fewer neural images use `-SemanticImages N`; this does change the declared
+experiment settings and needs a separate output/explicit coverage upgrade.
+
+
 The **inventory** is fully processed once every installed preset has a report,
 including explicit `partial` failure receipts for incompatible shaders or
 unavailable models. A **fully successful analysis** additionally requires no
@@ -189,6 +229,7 @@ FrameRudiments/
     reports/<stable-id>.pixelcue.json.gz  # full PrismMoves/PixelCue semantic receipts
     previews/<stable-id>.webp          # contact sheet of labelled captures per condition
     _work/schedules/*.json             # ignored: per-invocation random order and seed
+    _work/current-job.json             # ignored: current preset, stage, progress and log
     _work/                             # ignored: raw PNGs, intermediate reports, logs
     .gitignore                         # protects raw/incomplete work from accidental Git add
 ```

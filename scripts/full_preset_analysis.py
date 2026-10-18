@@ -215,8 +215,13 @@ def exclusive_run(work: Path):
                 fcntl.flock(handle, fcntl.LOCK_UN)
 
 
-def run_logged(command: list[str], log: Path, *, environment: dict[str, str], timeout: int) -> int:
-    """One independently killable subprocess; returns 124 for a timed-out job."""
+def run_logged(command: list[str], log: Path, *, environment: dict[str, str],
+               timeout: int, on_poll=None) -> int:
+    """One independently killable subprocess, with periodic safe progress polling.
+
+    on_poll runs on the parent process, not in a renderer thread, so it can
+    inspect atomic capture receipts without sharing OpenGL or a browser.
+    """
     log.parent.mkdir(parents=True, exist_ok=True)
     with log.open("ab") as output:
         output.write(("\n" + " ".join(str(part) for part in command) + "\n").encode("utf-8", "replace"))
@@ -227,23 +232,71 @@ def run_logged(command: list[str], log: Path, *, environment: dict[str, str], ti
         else:
             options["start_new_session"] = True
         process = subprocess.Popen(command, **options)
+        deadline = time.monotonic() + timeout
         try:
-            return process.wait(timeout=timeout)
-        except (subprocess.TimeoutExpired, KeyboardInterrupt) as exc:
-            # The owning subprocess and its descendants must not survive a
-            # timeout or Ctrl+C and continue changing captured files.
-            if process.poll() is None:
-                if os.name == "nt":
-                    subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                                   stdout=output, stderr=subprocess.STDOUT, check=False)
-                else:
-                    os.killpg(process.pid, signal.SIGKILL)
-            process.wait(timeout=30)
-            if isinstance(exc, KeyboardInterrupt):
-                output.write(b"\nINTERRUPTED by operator; child process tree stopped\n")
-                raise
-            output.write(f"\nTIMEOUT after {timeout} seconds\n".encode())
-            return 124
+            while True:
+                try:
+                    result = process.wait(timeout=max(.01, min(4, deadline - time.monotonic())))
+                    if on_poll is not None:
+                        on_poll()
+                    return result
+                except subprocess.TimeoutExpired:
+                    if on_poll is not None:
+                        on_poll()
+                    if time.monotonic() >= deadline:
+                        break
+        except KeyboardInterrupt:
+            _stop_process_tree(process, output)
+            output.write(b"\nINTERRUPTED by operator; child process tree stopped\n")
+            raise
+        except BaseException:
+            # A progress-hook/file I/O failure must not orphan a native GPU,
+            # browser or model subprocess when the parent stops monitoring it.
+            _stop_process_tree(process, output)
+            raise
+        _stop_process_tree(process, output)
+        output.write(f"\nTIMEOUT after {timeout} seconds\n".encode())
+        return 124
+
+
+def _stop_process_tree(process, log):
+    """Terminate native engine + owned descendants on timeout/interrupt."""
+    if process.poll() is None:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/PID", str(process.pid), "/T", "/F"],
+                           stdout=log, stderr=subprocess.STDOUT, check=False)
+        else:
+            os.killpg(process.pid, signal.SIGKILL)
+    process.wait(timeout=30)
+
+
+def write_current_progress(out: Path, preset: dict, phase: str, *,
+                           elapsed: float = 0, log: Path | None = None, **details) -> dict:
+    """Human-readable, atomically replaced heartbeat under ignored _work/."""
+    relative_log = log.relative_to(out).as_posix() if log is not None else None
+    entry = {
+        "schema": SCHEMA + ".current-job.v1",
+        "preset_id": preset["id"], "engine": preset["engine"],
+        "name": preset.get("name", ""), "phase": phase,
+        "seconds_elapsed": round(elapsed, 1), "updated_unix": time.time(),
+        "log": relative_log,
+        **details,
+    }
+    write_json(out / "_work" / "current-job.json", entry)
+    return entry
+
+
+def tail_failed_log(path: Path, *, lines: int = 9, max_chars: int = 1800) -> str:
+    """Best-effort diagnostic; original full log stays in ignored _work."""
+    try:
+        # Only read a bounded tail even when a renderer emits huge logs.
+        with path.open("rb") as stream:
+            stream.seek(0, 2)
+            stream.seek(max(0, stream.tell() - 16384))
+            message = stream.read().decode("utf-8", "replace")
+        return "\n".join(message.splitlines()[-lines:])[-max_chars:]
+    except OSError:
+        return "(log unavailable)"
 
 
 def get_preset_catalogue(path: Path) -> dict:
@@ -363,42 +416,115 @@ def prepare_artwork_suite(work: Path, font: Path, directory: Path) -> Path:
     return target
 
 
-def upgrade_experiment(out: Path, settings: dict, *, enabled: bool) -> None:
-    """Explicit in-place coverage upgrade: preserve *every* previous pilot byte.
+def _archive_without_overwrite(source: Path, destination: Path) -> None:
+    """Relocate an old receipt without ever replacing an existing archived byte.
 
-    No automatic replacement of committed experiment metadata is permitted.
-    Archived receipts stay in ignored _work/ and original commits remain in Git.
+    A crashed Windows migration can leave some files in .staging and the rest
+    at the output root. We merge only disjoint names, including nested work
+    folders. Existing destination names are never silently overwritten.
+    """
+    if not source.exists():
+        return
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists():
+        if not source.is_dir() or not destination.is_dir():
+            raise ValueError(f"Archive name collision; original kept unchanged: {source}")
+        for child in sorted(source.iterdir()):
+            _archive_without_overwrite(child, destination / child.name)
+        # Windows may have an open directory handle: only remove an EMPTY
+        # directory when permitted, leaving the data-free folder otherwise.
+        try:
+            source.rmdir()
+        except OSError:
+            if any(source.iterdir()):
+                raise
+    else:
+        shutil.move(str(source), str(destination))
+
+
+def _verified_archive(archive: Path, signature: str) -> dict[str, dict]:
+    """Verify that all indexed old reports survived, even after an interrupted move."""
+    prior = read_json(archive / "experiment.json")
+    if prior.get("signature") != signature:
+        raise ValueError("The old experiment signature does not match its archive directory")
+    index = archive / "index.json"
+    archived_rows = existing_rows(archive, signature)
+    if index.is_file():
+        entries = read_json(index).get("entries", [])
+        if not isinstance(entries, list) or {x["id"] for x in entries} != set(archived_rows):
+            raise ValueError("Previous experiment archive is missing indexed reports; no new run started")
+        if any(archived_rows[x["id"]]["interrupted"] for x in entries):
+            raise ValueError("Previous experiment archive has missing/changed previews or semantic receipts")
+    return archived_rows
+
+
+def upgrade_experiment(out: Path, settings: dict, *, enabled: bool) -> None:
+    """Losslessly upgrade an old pilot, including an already interrupted Windows move.
+
+    Windows can deny a rename of an *entire populated directory* even when
+    the earlier file moves succeeded (WinError 5, antivirus/indexer handles).
+    Never rename that directory again: on a new upgrade, archive straight into
+    its final name; on a retry, adopt the original .staging folder as a durable
+    archive. The old experiment is verified before any new settings are written.
     """
     experiment = out / "experiment.json"
-    if not experiment.exists():
+    target_signature = digest(stable_json(settings))
+    previous_root = out / "_work" / "previous-experiments"
+    previous = read_json(experiment) if experiment.is_file() else None
+    if previous and previous.get("settings") == settings and previous.get("signature") == target_signature:
         return
-    previous = read_json(experiment)
-    if previous.get("settings") == settings and previous.get("signature") == digest(stable_json(settings)):
+
+    # A previous attempt may have moved experiment.json into .staging *before*
+    # Windows rejected the final rename. Detect this before assuming a fresh run.
+    candidate = None
+    if previous is None and previous_root.is_dir():
+        incomplete = [p for p in previous_root.iterdir() if p.is_dir() and
+                      (p.name.endswith(".staging") or not (p / "migration.json").is_file()) and
+                      (p / "experiment.json").is_file()]
+        if len(incomplete) > 1:
+            raise ValueError("Multiple incomplete previous experiments; manual review required")
+        if incomplete:
+            candidate = incomplete[0]
+            previous = read_json(candidate / "experiment.json")
+        else:
+            # After archiving, a crash before writing the new experiment is
+            # harmless, but restarting with DIFFERENT new settings is not.
+            completed = [read_json(p / "migration.json") for p in previous_root.iterdir()
+                         if p.is_dir() and (p / "migration.json").is_file()]
+            if completed and target_signature not in {p.get("target_signature") for p in completed}:
+                raise ValueError("An earlier coverage upgrade already selected different settings")
+    if previous is None:
         return
     if not enabled:
-        raise ValueError("Capture/semantic coverage changed; rerun with --upgrade-coverage to archive "
-                         "the old pilot, or choose a new --output directory")
+        raise ValueError("Capture/semantic coverage changed or upgrade was interrupted; "
+                         "rerun with --upgrade-coverage to preserve the old pilot")
     prior_signature = previous.get("signature")
     if not isinstance(prior_signature, str) or len(prior_signature) != 64:
         raise ValueError("Existing experiment has no trusted signature: refusing upgrade")
-    # Validate the previous index and per-preset hashes before moving anything.
-    existing_rows(out, prior_signature)
-    archive = out / "_work" / "previous-experiments" / prior_signature
-    staging = archive.with_name(archive.name + ".staging")
-    if archive.exists() or staging.exists():
-        raise ValueError("Previous analysis archive already exists or upgrade was interrupted")
-    staging.mkdir(parents=True)
+
+    standard = previous_root / prior_signature
+    staging = previous_root / (prior_signature + ".staging")
+    if standard.exists() and staging.exists():
+        raise ValueError("Both archived and staged copies exist; refusing to combine unknown evidence")
+    archive = staging if staging.exists() else standard
+    if candidate is not None and archive != candidate:
+        raise ValueError("Interrupted upgrade signature does not match its staging directory")
+    # Old code left .staging containing the moved material. Treat it as the
+    # final archive *in place*, rather than renaming a directory Windows locks.
+    archive.mkdir(parents=True, exist_ok=True)
     for name in ("experiment.json", "index.json", "index.html", "SUMMARY.md", "reports", "previews"):
-        source = out / name
-        if source.exists():
-            shutil.move(str(source), str(staging / name))
-    old_jobs = out / "_work" / "jobs"
-    if old_jobs.exists():
-        shutil.move(str(old_jobs), str(staging / "jobs"))
-    staging.rename(archive)
-    (out / "reports").mkdir()
-    (out / "previews").mkdir()
-    print(f"Preserved the old experiment and captured work at {archive}", flush=True)
+        _archive_without_overwrite(out / name, archive / name)
+    _archive_without_overwrite(out / "_work" / "jobs", archive / "jobs")
+    archived_rows = _verified_archive(archive, prior_signature)
+    write_json(archive / "migration.json", {
+        "schema": SCHEMA + ".migration.v1", "source_signature": prior_signature,
+        "target_signature": target_signature, "preserved_reports": len(archived_rows),
+        "complete": True,
+        "note": "Original evidence retained; no weights, jobs or raw captures discarded",
+    })
+    (out / "reports").mkdir(exist_ok=True)
+    (out / "previews").mkdir(exist_ok=True)
+    print(f"Preserved old experiment ({len(archived_rows)} reports) at {archive}", flush=True)
 
 
 def ensure_workspace(out: Path) -> Path:
@@ -984,6 +1110,46 @@ def run_preset(args, row: dict, signature: str, out: Path, catalogue: Path, suit
     folder.mkdir(parents=True, exist_ok=True)
     capture_log = folder / "capture.log"
     existing_capture = captured_manifest(out / "_work", row)
+    started = time.monotonic()
+    last_manifest_mtime = -1
+    last_heartbeat = 0.0
+
+    def progress(phase, *, log=None, **details):
+        nonlocal last_heartbeat
+        now = time.monotonic()
+        state = write_current_progress(out, row, phase, elapsed=now - started,
+                                       log=log, **details)
+        # Real, periodic feedback; no fabricated ETA or measurements.
+        if now - last_heartbeat > 15 or details.get("new_frames"):
+            info = f" {details['captured_frames']} captured frames" if "captured_frames" in details else ""
+            print(f"  [{row['engine']} {phase}: {state['seconds_elapsed']:.0f}s{info}]", flush=True)
+            last_heartbeat = now
+
+    def poll_captures():
+        nonlocal last_manifest_mtime
+        completed, count, new_frames = 0, 0, False
+        if existing_capture.is_file():
+            try:
+                mtime = existing_capture.stat().st_mtime_ns
+                if mtime != last_manifest_mtime:
+                    manifest = read_json(existing_capture)
+                    sheets = make_contact_sheets(out, key, manifest)
+                    frames = sum(sheet["frames"] for sheet in sheets)
+                    completed = sum(c.get("state") == "captured" for c in manifest.get("conditions", []))
+                    last_manifest_mtime = mtime
+                    new_frames = bool(frames)
+                    count = frames
+                    progress("capturing", log=capture_log, captured_frames=count,
+                             completed_conditions=completed, new_frames=new_frames,
+                             preview_files=[item["path"] for item in sheets])
+                    return
+            except (OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+                # Partial/temporarily inaccessible receipt; next poll retries.
+                progress("capturing", log=capture_log, progress_note=str(exc)[:240])
+                return
+        progress("capturing", log=capture_log)
+
+    progress("capturing", log=capture_log)
     if directory.exists() and not (directory / "experiment.json").is_file():
         orphan = folder / f"orphan-{int(time.time())}"
         directory.rename(orphan)
@@ -998,8 +1164,12 @@ def run_preset(args, row: dict, signature: str, out: Path, catalogue: Path, suit
         command += ["--resume"]
         if args.retry_failed:
             command += ["--retry-failed"]
-    capture_code = run_logged(command, capture_log, environment=environment, timeout=args.capture_timeout)
+    capture_code = run_logged(command, capture_log, environment=environment,
+                              timeout=args.capture_timeout, on_poll=poll_captures)
+    if capture_code:
+        print(f"  [capture exit {capture_code}] {tail_failed_log(capture_log)}", flush=True)
     if not existing_capture.is_file():
+        progress("capture-failed", log=capture_log, exit_code=capture_code)
         return _report_failed(out, row, signature,
                               f"Capture subprocess exit {capture_code}; see ignored _work/jobs/{key}/capture.log")
     try:
@@ -1008,21 +1178,42 @@ def run_preset(args, row: dict, signature: str, out: Path, catalogue: Path, suit
         return _report_failed(out, row, signature, f"Invalid capture manifest: {exc}")
     if captured.get("preset", {}).get("id") != row["id"]:
         raise ValueError("Capture manifest identity mismatch")
+    # The renderer has finished. Publish the entire contact sheet now, before
+    # running potentially hours of CPU-only PixelCue/PrismMoves inference.
+    sheets = make_contact_sheets(out, key, captured)
+    progress("capture-complete", log=capture_log, exit_code=capture_code,
+             captured_frames=sum(p["frames"] for p in sheets),
+             preview_files=[p["path"] for p in sheets])
+    if not sheets:
+        # Incompatible/failed projectM presets can reject every condition.
+        # They must still receive an honest partial receipt, but running heavy
+        # numerical and neural stages with zero images wastes minutes to hours.
+        failed = [c for c in captured.get("conditions", []) if c.get("state") != "captured"]
+        descriptions = [f"{c.get('id', 'unknown')}: {str(c.get('error', c.get('state')))[:150]}"
+                        for c in failed[:5]]
+        message = (f"No captured outputs; capture exit {capture_code}; "
+                   + "; ".join(descriptions))
+        progress("capture-failed", log=capture_log, exit_code=capture_code,
+                 failed_conditions=len(failed))
+        return _report_failed(out, row, signature, message, captured)
     response = None
     numeric_code = -1
     numeric_path = existing_capture.parent / "identity" / "response.json"
     if captured.get("complete"):
+        progress("numerical-analysis", log=folder / "numerical.log")
         command = [str(args.analysis_python), str(ROOT / "src" / "framerudiments" / "profile_analysis.py"),
                    str(existing_capture), "--max-edge", str(args.max_edge), "--models-dir", str(MODELS)]
         numeric_code = run_logged(command, folder / "numerical.log", environment=environment,
-                                  timeout=args.analysis_timeout)
+                                  timeout=args.analysis_timeout,
+                                  on_poll=lambda: progress("numerical-analysis", log=folder / "numerical.log"))
         if numeric_code and (numeric_path.parent).exists():
             # An interrupted PrismMoves batch can leave a directory without
             # checksums. Preserve it, then retry from a clean analysis folder.
             archived = folder / f"identity-interrupted-{int(time.time())}"
             numeric_path.parent.rename(archived)
             numeric_code = run_logged(command, folder / "numerical.log", environment=environment,
-                                      timeout=args.analysis_timeout)
+                                      timeout=args.analysis_timeout,
+                                      on_poll=lambda: progress("numerical-analysis-retry", log=folder / "numerical.log"))
         if numeric_path.is_file():
             try:
                 response = read_json(numeric_path)
@@ -1042,7 +1233,11 @@ def run_preset(args, row: dict, signature: str, out: Path, catalogue: Path, suit
         required_models = set(args.models) | {"pixelcue-tagger:" + tagger for tagger in args.keyword_models}
         all_items: dict[str, dict] = {}
         batch_receipts = []
-        for index, batch in enumerate(semantic_batches(selected)):
+        batches = semantic_batches(selected)
+        for index, batch in enumerate(batches):
+            progress("semantic-analysis", log=folder / "semantic.log",
+                     batch=index + 1, batches=len(batches), images_in_batch=len(batch),
+                     total_images=len(selected))
             destination = semantic_root / f"batch-{index:04d}"
             report_path = destination / "analysis.json"
             existing = reusable_prism_report(report_path, batch, required_models)
@@ -1068,7 +1263,11 @@ def run_preset(args, row: dict, signature: str, out: Path, catalogue: Path, suit
                 if args.keyword_models:
                     command.extend(["--pixelcue-models", *args.keyword_models, "--allow-download"])
                 code = run_logged(command, folder / "semantic.log", environment=environment,
-                                  timeout=args.semantic_timeout)
+                                  timeout=args.semantic_timeout,
+                                  on_poll=lambda index=index: progress(
+                                      "semantic-analysis", log=folder / "semantic.log",
+                                      batch=index + 1, batches=len(batches),
+                                      total_images=len(selected)))
                 if code:
                     semantic_code = 2
                 try:
@@ -1128,9 +1327,18 @@ def run_preset(args, row: dict, signature: str, out: Path, catalogue: Path, suit
         messages.append(f"numeric analysis exit {numeric_code}")
     if semantic_code:
         messages.append(f"semantic analysis exit {semantic_code}")
+    failed_conditions = [c for c in captured.get("conditions", [])
+                         if c.get("state") != "captured"]
+    for condition in failed_conditions[:8]:
+        messages.append(f"{condition.get('id', 'unknown')}: {str(condition.get('error', condition.get('state')))[:150]}")
+    if failed_conditions:
+        print(f"  {len(failed_conditions)} rendering conditions failed; see {capture_log}", flush=True)
     required = (*args.models, *("pixelcue-tagger:" + name for name in args.keyword_models))
-    return publish_record(out, row, signature, captured, response, semantic,
-                          error="; ".join(messages), required_models=required)
+    published = publish_record(out, row, signature, captured, response, semantic,
+                               error="; ".join(messages), required_models=required)
+    progress("finished", log=folder / "semantic.log", result=published["status"],
+             captured_frames=sum(p["frames"] for p in sheets))
+    return published
 
 
 def commit_if_complete(out: Path, index: dict) -> None:
@@ -1210,6 +1418,8 @@ def run(args) -> int:
             try:
                 result = run_preset(args, item, signature, out, expanded_path, suite, env)
             except (ValueError, RuntimeError, OSError, subprocess.SubprocessError, KeyError) as exc:
+                write_current_progress(out, item, "failed", elapsed=time.monotonic() - started,
+                                       error=f"{type(exc).__name__}: {str(exc)[:500]}")
                 result = _report_failed(out, item, signature, f"{type(exc).__name__}: {exc}")
             rows[item["id"]] = result
             # Each preset JSON/Markdown report is saved atomically. Avoid
@@ -1245,12 +1455,15 @@ def find_font(given: str | None) -> Path:
 
 def status(args) -> int:
     out = assert_local_directory(Path(args.output))
+    running = out / "_work" / "current-job.json"
+    current = read_json(running) if running.is_file() else None
     if not (out / "index.json").is_file():
-        print("No indexed analysis yet")
+        print(json.dumps({"indexed": False, "current_job": current}, indent=2))
         return 2
     index = read_json(out / "index.json")
     print(json.dumps({"total": index["total"], "processed": index["processed"],
-                      "counts": index["counts"], "gallery": str(out / "index.html")}, indent=2))
+                      "counts": index["counts"], "gallery": str(out / "index.html"),
+                      "current_job": current}, indent=2))
     return 0 if index["counts"]["pending"] == index["counts"]["partial"] == 0 else 2
 
 

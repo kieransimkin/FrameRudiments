@@ -177,7 +177,7 @@ def test_one_preset_runs_capture_measurement_and_optional_semantics(tmp_path, mo
                            max_edge=128, semantic_edge=128, semantic_images=1, device="cpu",
                            capture_timeout=10, analysis_timeout=10, semantic_timeout=10, retry_failed=False)
     calls = []
-    def simulated_subprocess(command, log, *, environment, timeout):
+    def simulated_subprocess(command, log, *, environment, timeout, on_poll=None):
         calls.append(command)
         key = RUNNER.name_key(row["id"])
         if "presets-profile" in command:
@@ -194,6 +194,8 @@ def test_one_preset_runs_capture_measurement_and_optional_semantics(tmp_path, mo
                                                              "output": {"path": str(sample),
                                                                         "sha256": RUNNER.file_digest(sample)}}]}]})
         elif "profile_analysis.py" in " ".join(command):
+            # Capture evidence must already be visible BEFORE numerical/model inference.
+            assert (out / "previews" / f"{RUNNER.name_key(row['id'])}.webp").is_file()
             dest = out / "_work" / "jobs" / key / "run" / "presets" / row["id"].replace(":", "-") / "identity"
             dest.mkdir(parents=True, exist_ok=True)
             RUNNER.write_json(dest / "response.json", {"state": "completed", "measured_response_ranges": {
@@ -213,6 +215,8 @@ def test_one_preset_runs_capture_measurement_and_optional_semantics(tmp_path, mo
                                          "result": {"tags": ["abstract", "blue"]}}]}}]})
         else:
             raise AssertionError(command)
+        if on_poll is not None:
+            on_poll()
         return 0
     monkeypatch.setattr(RUNNER, "run_logged", simulated_subprocess)
     result = RUNNER.run_preset(args, row, "signature", out, tmp_path / "catalogue.json",
@@ -624,3 +628,183 @@ def test_contact_sheets_publish_all_labelled_frames_not_one_thumbnail(tmp_path, 
         with Image.open(p) as pic:
             assert pic.width == 558
             assert pic.height > 0
+
+
+def _old_coverage_pilot(tmp_path, monkeypatch):
+    """A real indexed pilot with hashed receipts, previews and ignored raw captures."""
+    monkeypatch.setattr(RUNNER, "ROOT", tmp_path)
+    monkeypatch.setattr(RUNNER, "MODELS", tmp_path / "models")
+    output = RUNNER.ensure_workspace(tmp_path / "visualiser-analysis" / "full-catalogue")
+    old = {"schema": "pilot", "images": ["cover-lyrics", "grid-rings"], "semantic_images": 1}
+    old_signature = RUNNER.digest(RUNNER.stable_json(old))
+    RUNNER.write_json(output / "experiment.json", {"signature": old_signature, "settings": old})
+    preset_id = "butterchurn:pilot0"
+    key = RUNNER.name_key(preset_id)
+    name = f"previews/{key}.webp"
+    preview = output / name
+    preview.write_bytes(b"pilot preview originally tracked by git")
+    semantic = output / "reports" / f"{key}.pixelcue.json.gz"
+    semantic.write_bytes(b"original compressed PixelCue evidence")
+    report = output / "reports" / f"{key}.json"
+    RUNNER.write_json(report, {"schema": RUNNER.SCHEMA + ".preset", "id": preset_id,
+                               "name": "Old pilot", "engine": "butterchurn", "status": "complete",
+                               "experiment_signature": old_signature, "preview": name,
+                               "preview_sha256": RUNNER.file_digest(preview),
+                               "semantic_receipt_sha256": RUNNER.file_digest(semantic),
+                               "semantic": {"caption_hypotheses": ["a neon tunnel"], "tags": ["neon"]}})
+    (output / "reports" / f"{key}.md").write_text("Original pilot description", encoding="utf-8")
+    RUNNER.write_json(output / "index.json", {"experiment_signature": old_signature,
+                           "entries": [{"id": preset_id, "report_sha256": RUNNER.file_digest(report)}]})
+    (output / "index.html").write_text("Old rendered gallery", encoding="utf-8")
+    (output / "SUMMARY.md").write_text("Old summary", encoding="utf-8")
+    jobs = output / "_work" / "jobs" / key
+    jobs.mkdir(parents=True)
+    (jobs / "original.png").write_bytes(b"original raw rendered capture")
+    return output, old_signature, {"schema": "pilot", "images": list(RUNNER.FULL_IMAGES), "semantic_images": 0}, key
+
+
+def test_coverage_upgrade_preserves_old_reports_without_renaming_populated_windows_directory(tmp_path, monkeypatch):
+    out, old_signature, desired, key = _old_coverage_pilot(tmp_path, monkeypatch)
+    def forbid_rename(self, target):
+        raise PermissionError(5, "WinError 5: folder rename denied by Windows", str(self))
+    monkeypatch.setattr(Path, "rename", forbid_rename)
+    RUNNER.upgrade_experiment(out, desired, enabled=True)
+    archive = out / "_work" / "previous-experiments" / old_signature
+    assert (archive / "reports" / f"{key}.json").is_file()
+    assert (archive / "reports" / f"{key}.pixelcue.json.gz").read_bytes() == b"original compressed PixelCue evidence"
+    assert (archive / "jobs" / key / "original.png").read_bytes() == b"original raw rendered capture"
+    assert RUNNER.read_json(archive / "migration.json")["complete"]
+    assert RUNNER.validate_experiment(out, desired) == RUNNER.digest(RUNNER.stable_json(desired))
+    RUNNER.upgrade_experiment(out, desired, enabled=True)
+    assert RUNNER.read_json(out / "experiment.json")["settings"] == desired
+
+
+def test_coverage_upgrade_recovers_prior_winerror5_staging_without_discarding_pilot(tmp_path, monkeypatch):
+    import shutil
+    out, old_signature, desired, key = _old_coverage_pilot(tmp_path, monkeypatch)
+    staging = out / "_work" / "previous-experiments" / (old_signature + ".staging")
+    staging.mkdir(parents=True)
+    # Reproduce the exact real-world failure: everything is moved, then Windows
+    # refuses to rename .staging -> <signature>. The original root has no experiment.
+    for name in ("experiment.json", "index.json", "index.html", "SUMMARY.md", "reports", "previews"):
+        shutil.move(str(out / name), str(staging / name))
+    shutil.move(str(out / "_work" / "jobs"), str(staging / "jobs"))
+    assert not (out / "experiment.json").exists()
+    RUNNER.ensure_workspace(out)  # The entry point creates empty reports/previews on resume.
+    with pytest.raises(ValueError, match="--upgrade-coverage"):
+        RUNNER.upgrade_experiment(out, desired, enabled=False)
+    def forbid_rename(self, target):
+        raise PermissionError(5, "WinError 5: Windows directory rename denied", str(self))
+    monkeypatch.setattr(Path, "rename", forbid_rename)
+    RUNNER.upgrade_experiment(out, desired, enabled=True)
+    assert (staging / "experiment.json").is_file()
+    assert (staging / "reports" / f"{key}.md").read_text() == "Original pilot description"
+    assert (staging / "jobs" / key / "original.png").read_bytes() == b"original raw rendered capture"
+    assert RUNNER.read_json(staging / "migration.json")["complete"]
+    assert not (out / "experiment.json").exists()
+    RUNNER.validate_experiment(out, desired)
+    assert (out / "experiment.json").is_file()
+
+
+def test_coverage_upgrade_resumes_split_staging_and_root_evidence(tmp_path, monkeypatch):
+    import shutil
+    out, old_signature, desired, key = _old_coverage_pilot(tmp_path, monkeypatch)
+    staging = out / "_work" / "previous-experiments" / (old_signature + ".staging")
+    staging.mkdir(parents=True)
+    shutil.move(str(out / "experiment.json"), str(staging / "experiment.json"))
+    shutil.move(str(out / "index.json"), str(staging / "index.json"))
+    shutil.move(str(out / "reports"), str(staging / "reports"))
+    # Original `previews` and raw `jobs` are still at the source on partial crash.
+    RUNNER.upgrade_experiment(out, desired, enabled=True)
+    assert (staging / "previews" / f"{key}.webp").is_file()
+    assert (staging / "jobs" / key / "original.png").is_file()
+    assert RUNNER.read_json(staging / "migration.json")["preserved_reports"] == 1
+
+
+def test_coverage_upgrade_refuses_collisions_and_does_not_overwrite_evidence(tmp_path, monkeypatch):
+    import shutil
+    out, old_signature, desired, key = _old_coverage_pilot(tmp_path, monkeypatch)
+    staging = out / "_work" / "previous-experiments" / (old_signature + ".staging")
+    staging.mkdir(parents=True)
+    shutil.move(str(out / "experiment.json"), str(staging / "experiment.json"))
+    (staging / "reports").mkdir()
+    duplicate = staging / "reports" / f"{key}.json"
+    duplicate.write_bytes(b"conflicting old content")
+    original = out / "reports" / f"{key}.json"
+    prior = original.read_bytes()
+    with pytest.raises(ValueError, match="Archive name collision"):
+        RUNNER.upgrade_experiment(out, desired, enabled=True)
+    assert original.read_bytes() == prior
+    assert duplicate.read_bytes() == b"conflicting old content"
+    assert not (out / "experiment.json").exists()
+
+
+def test_crash_after_successful_archive_requires_matching_new_settings(tmp_path, monkeypatch):
+    out, _, desired, _ = _old_coverage_pilot(tmp_path, monkeypatch)
+    RUNNER.upgrade_experiment(out, desired, enabled=True)
+    with pytest.raises(ValueError, match="different settings"):
+        RUNNER.upgrade_experiment(out, {"schema": "totally different"}, enabled=True)
+    # The exact originally selected settings may safely resume without touching old data.
+    RUNNER.upgrade_experiment(out, desired, enabled=True)
+    assert RUNNER.validate_experiment(out, desired) == RUNNER.digest(RUNNER.stable_json(desired))
+
+
+def test_live_progress_receipt_stays_ignored_and_contains_actual_stage(tmp_path, monkeypatch):
+    monkeypatch.setattr(RUNNER, "ROOT", tmp_path)
+    monkeypatch.setattr(RUNNER, "MODELS", tmp_path / "models")
+    out = RUNNER.ensure_workspace(tmp_path / "visualiser-analysis" / "full-catalogue")
+    job = {"id": "projectm:glx-test", "engine": "projectm", "name": "GLX Test"}
+    log = out / "_work" / "jobs" / "123" / "capture.log"
+    receipt = RUNNER.write_current_progress(out, job, "capturing", elapsed=17.8,
+                                                log=log, captured_frames=8)
+    assert receipt["captured_frames"] == 8
+    assert receipt["seconds_elapsed"] == 17.8
+    assert receipt["log"].endswith("capture.log")
+    assert RUNNER.read_json(out / "_work" / "current-job.json")["phase"] == "capturing"
+    assert "_work/" in (out / ".gitignore").read_text()
+
+
+def test_gpu_capture_subprocess_reports_progress_without_changing_exit_or_logs(tmp_path):
+    import subprocess
+    import sys
+    log = tmp_path / "capture.log"
+    calls = []
+    code = RUNNER.run_logged([sys.executable, "-c", "print('simulation finished')"], log,
+                             environment=dict(__import__('os').environ), timeout=10,
+                             on_poll=lambda: calls.append('observed'))
+    assert code == 0
+    assert calls
+    assert 'simulation finished' in log.read_text()
+
+
+def test_no_rendered_frames_records_projectm_failure_without_slow_semantics(tmp_path, monkeypatch):
+    monkeypatch.setattr(RUNNER, "ROOT", tmp_path)
+    monkeypatch.setattr(RUNNER, "MODELS", tmp_path / "models")
+    out = RUNNER.ensure_workspace(tmp_path / "visualiser-analysis" / "full-catalogue")
+    row = {"id": "projectm:broken", "name": "Legacy shader", "engine": "projectm",
+           "preset": {"sha256": "a" * 64}}
+    args = SimpleNamespace(render_python=Path(sys.executable), analysis_python=Path(sys.executable),
+                           intervals=[0, 0.5], images=["cover-lyrics", "grid-rings"],
+                           audio_modes=["programme", "silence"], models=["clip"], keyword_models=[],
+                           max_edge=128, semantic_edge=128, semantic_images=0, device="cpu",
+                           capture_timeout=10, analysis_timeout=10, semantic_timeout=10, retry_failed=False)
+    calls = []
+    def fake_capture(command, log, *, environment, timeout, on_poll=None):
+        calls.append(command)
+        assert "presets-profile" in command
+        manifest = RUNNER.captured_manifest(out / "_work", row)
+        manifest.parent.mkdir(parents=True, exist_ok=True)
+        (manifest.parent.parent.parent / "experiment.json").write_text('{}')
+        RUNNER.write_json(manifest, {"preset": {"id": row["id"]}, "state": "partial", "complete": True,
+                                         "conditions": [{"id": "sample-01-cover-lyrics-programme", "state": "failed",
+                                                         "error": "projectM preset failed: unsupported shader", "captures": []}]})
+        if on_poll:
+            on_poll()
+        return 0
+    monkeypatch.setattr(RUNNER, "run_logged", fake_capture)
+    result = RUNNER.run_preset(args, row, "signature", out, tmp_path / "catalogue.json", tmp_path / "suite.json", {})
+    assert result["status"] == "partial"
+    assert len(calls) == 1, "No CLIP/BLIP/PrismMoves when projectM produced zero images"
+    report = RUNNER.read_json(out / "reports" / f"{result['key']}.json")
+    assert "unsupported shader" in report["error"]
+    assert RUNNER.read_json(out / "_work" / "current-job.json")["phase"] == "capture-failed"

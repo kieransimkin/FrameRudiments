@@ -359,6 +359,18 @@ else {
     }
 }
 
+# Ensure a freshly built projectM DLL is actually loadable, not merely present.
+# Python + projectM may each need DLLs in separate install/bin or install/lib
+# directories on Windows. Never add external or unverified directories.
+$projectmInstall = Join-Path $models 'runtimes/projectm/install'
+$dllSearchDirs = @(Get-ChildItem -Path $projectmInstall -Filter '*.dll' -File -Recurse `
+    -ErrorAction Stop | ForEach-Object { $_.DirectoryName } | Select-Object -Unique)
+if (-not $dllSearchDirs.Count) { throw 'projectM installation contains no DLLs.' }
+$env:FRAMERUDIMENTS_PROJECTM_DLL_DIRS = $dllSearchDirs -join [IO.Path]::PathSeparator
+Write-Host 'Checking pinned projectM native DLL and its dependency search paths...' -ForegroundColor Cyan
+Invoke-Checked $renderPython @((Join-Path $PSScriptRoot 'check_projectm_runtime.py'),
+    '--library',$env:FRAMERUDIMENTS_PROJECTM_LIBRARY,'--install-root',$projectmInstall)
+
 if ($InstallOnly) { Write-Host 'Setup complete. Analysis not started.' -ForegroundColor Green; exit 0 }
 
 $argsList = @($pythonScript,'run','--output',$output,'--catalogue',$catalogue,
