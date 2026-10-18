@@ -71,8 +71,8 @@ def capture_frames(intervals, fps, frame_count):
     frames = sorted({math.ceil(x * fps - 1e-9) for x in intervals})
     if frames[-1] >= frame_count:
         raise ValueError("A capture interval is outside the project programme")
-    if len(frames) > 32:
-        raise ValueError("At most 32 captures per condition")
+    if len(frames) > 512:
+        raise ValueError("At most 512 captures per condition")
     return frames
 
 

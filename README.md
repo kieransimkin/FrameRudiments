@@ -1,5 +1,31 @@
 # FrameRudiments
 
+## Efficient preset descriptions (new recommended analysis entry point)
+
+Run `./scripts/Run-PresetBehaviourAnalysis.ps1 -Limit 2` after installing the
+coordinated PixelCue/PrismMoves update. It captures 15 fps over 3 seconds (46
+frames per condition; 368 for the default four inputs and two audio controls),
+measures motion **before** semantic inference, and selects at most 24 unique
+non-blank images for CLIP and BLIP. Generated fixtures render at 384 x 384
+instead of the legacy 160-pixel pilot. The native render/audio clock is unchanged.
+
+One paragraph per preset describes supported movement, appearance and artefacts.
+The searchable gallery rebuilds from completed per-preset records at each job,
+not from an occasionally checkpointed index. Raw dense frames and attempts stay
+in ignored `_work/`; the compact reports and compressed evidence are under
+`visualiser-analysis/behaviour-catalogue/`. The old full-catalogue is preserved.
+
+`./scripts/Run-PresetBehaviourAnalysis.ps1 -DescribeExisting` produces a separate
+atlas from the saved analysis receipts without rerunning models. Sparse legacy
+stills never acquire invented temporal measurements. An authored `-Suite` or an
+explicit `-ArtworkDirectory` supplies real material; defaults use synthetic audio.
+See [the efficient workflow and its limitations](docs/preset-behaviour.md).
+
+Windows setup also gains checked project-local MinGW runtime bundling. Missing
+compiler DLLs come from the recorded, matching compiler installation and are
+verified in a fresh process; arbitrary DLL downloads and global PATH changes
+are not used. See [projectM local runtime bundle](docs/projectm-local-runtime.md).
+
 FrameRudiments renders Shorts, Canvas-style clips and full lyric visualisers
 from one traceable timeline. It is the offline Python renderer in the
 [DanceFlow ecosystem](https://kieransimkin.co.uk/danceflow/).
