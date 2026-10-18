@@ -83,6 +83,6 @@ class RangoliRenderer(_Viewport):
             image = glow
         self.frame_report = dict(kind="rangoli-petals", petals=self.petals,
                                  radius_pixels=radius, scale=scale, rotation_degrees=angle,
-                                 source_seconds=frame.context.source_seconds,
+                                 source_seconds=getattr(frame.context, "source_seconds", None),
                                  axes=list(self.axes))
         return image
