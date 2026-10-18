@@ -765,7 +765,6 @@ def test_live_progress_receipt_stays_ignored_and_contains_actual_stage(tmp_path,
 
 
 def test_gpu_capture_subprocess_reports_progress_without_changing_exit_or_logs(tmp_path):
-    import subprocess
     import sys
     log = tmp_path / "capture.log"
     calls = []

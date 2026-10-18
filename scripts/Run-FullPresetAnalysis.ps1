@@ -362,6 +362,10 @@ else {
 # Ensure a freshly built projectM DLL is actually loadable, not merely present.
 # Python + projectM may each need DLLs in separate install/bin or install/lib
 # directories on Windows. Never add external or unverified directories.
+# Bundle matching MinGW runtime DLLs before the existing native preflight.
+Invoke-Checked $renderPython @((Join-Path $PSScriptRoot 'ensure_projectm_runtime.py'),
+    '--repository',$repo)
+
 $projectmInstall = Join-Path $models 'runtimes/projectm/install'
 $dllSearchDirs = @(Get-ChildItem -Path $projectmInstall -Filter '*.dll' -File -Recurse `
     -ErrorAction Stop | ForEach-Object { $_.DirectoryName } | Select-Object -Unique)
