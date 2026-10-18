@@ -55,8 +55,13 @@ def test_real_prism_pixelcue_response_synthesis_and_controls(tmp_path):
     assert len(response["controlled_comparisons"]) == 2
     assert all(len(x["source_to_output"]) == 2 for x in response["conditions"])
     assert all(len(x["temporal"]) == 1 for x in response["conditions"])
-    assert response["settings"]["versions"]["prismmoves"] == "0.1.0"
-    assert response["settings"]["versions"]["pixelcue"] == "0.9.0"
+    # The checked release lock, not a former release or the installed environment,
+    # defines the expected versions. Keep this test valid across future pin bumps.
+    lock = read_json(Path(__file__).resolve().parents[1] / "analysis-releases.json")
+    expected_versions = {package["name"]: package["version"] for package in lock["packages"]}
+    assert set(expected_versions) == {"pixelcue", "prismmoves"}
+    for name, expected_version in expected_versions.items():
+        assert response["settings"]["versions"][name] == expected_version, name
     assert all("median" in x for x in response["measured_response_ranges"].values())
     assert summarise(result[0]["manifest"], max_edge=64, models_dir=tmp_path / "models") == response
     report = Path(result[0]["manifest"]).parent / "identity/report.html"
