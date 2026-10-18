@@ -329,7 +329,7 @@ The playback control above scrubs the exact native-driver frames.</p>
         + """</div></main>
 <footer><div>FrameRudiments is a deterministic rendering toolkit. Catalogue previews are structural display tests, not claims about sound or perceptual quality. Exact analyses should come from pinned StemLab recordings. <a href="https://github.com/kieransimkin/FrameRudiments">Contribute on GitHub</a>.</div></footer>
 <script>
-const images=[...document.querySelectorAll('img[data-mode],img[data-lab]')],cards=[...document.querySelectorAll('.tile')];
+const images=[...document.querySelectorAll('img[data-mode],img[data-lab]')],cards=[...document.querySelectorAll('#gallery .tile')];
 const slider=document.getElementById('frame'),label=document.getElementById('frame-label');
 const search=document.getElementById('search'),family=document.getElementById('family'),count=document.getElementById('count');
 const play=document.getElementById('play');let timer=null;
