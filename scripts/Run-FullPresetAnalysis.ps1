@@ -100,7 +100,7 @@ function Find-Executable {
     foreach ($path in $KnownPaths) {
         if (-not [string]::IsNullOrWhiteSpace($path) -and
             (Test-Path -LiteralPath $path -PathType Leaf)) {
-            $env:PATH = (Split-Path -LiteralPath $path -Parent) + [IO.Path]::PathSeparator + $env:PATH
+            $env:PATH = (Split-Path -LiteralPath $path) + [IO.Path]::PathSeparator + $env:PATH
             return [string]$path
         }
     }
@@ -286,10 +286,10 @@ if (-not $SkipSetup) {
     if ($tesseract -isnot [string] -or -not (Test-Path -LiteralPath $tesseract -PathType Leaf)) {
         throw 'Tesseract detection returned an invalid executable path; existing model downloads are safe.'
     }
-    $env:PATH = (Split-Path -LiteralPath $tesseract -Parent) + [IO.Path]::PathSeparator + $env:PATH
+    $env:PATH = (Split-Path -LiteralPath $tesseract) + [IO.Path]::PathSeparator + $env:PATH
     $trained = Join-Path $env:TESSDATA_PREFIX 'eng.traineddata'
     if (-not (Test-Path $trained)) {
-        $source = Join-Path (Split-Path -LiteralPath $tesseract -Parent) 'tessdata/eng.traineddata'
+        $source = Join-Path (Split-Path -LiteralPath $tesseract) 'tessdata/eng.traineddata'
         if (-not (Test-Path $source)) { throw "English OCR model missing next to Tesseract: $source" }
         Copy-Item $source $trained
     }
@@ -346,7 +346,7 @@ else {
     $env:FRAMERUDIMENTS_FFMPEG = $ff
     $ocr = Find-Executable -Names @('tesseract.exe','tesseract') -KnownPaths @(Get-TesseractKnownPaths)
     if (-not $ocr) { throw 'Tesseract is missing. Re-run without -SkipSetup.' }
-    $env:PATH = (Split-Path -LiteralPath $ocr -Parent) + [IO.Path]::PathSeparator + $env:PATH
+    $env:PATH = (Split-Path -LiteralPath $ocr) + [IO.Path]::PathSeparator + $env:PATH
     if (-not (Test-Path (Join-Path $env:TESSDATA_PREFIX 'eng.traineddata'))) {
         throw 'Project-local OCR trained-data missing. Re-run without -SkipSetup.'
     }
