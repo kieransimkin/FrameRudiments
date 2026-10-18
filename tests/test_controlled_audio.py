@@ -130,5 +130,8 @@ def test_driver_alternates_engines_without_relying_on_names():
 
 def test_legacy_release_pins_are_not_changed_by_new_launcher():
     script = (Path(__file__).resolve().parents[1] / 'scripts' / 'Run-ControlledPresetAnalysis.ps1').read_text()
-    assert '.venv-audio-effects' in script
+    assert 'Run-HybridPresetAnalysis.ps1' in script
+    hybrid = (Path(__file__).resolve().parents[1] / 'scripts' / 'Run-HybridPresetAnalysis.ps1').read_text()
+    assert '.venv-hybrid-analysis' in hybrid
+    assert 'install_analysis_releases.py' not in hybrid
     assert 'install_analysis_releases.py' not in script

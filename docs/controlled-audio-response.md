@@ -1,5 +1,10 @@
 # Controlled preset audio responses
 
+> The current launcher uses the hybrid report workflow, including contact sheets
+> and bounded appearance inference. See [hybrid preset analysis](hybrid-preset-analysis.md).
+> Use `-NoSemantics` for measurement-only descriptions with contact sheets retained.
+> The reference-free capture protocol and numerical response controls below are unchanged.
+
 The new `Run-ControlledPresetAnalysis.ps1` measures the preset with **zero
 reference-image contribution**. It does not use artwork, lyrics, colour bars,
 rings, test-card text or captions to write the preset summary. The ordinary

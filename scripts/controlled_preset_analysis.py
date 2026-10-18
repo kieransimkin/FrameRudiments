@@ -1,4 +1,4 @@
-"""Controlled audio response sweep: fresh renderer per condition, no neural inference.
+"""Controlled audio sweep: measurements first, optional sparse appearance inference.
 
 Separate output from legacy and behaviour catalogues. Nothing is published remotely.
 """
@@ -125,7 +125,7 @@ def run(args):
         raise ValueError("Output must stay under this project's visualiser-analysis directory")
     if not args.analysis_python.is_file():
         raise ValueError("Install the isolated audio-effects environment first")
-    subprocess.run([str(args.analysis_python), "-I", "-c", "import cv2; from prismmoves.controlled_response import analyse"], check=True)
+    subprocess.run([str(args.analysis_python), "-I", "-c", f"import cv2; from {args.analysis_module} import analyse"], check=True)
     library = load_library(args.catalogue.resolve())
     if library.get("textures"):
         parents = {str(Path(r["path"]).resolve().parent) for r in library["textures"]}
@@ -196,7 +196,7 @@ def run(args):
                 continue
             if args.limit and processed >= args.limit:
                 break
-            print(f"[{processed+1}] {row['engine']}: {row['name']} | {count} frames; zero neural calls", flush=True)
+            print(f"[{processed+1}] {row['engine']}: {row['name']} | {count} frames; semantic budget {args.semantic_budget}", flush=True)
             conditions = []
             tasks = [(role, profile, trial) for role in roles for profile in profiles for trial in range(args.trials)]
             random.Random(1451).shuffle(tasks)
@@ -226,13 +226,25 @@ def run(args):
                                       "settings": settings, "expected_conditions": len(tasks)})
             report_dir = out / key
             print("  Measuring temporal evidence and repeated audio contrasts...", flush=True)
-            code = run_stage([str(args.analysis_python), "-I", "-u", "-m", "prismmoves.controlled_response", "analyse",
-                              "--captures", str(manifest_path), "--out", str(report_dir)], folder / "analysis.log", args.timeout)
+            command = [str(args.analysis_python), "-I", "-u", "-m", args.analysis_module, "analyse",
+                       "--captures", str(manifest_path), "--out", str(report_dir)]
+            if args.analysis_module == "prismmoves.hybrid_response":
+                command += ["--models-dir", str(ROOT / "models"), "--budget", str(args.semantic_budget),
+                            "--device", args.device]
+                if args.allow_model_downloads:
+                    command += ["--allow-download"]
+            code = run_stage(command, folder / "analysis.log", args.timeout)
             if code not in (0, 2):
                 raise ValueError(f"Analysis failed ({code}); see {folder / 'analysis.log'}")
             if code == 2:
                 failures += 1
-            subprocess.run([str(args.analysis_python), "-I", "-m", "prismmoves.controlled_response", "index", "--out", str(out)], check=True)
+            if (report_dir / "response.json").is_file():
+                report = read(report_dir / "response.json")
+                print("  Description: " + report.get("summary", "unavailable"), flush=True)
+                quality = report.get("completion", {})
+                if quality.get("appearance") in {"unavailable", "partial"}:
+                    print("  Appearance is incomplete; numerical evidence and contact sheets are saved. Inspect appearance.json.", flush=True)
+            subprocess.run([str(args.analysis_python), "-I", "-m", args.analysis_module, "index", "--out", str(out)], check=True)
             processed += 1
         print(f"Processed {processed} presets ({failures} partial). Open {out / 'index.html'}", flush=True)
     return 2 if failures else 0
@@ -241,7 +253,12 @@ def run(args):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--analysis-python", type=Path, required=True)
-    parser.add_argument("--output", type=Path, default=ROOT / "visualiser-analysis" / "audio-response-catalogue")
+    parser.add_argument("--analysis-module", choices=("prismmoves.hybrid_response", "prismmoves.controlled_response"),
+                        default="prismmoves.hybrid_response")
+    parser.add_argument("--semantic-budget", type=int, choices=range(65), default=24)
+    parser.add_argument("--device", choices=("cpu", "cuda", "mps"), default="cpu")
+    parser.add_argument("--allow-model-downloads", action="store_true")
+    parser.add_argument("--output", type=Path, default=ROOT / "visualiser-analysis" / "full-catalogue" / "hybrid")
     parser.add_argument("--catalogue", type=Path, default=ROOT / "models" / "preset-library" / "catalogue.json")
     parser.add_argument("--limit", type=int, default=2, help="0 processes the remaining catalogue")
     parser.add_argument("--trials", type=int, choices=range(3, 7), default=3)

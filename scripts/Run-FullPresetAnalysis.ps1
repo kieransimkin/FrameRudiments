@@ -1,17 +1,17 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-Single-command, resumable PrismMoves/PixelCue analysis of EVERY FrameRudiments preset.
+Single entry point: reference-free hybrid analysis by default; old reference analysis with -Legacy.
 .EXAMPLE
 .\scripts\Run-FullPresetAnalysis.ps1
 .EXAMPLE
 .\scripts\Run-FullPresetAnalysis.ps1 -Limit 5
 .EXAMPLE
-.\scripts\Run-FullPresetAnalysis.ps1 -ArtworkDirectory 'Z:\My Songs\Covers' -UpgradeCoverage -Limit 5
+.\scripts\Run-FullPresetAnalysis.ps1 -Legacy -ArtworkDirectory 'Z:\My Songs\Covers' -UpgradeCoverage -Limit 5
 .EXAMPLE
 .\scripts\Run-FullPresetAnalysis.ps1 -Status
 .EXAMPLE
-.\scripts\Run-FullPresetAnalysis.ps1 -RetryFailed -CommitWhenComplete
+.\scripts\Run-FullPresetAnalysis.ps1 -Legacy -RetryFailed -CommitWhenComplete
 .NOTES
 All analysis outputs: ./visualiser-analysis/full-catalogue/
 Downloaded models, runtimes and caches: ./models/ (Git ignored).
@@ -19,6 +19,21 @@ The sweep can take days. Rerunning the same command safely resumes it.
 #>
 [CmdletBinding()]
 param(
+    [switch]$Legacy,
+    [string]$OutputDirectory,
+    [string]$AudioFile,
+    [double]$AudioStart = 0,
+    [ValidateRange(3,6)][int]$Trials = 3,
+    [ValidateSet(5,10,15,20,30)][int]$CaptureFps = 15,
+    [ValidateRange(64,1024)][int]$RenderEdge = 384,
+    [ValidateRange(0,64)][int]$SemanticBudget = 24,
+    [string[]]$PresetId,
+    [ValidateSet('butterchurn','projectm')][string]$Engine,
+    [switch]$Extended,
+    [switch]$TextureControls,
+    [Alias('Reanalyse')][switch]$ReanalyseExisting,
+    [switch]$NoSemantics,
+    [switch]$AllowModelDownloads,
     [string]$Suite,
     [string]$ArtworkDirectory,
     [string]$Font,
@@ -51,6 +66,29 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+# Default is the current, reference-free hybrid workflow. Setup-only remains a
+# reusable runtime preflight; -Legacy is the only route to the old actual sweep.
+if (-not $Legacy -and -not $InstallOnly) {
+    $legacyOnly = @('Suite','ArtworkDirectory','Font','Intervals','UpgradeCoverage',
+                   'CommitWhenComplete','FullConditions','AllVLMs','PixelCueTagger',
+                   'SemanticImages','SemanticEdge','CheckpointEvery','RequireAllSuccessful',
+                   'AnalysisTimeout','SemanticTimeout')
+    $invalid = @($legacyOnly | Where-Object { $PSBoundParameters.ContainsKey($_) })
+    if ($invalid.Count) {
+        throw ('Legacy reference-analysis options require -Legacy: ' + ($invalid -join ', ') +
+               '. Use -AudioFile for reference-free musical-input tests.')
+    }
+    $forward = @{ Limit = $Limit; Device = $Device; SemanticBudget = $SemanticBudget }
+    foreach ($key in @('OutputDirectory','AudioFile','AudioStart','Trials','CaptureFps','RenderEdge',
+                       'PresetId','Engine','OrderSeed','Extended','TextureControls','RetryFailed',
+                       'ReanalyseExisting','NoSemantics','AllowModelDownloads','Status','Verify','CaptureTimeout')) {
+        if ($PSBoundParameters.ContainsKey($key)) { $forward[$key] = $PSBoundParameters[$key] }
+    }
+    if ($NoVLM) { $forward['NoSemantics'] = $true }
+    & (Join-Path $PSScriptRoot 'Run-HybridPresetAnalysis.ps1') @forward
+    return
+}
+
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $models = Join-Path $repo 'models'
 $output = Join-Path $repo 'visualiser-analysis/full-catalogue'

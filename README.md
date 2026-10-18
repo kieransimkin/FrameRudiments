@@ -1,10 +1,20 @@
 # FrameRudiments
 
+## Complete preset portraits and contact sheets (development)
+
+The hybrid workflow combines reference-free style, colour, shape and movement
+observations with controlled silence/music and sound-probe comparisons in **one
+paragraph**. Numerical analysis runs first; at most 24 distinct output images
+receive appearance inference. Labelled contact sheets and exact original
+keyframes are retained for comparison with the paragraph.
+See [hybrid preset analysis](docs/hybrid-preset-analysis.md) for the unified
+launcher, no-rerender reanalysis, model policy, data retention and limitations.
+
 ## Controlled sound-response analysis
 
 The new `scripts/Run-ControlledPresetAnalysis.ps1` tests **zero image feed**, silence,
 level-matched low/mid/high probes and rhythmic test music across independent render
-trials. Temporal measurements run without neural models. Summaries exclude all
+trials. Temporal measurements precede sparse appearance inference. Summaries exclude all
 reference-fed conditions; optional texture-transfer results stay separate.
 See [controlled audio responses](docs/controlled-audio-response.md) for setup,
 protocol limits, supplied-music tests, repeat controls and safe resume.
