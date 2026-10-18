@@ -1,5 +1,16 @@
 # FrameRudiments
 
+## Controlled sound-response analysis
+
+The new `scripts/Run-ControlledPresetAnalysis.ps1` tests **zero image feed**, silence,
+level-matched low/mid/high probes and rhythmic test music across independent render
+trials. Temporal measurements run without neural models. Summaries exclude all
+reference-fed conditions; optional texture-transfer results stay separate.
+See [controlled audio responses](docs/controlled-audio-response.md) for setup,
+protocol limits, supplied-music tests, repeat controls and safe resume.
+The pilot uses a separate project-local analysis environment and does not alter the
+stable releases pinned below or previous catalogue results.
+
 ## Pinned visual-analysis releases
 
 PixelCue **0.9.1** and PrismMoves **0.2.0** are pinned by final release URL,
