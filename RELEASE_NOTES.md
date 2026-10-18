@@ -1,3 +1,16 @@
+# FrameRudiments 0.4.1
+
+- Native `rangoli` Bezier-petal renderer with independent scale, rotation and
+  lift axes, explicit halo/stroke bounds, transparent fills and optional glow.
+- Uses the existing genuine high-resolution font/vector rasterization,
+  source-clock sampling, saved native recordings and technical video QA.
+- Original texture-free projectM background preset composes through existing
+  per-element routing, keeping petals and lyrics clean above the GPU output.
+- `demo --rangoli`, regression coverage and [actual synthetic video/still with
+  transcript](docs/rangoli.md). No private campaign media or downloaded models.
+- Stem analysis/smoothing remain in StemLab and native playback remains in
+  DanceRudiments; this release does not duplicate either engine.
+
 # FrameRudiments 0.4.0
 
 ## Rendering and authoring
