@@ -306,16 +306,15 @@ if (-not $SkipSetup) {
         -File -Recurse -ErrorAction SilentlyContinue | Where-Object { Test-Path (Join-Path $_.DirectoryName 'framerudiments-projectm.json') })
     if ($native.Count -eq 0) {
         Write-Host 'Building pinned projectM native runtime (may take several minutes)...' -ForegroundColor Yellow
-        $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
-        $cmakeGenerator = '-GNinja'
-        if (Test-Path $vswhere) {
-            $vsInstall = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 `
-                -property installationPath 2>$null
-            if ($vsInstall) { $cmakeGenerator = '-GVisual Studio 17 2022' }
+        # Select by *installed VS major version* and CMake's supported generators.
+        # Never assume that vswhere's presence means Visual Studio 2022.
+        $selectGenerator = Join-Path $PSScriptRoot 'select_projectm_generator.py'
+        $cmakeGenerator = & $renderPython $selectGenerator '--cmake' $cmake '--runtime' $projectm
+        if ($LASTEXITCODE -ne 0 -or $cmakeGenerator -isnot [string] -or
+            -not $cmakeGenerator.StartsWith('-G')) {
+            throw 'Could not select a matching projectM CMake generator. Check the toolchain details above.'
         }
-        elseif (-not (Find-Executable -Names @('cl.exe','clang++.exe','g++.exe'))) {
-            throw 'The pinned projectM runtime needs Visual Studio 2022 C++ Build Tools or a working C++ compiler.'
-        }
+        Write-Host ("Selected projectM generator: " + $cmakeGenerator) -ForegroundColor Cyan
         Invoke-Checked $renderPython @('-m','framerudiments','effects-setup','projectm',$projectm,
             ('--cmake-arg=' + $cmakeGenerator))
         $native = @(Get-ChildItem -Path (Join-Path $projectm 'install') -Include 'projectM-4.dll','libprojectM-4.dll' -File -Recurse |

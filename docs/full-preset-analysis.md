@@ -195,11 +195,17 @@ before pushing. Model weights must never be tracked by Git LFS either.
   first run requires free disk space for weights, full executable preset packs
   and raw captures. The total workload can take days or longer.
 - On Windows projectM is compiled from its exact pinned development commit.
-  The script detects Visual Studio 2022 C++ Build Tools and uses its CMake
-  generator. A supported compiler and the relevant projectM dependencies must
-  be present. A failed setup leaves caches intact; rerun after fixing the
-  prerequisite. A Tesseract installation may need a new PowerShell session to
-  update PATH.
+  The launcher queries the installed Visual Studio C++ version with `vswhere`
+  and verifies the corresponding generator in `cmake --help`: **VS 2026 uses
+  `Visual Studio 18 2026` (requires CMake 4.2+)**, while VS 2022 uses
+  `Visual Studio 17 2022`. A prepared Ninja environment with a real C/C++
+  compiler is also supported. If CMake lacks the installed generator, upgrade
+  CMake rather than silently selecting an absent Visual Studio version.
+  When changing generators after a failed configuration, the previous
+  `models/runtimes/projectm/build/` directory is archived under the same
+  runtime root. Model downloads, preset libraries and pinned projectM source
+  remain intact and are reused on the next run. Tesseract installation may
+  require a new PowerShell session to update PATH.
 - `-SkipSetup` is a fast retry option **after** the full setup has completed.
   Normal reruns also reuse existing model snapshots and runtimes.
 
