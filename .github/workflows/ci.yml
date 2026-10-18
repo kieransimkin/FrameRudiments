@@ -93,20 +93,8 @@ jobs:
           echo "FRAMERUDIMENTS_BUTTERCHURN_RUNTIME=$RUNNER_TEMP/butterchurn" >> "$GITHUB_ENV"
           echo "LIBGL_ALWAYS_SOFTWARE=1" >> "$GITHUB_ENV"
       - run: python -m pip install -e '.[dev,projectm,gpu]'
-      - name: Pinned released PrismMoves and PixelCue analysis APIs
-        run: |
-          python - <<'PY'
-          import hashlib, pathlib, subprocess, sys, urllib.request
-          wheels = [
-            ('https://github.com/kieransimkin/PrismMoves/releases/download/v0.1.0/prismmoves-0.1.0-py3-none-any.whl', '16b1ed8b8574809b36f7a1e60e5bd4fa2d024720b583106b73a5c3bf9e32f865'),
-            ('https://github.com/kieransimkin/PixelCue/releases/download/v0.9.0/pixelcue-0.9.0-py3-none-any.whl', '9b89169331f002e93bcced0dcc62be340c6aa6d8bb87d35dc878fdfa755320d4')]
-          for url, expected in wheels:
-              data = urllib.request.urlopen(url, timeout=90).read()
-              assert hashlib.sha256(data).hexdigest() == expected
-              path = pathlib.Path(url.rsplit('/',1)[-1]); path.write_bytes(data)
-              subprocess.run([sys.executable,'-m','pip','install','--no-deps',str(path)],check=True)
-              path.unlink()
-          PY
+      - name: Install checksum-pinned visual analysis releases
+        run: python scripts/install_analysis_releases.py --with-sequence
       - run: framerudiments effects-setup butterchurn "$FRAMERUDIMENTS_BUTTERCHURN_RUNTIME"
       - run: framerudiments effects-setup projectm "$RUNNER_TEMP/projectm" --cmake-arg=-GNinja
       - name: Select exact pinned native library

@@ -1,5 +1,17 @@
 # FrameRudiments
 
+## Pinned visual-analysis releases
+
+PixelCue **0.9.1** and PrismMoves **0.2.0** are pinned by final release URL,
+source commit and wheel SHA-256 in `analysis-releases.json`. Both analysis
+launchers install these coordinated wheels into the project-local analysis
+environment; neither can silently restore the old development/API pair.
+Run `scripts/install_analysis_releases.py --python PATH_TO_ANALYSIS_PYTHON
+--with-sequence` to reinstall the pinned pair without downloading model weights.
+The native CI job tests the actual released sequence/description APIs with
+synthetic frames and no neural inference. OpenCV and other runtime dependencies
+remain separately constrained; this is not a whole-environment lock.
+
 ## Efficient preset descriptions (new recommended analysis entry point)
 
 Run `./scripts/Run-PresetBehaviourAnalysis.ps1 -Limit 2` after installing the

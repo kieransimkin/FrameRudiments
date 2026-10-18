@@ -1,0 +1,26 @@
+{
+  "packages": [
+    {
+      "commit": "d09861b04dea033d26303d6099837785eeb48686",
+      "filename": "pixelcue-0.9.1-py3-none-any.whl",
+      "name": "pixelcue",
+      "pypi_verified": true,
+      "repository": "kieransimkin/PixelCue",
+      "sha256": "4ce323102d00f2bf0743a1f975bc06621961f7ac74c8785db3b3247427edaeae",
+      "tag": "v0.9.1",
+      "url": "https://github.com/kieransimkin/PixelCue/releases/download/v0.9.1/pixelcue-0.9.1-py3-none-any.whl",
+      "version": "0.9.1"
+    },
+    {
+      "commit": "b9cb0ade27b844674012fe289fcd949ce113ea8e",
+      "filename": "prismmoves-0.2.0-py3-none-any.whl",
+      "name": "prismmoves",
+      "repository": "kieransimkin/PrismMoves",
+      "sha256": "c27c79226097dec6862c4ef1d133849e85ddf2c25344577a2003f44780b9e76d",
+      "tag": "v0.2.0",
+      "url": "https://github.com/kieransimkin/PrismMoves/releases/download/v0.2.0/prismmoves-0.2.0-py3-none-any.whl",
+      "version": "0.2.0"
+    }
+  ],
+  "schema": "framerudiments.analysis-releases.v1"
+}

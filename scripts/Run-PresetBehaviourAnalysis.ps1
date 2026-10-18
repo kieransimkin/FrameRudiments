@@ -32,9 +32,12 @@ $analysis = Join-Path $repo 'models\.venv-analysis\Scripts\python.exe'
 if (-not (Test-Path -LiteralPath $analysis)) {
     throw 'Create the project-local environments with Run-FullPresetAnalysis.ps1 -InstallOnly, then install this update into the analysis environment.'
 }
+# Always install the coordinated, checksum-pinned releases; no model downloads.
+& $analysis (Join-Path $PSScriptRoot 'install_analysis_releases.py') --with-sequence
+if ($LASTEXITCODE -ne 0) { throw 'Pinned analysis release installation failed.' }
 & $analysis -c 'from prismmoves.preset_pipeline import analyse_capture_manifest; from pixelcue.visual_sequence import analyse_sequences; import cv2'
 if ($LASTEXITCODE -ne 0) {
-    throw 'Install the updated PrismMoves and PixelCue sequence APIs (and OpenCV) into models\.venv-analysis first. Do not reinstall the old pinned analysis wheels afterwards.'
+    throw 'Install the updated PrismMoves and PixelCue sequence APIs (and OpenCV) into models\.venv-analysis first. Run-FullPresetAnalysis.ps1 -InstallOnly installs these same pinned releases.'
 }
 if ($DescribeExisting) {
     if (-not $OutputDirectory) {

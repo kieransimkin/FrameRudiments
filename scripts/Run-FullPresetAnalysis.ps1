@@ -247,14 +247,7 @@ if (-not $SkipSetup) {
     $env:FRAMERUDIMENTS_FFMPEG = $ffmpeg
     Invoke-Checked $uv @('pip','install','--python',$renderPython,'-e',"${repo}[dev,projectm,gpu]")
 
-    $wheels = Join-Path $models 'release-wheels'
-    $prism = Download-PinnedWheel -Directory $wheels -Name 'prismmoves-0.1.0-py3-none-any.whl' `
-        -Url 'https://github.com/kieransimkin/PrismMoves/releases/download/v0.1.0/prismmoves-0.1.0-py3-none-any.whl' `
-        -Sha256 '16b1ed8b8574809b36f7a1e60e5bd4fa2d024720b583106b73a5c3bf9e32f865'
-    $pixel = Download-PinnedWheel -Directory $wheels -Name 'pixelcue-0.9.0-py3-none-any.whl' `
-        -Url 'https://github.com/kieransimkin/PixelCue/releases/download/v0.9.0/pixelcue-0.9.0-py3-none-any.whl' `
-        -Sha256 '9b89169331f002e93bcced0dcc62be340c6aa6d8bb87d35dc878fdfa755320d4'
-
+    # Exact wheel URLs and hashes are read from analysis-releases.json.
     # The two exact wheel hashes are the same pinned wheels exercised by FrameRudiments CI.
     # Install only PixelCue's visual-analysis imports; its GUI/faces are unrelated.
     Invoke-Checked $uv @('pip','install','--python',$analysisPython,
@@ -264,7 +257,8 @@ if (-not $SkipSetup) {
         'safetensors>=0.4','sentencepiece>=0.2','protobuf>=5','av>=12',
         'py7zr>=0.22','rarfile>=4.2')
     if ($AllVLMs) { Invoke-Checked $uv @('pip','install','--python',$analysisPython,'bitsandbytes>=0.45') }
-    Invoke-Checked $uv @('pip','install','--python',$analysisPython,'--no-deps',$pixel,$prism)
+    Invoke-Checked $renderPython @((Join-Path $PSScriptRoot 'install_analysis_releases.py'),
+        '--python',$analysisPython,'--uv',$uv,'--with-sequence')
 
     # All three default neural adapters have pinned, project-local checkpoints.
     $modelProfiles = @('clip','dinov2','blip')
