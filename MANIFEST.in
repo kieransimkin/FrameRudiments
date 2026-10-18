@@ -1,10 +1,11 @@
-include README.md LICENSE AGENTS.md
+include README.md LICENSE AGENTS.md RELEASE_NOTES.md analysis-releases.json
 recursive-include docs *.md *.png *.svg *.json *.mp4
 recursive-include tests *.py
 
 recursive-include integration *.py
 
 prune models
+prune visualiser-analysis
 
-recursive-include scripts *.py
+recursive-include scripts *.py *.ps1
 recursive-include src/framerudiments/sprite_assets *.png *.json
