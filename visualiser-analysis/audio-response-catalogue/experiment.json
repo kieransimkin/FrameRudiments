@@ -1,0 +1,33 @@
+{
+  "audio_sha256": null,
+  "audio_start": 0,
+  "capture_fps": 15,
+  "catalogue_sha256": "69ff55df1c99a2a6cd46a8dc5629745d1d719711df900dbb123898497f7df72a",
+  "edge": 384,
+  "host_code": {
+    "scripts/controlled_preset_analysis.py": "e2172fd44476316a6ed816cd5f915a3f90a73ea1d07119ed87353c365e890e13",
+    "src/framerudiments/audio_probes.py": "8f8771d48b365e2bc8d7f9ad0b63e8abf8895e0a863c3839d0d95a27da8ccf74",
+    "src/framerudiments/controlled_profiling.py": "a5ea079d725b88343aba9d5803ad4f00fc8858b7ed3d613be0432bfe6f426630",
+    "src/framerudiments/projectm_backend.py": "9d30ee1c7e72e459842a5a3b03ca29cf4b3dd686d7e93ae23563e7ef84afc3c4",
+    "src/framerudiments/visualiser_assets/butterchurn-page.js": "9df1b1b1ced1b194bcb0395d72b6d3edf1027067feac20f4c7a9c14fbdf946b0",
+    "src/framerudiments/visualiser_assets/butterchurn-worker.mjs": "d6438f55d8550a61955271998311efc52f060122953b1ad5481a96dee67f2ac6",
+    "src/framerudiments/visualisers.py": "23745f247aff758101bc7851fb0adffddb9c2cc4d8090b6173a83ccc65fb0dae"
+  },
+  "input_roles": [
+    "engine-only"
+  ],
+  "profiles": [
+    "silence",
+    "bass-pulses",
+    "mid-pulses",
+    "treble-pulses",
+    "rhythmic-mix"
+  ],
+  "protocol": "framerudiments.audio-interventions/1",
+  "render_fps": 60,
+  "runtime": {
+    "FRAMERUDIMENTS_BROWSER": "6ee912e7c8f37aa1dad65c977c035676b4d238868c97ef9f897fd742dffe3810",
+    "FRAMERUDIMENTS_PROJECTM_LIBRARY": "945468e818e9db7696b313ed7e820450ffa6f0b83518b6bdbdd6557240082b29"
+  },
+  "trials": 3
+}
