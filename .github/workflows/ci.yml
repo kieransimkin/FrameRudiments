@@ -110,13 +110,14 @@ jobs:
           set -euo pipefail
           xvfb-run -a python -X faulthandler -m pytest -vv -s \
             integration/test_music_spatial_gpu.py \
+            integration/test_fire_volume_gpu.py \
             --junitxml=gpu-mesh-results.xml 2>&1 | tee gpu-mesh-console.log
       - name: Butterchurn, projectM, profiling and encoded QA (fresh GLX session)
         shell: bash
         run: |
           set -euo pipefail
           xvfb-run -a python -X faulthandler -m pytest -vv -s \
-            integration --ignore=integration/test_music_spatial_gpu.py \
+            integration --ignore=integration/test_music_spatial_gpu.py --ignore=integration/test_fire_volume_gpu.py \
             --junitxml=gpu-results.xml 2>&1 | tee gpu-console.log
       - name: Verify both GPU suites ran without skipped tests
         run: |

@@ -52,6 +52,7 @@ PARAMETERS = {
     "saturation": (0, 3, 1),
     "brightness": (0, 3, 1),
     "rotation": (-360, 360, 0),
+    "rotation_randomness": (0, 360, 360),
     "spin": (-1440, 1440, 0),  # degrees per second
     "stretch": (0.2, 8, 1),
     "softness": (0, 1, 0.65),
@@ -317,6 +318,7 @@ class ParticleEmitter:
                 "emission",
                 "opacity",
                 "particle_sprite",
+                "particle_atlas",
                 "start_seconds",
                 "end_seconds",
             },
@@ -483,6 +485,14 @@ class ParticleEmitter:
         if self.mode != "cue" and self.base["rate"] / project.fps > MAX_BIRTHS_PER_FRAME:
             raise ValueError("Configured continuous particle birth rate exceeds per-frame cap")
         self.sprite_ref = project.ref(cfg["particle_sprite"]) if "particle_sprite" in cfg else None
+        if "particle_atlas" in cfg and self.sprite_ref:
+            raise ValueError("Choose particle_sprite or particle_atlas, not both")
+        self.sprite_atlas = None
+        if "particle_atlas" in cfg:
+            from .fire_assets import FireAtlas
+
+            self.sprite_atlas = FireAtlas(cfg["particle_atlas"], project.base)
+            project.inputs.extend([self.sprite_atlas.reference, self.sprite_atlas.image_ref])
         self.sprite_image = None
         if self.sprite_ref:
             with Image.open(self.sprite_ref["path"]) as asset:
@@ -500,6 +510,7 @@ class ParticleEmitter:
             scheduled_bursts=len(self.bursts),
             source_policy="exact source cue times mapped to each excerpt/repeat cycle",
             sprite=self.sprite_ref,
+            sprite_atlas=self.sprite_atlas.evidence if self.sprite_atlas else None,
             seed=self.base["seed"],
             modulation=self.mods.evidence,
             bounds=self.bounds,
@@ -532,6 +543,10 @@ class ParticleEmitter:
                     )
                 )
         return result
+
+    def close(self):
+        if self.sprite_atlas is not None:
+            self.sprite_atlas.close()
 
     @lru_cache(maxsize=2048)
     def _parameters_at(self, frame):
@@ -616,7 +631,7 @@ class ParticleEmitter:
             )
         grow = max(0.15, 1 + age * style["size_growth"])
         size = max(1, min(256, round(style["size"] * grow * (0.7 + rng.random() * 0.6))))
-        angle = style["rotation"] + style["spin"] * age + rng.random() * 360
+        angle = style["rotation"] + style["spin"] * age + rng.random() * style["rotation_randomness"]
         rgb = style["colour"] if rng.random() >= 0.25 else style["secondary_colour"]
         from colorsys import rgb_to_hsv, hsv_to_rgb
 
@@ -625,7 +640,8 @@ class ParticleEmitter:
         s = min(1, s * style["saturation"])
         v = min(1, v * style["brightness"])
         colour = tuple(round(c * 255) for c in hsv_to_rgb(h, s, v))
-        return (px, py, size, angle, max(0, min(1, alpha)), colour)
+        result = (px, py, size, angle, max(0, min(1, alpha)), colour)
+        return (*result, age) if self.sprite_atlas is not None else result
 
     @staticmethod
     def _composite(canvas, tile, pos, *, additive=False):
@@ -649,7 +665,7 @@ class ParticleEmitter:
         canvas.paste(output, (x0, y0))
 
     def _stamp(self, image, info, style):
-        x, y, size, angle, alpha, rgb = info
+        x, y, size, angle, alpha, rgb, *extra = info
         if alpha <= 0:
             return
         cx = round(x * (self.size[0] - 1))
@@ -662,8 +678,13 @@ class ParticleEmitter:
         mask = _shape_mask(shape, diameter, softness)
         if height != diameter:
             mask = mask.resize((width, height), Image.Resampling.LANCZOS)
-        if self.sprite_image is not None:
-            tile = self.sprite_image.resize((width, height), Image.Resampling.LANCZOS)
+        sprite = (
+            self.sprite_atlas.frame_at(extra[0], repeat=False)
+            if self.sprite_atlas is not None
+            else self.sprite_image
+        )
+        if sprite is not None:
+            tile = sprite.resize((width, height), Image.Resampling.LANCZOS)
             if angle and self.kind not in {"smoke", "dust"}:
                 tile = tile.rotate(angle, resample=Image.Resampling.BICUBIC, expand=False)
             tile = tile.copy()

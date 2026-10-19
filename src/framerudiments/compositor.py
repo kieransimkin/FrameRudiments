@@ -10,6 +10,7 @@ from .effects import alpha_scaled, transformed_bounds, within, directional_trail
 from .io import fields, number, integer, rectangle
 from .rudiment_renderers import RudimentLayer, default_renderers
 from .particle_engine import ParticleEmitter
+from .natural_materials import NaturalMaterialLayer
 from .motion import Motion
 from .timeline import EventTrack
 from .word_timing import WordTrack
@@ -312,6 +313,8 @@ class Compositor:
             if cfg.get("type") == "rudiment"
             else ParticleEmitter(project, cfg, self.context)
             if cfg.get("type") == "emitter"
+            else NaturalMaterialLayer(project, cfg, self.context)
+            if cfg.get("type") == "material"
             else Sprite(project, cfg)
             for cfg in project.data.get("layers", [])
         ]
@@ -642,7 +645,8 @@ class Compositor:
         reports = {
             layer.id: layer.frame_report
             for layer in self.layers
-            if isinstance(layer, (RudimentLayer, ParticleEmitter)) and layer.frame_report is not None
+            if isinstance(layer, (RudimentLayer, ParticleEmitter, NaturalMaterialLayer))
+            and layer.frame_report is not None
         }
         if self.word_indicator and self.word_indicator.frame_report is not None:
             reports["word-indicator"] = self.word_indicator.frame_report
@@ -651,6 +655,11 @@ class Compositor:
     def post_effect_reports(self):
         return dict(self.post_pipeline.last_report) if self.post_pipeline.enabled else {}
 
+    def close(self):
+        for layer in self.layers:
+            if isinstance(layer, (NaturalMaterialLayer,ParticleEmitter)):
+                layer.close()
+
     def evidence(self):
         return dict(
             transformed_alpha_extents=self.extents,
@@ -658,6 +667,15 @@ class Compositor:
             render_quality=self.output_quality.evidence,
             motions={x.id: x.motion.evidence for x in [*self.layers, *self.lyric_art.values()] if x.motion},
             rudiment_renderers={x.id: x.evidence for x in self.layers if isinstance(x, RudimentLayer)},
+            **(
+                {
+                    "natural_materials": {
+                        x.id: x.evidence for x in self.layers if isinstance(x, NaturalMaterialLayer)
+                    }
+                }
+                if any(isinstance(x, NaturalMaterialLayer) for x in self.layers)
+                else {}
+            ),
             **(
                 {"emitters": {x.id: x.evidence for x in self.layers if isinstance(x, ParticleEmitter)}}
                 if any(isinstance(x, ParticleEmitter) for x in self.layers)

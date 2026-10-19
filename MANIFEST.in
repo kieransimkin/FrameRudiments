@@ -9,3 +9,4 @@ prune visualiser-analysis
 
 recursive-include scripts *.py *.ps1
 recursive-include src/framerudiments/sprite_assets *.png *.json
+recursive-include src/framerudiments/fire_assets *.png *.json *.md

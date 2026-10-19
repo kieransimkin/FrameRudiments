@@ -1,3 +1,18 @@
+# FrameRudiments 0.4.2
+
+- Five selectable fire routes: hash-pinned CC0 filmed flame, animated flame
+  sprites through the native ParticleEmitter, a bounded 2D buoyant fluid solver,
+  original GPU volume ray marching, and actual Blender/Mantaflow bake/import.
+  Original noise fire is explicitly stylized; ice adds fractures and frost.
+- Bounded `type: "material"` layers, source-time progress, ordinary routing,
+  masks/keyframes and per-frame method/settings evidence.
+- Optional `[materials]` / `[gpu]` extras, reviewed compact atlases and provenance;
+  no model weights or render-time downloads. Original RGBA artwork is preserved at zero burn/freeze; completed
+  burn is transparent and freezing preserves source alpha.
+- Encoded QA checkpoint extraction now uses bounded 32-term batches; full
+  lyric/cue ledgers retain every checkpoint without a giant select expression.
+- [Actual synthetic still/video, API, settings and limitations](docs/natural-materials.md).
+
 # FrameRudiments 0.4.1
 
 - Native `rangoli` Bezier-petal renderer with independent scale, rotation and

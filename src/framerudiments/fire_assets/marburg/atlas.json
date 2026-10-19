@@ -1,0 +1,47 @@
+{
+  "schema": "framerudiments.fire-atlas.v1",
+  "image": {
+    "path": "flames.png",
+    "sha256": "6b26c8ca150005349f3bff6d5183a0604fedb8f5c15544d369bec6e4e5614a99"
+  },
+  "columns": 12,
+  "rows": 20,
+  "frames": 240,
+  "fps": "60",
+  "provenance": {
+    "method": "filmed flame / black-screen emission key",
+    "source": {
+      "sha256": "e666e99e06f19679dd359dd4231d56507987642bf18b8546d2adfb5872eb2573",
+      "bytes": 104380833
+    },
+    "source_url": "https://www.uni-marburg.de/en/fb12/research-groups/grafikmultimedia/research/studio",
+    "licence": "CC0 1.0; university-recorded real gas burner, original primary page verified 2026-10-19",
+    "source_probe": {
+      "width": 1920,
+      "height": 1080,
+      "avg_frame_rate": "60000/1001",
+      "time_base": "1/180000",
+      "duration": "17.017000"
+    },
+    "source_start_seconds": 2.0,
+    "duration_seconds": 4.0,
+    "output_fps": 60,
+    "crop": [
+      600,
+      60,
+      985,
+      830
+    ],
+    "rotation": -50.0,
+    "black_level": 0.055,
+    "key": "sRGB approximate emission alpha/unpremultiplication",
+    "audio": "discarded; never part of song soundtrack",
+    "temporal_mapping": "Explicit FFmpeg fps resample; not original source FPS",
+    "stable_alpha_crop": [
+      36,
+      75,
+      595,
+      830
+    ]
+  }
+}

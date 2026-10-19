@@ -33,6 +33,52 @@ def checkpoints(project):
     )
 
 
+def extract_encoded_checkpoints(ffmpeg, video, directory, frames, *, batch_size=32):
+    """Bound FFmpeg expression complexity; preserve every exact encoded frame.
+
+    Long lyric/cue ledgers can exceed the select parser's expression limit.
+    Do not weaken QA or label that parser error as physical RAM exhaustion.
+    """
+    if type(batch_size) is not int or not 1 <= batch_size <= 32:
+        raise ValueError("Checkpoint batch size must be between 1 and 32")
+    selected = sorted(set(frames))
+    if any(type(n) is not int or n < 0 for n in selected):
+        raise ValueError("Checkpoint frames must be nonnegative integers")
+    directory = Path(directory)
+    for start in range(0, len(selected), batch_size):
+        batch = selected[start : start + batch_size]
+        selection = "+".join(f"eq(n\\,{n})" for n in batch)
+        subprocess.run(
+            [
+                str(ffmpeg),
+                "-n",
+                "-v",
+                "error",
+                "-threads",
+                "1",
+                "-i",
+                str(video),
+                "-filter_threads",
+                "1",
+                "-vf",
+                f"select={selection}",
+                "-fps_mode",
+                "passthrough",
+                "-threads",
+                "1",
+                "-start_number",
+                str(start),
+                "-frames:v",
+                str(len(batch)),
+                str(directory / "checkpoint-%08d.png"),
+            ],
+            check=True,
+            capture_output=True,
+        )
+        for i, frame in enumerate(batch, start):
+            (directory / f"checkpoint-{i:08}.png").rename(directory / f"encoded-{frame:08}.png")
+
+
 def _prepare(project, output, ffmpeg, ffprobe, scene, renderers):
     project = Project.load(project) if not isinstance(project, Project) else project
     ffmpeg, ffprobe = encoding.binaries(ffmpeg, ffprobe)
@@ -91,6 +137,7 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
                     image.save(out / "qa" / f"source-{n:08}.png")
         if effects:
             effects.close()
+        compositor.close()
         p.verify_inputs()
         result = dict(
             p.summary(),
@@ -107,6 +154,7 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
     finally:
         if effects:
             effects.close()
+        compositor.close()
 
 
 def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=None, preset="fast", crf=20):
@@ -151,6 +199,7 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
                 raise RuntimeError(f"FFmpeg failed; see {out / 'encode.log'}")
         if effects:
             effects.close()
+        compositor.close()
         p.verify_inputs()
         verified = encoding.verify(candidate, p, ffmpeg, ffprobe)
         source_audio = encoding.probe(p.audio_ref["path"], ffprobe)
@@ -162,30 +211,7 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
             raise ValueError("Encoder changed channel count")
         candidate.rename(final)
         # Extract from the actual encoded file, independently of the source Pillow frames.
-        selection = "+".join(f"eq(n\\,{n})" for n in sorted(selected))
-        subprocess.run(
-            [
-                ffmpeg,
-                "-n",
-                "-v",
-                "error",
-                "-i",
-                str(final),
-                "-vf",
-                f"select={selection}",
-                "-fps_mode",
-                "passthrough",
-                "-start_number",
-                "0",
-                "-frames:v",
-                str(len(selected)),
-                str(out / "qa" / "checkpoint-%08d.png"),
-            ],
-            check=True,
-            capture_output=True,
-        )
-        for i, n in enumerate(sorted(selected)):
-            (out / "qa" / f"checkpoint-{i:08}.png").rename(out / "qa" / f"encoded-{n:08}.png")
+        extract_encoded_checkpoints(ffmpeg, final, out / "qa", selected)
         with Image.open(out / "qa" / "encoded-00000000.png") as first:
             first.save(out / "poster.png")
             thumbnail = first.copy()
@@ -224,6 +250,7 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
     finally:
         if effects:
             effects.close()
+        compositor.close()
 
 
 def _analysis(handle, compositor, context):

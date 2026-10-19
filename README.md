@@ -1,5 +1,18 @@
 # FrameRudiments
 
+## Five fire methods and ice
+
+Version 0.4.2 adds filmed flame, animated flame sprites, a bounded 2D fluid
+solver, GPU volumetric rays, Blender/Mantaflow bake playback, scorched artwork burn-away,
+fractured ice and frost. Use ordinary material layers or the reusable
+`FireRenderer` and `NaturalMaterial` APIs. Source clocks, clean text, transparent edges and
+seek-safe rendering remain explicit. See [natural materials](docs/natural-materials.md).
+
+![Actual synthetic fire and ice render](docs/media/natural-materials.png)
+
+[Play the actual four-second demonstration](docs/media/natural-materials.mp4).
+Synthetic tone and labelled paper effects; no private campaign media or models.
+
 ## Complete preset portraits and contact sheets (development)
 
 The hybrid workflow combines reference-free style, colour, shape and movement

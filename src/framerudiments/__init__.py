@@ -1,9 +1,11 @@
 """Offline frame composition on a traceable musical clock."""
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 from .project import Project
 from .render import render, preflight
+from .natural_materials import NaturalMaterial
+from .fire_renderer import FireRenderer
 
 from .rudiment_renderers import (
     RendererRegistry,
@@ -23,4 +25,6 @@ __all__ = [
     "RudimentFrame",
     "RudimentSample",
     "default_renderers",
+    "NaturalMaterial",
+    "FireRenderer",
 ]
