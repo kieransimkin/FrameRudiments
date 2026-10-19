@@ -280,7 +280,11 @@ MUSIC_SPATIAL_VIEWS = tuple(
     )
     for shape in ("torus", "sphere", "terrain")
 )
+RANGOLI_VIEWS = (ViewSpec("rangoli", "motion",
+                        "Radial cubic Bezier petals with independent scale, spin and lift axes",
+                        "Native source-clocked geometric petal rings"),)
 ALL_VIEWS = (SPECTRAL_VIEWS + MOTION_VIEWS + CIRCULAR_VIEWS + EFFECT_VIEWS
-             + SPRITE_VIEWS + SPATIAL_VIEWS + SOLID_SPATIAL_VIEWS + MUSIC_SPATIAL_VIEWS)
+             + SPRITE_VIEWS + SPATIAL_VIEWS + SOLID_SPATIAL_VIEWS + MUSIC_SPATIAL_VIEWS
+             + RANGOLI_VIEWS)
 BY_NAME = {v.name: v for v in ALL_VIEWS}
 assert len(BY_NAME) == len(ALL_VIEWS)

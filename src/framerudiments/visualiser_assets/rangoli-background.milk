@@ -1,0 +1,26 @@
+[preset00]
+fDecay=0.965
+fGammaAdj=1
+fWaveAlpha=0.26
+fWaveScale=0.8
+fWaveSmoothing=0.8
+fWaveR=0.65
+fWaveG=0.28
+fWaveB=0.85
+fWaveX=0.5
+fWaveY=0.5
+nWaveMode=0
+bAdditiveWaves=1
+bWaveDots=0
+bWaveThick=0
+mv_a=0
+ob_size=0
+ib_size=0
+warp=0.12
+zoom=1.006
+rot=0.004
+fVideoEchoAlpha=0.08
+fVideoEchoZoom=1.018
+nVideoEchoOrientation=0
+bTexWrap=1
+per_frame_1=rot=0.004+0.003*sin(time*0.23); zoom=1.004+0.002*min(bass,3);
