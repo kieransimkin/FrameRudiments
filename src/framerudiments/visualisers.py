@@ -3,13 +3,14 @@
 from array import array
 import base64
 import json
+import math
 import mmap
 import os
 from pathlib import Path
 import shutil
 import subprocess
 
-from PIL import Image
+from PIL import Image, ImageColor, ImageOps
 
 from .encoding import audio_filters
 from .io import fields, integer, number, sha256
@@ -31,6 +32,57 @@ def _preset_ref(project, engine, preset, *, trusted=False):
     return project.ref(preset)
 
 
+def _colour(value, label):
+    if not isinstance(value, str):
+        raise ValueError(f"{label} must be a CSS colour string")
+    try:
+        rgb = ImageColor.getrgb(value)
+    except ValueError as exc:
+        raise ValueError(f"{label} must be a CSS colour string") from exc
+    if len(rgb) != 3:
+        raise ValueError(f"{label} must not include alpha")
+    return "#" + "".join(f"{channel:02x}" for channel in rgb)
+
+
+def _palette_grade(config, label):
+    if config is None:
+        return None
+    if not isinstance(config, dict):
+        raise ValueError(f"{label} must be an object")
+    fields(config, {"stops", "amount"}, label)
+    stops = config.get("stops")
+    if not isinstance(stops, list) or not 2 <= len(stops) <= 16:
+        raise ValueError(f"{label}.stops must contain 2 to 16 CSS colours")
+    return dict(
+        stops=[_colour(value, f"{label}.stops[{index}]") for index, value in enumerate(stops)],
+        amount=number(config.get("amount", 1), f"{label}.amount", minimum=0, maximum=1),
+    )
+
+
+def apply_palette_grade(image, config):
+    """Map output luminance through an ordered palette while preserving alpha."""
+    if config is None or config["amount"] == 0:
+        return image
+    source = image.convert("RGBA")
+    alpha = source.getchannel("A")
+    rgb = source.convert("RGB")
+    grey = ImageOps.grayscale(rgb)
+    colours = [ImageColor.getrgb(value) for value in config["stops"]]
+    tables = [[], [], []]
+    for value in range(256):
+        position = value * (len(colours) - 1) / 255
+        lower = min(math.floor(position), len(colours) - 2)
+        fraction = position - lower
+        for channel in range(3):
+            tables[channel].append(
+                round(colours[lower][channel] * (1 - fraction) + colours[lower + 1][channel] * fraction)
+            )
+    graded = Image.merge("RGB", tuple(grey.point(table) for table in tables))
+    result = Image.blend(rgb, graded, config["amount"]).convert("RGBA")
+    result.putalpha(alpha)
+    return result
+
+
 def effect_specs(project):
     configs = project.data.get("effects", [])
     if not isinstance(configs, list) or len(configs) > 8:
@@ -47,6 +99,9 @@ def effect_specs(project):
                 "seed",
                 "trusted_preset",
                 "preset_timeline",
+                "mesh_width",
+                "mesh_height",
+                "output_palette_grade",
             },
             "full-frame effect",
         )
@@ -56,6 +111,8 @@ def effect_specs(project):
         engine = cfg.get("engine")
         if engine not in {"butterchurn", "projectm"}:
             raise ValueError("Full-frame engine must be butterchurn or projectm")
+        if engine != "butterchurn" and ("mesh_width" in cfg or "mesh_height" in cfg):
+            raise ValueError("mesh_width and mesh_height require Butterchurn")
         ref = _preset_ref(
             project,
             engine,
@@ -108,6 +165,15 @@ def effect_specs(project):
                 input_mix=number(cfg.get("input_mix", 0.65), "input mix", minimum=0.001, maximum=1),
                 seed=integer(cfg.get("seed", 0), "visualiser seed", maximum=2**32 - 1),
                 preset_timeline=resolved_timeline,
+                mesh_width=integer(
+                    cfg.get("mesh_width", 64), "Butterchurn mesh width", minimum=16, maximum=256
+                ),
+                mesh_height=integer(
+                    cfg.get("mesh_height", 48), "Butterchurn mesh height", minimum=12, maximum=256
+                ),
+                output_palette_grade=_palette_grade(
+                    cfg.get("output_palette_grade"), "full-frame effect.output_palette_grade"
+                ),
             )
         )
     return specs
@@ -174,7 +240,7 @@ class EffectAudio:
 
 
 class ButterchurnBackend:
-    def __init__(self, size, fps, preset, mix, seed, work):
+    def __init__(self, size, fps, preset, mix, seed, work, *, mesh_width=64, mesh_height=48):
         runtime = Path(os.environ.get("FRAMERUDIMENTS_BUTTERCHURN_RUNTIME", ""))
         browser = os.environ.get("FRAMERUDIMENTS_BROWSER")
         node = os.environ.get("FRAMERUDIMENTS_NODE") or shutil.which("node")
@@ -216,6 +282,8 @@ class ButterchurnBackend:
                     preset=json.loads(Path(preset).read_text(encoding="utf-8")),
                     mix=mix,
                     seed=seed,
+                    mesh_width=mesh_width,
+                    mesh_height=mesh_height,
                     work=str(Path(work).resolve()),
                     profile_root=str(profile_root),
                 )
@@ -323,6 +391,7 @@ class EffectChain:
             if type(opacity) not in (int, float) or not 0 <= opacity <= 1:
                 raise ValueError("Stage injection opacity must be between zero and one")
             self.stage_injections.setdefault(before, []).append((tuple(names), opacity))
+        default_factories = factories is None
         if factories is None:
             from .projectm_backend import ProjectMBackend
 
@@ -330,14 +399,23 @@ class EffectChain:
         try:
             self.audio = EffectAudio(project, ffmpeg, output)
             for spec in specs:
-                backend = factories[spec["engine"]](
+                backend_args = [
                     (project.width, project.height),
                     project.fps,
                     spec["preset"]["path"],
                     spec["input_mix"],
                     spec["seed"],
                     output,
+                ]
+                backend_kwargs = (
+                    dict(
+                        mesh_width=spec.get("mesh_width", 64),
+                        mesh_height=spec.get("mesh_height", 48),
+                    )
+                    if default_factories and spec["engine"] == "butterchurn"
+                    else {}
                 )
+                backend = factories[spec["engine"]](*backend_args, **backend_kwargs)
                 self.backends.append(backend)
         except BaseException:
             self.close()
@@ -395,6 +473,7 @@ class EffectChain:
             image = backend.process(image, context, pcm)
             if image.size != (self.audio.project.width, self.audio.project.height) or image.mode != "RGBA":
                 raise ValueError("Visualiser must return frame-sized RGBA")
+            image = apply_palette_grade(image, self.specs[index].get("output_palette_grade"))
         self.next_frame += 1
         if overlay is not None:
             final = image.convert("RGBA")

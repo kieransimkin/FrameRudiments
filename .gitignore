@@ -13,6 +13,8 @@ dist/
 !docs/media/rangoli.mp4
 !docs/media/natural-materials.mp4
 local/
+.tmp/
+.local-app-data/
 
 # Project-owned model weights and framework caches
 models/

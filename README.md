@@ -1,5 +1,17 @@
 # FrameRudiments
 
+## Palette-controlled high-detail feedback
+
+Version 0.4.4 adds optional Butterchurn mesh dimensions and a deterministic
+multi-stop palette grade after each full-frame visualiser stage. This lets a
+1080p visualiser retain more spatial detail and conform feedback colours to a
+campaign palette while clean routed overlays keep their authored appearance.
+See [full-frame visualisers](docs/visualisers.md).
+
+![Generated test illustration comparing ungraded and palette-graded output](docs/media/palette-grade-comparison.png)
+
+Generated test illustration; no private campaign media is included.
+
 ## Five fire methods and ice
 
 Version 0.4.3 adds evidence-recorded three-stop fire palettes, an optional

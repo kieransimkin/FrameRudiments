@@ -266,6 +266,59 @@ def test_two_ordered_engine_stages_receive_routed_alpha_then_clean_overlay(monke
         chain.close()
 
 
+def test_output_palette_grade_precedes_clean_overlay(monkeypatch, tmp_path):
+    import framerudiments.visualisers as visualisers
+
+    class Audio:
+        def __init__(self, *args):
+            self.project = args[0]
+            self.evidence = {"test": True}
+
+        def at(self, frame):
+            return [0.0] * 2048
+
+        def close(self):
+            pass
+
+    class Backend:
+        def __init__(self, *args):
+            self.evidence = {"test_engine": True}
+
+        def process(self, image, ctx, pcm):
+            return Image.new("RGBA", SIZE, "#ffffff")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(visualisers, "EffectAudio", Audio)
+    project = SimpleNamespace(width=SIZE[0], height=SIZE[1], fps=60)
+    router = VisualiserLayerRouting(
+        {"default": {"feed": "never"}, "elements": {"caption": {"overlay": True}}},
+        ["caption"],
+        SIZE,
+    )
+    specs = [
+        dict(
+            engine="butterchurn",
+            id="graded",
+            preset={"path": "mock"},
+            input_mix=0.6,
+            seed=1,
+            output_palette_grade={"stops": ["#100b19", "#c49986"], "amount": 1},
+        )
+    ]
+    chain = visualisers.EffectChain(
+        project, specs, None, tmp_path, factories={"butterchurn": Backend}, routing=router
+    )
+    try:
+        label = block("#00ff00", (65, 8, 110, 30))
+        result = chain.process(Image.new("RGB", SIZE), context(0), isolated_layers=[("caption", label)])
+        assert result.getpixel((2, 2)) == (196, 153, 134)
+        assert result.getpixel((70, 12)) == (0, 255, 0)
+    finally:
+        chain.close()
+
+
 def test_full_compositor_exposes_isolated_parts_with_opt_in(tmp_path):
     import os
     from pathlib import Path

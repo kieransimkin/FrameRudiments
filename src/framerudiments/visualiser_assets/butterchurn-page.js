@@ -8,7 +8,7 @@ async function initialise(config) {
   const engine = window.butterchurn.default || window.butterchurn;
   const viz = engine.createVisualizer(null, canvas, {
     width: config.width, height: config.height, pixelRatio: 1, textureRatio: 1,
-    meshWidth: 64, meshHeight: 48,
+    meshWidth: config.mesh_width, meshHeight: config.mesh_height,
   });
   const r = viz.renderer, gl = r.gl;
   for (const name of ['targetFrameBuffer', 'targetTexture', 'calcTimeAndFPS']) {
@@ -114,5 +114,6 @@ async function initialise(config) {
   return {engine: 'butterchurn', version: '2.6.7', opengl: gl.getParameter(gl.VERSION),
     renderer: info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
     input: 'full composed RGBA injected into feedback before real MilkDrop warp/composite',
-    clock: 'pinned calcTimeAndFPS bridge: output frame / fps; fixed fps', seed: config.seed};
+    clock: 'pinned calcTimeAndFPS bridge: output frame / fps; fixed fps', seed: config.seed,
+    mesh_width: config.mesh_width, mesh_height: config.mesh_height};
 }

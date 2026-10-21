@@ -14,6 +14,24 @@
   evidence behaviour. Private campaign artwork and audio remain outside the
   distribution.
 
+## High-detail, palette-controlled visualiser output
+
+- Butterchurn stages accept bounded `mesh_width` and `mesh_height` values. The
+  existing 64×48 mesh remains the default; projects can request additional
+  spatial detail without changing their encoded dimensions or frame rate.
+- Any Butterchurn or projectM stage can apply `output_palette_grade` after the
+  engine output and before the next stage or clean routing overlay. Two to
+  sixteen ordered CSS colours define a deterministic luminance palette; alpha,
+  PCM, feedback state and the source clock remain unchanged.
+- The exact mesh and grade configuration is retained in plan and manifest
+  evidence. Focused validation covers schema bounds, deterministic pixels,
+  alpha preservation, stage order and routed overlays.
+
+![Generated comparison of ungraded and palette-graded synthetic output](docs/media/palette-grade-comparison.png)
+
+Generated test illustration; no private campaign media. A video is omitted
+because this stateless grade adds no temporal behaviour to demonstrate.
+
 # FrameRudiments 0.4.4
 
 - Spectrum views accept a validated `style.grid` boolean. Set it to `false` to remove the three fixed dB guide lines while retaining calibrated bars and moving peak holds; label visibility remains independent.

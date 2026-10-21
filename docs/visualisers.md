@@ -22,6 +22,41 @@ Original paired presets are `feedback` (audio-reactive swirl/echo),
 distortion of the frame's texture coordinates). They are examples, not a claim
 that two independent MilkDrop implementations produce identical pixels.
 
+Butterchurn stages may set `mesh_width` (16–256) and `mesh_height` (12–256).
+The default remains 64×48 for pixel compatibility. A denser mesh such as
+128×72 gives the warp field more spatial detail at 1920×1080, but it does not
+change the encoded dimensions or frame rate and can increase GPU cost.
+
+Each stage may also apply a deterministic multi-stop `output_palette_grade`
+after its visualiser output and before the next stage or the clean routing
+overlay:
+
+```json
+{
+  "id": "clay-feedback",
+  "engine": "butterchurn",
+  "preset": "feedback",
+  "mesh_width": 128,
+  "mesh_height": 72,
+  "output_palette_grade": {
+    "stops": ["#100b19", "#171b37", "#572417", "#8a3c25", "#c49986"],
+    "amount": 0.85
+  }
+}
+```
+
+The grade maps output luminance through 2–16 ordered CSS colours in
+sRGB, blends that result with the original by `amount` (0–1), and preserves
+alpha. It does not change PCM, motion, feedback state or the source clock.
+When `visualiser_routing` keeps lyrics or sprites as a clean overlay, that
+overlay is composited after the grade and retains its authored colours.
+
+![Generated test illustration comparing ungraded and multi-stop graded output](media/palette-grade-comparison.png)
+
+Generated test illustration; it demonstrates the colour transform rather than
+evidence from a private campaign. A video is omitted because the grade is a
+stateless per-frame colour operation with no temporal behaviour.
+
 ## Per-element feed and clean overlay routing
 
 FrameRudiments supports an optional project-level `visualiser_routing` object.
