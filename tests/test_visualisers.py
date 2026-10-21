@@ -9,7 +9,7 @@ from framerudiments.compositor import Compositor
 from framerudiments.demo import create_demo
 from framerudiments.io import read_json, write_json
 from framerudiments.project import Project
-from framerudiments.visualisers import EffectAudio, EffectChain, effect_specs
+from framerudiments.visualisers import EffectAudio, EffectChain, apply_palette_grade, effect_specs
 
 
 def project(tmp_path):
@@ -36,6 +36,9 @@ def project(tmp_path):
         [dict(id="x", engine="butterchurn", seed=True)],
         [dict(id="x", engine="projectm", preset="unknown")],
         [dict(id="x", engine="projectm", preset=dict(path="external.milk", sha256="0" * 64))],
+        [dict(id="x", engine="projectm", mesh_width=128)],
+        [dict(id="x", engine="butterchurn", mesh_width=15)],
+        [dict(id="x", engine="butterchurn", output_palette_grade={"stops": ["bad", "#fff"]})],
         [dict(id="x", engine="projectm"), dict(id="x", engine="butterchurn")],
     ],
 )
@@ -56,6 +59,38 @@ def test_presets_hashed_and_optional_runtime_not_loaded_for_plan(tmp_path):
     assert [item["engine"] for item in compositor.effect_specs] == ["projectm", "butterchurn"]
     assert all(item["preset"] in p.inputs for item in compositor.effect_specs)
     p.verify_inputs()
+
+
+def test_palette_grade_maps_luminance_to_ordered_stops_and_preserves_alpha():
+    image = Image.new("RGBA", (3, 1))
+    image.putdata([(0, 0, 0, 17), (128, 128, 128, 99), (255, 255, 255, 231)])
+    config = dict(stops=["#0b101c", "#a9633f", "#f2e3c6"], amount=1)
+    result = apply_palette_grade(image, config)
+    assert [result.getpixel((x, 0)) for x in range(3)] == [
+        (11, 16, 28, 17),
+        (169, 100, 64, 99),
+        (242, 227, 198, 231),
+    ]
+
+
+def test_effect_spec_retains_mesh_and_output_grade(tmp_path):
+    p = project(tmp_path)
+    p.data["effects"] = [
+        dict(
+            id="graded",
+            engine="butterchurn",
+            mesh_width=128,
+            mesh_height=72,
+            output_palette_grade=dict(
+                stops=["#100B19", "#171B37", "#572417", "#8A3C25", "#C49986"], amount=0.85
+            ),
+        )
+    ]
+    spec = effect_specs(p)[0]
+    assert (spec["mesh_width"], spec["mesh_height"]) == (128, 72)
+    assert spec["output_palette_grade"] == dict(
+        stops=["#100b19", "#171b37", "#572417", "#8a3c25", "#c49986"], amount=0.85
+    )
 
 
 def test_pcm_reuses_exact_trim_repeat_chain_and_causal_windows(tmp_path):
@@ -80,7 +115,7 @@ def test_chain_full_composition_order_sequential_contract_and_cleanup(tmp_path):
     calls = []
 
     class Fake:
-        def __init__(self, size, fps, preset, mix, seed, work):
+        def __init__(self, size, fps, preset, mix, seed, work, **kwargs):
             self.index = len(calls)
             calls.append(self)
             self.evidence = dict(engine="test")

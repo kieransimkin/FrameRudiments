@@ -23,7 +23,7 @@ the inputs are checked again before and after a render.
 | `layers` | Ordered sprite, legacy bar and modular rudiment layers described below. |
 | Native radial petals | Use `type: "rudiment", renderer: "rangoli"` with independent scale/spin/lift axes; see [rangoli configuration and actual demo](rangoli.md). |
 | `visualiser_routing` | Optional per-element GPU input/overlay policies. Feed continuously, only for first N native pips after visibility onset, or never; see [routing](visualiser-routing.md). |
-| `effects[].preset_timeline` | Optional ordered projectM preset changes at canonical source seconds, using the native soft transition and retaining one feedback instance. |
+| `effects` | Ordered Butterchurn/projectM stages. Butterchurn may set a denser `mesh_width`/`mesh_height`; any stage may set a multi-stop `output_palette_grade` applied before the next stage or clean routing overlay. projectM stages may use `preset_timeline` for ordered changes at canonical source seconds through the native soft transition on one retained feedback instance. See [visualisers](visualisers.md). |
 | `lyric_art` | `{items: [{text, asset}], placement: <sprite fields>, fallback: "text" or "error"}`. Exact text lookup preserves canonical lyric association. `error` requires every visible lyric to have an asset. |
 | `stemlab_loop` | `{file: <pinned loops report>, id: <accepted loop id>}`; imports native bounds/rate, verifies source SHA, rejects conflicting explicit audio values. Does not approve a seam. |
 
