@@ -10,7 +10,7 @@ from framerudiments.visualiser_routing import VisualiserLayerRouting
 SIZE = (120, 72)
 
 
-def context(frame, beat=None, lyric=None, cue=None):
+def context(frame, beat=None, lyric=None, cue=None, lyric_next=None, lyric_next_beat=None):
     return SimpleNamespace(
         frame=frame,
         output_seconds=frame / 60,
@@ -18,6 +18,8 @@ def context(frame, beat=None, lyric=None, cue=None):
         beat=frame / 8 if beat is None else beat,
         lyric=lyric,
         cue=cue,
+        lyric_next=lyric_next,
+        lyric_next_beat=lyric_next_beat,
     )
 
 
@@ -94,6 +96,58 @@ def test_retrigger_by_lyric_and_variable_source_pips():
     assert router.last_report["elements"]["caption"]["elapsed_pips"] == pytest.approx(0.2 * 64)
 
 
+def test_last_pips_feeds_only_before_a_real_lyric_gap():
+    router = VisualiserLayerRouting(
+        {
+            "elements": {
+                "caption": {
+                    "feed": {"mode": "last_pips", "duration_pips": 32},
+                    "overlay": True,
+                    "retrigger": "lyric",
+                }
+            }
+        },
+        ["caption"],
+        SIZE,
+    )
+    line = dict(cycle=0, source_order=0, frame=0, text="Light")
+    blank = dict(cycle=0, source_order=1, frame=3, text="")
+    samples = [(0, 0.0), (1, 0.49), (2, 0.75)]
+    results = []
+    for frame, beat in samples:
+        injected, overlay = router.route(
+            context(frame, beat=beat, lyric=line, lyric_next=blank, lyric_next_beat=1.0),
+            [("caption", block("#f7c63d"))],
+        )
+        results.append((bool(injected.getbbox()), bool(overlay.getbbox())))
+    assert results == [(False, True), (False, True), (True, True)]
+    assert router.last_report["elements"]["caption"]["remaining_pips"] == pytest.approx(16.0)
+    assert router.last_report["elements"]["caption"]["lyric_gap_exit"] is True
+
+
+def test_last_pips_does_not_feed_an_immediate_lyric_handoff():
+    router = VisualiserLayerRouting(
+        {
+            "elements": {
+                "caption": {
+                    "feed": {"mode": "last_pips", "duration_pips": 32},
+                    "retrigger": "lyric",
+                }
+            }
+        },
+        ["caption"],
+        SIZE,
+    )
+    line = dict(cycle=0, source_order=0, frame=0, text="First")
+    following = dict(cycle=0, source_order=2, frame=1, text="Second")
+    injected, _ = router.route(
+        context(0, beat=0.75, lyric=line, lyric_next=following, lyric_next_beat=1.0),
+        [("caption", block("#f7c63d"))],
+    )
+    assert not injected.getbbox()
+    assert router.last_report["elements"]["caption"]["lyric_gap_exit"] is False
+
+
 def test_ordered_overlay_alpha_blends_at_last_composite():
     router = VisualiserLayerRouting(
         {"default": {"feed": "never", "overlay": True}}, ["layer:base", "layer:top"], SIZE
@@ -112,6 +166,7 @@ def test_ordered_overlay_alpha_blends_at_last_composite():
         {"elements": {"layer:unknown": {"overlay": True}}},
         {"default": {"feed": {"mode": "first_pips"}}},
         {"default": {"feed": {"mode": "continuous", "duration_pips": 20}}},
+        {"default": {"feed": {"mode": "last_pips", "duration_pips": 20}}},
         {"elements": {"layer:x": {"overlay": 1}}},
         {"elements": {"layer:x": {"feed": {"mode": "first_pips", "duration_pips": -1}}}},
         {"elements": {"layer:x": {"retrigger": "every_frame"}}},

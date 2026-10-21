@@ -55,6 +55,7 @@ misspellings are errors rather than silent omissions.
 | --- | --- |
 | `continuous` | Inject this element on every output frame where it has visible alpha pixels |
 | `first_pips` | Inject from the first visible frame until `duration_pips` source-clock pips have elapsed, using the half-open interval `[appearance_pip, appearance_pip + duration_pips)` |
+| `last_pips` | With `retrigger: lyric`, inject the visible lyric element for the final `duration_pips` before the next effective lyric state becomes blank. A same-frame clear followed by a new nonblank line is an immediate handoff and does not trigger this window. |
 | `never` | No pixels from this element enter the first GPU stage; it can still be overlaid |
 
 `duration_pips` must be a finite number between 0 and 65,536. One beat is
@@ -63,6 +64,13 @@ sample-bound **variable-BPM** integration from StemLab and the continuous
 beat count over repeated audio excerpts. Therefore a 64-pip window may be
 shorter or longer than half a second as the music accelerates or slows.
 A zero-pip window never injects the element.
+
+`last_pips` is designed for lyric tails that should enter feedback only before
+a genuine silent display gap. It requires `retrigger: lyric`, an active nonblank
+lyric, and a known next effective lyric event. The route report records
+`remaining_pips` and `lyric_gap_exit` so the decision is auditable. With
+`overlay: true`, the readable original remains visible while its copy enters the
+feedback pipeline; at the blank event both disappear from the clean layer.
 
 `retrigger` controls how the window starts:
 

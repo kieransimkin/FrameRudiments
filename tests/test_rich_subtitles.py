@@ -226,6 +226,30 @@ def test_bounce_uses_single_selected_native_rudiment_axis_and_replays(project):
     assert obj.bounce_axis == 0
 
 
+def test_between_word_arc_lands_on_the_next_word_frame(project):
+    settings = {
+        "glyph": "star",
+        "size": 17,
+        "travel_frames": 20,
+        "travel_mode": "between_words",
+        "travel_arc": 24,
+    }
+    obj = WordIndicator(project, settings, project.context, block(project, {}))
+    first = obj._centre(5)
+    midpoint = obj._centre(25)
+    before_landing = obj._centre(34)
+    landed = obj._centre(35)
+    assert first and midpoint and before_landing and landed
+    assert first[0] < midpoint[0] < landed[0]
+    assert midpoint[1] < first[1] and midpoint[1] < landed[1]
+    assert before_landing[0] < landed[0]
+    assert landed[1] == pytest.approx(first[1])
+    frame = image()
+    obj.draw(frame, project.context(35))
+    assert obj.frame_report["landed"] is True
+    assert obj.frame_report["travel_mode"] == "between_words"
+
+
 def test_constant_particles_stay_on_and_word_events_trigger_bursts(project):
     obj = indicator(
         project,

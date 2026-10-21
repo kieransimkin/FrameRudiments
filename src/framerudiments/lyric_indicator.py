@@ -107,6 +107,8 @@ class WordIndicator:
                 "offset_x",
                 "offset_y",
                 "travel_frames",
+                "travel_mode",
+                "travel_arc",
                 "bounce",
                 "rotation",
                 "particles",
@@ -142,6 +144,25 @@ class WordIndicator:
         self.travel = integer(
             config.get("travel_frames", 8), "indicator transition frames", maximum=120 * time_factor
         )
+        self.travel_mode = config.get("travel_mode", "after_hit")
+        if self.travel_mode not in {"after_hit", "between_words"}:
+            raise ValueError("Indicator travel_mode must be after_hit or between_words")
+        self.travel_arc = number(
+            config.get("travel_arc", 0), "indicator travel arc", minimum=0, maximum=250
+        )
+        self._next_words = {}
+        timed_words = [
+            row for row in project.words if row.get("text") and row.get("word_index") is not None
+        ]
+        for current, following in zip(timed_words, timed_words[1:]):
+            if (
+                current.get("cycle") == following.get("cycle")
+                and current.get("line_frame") == following.get("line_frame")
+                and current.get("line_order") == following.get("line_order")
+                and following["frame"] > current["frame"]
+            ):
+                key = (current["frame"], current.get("source_order"), current.get("cycle"))
+                self._next_words[key] = following
         self.style = dict(
             indicator_size=number(config.get("size", 18), "indicator size", minimum=2, maximum=128),
             indicator_glow=number(config.get("glow", 4), "indicator glow", minimum=0, maximum=24),
@@ -282,7 +303,13 @@ class WordIndicator:
             font=self.font_ref,
             glyph=self.glyph,
             mode=self.particle_mode,
-            source_clock="encoded words/cues + native bounce axis",
+            source_clock="encoded words/cues + optional native bounce axis",
+            travel={
+                "mode": self.travel_mode,
+                "frames": self.travel,
+                "arc_pixels": self.travel_arc,
+                "landing_authority": "next encoded word frame" if self.travel_mode == "between_words" else None,
+            },
             bounce=self.bounce.evidence if self.bounce else None,
             modulations=self.modulations.evidence,
             cue_file=self.cue_ref,
@@ -323,7 +350,21 @@ class WordIndicator:
         if not 0 <= i < len(positions):
             return None
         x, y = positions[i]
-        if self.travel and i:
+        arc = 0.0
+        if self.travel_mode == "between_words" and self.travel:
+            key = (word["frame"], word.get("source_order"), word.get("cycle"))
+            following = self._next_words.get(key)
+            if following is not None:
+                target_index = following["word_index"]
+                start = max(word["frame"], following["frame"] - self.travel)
+                if frame >= start and 0 <= target_index < len(positions):
+                    u = _unit((frame - start) / max(1, following["frame"] - start))
+                    smooth = u * u * (3 - 2 * u)
+                    target = positions[target_index]
+                    x = x + (target[0] - x) * smooth
+                    y = y + (target[1] - y) * smooth
+                    arc = math.sin(math.pi * u) * self.travel_arc
+        elif self.travel and i:
             u = _unit((frame - word["frame"]) / self.travel)
             smooth = u * u * (3 - 2 * u)
             before = positions[i - 1]
@@ -337,6 +378,7 @@ class WordIndicator:
             y -= h / 2 + style["offset_y"]
         else:
             y += self.block.maximum * 0.5
+        y -= arc
         if self.bounce:
             values = self.bounce.sample(ctx.source_seconds, continuous_beat=ctx.beat)
             y -= values[self.bounce_axis] * style["bounce_amplitude"]
@@ -543,5 +585,7 @@ class WordIndicator:
             particles_active=active,
             cue_trigger=ctx.frame in self._events["cue"],
             word_trigger=ctx.frame in self._events["word"],
+            travel_mode=self.travel_mode,
+            landed=ctx.frame == ctx.word["frame"],
         )
         return layer.getchannel("A").getbbox()

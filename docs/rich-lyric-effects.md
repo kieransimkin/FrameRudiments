@@ -92,6 +92,8 @@ DanceRudiment axis to the y-coordinate. The cursor may use a `spark`, `orb`,
     "glow": 5,
     "opacity": 1,
     "travel_frames": 10,
+    "travel_mode": "between_words",
+    "travel_arc": 24,
     "offset_x": 0,
     "offset_y": 14,
     "bounce": {
@@ -123,7 +125,13 @@ The `sprite` field is optional. For custom files, the supplied SHA-256 is
 mandatory; changing images requires changing the project reference. The same
 built-in transparent glyphs work without external assets. `position` accepts
 `above`, `below` or `on`. `travel_frames` (0–120) determines the smoothstep
-movement to the next word. Selecting `bounce.axis` projects one native
+movement window. The default `travel_mode: "after_hit"` preserves the original
+behaviour, moving from the preceding word after the new timestamp. Use
+`travel_mode: "between_words"` to move during the final `travel_frames` before
+the next encoded word timestamp; `travel_arc` (0–250 pixels) adds a sine-shaped
+lift that is zero at both ends, so the sprite lands exactly on the next word
+frame. This uses only the pinned word ledger and does not infer timing from the
+audio. Selecting `bounce.axis` projects one native
 DanceRudiment dimension only; captured recordings retain their own source
 clock, and rhythmic named/table motions use the corrected BPM map if enabled.
 

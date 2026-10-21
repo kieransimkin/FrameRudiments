@@ -3,6 +3,7 @@ from types import SimpleNamespace
 import os
 
 import pytest
+from PIL import Image
 
 from framerudiments.compositor import Compositor
 from framerudiments.demo import create_demo
@@ -141,3 +142,55 @@ def test_partial_chain_failure_closes_prior_engine(tmp_path):
             factories=dict(projectm=First, butterchurn=fail),
         )
     assert closed == [True]
+
+
+def test_projectm_preset_timeline_switches_once_on_first_frame_at_or_after_boundary(tmp_path, monkeypatch):
+    p = project(tmp_path)
+    p.data["effects"] = [
+        dict(
+            id="sections",
+            engine="projectm",
+            preset="feedback",
+            preset_timeline=[
+                dict(at_source_seconds=0.25, preset="julia", transition_seconds=0.2),
+                dict(at_source_seconds=0.5, preset="kaleidoscope", transition_seconds=0.3),
+            ],
+        )
+    ]
+
+    class Audio:
+        def __init__(self, project, *args):
+            self.project = project
+            self.evidence = {}
+
+        def at(self, frame):
+            return [0.0] * 8
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(__import__("framerudiments.visualisers", fromlist=["EffectAudio"]), "EffectAudio", Audio)
+    calls = []
+
+    class Fake:
+        def __init__(self, *args):
+            self.evidence = {}
+
+        def switch_preset(self, preset, transition):
+            calls.append((Path(preset).name, transition))
+
+        def process(self, image, context, pcm):
+            return image.convert("RGBA")
+
+        def close(self):
+            pass
+
+    chain = EffectChain(p, effect_specs(p), None, tmp_path, factories={"projectm": Fake})
+    try:
+        image = Image.new("RGB", (p.width, p.height))
+        for frame, source in enumerate((0.2, 0.25, 0.4, 0.51)):
+            chain.process(image, SimpleNamespace(frame=frame, source_seconds=source))
+        assert calls == [("julia.milk", 0.2), ("kaleidoscope.milk", 0.3)]
+        assert [event["frame"] for event in chain.evidence()["preset_switches"]] == [1, 3]
+    finally:
+        chain.close()

@@ -23,6 +23,7 @@ the inputs are checked again before and after a render.
 | `layers` | Ordered sprite, legacy bar and modular rudiment layers described below. |
 | Native radial petals | Use `type: "rudiment", renderer: "rangoli"` with independent scale/spin/lift axes; see [rangoli configuration and actual demo](rangoli.md). |
 | `visualiser_routing` | Optional per-element GPU input/overlay policies. Feed continuously, only for first N native pips after visibility onset, or never; see [routing](visualiser-routing.md). |
+| `effects[].preset_timeline` | Optional ordered projectM preset changes at canonical source seconds, using the native soft transition and retaining one feedback instance. |
 | `lyric_art` | `{items: [{text, asset}], placement: <sprite fields>, fallback: "text" or "error"}`. Exact text lookup preserves canonical lyric association. `error` requires every visible lyric to have an asset. |
 | `stemlab_loop` | `{file: <pinned loops report>, id: <accepted loop id>}`; imports native bounds/rate, verifies source SHA, rejects conflicting explicit audio values. Does not approve a seam. |
 
@@ -148,7 +149,9 @@ Set `effects` and optional checksum-pinned `font` on any `captions`, `word_capti
 emboss, inner/outer glow and drop shadow. `word_indicator` needs both line and word LRC,
 a full-line captions block and a selected native one-axis Rudiment bounce driver. Its
 particle options support constant emission, timed word/cue bursts and trigger-driven
-appearance changes; see [full schema and examples](rich-lyric-effects.md).
+appearance changes. `travel_mode: "between_words"` can use the pinned next-word
+timestamp to follow a smooth pre-hit arc and land exactly on the word frame;
+see [full schema and examples](rich-lyric-effects.md).
 
 ## Optional full-frame effects
 
