@@ -1,3 +1,17 @@
+# FrameRudiments 0.4.3
+
+- Atlas fire accepts an evidence-recorded three-stop CSS palette ordered as
+  shadow, body and core. An optional bounded `palette_vertical` bias can carry
+  the shadow colour into visible flame tongues after burn-front placement while
+  preserving the source alpha silhouette.
+- Filmed and Mantaflow layouts vary deterministic jet scale, playback rate,
+  phase, mirroring, angle and placement across wide surfaces, reducing obvious
+  repeated strips without introducing a new source clock.
+- Invalid palette shapes, colours and bounds fail closed. The focused fire
+  suite, configured full suite, package checks and clean-wheel palette smoke
+  test cover the reusable contract.
+- [Actual synthetic still/video, API, settings and limitations](docs/natural-materials.md).
+
 # FrameRudiments 0.4.2
 
 - Five selectable fire routes: hash-pinned CC0 filmed flame, animated flame

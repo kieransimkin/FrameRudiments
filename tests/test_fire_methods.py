@@ -98,6 +98,23 @@ def test_grade_keeps_alpha_at_unshifted_front(atlas):
         b.close()
 
 
+def test_three_stop_palette_grades_fire_without_changing_alpha(atlas):
+    palette = ["#531178", "#ef5b16", "#ffd25c"]
+    plain = FireRenderer((64, 64), "footage", asset=atlas, warmth=0, glow=0)
+    graded = FireRenderer(
+        (64, 64), "footage", asset=atlas, warmth=1, palette=palette, palette_vertical=0.7, glow=0
+    )
+    try:
+        a, b = plain.render(0.1, front=1), graded.render(0.1, front=1)
+        assert a.getchannel("A").tobytes() == b.getchannel("A").tobytes()
+        assert a.tobytes() != b.tobytes()
+        assert graded.evidence["palette"] == palette
+        assert graded.evidence["palette_vertical"] == 0.7
+    finally:
+        plain.close()
+        graded.close()
+
+
 def test_native_sprite_particle_age_selects_frame_and_long_source_is_bounded(atlas):
     f = FireRenderer((64, 64), "sprites", asset=atlas)
     try:
@@ -153,6 +170,9 @@ def test_bundled_assets_have_reviewed_provenance_and_no_private_paths():
         {"backend_settings": []},
         {"method": "missing"},
         {"asset": {}, "method": "fluid_2d"},
+        {"palette": ["#fff", "#000"]},
+        {"palette": ["#fff", "not-a-colour", "#000"]},
+        {"palette_vertical": 2},
     ),
 )
 def test_invalid_fire_options_do_not_fallback(settings):

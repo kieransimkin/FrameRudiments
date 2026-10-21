@@ -2,9 +2,10 @@
 
 ## Five fire methods and ice
 
-Version 0.4.2 adds filmed flame, animated flame sprites, a bounded 2D fluid
-solver, GPU volumetric rays, Blender/Mantaflow bake playback, scorched artwork burn-away,
-fractured ice and frost. Use ordinary material layers or the reusable
+Version 0.4.3 adds evidence-recorded three-stop fire palettes, an optional
+vertical tip bias applied after burn-front placement, and less repetitive
+deterministic layouts for filmed and Mantaflow sources. The five fire methods,
+scorched artwork burn-away, fractured ice and frost remain available through ordinary material layers or the reusable
 `FireRenderer` and `NaturalMaterial` APIs. Source clocks, clean text, transparent edges and
 seek-safe rendering remain explicit. See [natural materials](docs/natural-materials.md).
 

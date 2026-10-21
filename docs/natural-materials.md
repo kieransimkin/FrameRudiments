@@ -1,6 +1,6 @@
 # Five fire methods and ice
 
-FrameRudiments 0.4.2 offers five distinct fire routes through one RGBA and
+FrameRudiments 0.4.3 offers five distinct fire routes through one RGBA and
 artwork-burn API. Recorded flame preserves photographed detail; sprite
 particles rearrange that detail; a 2D fluid solver, a GPU volume renderer and
 a Blender/Mantaflow bake offer different degrees of simulation and control.
@@ -49,7 +49,9 @@ assets fail clearly; methods never silently substitute another backend.
 from framerudiments import FireRenderer, NaturalMaterial
 
 fire = FireRenderer(ticket.size, method="sprites", seed=21,
-                    resolution=0.75, warmth=1.0, glow=0.1)
+                    resolution=0.75, warmth=1.0, glow=0.1,
+                    palette=["#531178", "#ef5b16", "#ffd25c"],
+                    palette_vertical=0.7)
 ice = NaturalMaterial(ticket.size, "ice", seed=21, resolution=0.75)
 try:
     burning = fire.burn(ticket, source_seconds, progress=0.5)
@@ -87,12 +89,18 @@ source-to-asset time mapping in the scene if a bake represents another interval.
 
 Shared controls are `seed`, `speed`, `glow` and `opacity`. `resolution` declares
 the synthetic working tile scale (0.1–1). Atlas detail remains bounded by its
-actual cell resolution. `flame_height` controls the tiled footage/bake layout;
+actual cell resolution. The footage route deterministically varies jet scale, playback rate, phase, mirroring, angle and placement so wide surfaces do not expose an evenly repeated source silhouette. `flame_height` controls the overlapping footage/bake layout;
 sprite shape and simulation shape are owned by their respective backends.
 The legacy noise `scale`/`turbulence` controls apply to `stylized`, and to the
 shared scorched burn mask, rather than altering recorded motion. `warmth`
 (0–1) grades only atlas-based methods, preserves alpha and is a creative colour
-grade, never a new source or temperature observation.
+grade, never a new source or temperature observation. It can blend the original
+emission towards the default hot grade or an explicit
+three-stop CSS `palette` ordered shadow, body and core. The selected colours
+are retained in renderer evidence; the palette changes RGB only and preserves
+the source alpha silhouette. `palette_vertical` (0–1) optionally biases the
+shadow colour into higher flame tongues while retaining the energy-led body and
+core grade; it is useful when art direction calls for coloured flame tips.
 
 Simulation controls are explicit `backend_settings`: `fluid_2d` accepts
 `simulation_hz`, `resolution` and `warmup`; `volume` accepts `steps`. Atlas

@@ -4,7 +4,7 @@ from pathlib import Path
 import math
 from types import SimpleNamespace
 
-from PIL import Image, ImageFilter
+from PIL import Image, ImageColor, ImageFilter
 
 from .natural_materials import NaturalMaterial
 from .io import file_ref, number, sha256
@@ -24,7 +24,17 @@ def builtin_asset(name="marburg"):
 
 class FireRenderer(NaturalMaterial):
     def __init__(
-        self, size, method="footage", *, asset=None, repeat=True, warmth=0, backend_settings=None, **settings
+        self,
+        size,
+        method="footage",
+        *,
+        asset=None,
+        repeat=True,
+        warmth=0,
+        palette=None,
+        palette_vertical=0,
+        backend_settings=None,
+        **settings,
     ):
         if method not in METHODS:
             raise ValueError(f"Unknown fire method; choose {METHODS}")
@@ -34,6 +44,20 @@ class FireRenderer(NaturalMaterial):
         self.method = method
         self.closed = False
         self.warmth = number(warmth, "fire warmth grade", minimum=0, maximum=1)
+        if palette is not None:
+            if not isinstance(palette, (list, tuple)) or len(palette) != 3:
+                raise ValueError("Fire palette must contain exactly three CSS colours")
+            try:
+                self.palette = tuple(ImageColor.getcolor(value, "RGB") for value in palette)
+            except (TypeError, ValueError) as exc:
+                raise ValueError("Fire palette must contain exactly three CSS colours") from exc
+            self.palette_source = list(palette)
+        else:
+            self.palette = None
+            self.palette_source = None
+        self.palette_vertical = number(
+            palette_vertical, "fire vertical palette bias", minimum=0, maximum=1
+        )
         self.repeat = repeat
         self.atlas = None
         self.backend = None
@@ -71,6 +95,8 @@ class FireRenderer(NaturalMaterial):
         self.evidence.update(
             method=method,
             warmth_grade=self.warmth,
+            palette=self.palette_source,
+            palette_vertical=self.palette_vertical,
             repeat=repeat,
             asset=self.atlas.evidence if self.atlas else None,
             backend="opengl"
@@ -168,16 +194,30 @@ class FireRenderer(NaturalMaterial):
 
     def _footage(self, seconds):
         image = Image.new("RGBA", self.size)
-        h = max(8, round(self.size[1] * self.flame_height))
+        base_h = max(8, round(self.size[1] * self.flame_height))
         cw, ch = self.atlas.cell_size
-        w = max(4, round(h * cw / ch))
-        count = math.ceil(self.size[0] / max(1, w * 0.72)) + 1
+        base_w = max(4, round(base_h * cw / ch))
+        step = max(2, round(base_w * 0.42))
+        count = math.ceil(self.size[0] / step) + 3
         for i in range(count):
-            t = seconds + ((i * 73 + self.seed * 17) % 233) / 100
+            # Vary every jet deterministically so a real source does not become
+            # an artificial picket-fence pattern when it spans a wide surface.
+            code = (i * 1103515245 + self.seed * 12345) & 0x7FFFFFFF
+            scale = 0.72 + ((code >> 4) % 67) / 100
+            speed = 0.82 + ((code >> 11) % 39) / 100
+            h = max(8, round(base_h * scale))
+            w = max(4, round(h * cw / ch))
+            t = seconds * speed + ((code >> 17) % 997) / 137
             tile = self.atlas.frame_at(t, repeat=self.repeat)
             tile = tile.convert("RGBa").resize((w, h), Image.Resampling.LANCZOS).convert("RGBA")
-            x = round(i * w * 0.72 - w * 0.2)
-            y = self.size[1] - h
+            if code & 1:
+                tile = tile.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+            angle = ((code >> 23) % 7) - 3
+            if angle:
+                tile = tile.rotate(angle, Image.Resampling.BICUBIC, expand=True)
+            jitter_x = ((code >> 7) % max(2, step)) - step / 2
+            x = round((i - 1) * step + jitter_x - tile.width * 0.18)
+            y = round(self.size[1] - tile.height + (((code >> 14) % 13) - 6) * base_h / 100)
             image.alpha_composite(tile, (x, y))
         return image
 
@@ -211,19 +251,45 @@ class FireRenderer(NaturalMaterial):
             # photographed/simulated silhouette so blue-screen fringes cannot
             # leak into a warm fire treatment.
             energy = np.max(a[:, :, :3], axis=2)
-            warm = np.dstack(
-                (
-                    np.ones_like(energy),
-                    np.clip(0.04 + energy * 0.58, 0, 1),
-                    np.clip((energy - 0.84) * 4.5, 0, 1),
+            if self.palette:
+                low, middle, high = (np.asarray(colour, dtype=np.float32) / 255 for colour in self.palette)
+                split = 0.58
+                lower_t = np.clip(energy / split, 0, 1)[:, :, None]
+                upper_t = np.clip((energy - split) / (1 - split), 0, 1)[:, :, None]
+                lower = low + (middle - low) * lower_t
+                upper = middle + (high - middle) * upper_t
+                warm = np.where((energy < split)[:, :, None], lower, upper)
+                # Keep low-energy tongues dark while allowing the hot core to
+                # reach the selected highlight. Alpha continues to own shape.
+                warm *= (0.28 + 0.72 * energy)[:, :, None]
+            else:
+                warm = np.dstack(
+                    (
+                        np.ones_like(energy),
+                        np.clip(0.12 + energy * 0.82, 0, 1),
+                        np.clip((energy - 0.93) * 8, 0, 1),
+                    )
                 )
-            )
             a[:, :, :3] = a[:, :, :3] * (1 - self.warmth) + warm * self.warmth
             tile = Image.fromarray(np.rint(a * 255).astype(np.uint8))
         if front != 1:
             shifted = Image.new("RGBA", self.size)
             shifted.alpha_composite(tile, (0, round((front - 1) * self.size[1])))
             tile = shifted
+        if self.palette and self.palette_vertical:
+            # Apply the tip bias after front placement. Otherwise a moving burn
+            # front can translate all cooler graded pixels off-canvas and leave
+            # only the body/core colours visible at the consumption edge.
+            np = self.np
+            a = np.asarray(tile, dtype=np.float32) / 255
+            energy = np.max(a[:, :, :3], axis=2)
+            low = np.asarray(self.palette[0], dtype=np.float32) / 255
+            y = np.linspace(0, 1, a.shape[0], dtype=np.float32)[:, None]
+            tip = np.clip((front - y) / max(0.05, self.flame_height), 0, 1)
+            tip *= self.palette_vertical
+            cool = low[None, None, :] * (0.38 + 0.62 * energy)[:, :, None]
+            a[:, :, :3] = a[:, :, :3] * (1 - tip[:, :, None]) + cool * tip[:, :, None]
+            tile = Image.fromarray(np.rint(a * 255).astype(np.uint8))
         factor = amount * self.opacity
         tile.putalpha(tile.getchannel("A").point(lambda a: round(a * factor)))
         if self.glow:
