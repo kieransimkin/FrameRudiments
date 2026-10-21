@@ -4,6 +4,7 @@ import os
 
 from dancerudiments_authoring.recording import Recording, RecordingClock, write_recording
 import pytest
+from PIL import ImageColor
 
 from framerudiments import Project, render
 from framerudiments.compositor import Compositor
@@ -91,6 +92,17 @@ def test_peak_hold_decays_deterministically_without_hidden_state(spectrum_projec
     first = comp.frame(30)[0].tobytes()
     comp.frame(180)
     assert comp.frame(30)[0].tobytes() == first
+
+
+def test_spectrum_grid_can_be_omitted_without_removing_bars_or_peak_holds(spectrum_project):
+    project, _, _ = spectrum_project
+    project.data["layers"][0]["style"] = {"grid": False, "labels": False}
+    comp = Compositor(Project(project.data, project.base))
+    view = comp.layers[0]
+    assert view.renderer.grid is False
+    image = view.renderer.render(view.data(comp.context(0)))
+    assert ImageColor.getcolor("#40516a", "RGBA") not in set(image.get_flattened_data())
+    assert image.getbbox() is not None
 
 
 def test_local_peak_plateaus_threshold_contrast_and_minimum_distance():

@@ -280,6 +280,7 @@ class SpectrumRenderer(_Viewport):
                 "label_colour",
                 "font_size",
                 "labels",
+                "grid",
             },
         )
         self.floor = number(style.get("floor_db", -72), "spectrum floor", minimum=-240, maximum=0)
@@ -306,6 +307,9 @@ class SpectrumRenderer(_Viewport):
         self.labels = style.get("labels", True)
         if not isinstance(self.labels, bool):
             raise ValueError("Spectrum labels must be boolean")
+        self.grid = style.get("grid", True)
+        if not isinstance(self.grid, bool):
+            raise ValueError("Spectrum grid must be boolean")
         self.font_size = integer(
             style.get("font_size", max(6, min(14, size[0] // 30))), "spectrum font", minimum=6, maximum=128
         )
@@ -346,7 +350,8 @@ class SpectrumRenderer(_Viewport):
             return bottom - max(0, min(1, (db - self.floor) / (self.ceiling - self.floor))) * (bottom - top)
 
         for db in (self.floor, (self.floor + self.ceiling) / 2, self.ceiling):
-            draw.line((left, y(db), right, y(db)), fill="#40516a")
+            if self.grid:
+                draw.line((left, y(db), right, y(db)), fill="#40516a")
             if self.labels:
                 draw.text(
                     (self.padding, y(db) - self.font_size / 2),
