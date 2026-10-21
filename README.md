@@ -121,7 +121,7 @@ its own tone, sprite, LRC, CUE and four-dimensional recording.
   stills, a poster, phone preview, input/output hashes, commands and logs.
 
 The [spectrum guide](docs/spectrum.md) covers saved StemLab Fourier calibration,
-frequency labels, peak controls and per-frame JSONL effect signals. Run
+frequency labels, independent fixed-grid visibility, peak controls and per-frame JSONL effect signals. Run
 `framerudiments renderers` for the current built-in names. The optional
 `demo --spectrum` generator uses StemLab 1.6+; rendering its saved recording
 keeps the core package lightweight.

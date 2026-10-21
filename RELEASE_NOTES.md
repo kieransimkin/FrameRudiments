@@ -1,3 +1,8 @@
+# FrameRudiments 0.4.4
+
+- Spectrum views accept a validated `style.grid` boolean. Set it to `false` to remove the three fixed dB guide lines while retaining calibrated bars and moving peak holds; label visibility remains independent.
+- The existing default remains `true` for backward compatibility. Documentation and focused regression coverage include the no-grid, no-label presentation used by clean campaign visualisers.
+
 # FrameRudiments 0.4.3
 
 - Atlas fire accepts an evidence-recorded three-stop CSS palette ordered as

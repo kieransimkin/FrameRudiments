@@ -26,7 +26,8 @@ the ordinary FrameRudiments dependencies.
     "min_peak_db": -60,
     "min_peak_contrast_db": 3,
     "min_peak_distance": 2,
-    "labels": true
+    "labels": true,
+    "grid": true
   }
 }
 ```
@@ -112,6 +113,7 @@ In addition to the common `colours`, `padding` and `background`, spectrum accept
 | `gap` | 1 pixel, nonnegative |
 | `peak_colour`, `label_colour` | CSS colours |
 | `labels`, `font_size` | true; responsive default font size, explicit range 6..128 pixels |
+| `grid` | true; set false to omit the three horizontal dB reference lines while retaining bars and peak holds |
 
 Every render/preflight streams active spectrum reports into
 `rudiment-analysis.jsonl`, binding the sidecar hash in the final manifest.
