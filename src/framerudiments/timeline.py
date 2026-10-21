@@ -111,6 +111,21 @@ class EventTrack:
         index = bisect_right(self.frames, frame) - 1
         return self.events[index] if index >= 0 else None
 
+    def next_effective(self, frame):
+        """Return the rendered state at the next distinct event frame.
+
+        Several lyric ledgers deliberately write a blank clear followed by the
+        next line at the same frame.  The last event at that frame is the state
+        a viewer actually sees, so a same-frame clear must not be mistaken for
+        a real lyric gap.
+        """
+        index = bisect_right(self.frames, frame)
+        if index >= len(self.events):
+            return None
+        next_frame = self.events[index]["frame"]
+        end = bisect_right(self.frames, next_frame)
+        return self.events[end - 1]
+
     def neighbours(self, frame):
         index = bisect_right(self.frames, frame) - 1
         current = self.events[index] if index >= 0 else None

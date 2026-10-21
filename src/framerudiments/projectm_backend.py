@@ -169,6 +169,7 @@ class ProjectMBackend:
             "set_preset_locked": (None, [h, C.c_bool]),
             "set_hard_cut_enabled": (None, [h, C.c_bool]),
             "set_preset_start_clean": (None, [h, C.c_bool]),
+            "set_soft_cut_duration": (None, [h, C.c_double]),
             "load_preset_file": (None, [h, C.c_char_p, C.c_bool]),
             "set_preset_switch_failed_event_callback": (None, [h, C.c_void_p, h]),
             "pcm_add_float": (None, [h, C.POINTER(C.c_float), C.c_uint, C.c_int]),
@@ -201,6 +202,24 @@ class ProjectMBackend:
 
     def advance(self, image, context, pcm, *, capture=False):
         return self.process(image, context, pcm, capture=capture)
+
+    def switch_preset(self, preset, transition_seconds):
+        """Change preset on the existing feedback instance with projectM's soft transition."""
+        self.glfw.make_context_current(self.window)
+        self.lib.projectm_set_soft_cut_duration(self.handle, float(transition_seconds))
+        self.lib.projectm_load_preset_file(
+            self.handle,
+            os.fsencode(preset),
+            bool(transition_seconds),
+        )
+        self._check()
+        self.evidence.setdefault("preset_switches", []).append(
+            dict(
+                preset_path=str(Path(preset).resolve()),
+                preset_sha256=sha256(preset),
+                transition_seconds=float(transition_seconds),
+            )
+        )
 
     def process(self, image, context, pcm, *, capture=True):
         gl = self.gl

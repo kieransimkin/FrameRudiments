@@ -33,6 +33,8 @@ class FrameContext:
     lyric: dict | None
     cue: dict | None
     word: dict | None = None
+    lyric_next: dict | None = None
+    lyric_next_beat: float | None = None
 
 
 class TextBlock:
@@ -413,6 +415,7 @@ class Compositor:
     def context(self, frame):
         p = self.project
         lyric = self.lyrics.at(frame)
+        lyric_next = self.lyrics.next_effective(frame)
         word = self.words.at(frame, lyric if p.lyrics else None) if self.words else None
         return FrameContext(
             frame,
@@ -422,6 +425,8 @@ class Compositor:
             lyric,
             self.cues.at(frame),
             word,
+            lyric_next,
+            p.continuous_beat(lyric_next["frame"]) if lyric_next is not None else None,
         )
 
     def _caption_draw(self, image, text, ctx):

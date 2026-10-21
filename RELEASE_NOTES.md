@@ -1,3 +1,19 @@
+# FrameRudiments 0.4.5
+
+- Word indicators can now travel between encoded word hits with a configurable
+  arc and land on the next word's authoritative frame, while retaining the
+  existing after-hit mode.
+- projectM stages accept source-time preset timelines and perform bounded soft
+  transitions on the existing feedback instance, with every switch recorded in
+  render evidence.
+- Lyric layers can feed the visualiser only during their final bounded pips when
+  a real blank gap follows, allowing the departing line to dissolve into the
+  background without contaminating immediate line-to-line changes.
+- Project-format and visualiser documentation describe the new contracts;
+  focused regression coverage preserves clock, preset trust, routing and
+  evidence behaviour. Private campaign artwork and audio remain outside the
+  distribution.
+
 # FrameRudiments 0.4.4
 
 - Spectrum views accept a validated `style.grid` boolean. Set it to `false` to remove the three fixed dB guide lines while retaining calibrated bars and moving peak holds; label visibility remains independent.

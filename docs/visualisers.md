@@ -25,6 +25,33 @@ that two independent MilkDrop implementations produce identical pixels.
 ## Per-element feed and clean overlay routing
 
 FrameRudiments supports an optional project-level `visualiser_routing` object.
+
+## Source-timed projectM preset changes
+
+A projectM stage may retain one feedback instance while changing presets at
+canonical source-audio times. The native projectM soft transition blends the
+old and new preset; no frame is skipped and the existing PCM/output clock stays
+authoritative.
+
+```json
+{
+  "id": "section-visualiser",
+  "engine": "projectm",
+  "preset": "feedback",
+  "preset_timeline": [
+    {"at_source_seconds": 62.46, "preset": "kaleidoscope", "transition_seconds": 0.42},
+    {"at_source_seconds": 128.60, "preset": "julia", "transition_seconds": 0.42}
+  ]
+}
+```
+
+Times are measured in the unchanged source recording. Entries must be strictly
+increasing. Built-in names retain their package hashes; external `.milk` files
+still require `trusted_preset: true` on the individual timeline entry. Timeline
+switches currently use projectM because its pinned native API provides an
+auditable soft-cut transition on the same renderer instance. The manifest
+records the scheduled boundary, actual frame/source time, preset hash and blend
+duration.
 It controls the **input RGBA texture** entering the first Butterchurn or
 projectM stage and independently decides which original layers are composited
 cleanly above the **last** visualiser result. The subsequent stages remain

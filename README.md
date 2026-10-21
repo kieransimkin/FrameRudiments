@@ -173,6 +173,8 @@ text. Existing plain text remains untouched unless configured. Set `word_indicat
 native 1-dimensional DanceRudiment-driven bouncing sprite that tracks the active word of
 the full line. Its particle field can be continuous, word/cue-triggered, or hybrid;
 trigger windows independently change colour, density, size, glow and burst count.
+An optional between-word travel arc rises before the next timestamp and lands
+exactly on its encoded word frame.
 See [rich lyric reference](docs/rich-lyric-effects.md) and the
 [CI-generated demo](https://kieransimkin.github.io/FrameRudiments/rich-lyrics/).
 

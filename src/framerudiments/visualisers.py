@@ -18,31 +18,88 @@ ASSETS = Path(__file__).with_name("visualiser_assets")
 PRESETS = ("feedback", "kaleidoscope", "julia")
 
 
+def _preset_ref(project, engine, preset, *, trusted=False):
+    if isinstance(preset, str):
+        if preset not in PRESETS:
+            raise ValueError(f"Unknown built-in visualiser preset: {preset}")
+        path = ASSETS / f"{preset}.{'json' if engine == 'butterchurn' else 'milk'}"
+        return project.ref(dict(path=str(path), sha256=sha256(path)))
+    if trusted is not True:
+        raise ValueError(
+            "External presets contain executable equations/shaders: set trusted_preset true after review"
+        )
+    return project.ref(preset)
+
+
 def effect_specs(project):
     configs = project.data.get("effects", [])
     if not isinstance(configs, list) or len(configs) > 8:
         raise ValueError("effects must be an ordered list with at most eight stages")
     specs = []
     for cfg in configs:
-        fields(cfg, {"id", "engine", "preset", "input_mix", "seed", "trusted_preset"}, "full-frame effect")
+        fields(
+            cfg,
+            {
+                "id",
+                "engine",
+                "preset",
+                "input_mix",
+                "seed",
+                "trusted_preset",
+                "preset_timeline",
+            },
+            "full-frame effect",
+        )
         name = cfg.get("id")
         if not isinstance(name, str) or not name or name in [item["id"] for item in specs]:
             raise ValueError("Full-frame effect ids must be nonempty and unique")
         engine = cfg.get("engine")
         if engine not in {"butterchurn", "projectm"}:
             raise ValueError("Full-frame engine must be butterchurn or projectm")
-        preset = cfg.get("preset", "feedback")
-        if isinstance(preset, str):
-            if preset not in PRESETS:
-                raise ValueError(f"Unknown built-in visualiser preset: {preset}")
-            path = ASSETS / f"{preset}.{'json' if engine == 'butterchurn' else 'milk'}"
-            ref = project.ref(dict(path=str(path), sha256=sha256(path)))
-        else:
-            if cfg.get("trusted_preset") is not True:
-                raise ValueError(
-                    "External presets contain executable equations/shaders: set trusted_preset true after review"
+        ref = _preset_ref(
+            project,
+            engine,
+            cfg.get("preset", "feedback"),
+            trusted=cfg.get("trusted_preset", False),
+        )
+        timeline = cfg.get("preset_timeline", [])
+        if timeline and engine != "projectm":
+            raise ValueError("preset_timeline currently requires projectM")
+        if not isinstance(timeline, list) or len(timeline) > 64:
+            raise ValueError("preset_timeline must be a list with at most 64 entries")
+        resolved_timeline = []
+        previous = -1.0
+        for index, entry in enumerate(timeline):
+            fields(
+                entry,
+                {"at_source_seconds", "preset", "transition_seconds", "trusted_preset"},
+                f"preset_timeline[{index}]",
+            )
+            at = number(
+                entry.get("at_source_seconds"),
+                f"preset_timeline[{index}].at_source_seconds",
+                minimum=0,
+            )
+            if at <= previous:
+                raise ValueError("preset_timeline source times must be strictly increasing")
+            previous = at
+            resolved_timeline.append(
+                dict(
+                    at_source_seconds=at,
+                    preset=_preset_ref(
+                        project,
+                        engine,
+                        entry.get("preset"),
+                        trusted=entry.get("trusted_preset", False),
+                    ),
+                    transition_seconds=number(
+                        entry.get("transition_seconds", 0.5),
+                        f"preset_timeline[{index}].transition_seconds",
+                        minimum=0,
+                        maximum=30,
+                    ),
                 )
-            ref = project.ref(preset)
+            )
         specs.append(
             dict(
                 id=name,
@@ -50,6 +107,7 @@ def effect_specs(project):
                 preset=ref,
                 input_mix=number(cfg.get("input_mix", 0.65), "input mix", minimum=0.001, maximum=1),
                 seed=integer(cfg.get("seed", 0), "visualiser seed", maximum=2**32 - 1),
+                preset_timeline=resolved_timeline,
             )
         )
     return specs
@@ -243,6 +301,8 @@ class EffectChain:
         self.closed = False
         self.specs = specs
         self.routing = routing
+        self.preset_timeline_positions = [0 for _ in specs]
+        self.preset_switches = []
         self.stage_injections = {}
         requested = getattr(project, "data", {}).get("visualiser_stage_injections", [])
         if not isinstance(requested, list) or len(requested) > 32 or (requested and not specs):
@@ -298,6 +358,25 @@ class EffectChain:
         if self.stage_injections and isolated_layers is None:
             raise ValueError("Intermediate stage injection needs isolated layer surfaces")
         for index, backend in enumerate(self.backends):
+            timeline = self.specs[index].get("preset_timeline", [])
+            position = self.preset_timeline_positions[index]
+            while position < len(timeline) and context.source_seconds >= timeline[position]["at_source_seconds"]:
+                event = timeline[position]
+                if not hasattr(backend, "switch_preset"):
+                    raise ValueError("Scheduled preset changes require a backend with switch_preset support")
+                backend.switch_preset(event["preset"]["path"], event["transition_seconds"])
+                self.preset_switches.append(
+                    dict(
+                        frame=context.frame,
+                        source_seconds=context.source_seconds,
+                        stage=index,
+                        scheduled_at_source_seconds=event["at_source_seconds"],
+                        transition_seconds=event["transition_seconds"],
+                        preset=event["preset"],
+                    )
+                )
+                position += 1
+            self.preset_timeline_positions[index] = position
             if index in self.stage_injections:
                 image = image.convert("RGBA")
                 for names, opacity in self.stage_injections[index]:
@@ -330,6 +409,7 @@ class EffectChain:
             pcm=self.audio.evidence,
             routing=self.routing.evidence if self.routing is not None else None,
             stage_injections={index: entries for index, entries in self.stage_injections.items()},
+            preset_switches=self.preset_switches,
             stages=[dict(spec, runtime=backend.evidence) for spec, backend in zip(self.specs, self.backends)],
             limits="GPU/driver and engine noise can vary; not a cross-platform bit-exact contract. Text bounds refer to pre-effect composition.",
         )

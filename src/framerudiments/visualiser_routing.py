@@ -13,7 +13,7 @@ from PIL import Image
 from .io import fields, number
 
 MAX_TARGETS = 256
-MODES = frozenset({"continuous", "first_pips", "never"})
+MODES = frozenset({"continuous", "first_pips", "last_pips", "never"})
 RETRIGGERS = frozenset({"reappearance", "once", "lyric", "cue"})
 
 
@@ -27,12 +27,12 @@ def _policy(config, label, inherited=None):
     fields(feed, {"mode", "duration_pips"}, label + ".feed")
     mode = feed.get("mode")
     if mode not in MODES:
-        raise ValueError(f"{label}.feed.mode must be continuous, first_pips or never")
-    if mode == "first_pips":
+        raise ValueError(f"{label}.feed.mode must be continuous, first_pips, last_pips or never")
+    if mode in {"first_pips", "last_pips"}:
         duration = number(feed.get("duration_pips"), label + ".feed.duration_pips", minimum=0, maximum=65536)
         feed = dict(mode=mode, duration_pips=duration)
     elif "duration_pips" in feed:
-        raise ValueError(f"{label}.feed.duration_pips requires first_pips")
+        raise ValueError(f"{label}.feed.duration_pips requires first_pips or last_pips")
     else:
         feed = dict(mode=mode)
     overlay = config.get("overlay", parent["overlay"])
@@ -41,6 +41,8 @@ def _policy(config, label, inherited=None):
     retrigger = config.get("retrigger", parent["retrigger"])
     if retrigger not in RETRIGGERS:
         raise ValueError(f"{label}.retrigger must be reappearance, once, lyric or cue")
+    if feed["mode"] == "last_pips" and retrigger != "lyric":
+        raise ValueError(f"{label}.feed.mode last_pips requires retrigger=lyric")
     return dict(feed=feed, overlay=overlay, retrigger=retrigger)
 
 
@@ -128,6 +130,20 @@ class VisualiserLayerRouting:
             state["lyric"], state["cue"] = lyric, cue
             mode = policy["feed"]["mode"]
             elapsed = max(0.0, pip - state["onset"]) if state["onset"] is not None else None
+            lyric_next = getattr(context, "lyric_next", None)
+            lyric_next_beat = getattr(context, "lyric_next_beat", None)
+            remaining = (
+                max(0.0, float(lyric_next_beat) * 64.0 - pip)
+                if lyric_next_beat is not None and math.isfinite(float(lyric_next_beat))
+                else None
+            )
+            lyric_gap_exit = bool(
+                trigger == "lyric"
+                and getattr(context, "lyric", None)
+                and getattr(context, "lyric", {}).get("text")
+                and lyric_next is not None
+                and not lyric_next.get("text")
+            )
             feeding = bool(
                 visible
                 and (
@@ -135,6 +151,10 @@ class VisualiserLayerRouting:
                     or mode == "first_pips"
                     and elapsed is not None
                     and elapsed < policy["feed"]["duration_pips"]
+                    or mode == "last_pips"
+                    and lyric_gap_exit
+                    and remaining is not None
+                    and 0.0 < remaining <= policy["feed"]["duration_pips"]
                 )
             )
             on_top = bool(visible and policy["overlay"])
@@ -149,6 +169,8 @@ class VisualiserLayerRouting:
                     overlay=on_top,
                     first_pip=state["onset"],
                     elapsed_pips=elapsed,
+                    remaining_pips=remaining,
+                    lyric_gap_exit=lyric_gap_exit,
                     policy=policy["feed"]["mode"],
                 )
         self.next_frame += 1
