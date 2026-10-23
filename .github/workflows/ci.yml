@@ -10,7 +10,7 @@ permissions:
 jobs:
   patch-contract:
     name: Verified git-apply patch
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-24.04, windows-latest]
         python: ['3.11', '3.13']
     runs-on: ${{ matrix.os }}
     steps:
@@ -51,8 +51,7 @@ jobs:
       - name: Linux render dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          bash scripts/install_ci_render_dependencies.sh
           echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_FFMPEG=$(command -v ffmpeg)" >> "$GITHUB_ENV"
       - name: Windows render dependencies
@@ -73,7 +72,7 @@ jobs:
       - run: python -m twine check --strict dist/*
 
   visualiser-acceptance:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
@@ -85,8 +84,7 @@ jobs:
           node-version: '24'
       - name: Native and headless rendering dependencies
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg fonts-dejavu-core libgl1-mesa-dev libgl1-mesa-dri libegl1 libglfw3 xvfb xauth ninja-build
+          bash scripts/install_ci_render_dependencies.sh --gpu
           echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_FFMPEG=$(command -v ffmpeg)" >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_BROWSER=$(command -v google-chrome)" >> "$GITHUB_ENV"

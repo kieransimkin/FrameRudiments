@@ -8,6 +8,20 @@ import shutil
 import subprocess
 
 
+X264_PRESETS = (
+    "ultrafast",
+    "superfast",
+    "veryfast",
+    "faster",
+    "fast",
+    "medium",
+    "slow",
+    "slower",
+    "veryslow",
+    "placebo",
+)
+
+
 def binaries(ffmpeg=None, ffprobe=None):
     ffmpeg = ffmpeg or os.environ.get("FRAMERUDIMENTS_FFMPEG") or shutil.which("ffmpeg")
     if not ffmpeg:
@@ -56,7 +70,7 @@ def audio_filters(project):
 
 
 def command(project, output, ffmpeg, *, preset="fast", crf=20):
-    if preset not in {"ultrafast", "superfast", "veryfast", "faster", "fast", "medium", "slow"}:
+    if preset not in X264_PRESETS:
         raise ValueError("Unsupported encoder preset")
     if not isinstance(crf, int) or not 0 <= crf <= 51:
         raise ValueError("CRF must be an integer in [0,51]")

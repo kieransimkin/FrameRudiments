@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build-gallery:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -23,8 +23,7 @@ jobs:
           python-version: '3.13'
       - name: Install font for compositor effects tests
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y fonts-dejavu-core
+          bash scripts/install_ci_render_dependencies.sh
           echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
       - name: Install distribution and test tooling
         run: python -m pip install -e '.[dev]'
@@ -145,7 +144,7 @@ jobs:
   deploy-pages:
     if: github.event_name != 'pull_request'
     needs: [build-gallery]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pages: write

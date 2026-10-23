@@ -1,5 +1,18 @@
 # FrameRudiments
 
+## Complete x264 preset range
+
+Version 0.4.6 accepts every named libx264 preset from `ultrafast` through
+`placebo`, including the previously rejected `slower` and `veryslow` delivery
+profiles. The selected preset and CRF remain explicit render arguments and are
+retained in the encode command and manifest evidence. A stronger preset can
+improve compression efficiency; it does not raise project resolution, mesh
+density, frame rate or source sampling on its own.
+
+The existing encoded demonstrations below remain representative because this
+change alters compression controls rather than composition or motion. No new
+image or video was generated solely to illustrate byte-level encoder effort.
+
 ## Palette-controlled high-detail feedback
 
 Version 0.4.4 adds optional Butterchurn mesh dimensions and a deterministic
