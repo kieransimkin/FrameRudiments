@@ -1,3 +1,21 @@
+# FrameRudiments 0.4.7
+
+- `preflight --max-frames N` composes a declared sequential prefix for expensive
+  long projects instead of forcing a complete unencoded pass before rendering.
+- The manifest records full versus bounded scope, frames rendered, total frames,
+  sequential-state behaviour and the explicit later-frame validation limit.
+- The final rendered file still receives complete decode, CFR, frame-count,
+  audio and encoded-checkpoint verification; bounded preflight does not weaken
+  or relabel final technical QA.
+- Focused regression coverage preserves default full-preflight behaviour, exact
+  prefix boundaries, final-prefix QA capture and fail-closed limits.
+- Wrapped-word layout coverage now follows visual reading order across current
+  Pillow text metrics instead of assuming every word remains on one row.
+
+![Generated workload illustration for bounded preflight](docs/media/bounded-preflight.svg)
+
+Generated explanatory diagram; not a benchmark or rendered campaign frame.
+
 # FrameRudiments 0.4.6
 
 - Encoding now accepts the complete named libx264 preset range: `ultrafast`,

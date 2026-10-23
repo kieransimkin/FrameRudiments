@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="360" viewBox="0 0 960 360" role="img" aria-labelledby="title desc">
+  <title id="title">Full preflight compared with bounded sequential preflight</title>
+  <desc id="desc">A full preflight composes every frame before rendering. A bounded preflight composes a short sequential prefix and labels the remainder unvalidated.</desc>
+  <rect width="960" height="360" fill="#16051f"/>
+  <text x="48" y="55" fill="#fff2cf" font-family="sans-serif" font-size="28" font-weight="700">Generated workflow illustration</text>
+  <text x="48" y="105" fill="#fff2cf" font-family="sans-serif" font-size="22">Full preflight</text>
+  <rect x="250" y="78" width="650" height="38" rx="19" fill="#ffb52e"/>
+  <text x="575" y="104" fill="#351300" text-anchor="middle" font-family="sans-serif" font-size="17" font-weight="700">every frame composed without encoding</text>
+  <path d="M575 126v45" stroke="#ffcf62" stroke-width="4" marker-end="url(#arrow)"/>
+  <text x="48" y="201" fill="#fff2cf" font-family="sans-serif" font-size="22">Complete render</text>
+  <rect x="250" y="174" width="650" height="38" rx="19" fill="#ff7a28"/>
+  <text x="575" y="200" fill="#351300" text-anchor="middle" font-family="sans-serif" font-size="17" font-weight="700">every frame composed again and encoded</text>
+  <text x="48" y="279" fill="#fff2cf" font-family="sans-serif" font-size="22">Bounded preflight</text>
+  <rect x="250" y="252" width="92" height="38" rx="19" fill="#ffb52e"/>
+  <rect x="342" y="252" width="558" height="38" rx="19" fill="none" stroke="#9c759f" stroke-width="3" stroke-dasharray="10 10"/>
+  <text x="296" y="278" fill="#351300" text-anchor="middle" font-family="sans-serif" font-size="16" font-weight="700">prefix</text>
+  <text x="621" y="278" fill="#d8b9dc" text-anchor="middle" font-family="sans-serif" font-size="17">later frames explicitly unvalidated</text>
+  <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#ffcf62"/></marker></defs>
+</svg>

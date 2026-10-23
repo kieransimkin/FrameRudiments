@@ -76,7 +76,13 @@ def main(argv=None):
         item.add_argument("--output", required=True, help="A new evidence/output directory; never overwrites")
         item.add_argument("--ffmpeg")
         item.add_argument("--ffprobe")
-        if name == "render":
+        if name == "preflight":
+            item.add_argument(
+                "--max-frames",
+                type=int,
+                help="Compose only this many initial sequential frames; later frames remain unvalidated",
+            )
+        else:
             item.add_argument("--preset", default="fast")
             item.add_argument("--crf", type=int, default=20)
     args = parser.parse_args(argv)
@@ -161,7 +167,11 @@ def main(argv=None):
             print(output)
         else:
             runner = preflight if args.command == "preflight" else render
-            extra = {"preset": args.preset, "crf": args.crf} if args.command == "render" else {}
+            extra = (
+                {"preset": args.preset, "crf": args.crf}
+                if args.command == "render"
+                else {"max_frames": args.max_frames}
+            )
             result = runner(args.project, args.output, ffmpeg=args.ffmpeg, ffprobe=args.ffprobe, **extra)
             print(json.dumps({"state": result["state"], "frames": result["frames"], "output": args.output}))
         return 0

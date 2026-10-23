@@ -199,7 +199,8 @@ def test_word_centres_follow_wrapped_text_layout_and_stay_in_box(project):
     centres = word_centres(text, "Lights follow every word")
     assert len(centres) == 4
     assert all(text.box[0] <= x <= text.box[2] for x, _ in centres)
-    assert all(a[0] < b[0] for a, b in zip(centres, centres[1:]))
+    assert all(a[1] <= b[1] for a, b in zip(centres, centres[1:]))
+    assert all(a[0] < b[0] for a, b in zip(centres, centres[1:]) if a[1] == b[1])
 
 
 def test_rich_highlight_can_tint_single_word_without_destroying_gradients(project):
