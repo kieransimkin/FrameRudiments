@@ -23,7 +23,7 @@ jobs:
     uses: ./.github/workflows/ci.yml
   build:
     needs: validate
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
         with:
@@ -73,7 +73,7 @@ jobs:
           path: dist/*
   github-release:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
@@ -102,7 +102,7 @@ jobs:
   pypi:
     needs: github-release
     if: github.event_name == 'push' || inputs.publish_pypi
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: pypi
     permissions:
       contents: read
