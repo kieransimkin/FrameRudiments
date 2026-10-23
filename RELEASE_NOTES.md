@@ -7,6 +7,8 @@
   FFmpeg command and that unknown values still fail closed.
 - Linux CI, gallery and release jobs now pin Ubuntu 24.04 so runner-image
   migrations cannot silently change the release environment mid-validation.
+- Linux render dependencies use one shared installer with bounded timeouts and
+  retries, preventing a stalled package mirror from hanging a release forever.
 - Preset strength remains separate from composition resolution, visualiser
   mesh density, frame rate and source sampling. Existing public demonstration
   media therefore remains applicable; no new visual was generated for this

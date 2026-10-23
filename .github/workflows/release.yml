@@ -42,7 +42,7 @@ jobs:
           assert os.environ['TAG']=='v'+version
           subprocess.run(['git','merge-base','--is-ancestor','HEAD','origin/main'],check=True)
           PY
-      - run: sudo apt-get update -qq && sudo apt-get install -y ffmpeg fonts-dejavu-core
+      - run: bash scripts/install_ci_render_dependencies.sh
       - run: python -m pip install -e '.[dev]'
       - run: ruff check .
       - name: Render regression suite

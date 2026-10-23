@@ -51,8 +51,7 @@ jobs:
       - name: Linux render dependencies
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg fonts-dejavu-core
+          bash scripts/install_ci_render_dependencies.sh
           echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_FFMPEG=$(command -v ffmpeg)" >> "$GITHUB_ENV"
       - name: Windows render dependencies
@@ -85,8 +84,7 @@ jobs:
           node-version: '24'
       - name: Native and headless rendering dependencies
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg fonts-dejavu-core libgl1-mesa-dev libgl1-mesa-dri libegl1 libglfw3 xvfb xauth ninja-build
+          bash scripts/install_ci_render_dependencies.sh --gpu
           echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_FFMPEG=$(command -v ffmpeg)" >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_BROWSER=$(command -v google-chrome)" >> "$GITHUB_ENV"
