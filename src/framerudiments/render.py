@@ -107,9 +107,38 @@ def _prepare(project, output, ffmpeg, ffprobe, scene, renderers):
     return project, output, ffmpeg, ffprobe, compositor
 
 
-def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=None):
-    p, out, ffmpeg, ffprobe, compositor = _prepare(project, output, ffmpeg, ffprobe, scene, renderers)
-    selected = set(checkpoints(p))
+def preflight(
+    project,
+    output,
+    *,
+    ffmpeg=None,
+    ffprobe=None,
+    scene=None,
+    renderers=None,
+    max_frames=None,
+):
+    p = Project.load(project) if not isinstance(project, Project) else project
+    if max_frames is None:
+        frame_count = p.frame_count
+    elif type(max_frames) is not int or not 1 <= max_frames <= p.frame_count:
+        raise ValueError(f"Preflight max_frames must be an integer in [1,{p.frame_count}]")
+    else:
+        frame_count = max_frames
+    p, out, ffmpeg, ffprobe, compositor = _prepare(p, output, ffmpeg, ffprobe, scene, renderers)
+    selected = {frame for frame in checkpoints(p) if frame < frame_count}
+    selected.add(frame_count - 1)
+    scope = dict(
+        mode="full" if frame_count == p.frame_count else "bounded-prefix",
+        frames_rendered=frame_count,
+        total_frames=p.frame_count,
+        complete=frame_count == p.frame_count,
+        sequential=True,
+        note=(
+            "All project frames were composed."
+            if frame_count == p.frame_count
+            else "Only the declared sequential prefix was composed; later frames remain unvalidated."
+        ),
+    )
     effects = None
     try:
         effects = (
@@ -118,7 +147,7 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
             else None
         )
         with (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
-            for n in range(p.frame_count):
+            for n in range(frame_count):
                 image, context = compositor.frame(n, apply_quality=False)
                 if effects:
                     if n in selected:
@@ -141,10 +170,15 @@ def preflight(project, output, *, ffmpeg=None, ffprobe=None, scene=None, rendere
         p.verify_inputs()
         result = dict(
             p.summary(),
+            preflight_scope=scope,
             composition=compositor.evidence(),
             full_frame_effects=effects.evidence() if effects else None,
             analysis_sidecar=_sidecar(out),
-            state="preflight passed; no encoded video",
+            state=(
+                "full preflight passed; no encoded video"
+                if scope["complete"]
+                else "bounded-prefix preflight passed; later frames unvalidated; no encoded video"
+            ),
         )
         write_json(out / "manifest.json", result)
         return result

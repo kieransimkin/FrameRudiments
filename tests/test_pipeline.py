@@ -135,3 +135,52 @@ def test_custom_scene_hook_and_preflight(demo, tmp_path):
     assert calls == list(range(240))
     assert result["composition"]["custom_scene"]
     assert "no encoded" in result["state"]
+    assert result["preflight_scope"] == {
+        "mode": "full",
+        "frames_rendered": 240,
+        "total_frames": 240,
+        "complete": True,
+        "sequential": True,
+        "note": "All project frames were composed.",
+    }
+
+    calls.clear()
+    bounded = preflight(demo, tmp_path / "bounded-preflight", scene=scene, max_frames=3)
+    assert calls == [0, 1, 2]
+    assert bounded["preflight_scope"] == {
+        "mode": "bounded-prefix",
+        "frames_rendered": 3,
+        "total_frames": 240,
+        "complete": False,
+        "sequential": True,
+        "note": "Only the declared sequential prefix was composed; later frames remain unvalidated.",
+    }
+    assert "later frames unvalidated" in bounded["state"]
+    assert (tmp_path / "bounded-preflight" / "qa" / "source-00000002.png").exists()
+
+
+@pytest.mark.parametrize("limit", [0, -1, 241, 1.5, True])
+def test_bounded_preflight_rejects_invalid_frame_limit(demo, tmp_path, limit):
+    with pytest.raises(ValueError, match="Preflight max_frames"):
+        preflight(demo, tmp_path / f"bad-preflight-{limit}", max_frames=limit)
+
+
+def test_cli_forwards_bounded_preflight_limit(monkeypatch, capsys):
+    from framerudiments import cli
+
+    received = {}
+
+    def fake_preflight(project, output, **kwargs):
+        received.update(project=project, output=output, **kwargs)
+        return {"state": "bounded-prefix preflight passed", "frames": 240}
+
+    monkeypatch.setattr(cli, "preflight", fake_preflight)
+    assert cli.main(["preflight", "project.json", "--output", "out", "--max-frames", "3"]) == 0
+    assert received == {
+        "project": "project.json",
+        "output": "out",
+        "ffmpeg": None,
+        "ffprobe": None,
+        "max_frames": 3,
+    }
+    assert '"state": "bounded-prefix preflight passed"' in capsys.readouterr().out

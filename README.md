@@ -90,6 +90,7 @@ framerudiments --version
 framerudiments demo demo --font /path/to/a/font.ttf
 framerudiments plan demo/project.json --output demo-plan.json
 framerudiments preflight demo/project.json --output preflight --ffmpeg /path/to/ffmpeg
+framerudiments preflight demo/project.json --output bounded-preflight --max-frames 3 --ffmpeg /path/to/ffmpeg
 framerudiments render demo/project.json --output render --ffmpeg /path/to/ffmpeg
 ```
 
@@ -98,6 +99,12 @@ ffprobe. Environment alternatives are `FRAMERUDIMENTS_FFMPEG` and
 `FRAMERUDIMENTS_FFPROBE`. Fonts are explicit hashed inputs; no platform-specific
 font or FFmpeg location is hardcoded into the engine. The synthetic demo creates
 its own tone, sprite, LRC, CUE and four-dimensional recording.
+
+For expensive long projects, `preflight --max-frames N` validates a bounded
+sequential prefix and records the exact incomplete scope in `manifest.json`.
+This preserves stateful particles and feedback inside the prefix without paying
+for a complete unencoded pass before the complete encoded render. It never
+claims later frames were checked. See [bounded preflight](docs/bounded-preflight.md).
 
 ## Capabilities
 
