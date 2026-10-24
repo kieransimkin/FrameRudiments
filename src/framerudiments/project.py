@@ -308,6 +308,11 @@ class Project:
                 else {}
             ),
             **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}),
+            **({"effect_graph": self.data["effect_graph"]} if "effect_graph" in self.data else {}),
+            **(
+                {"effect_graph_controls": self.data["effect_graph_controls"]}
+                if "effect_graph_controls" in self.data else {}
+            ),
             render_quality=self.output_quality.evidence,
             **(
                 {"visualiser_routing": self.data["visualiser_routing"]}

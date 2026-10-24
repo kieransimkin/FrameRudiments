@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.1 — 24 October 2026
+**Version:** 1.2 — 24 October 2026
 **Status:** Active implementation, with independently gated milestones.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
@@ -26,7 +26,7 @@ Unify alpha-aware per-layer styles, independently forked filter branches, arbitr
 - Existing `src/framerudiments/effect_graph_modulation.py`: native `_Modulator` adapter and immutable per-frame numeric overrides.
 - `src/framerudiments/compositor.py`: opt-in graph execution after legacy element and frame effects, using source `frame`, `background` and captured `layer:<id>` surfaces.
 - `docs/effect-graph-implementation-plan.md`: original granular project plan and dependency gates.
-- Current increment: CPU two-input `transition` node with dissolve, directional wipe and radial reveal, exact endpoints, premultiplied-safe interpolation and native `progress`/`feather`/`center.x`/`center.y` control targets. **Only isolated graph tests are locally verified; full repository CI is required.**
+- Current increment: CPU two-input `transition` node with dissolve, directional wipe and radial reveal, exact endpoints, premultiplied-safe interpolation and native `progress`/`feather`/`center.x`/`center.y` control targets. **Full-project render integration is covered by the M2 tests in v13; CI confirmation is still required.**
 
 ## Proposed graph API (transition v1)
 
@@ -203,3 +203,33 @@ All external shader/model/media sources must be pinned or versioned, constrained
 - GStreamer: https://gstreamer.freedesktop.org/
 
 These are architectural reference points and prospective adapters. Merely citing a standard does not establish compatible runtime integration or performance.
+
+## M2 integration hardening — implementation v13 (pending full CI confirmation)
+
+The v13 increment adds `effect_graph_integration.py` and integration tests under
+`tests/test_effect_graph_project_integration.py`.
+
+- The compositor validates all **reachable** graph source nodes against known layer/scene/text IDs at construction time; unknown sources fail before frame rendering.
+- An inactive but valid layer/text source is represented by an all-transparent RGBA image, preserving correct transitions even when only one branch has content.
+- Isolated `background` is not mutated while subsequent layers are alpha-composited; it remains a reusable source separate from `frame`.
+- When `scene` is a requested graph source, the scene hook is rendered in isolation and captured even without scoped post effects or visualiser routing.
+- Project evidence includes the authored graph and control declarations; source-clocked modulation continues through the existing native `_Modulator`.
+- Install `pip install -e ".[effect_graph,dev]"` to run the CPU effect-graph integration suite, or use the preexisting `gpu` extra. NumPy stays optional for projects that do not invoke NumPy-backed effects.
+
+### Required local/CI verification
+
+```bash
+python -m pytest tests/test_effect_graph.py tests/test_effect_graph_modulation.py tests/test_effect_graph_transitions.py tests/test_effect_graph_integration.py -q
+python -m pytest tests/test_effect_graph_project_integration.py -q
+python -m pytest tests -q
+```
+
+`test_effect_graph_project_integration.py` uses a generated, hash-pinned synthetic
+project and an installed TTF font. It does not require private assets, a GPU,
+or FFmpeg. If no font is available it skips with a clear reason; CI must install
+a font and use `FRAMERUDIMENTS_TEST_FONT` so the integration tests actually run.
+
+The M2 acceptance gate remains open until this full suite runs on a complete
+checkout. Future M3 stages add matte combination, perceptual keys, edge refinement
+and the wider DanceNotion control schema. M4 extends spectral displacement beyond
+RGB, M5+ add advanced transitions and temporal effects.

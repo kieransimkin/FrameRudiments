@@ -120,6 +120,12 @@ class EffectGraph:
             self.order.append(key)
 
         visit(self.output)
+        # Only nodes reachable from the selected output participate in execution.
+        # The compositor uses this set to validate provider names at preparation
+        # and to supply transparent images for valid but inactive layers.
+        self.source_ids = frozenset(
+            key for key in self.order if self.nodes[key].kind == 'source'
+        )
 
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)

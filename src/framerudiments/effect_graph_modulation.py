@@ -12,25 +12,31 @@ class EffectGraphControls:
             raise ValueError("effect_graph_controls must be a list of at most 64 bindings")
         if configs and graph is None:
             raise ValueError("effect_graph_controls requires effect_graph")
-        self.bindings = []
+        # Validate the whole binding table before constructing *any* native
+        # Motion. Invalid targets and colliding replacement bindings must fail
+        # before loading external recording files or accessing project state.
+        validated = []
         seen = set()
-        self.files = []
+        allowed_fields = {
+            "id", "node", "property", "motion", "axis", "range", "curve", "steps",
+            "power", "invert", "combine", "weight", "lag_frames",
+            "smoothing_frames", "deadzone", "sample_stride",
+        }
         for row in configs:
-            if not isinstance(row, dict) or set(row) - {
-                "id", "node", "property", "motion", "axis", "range", "curve", "steps",
-                "power", "invert", "combine", "weight", "lag_frames",
-                "smoothing_frames", "deadzone", "sample_stride",
-            }:
+            if not isinstance(row, dict) or set(row) - allowed_fields:
                 raise ValueError("invalid effect graph control fields")
             node, prop = row.get("node"), row.get("property")
+            if not isinstance(node, str) or not isinstance(prop, str):
+                raise ValueError("graph control needs node and property")
             if (node, prop) in seen and row.get("combine", "set") == "set":
                 raise ValueError("duplicate replacement graph control target")
             seen.add((node, prop))
-            if not isinstance(node, str) or not isinstance(prop, str):
-                raise ValueError("graph control needs node and property")
-            # Validate against the same target whitelist as runtime overrides.
-            # The selected numeric value is validated again during render.
             graph.validate_control_target(node, prop)
+            validated.append((row, node, prop))
+
+        self.bindings = []
+        self.files = []
+        for row, node, prop in validated:
             proxy = {k: v for k, v in row.items() if k not in {"node", "property"}}
             proxy["target"] = "style.value"
             driver = _Modulator(proxy, project, context_at)

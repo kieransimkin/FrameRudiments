@@ -20,6 +20,7 @@ from .visualisers import effect_specs, VisualiserEffectHooks
 from .scoped_effects import CompositingEffects
 from .effect_graph import EffectGraph
 from .effect_graph_modulation import EffectGraphControls
+from .effect_graph_integration import validate_graph_sources, evaluate_effect_graph
 from .visualiser_routing import VisualiserLayerRouting
 from .layer_masks import LayerMasks
 from .layer_animation import LayerAnimations
@@ -403,6 +404,7 @@ class Compositor:
             EffectGraphControls(project, self.effect_graph, project.data.get("effect_graph_controls", []), self.context)
             if self.effect_graph is not None else None
         )
+        validate_graph_sources(self.effect_graph, targets)
         mask_order = ["background"]
         mask_order.extend(f"layer:{layer.id}" for layer in self.layers)
         self.layer_masks = LayerMasks(project.data.get("layer_masks", {}), mask_order)
@@ -495,10 +497,16 @@ class Compositor:
         background = pipeline.apply_element(self.background.copy(), "background", ctx)
         mask_surfaces["background"] = background
         self._capture_route("background", background)
-        image = background
+        # Background is a graph provider; later compositing must not mutate it.
+        image = background.copy()
 
         if self.scene:
-            if pipeline.affects("scene") or self.visualiser_routing is not None:
+            isolate_scene = (
+                pipeline.affects("scene")
+                or self.visualiser_routing is not None
+                or (self.effect_graph is not None and "scene" in self.effect_graph.source_ids)
+            )
+            if isolate_scene:
                 # A scene hook with isolated FX paints onto transparent RGBA.
                 # Untargeted hooks keep their original composited-background API.
                 scene_ink = Image.new("RGBA", self.background.size)
@@ -506,6 +514,7 @@ class Compositor:
                 if scene_ink.size != self.background.size or scene_ink.mode != "RGBA":
                     raise ValueError("Custom scene hook must return frame-sized RGBA")
                 scene_ink = pipeline.apply_element(scene_ink, "scene", ctx)
+                mask_surfaces["scene"] = scene_ink
                 self._capture_route("scene", scene_ink)
                 image.alpha_composite(scene_ink)
             else:
@@ -594,14 +603,9 @@ class Compositor:
             paint("word-caption", lambda canvas: self._word_caption_draw(canvas, ctx) or None)
 
         image = pipeline.apply_frame(image, ctx)
-        if self.effect_graph is not None:
-            sources = {"frame": image, **mask_surfaces}
-            for node in self.effect_graph.nodes.values():
-                if node.kind == "source" and node.id not in sources:
-                    raise ValueError(f"Unknown effect graph source: {node.id}")
-            values = self.effect_graph_controls.values(ctx, self.effect_graph)
-            image = self.effect_graph.render(sources, parameter_values=values)
-        return image
+        return evaluate_effect_graph(
+            self.effect_graph, self.effect_graph_controls, ctx, image, mask_surfaces
+        )
 
     def _final_output(self, image, context, apply_quality):
         # Historical shutter samples must not receive a separate AA pass.
