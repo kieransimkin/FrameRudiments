@@ -1,5 +1,24 @@
 # FrameRudiments
 
+## Resumable, music-aware long renders
+
+Version 0.4.10 renders projects longer than 30 seconds as finalized video-only
+chunks by default. Boundaries prefer nearby structural cues, so a song normally
+splits at a verse, chorus, bridge or interlude transition. Composition still
+advances from frame zero on one absolute clock; a resume replays the retained
+prefix to rebuild temporal and feedback state before encoding the first missing
+chunk. The canonical audio is muxed once after stream-copy concatenation.
+
+Every chunk receives a receipt, exact frame-count/timestamp checks and a full
+decode. Final QA also compares decoded frames on both sides of every join, then
+checks the assembled video’s complete CFR ledger, audio duration and hash. See
+[chunked rendering](docs/chunked-rendering.md).
+
+![Generated architecture diagram of sequential chunk rendering](docs/media/chunked-rendering.svg)
+
+Generated architecture diagram; the integration tests use synthetic media and
+no private campaign material.
+
 ## Complete x264 preset range
 
 Version 0.4.6 accepts every named libx264 preset from `ultrafast` through
@@ -92,9 +111,13 @@ framerudiments plan demo/project.json --output demo-plan.json
 framerudiments preflight demo/project.json --output preflight --ffmpeg /path/to/ffmpeg
 framerudiments preflight demo/project.json --output bounded-preflight --max-frames 3 --ffmpeg /path/to/ffmpeg
 framerudiments render demo/project.json --output render --ffmpeg /path/to/ffmpeg
+framerudiments render demo/project.json --output render --chunk-seconds 30 --ffmpeg /path/to/ffmpeg
+framerudiments render demo/project.json --output render --resume --ffmpeg /path/to/ffmpeg
 ```
 
-Use a new output directory each time. `--ffprobe` overrides FFmpeg's sibling
+Use a new output directory for a new render; `--resume` targets the exact
+existing chunked output. Projects longer than 30 seconds chunk automatically.
+Use `--single-pass` only for a deliberate compatibility run. `--ffprobe` overrides FFmpeg's sibling
 ffprobe. Environment alternatives are `FRAMERUDIMENTS_FFMPEG` and
 `FRAMERUDIMENTS_FFPROBE`. Fonts are explicit hashed inputs; no platform-specific
 font or FFmpeg location is hardcoded into the engine. The synthetic demo creates

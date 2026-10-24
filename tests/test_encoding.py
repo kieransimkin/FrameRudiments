@@ -2,7 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from framerudiments.encoding import X264_PRESETS, command
+from framerudiments.encoding import X264_PRESETS, command, mux_chunks_command, video_chunk_command
 
 
 def project():
@@ -31,3 +31,17 @@ def test_command_accepts_every_documented_x264_preset(preset):
 def test_command_rejects_unknown_encoder_preset():
     with pytest.raises(ValueError, match="Unsupported encoder preset"):
         command(project(), "candidate.mp4", "ffmpeg", preset="maximum", crf=12)
+
+
+def test_chunk_command_is_video_only_and_forces_joinable_gops():
+    args = video_chunk_command(project(), "chunk.mp4", "ffmpeg", preset="slow", crf=14)
+    assert "-an" in args
+    assert args[args.index("-g") + 1] == "120"
+    assert args[args.index("-sc_threshold") + 1] == "0"
+
+
+def test_chunk_assembly_copies_video_and_muxes_canonical_audio_once():
+    args = mux_chunks_command(project(), "chunks.txt", "video.mp4", "ffmpeg")
+    assert args[args.index("-c:v") + 1] == "copy"
+    assert args[args.index("-c:a") + 1] == "aac"
+    assert args.count("source.wav") == 1

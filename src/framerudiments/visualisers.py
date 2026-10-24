@@ -277,7 +277,11 @@ class EffectAudio:
             "f32le",
             str(path),
         ]
-        subprocess.run(command, check=True, capture_output=True)
+        # Chunked resume recreates the sequential effect chain from frame zero.
+        # Reuse only the exact-sized native PCM prepared by the same pinned
+        # project; malformed or partial data still fails below.
+        if not path.exists():
+            subprocess.run(command, check=True, capture_output=True)
         self.samples = path.stat().st_size // 8
         expected = (project.end_sample - project.start_sample) * project.repeats
         if self.samples != expected or path.stat().st_size % 8:

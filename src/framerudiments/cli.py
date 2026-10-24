@@ -85,6 +85,21 @@ def main(argv=None):
         else:
             item.add_argument("--preset", default="fast")
             item.add_argument("--crf", type=int, default=20)
+            chunk_mode = item.add_mutually_exclusive_group()
+            chunk_mode.add_argument(
+                "--chunked", dest="chunked", action="store_true", help="Force sequential chunks"
+            )
+            chunk_mode.add_argument(
+                "--single-pass", dest="chunked", action="store_false", help="Disable automatic chunks"
+            )
+            item.set_defaults(chunked=None)
+            item.add_argument(
+                "--chunk-seconds", type=float, default=30.0, help="Approximate chunk duration"
+            )
+            item.add_argument("--resume", action="store_true", help="Resume a finalized chunk prefix")
+            item.add_argument(
+                "--min-free-gib", type=float, default=0.5, help="Reserved free disk space"
+            )
     args = parser.parse_args(argv)
     try:
         if args.command == "demo":
@@ -168,7 +183,14 @@ def main(argv=None):
         else:
             runner = preflight if args.command == "preflight" else render
             extra = (
-                {"preset": args.preset, "crf": args.crf}
+                {
+                    "preset": args.preset,
+                    "crf": args.crf,
+                    "chunked": args.chunked,
+                    "chunk_seconds": args.chunk_seconds,
+                    "resume": args.resume,
+                    "min_free_bytes": round(args.min_free_gib * 1024**3),
+                }
                 if args.command == "render"
                 else {"max_frames": args.max_frames}
             )

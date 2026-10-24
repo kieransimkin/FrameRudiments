@@ -184,3 +184,72 @@ def test_cli_forwards_bounded_preflight_limit(monkeypatch, capsys):
         "max_frames": 3,
     }
     assert '"state": "bounded-prefix preflight passed"' in capsys.readouterr().out
+
+
+def test_cli_forwards_chunk_controls(monkeypatch):
+    from framerudiments import cli
+
+    received = {}
+
+    def fake_render(project, output, **kwargs):
+        received.update(project=project, output=output, **kwargs)
+        return {"state": "ok", "frames": 1}
+
+    monkeypatch.setattr(cli, "render", fake_render)
+    assert (
+        cli.main(
+            [
+                "render",
+                "project.json",
+                "--output",
+                "out",
+                "--chunked",
+                "--chunk-seconds",
+                "42",
+                "--resume",
+                "--min-free-gib",
+                "0.75",
+            ]
+        )
+        == 0
+    )
+    assert received["chunked"] is True
+    assert received["chunk_seconds"] == 42
+    assert received["resume"] is True
+    assert received["min_free_bytes"] == round(0.75 * 1024**3)
+
+
+def test_chunked_render_resumes_finalized_prefix_with_exact_seams(demo, tmp_path):
+    if not os.environ.get("FRAMERUDIMENTS_FFMPEG"):
+        pytest.skip("Set FRAMERUDIMENTS_FFMPEG")
+    state = {"fail": True}
+
+    def scene(image, ctx):
+        if state["fail"] and ctx.frame == 130:
+            raise RuntimeError("synthetic interruption")
+        return image
+
+    output = tmp_path / "chunked"
+    with pytest.raises(RuntimeError, match="synthetic interruption"):
+        render(demo, output, scene=scene, preset="ultrafast", chunked=True, chunk_seconds=9)
+    first = output / "chunks" / "chunk-0000.mp4"
+    receipt = output / "chunks" / "chunk-0000.json"
+    assert first.is_file() and receipt.is_file()
+    retained = sha256(first)
+
+    state["fail"] = False
+    result = render(
+        demo,
+        output,
+        scene=scene,
+        preset="ultrafast",
+        chunked=True,
+        chunk_seconds=9,
+        resume=True,
+    )
+    assert sha256(first) == retained
+    assert result["render_mode"] == "chunked-sequential"
+    assert result["replayed_frames"] == result["chunk_plan"]["chunks"][0]["end_frame_exclusive"]
+    assert result["seam_verification"]["all_matched"]
+    assert result["verification"]["full_decode"] == "passed"
+    assert result["output"]["sha256"] == sha256(output / "video.mp4")
