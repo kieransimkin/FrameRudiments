@@ -1,3 +1,23 @@
+# FrameRudiments 0.4.10
+
+- Projects longer than 30 seconds now render as finalized sequential chunks by
+  default, with boundaries preferring nearby pinned structural cues.
+- Resume verifies a contiguous immutable receipt prefix, replays every retained
+  frame from zero to restore temporal and feedback state, and encodes only the
+  missing suffix.
+- The canonical audio is muxed once after stream-copy video concatenation.
+  Every chunk and the final MP4 receive exact frame/CFR and full-decode checks;
+  decoded seam hashes detect dropped, duplicated or altered join frames.
+- Disk-space guards run before each chunk and final assembly, leaving completed
+  chunks safely resumable instead of producing an unapproved truncated MP4.
+- CLI controls include `--chunked`, `--single-pass`, `--chunk-seconds`,
+  `--resume` and `--min-free-gib`.
+
+![Generated chunked-rendering architecture diagram](docs/media/chunked-rendering.svg)
+
+Generated explanatory diagram; synthetic integration tests contain no private
+campaign material.
+
 # FrameRudiments 0.4.9
 
 - Named visualiser matte providers remain available as isolated RGBA data but

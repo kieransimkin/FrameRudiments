@@ -129,6 +129,154 @@ def command(project, output, ffmpeg, *, preset="fast", crf=20):
     ]
 
 
+def video_chunk_command(project, output, ffmpeg, *, preset="fast", crf=20):
+    """Encode one finalized video-only chunk from consecutive raw RGB frames."""
+    if preset not in X264_PRESETS:
+        raise ValueError("Unsupported encoder preset")
+    if not isinstance(crf, int) or not 0 <= crf <= 51:
+        raise ValueError("CRF must be an integer in [0,51]")
+    p = project
+    keyint = max(1, p.fps * 2)
+    return [
+        ffmpeg,
+        "-n",
+        "-hide_banner",
+        "-loglevel",
+        "warning",
+        "-f",
+        "rawvideo",
+        "-pixel_format",
+        "rgb24",
+        "-video_size",
+        f"{p.width}x{p.height}",
+        "-framerate",
+        str(p.fps),
+        "-i",
+        "pipe:0",
+        "-an",
+        "-c:v",
+        "libx264",
+        "-preset",
+        preset,
+        "-crf",
+        str(crf),
+        "-threads",
+        "4",
+        "-pix_fmt",
+        "yuv420p",
+        "-fps_mode",
+        "cfr",
+        "-g",
+        str(keyint),
+        "-keyint_min",
+        str(keyint),
+        "-sc_threshold",
+        "0",
+        "-color_primaries",
+        "bt709",
+        "-color_trc",
+        "bt709",
+        "-colorspace",
+        "bt709",
+        "-movflags",
+        "+faststart",
+        str(output),
+    ]
+
+
+def mux_chunks_command(project, concat_file, output, ffmpeg):
+    """Stream-copy finalized video chunks and mux the canonical audio once."""
+    p = project
+    return [
+        ffmpeg,
+        "-n",
+        "-hide_banner",
+        "-loglevel",
+        "warning",
+        "-f",
+        "concat",
+        "-safe",
+        "0",
+        "-i",
+        str(concat_file),
+        "-i",
+        p.audio_ref["path"],
+        "-map",
+        "0:v:0",
+        "-map",
+        "1:a:0",
+        "-af",
+        audio_filters(p),
+        "-c:v",
+        "copy",
+        "-c:a",
+        "aac",
+        "-b:a",
+        "256k",
+        "-ar",
+        str(p.sample_rate),
+        "-movflags",
+        "+faststart",
+        str(output),
+    ]
+
+
+def verify_video(path, project, expected_frames, ffmpeg, ffprobe):
+    """Fully decode a video-only chunk and verify its zero-based CFR ledger."""
+    info = probe(path, ffprobe, count=True)
+    streams = [stream for stream in info["streams"] if stream["codec_type"] == "video"]
+    if len(streams) != 1 or any(stream["codec_type"] == "audio" for stream in info["streams"]):
+        raise ValueError("Chunk must contain exactly one video stream and no audio")
+    video = streams[0]
+    if (
+        int(video["nb_read_frames"]) != expected_frames
+        or Fraction(video["avg_frame_rate"]) != project.fps
+        or Fraction(video["r_frame_rate"]) != project.fps
+        or video["codec_name"] != "h264"
+        or video["pix_fmt"] != "yuv420p"
+        or [video["width"], video["height"]] != [project.width, project.height]
+    ):
+        raise ValueError("Encoded chunk does not match its frame contract")
+    completed = subprocess.run(
+        [
+            ffprobe,
+            "-v",
+            "error",
+            "-select_streams",
+            "v:0",
+            "-show_entries",
+            "frame=best_effort_timestamp_time",
+            "-of",
+            "csv=p=0",
+            str(path),
+        ],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    timestamps = [
+        float(line.split(",")[0])
+        for line in completed.stdout.splitlines()
+        if line.split(",")[0].strip()
+    ]
+    if len(timestamps) != expected_frames or any(
+        abs(timestamp - index / project.fps) > 0.000002
+        for index, timestamp in enumerate(timestamps)
+    ):
+        raise ValueError("Chunk timestamps are not constant-rate from zero")
+    subprocess.run(
+        [ffmpeg, "-v", "error", "-xerror", "-i", str(path), "-f", "null", "-"],
+        check=True,
+        capture_output=True,
+    )
+    return dict(
+        frames=expected_frames,
+        full_decode="passed",
+        decoded_timestamps="CFR from zero; all chunk frames checked",
+        probe=info,
+    )
+
+
 def verify(path, project, ffmpeg, ffprobe):
     info = probe(path, ffprobe, count=True)
     video = next(s for s in info["streams"] if s["codec_type"] == "video")
