@@ -142,7 +142,14 @@ def preflight(
     effects = None
     try:
         effects = (
-            EffectChain(p, compositor.effect_specs, ffmpeg, out, routing=compositor.visualiser_routing)
+            EffectChain(
+                p,
+                compositor.effect_specs,
+                ffmpeg,
+                out,
+                routing=compositor.visualiser_routing,
+                hooks=compositor.visualiser_hooks,
+            )
             if compositor.effect_specs
             else None
         )
@@ -201,7 +208,14 @@ def render(project, output, *, ffmpeg=None, ffprobe=None, scene=None, renderers=
     effects = None
     try:
         effects = (
-            EffectChain(p, compositor.effect_specs, ffmpeg, out, routing=compositor.visualiser_routing)
+            EffectChain(
+                p,
+                compositor.effect_specs,
+                ffmpeg,
+                out,
+                routing=compositor.visualiser_routing,
+                hooks=compositor.visualiser_hooks,
+            )
             if compositor.effect_specs
             else None
         )

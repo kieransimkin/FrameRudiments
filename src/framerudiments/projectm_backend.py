@@ -27,6 +27,7 @@ class ProjectMBackend:
         self.glfw, self.gl = glfw, GL
         self.window = self.handle = None
         self.texture = self.fbo = self.output_texture = None
+        self.feedback_override = None
         self.dll_dirs = []
         self.registered = False
         path = Path(os.environ.get("FRAMERUDIMENTS_PROJECTM_LIBRARY", ""))
@@ -225,26 +226,12 @@ class ProjectMBackend:
         gl = self.gl
         self.glfw.make_context_current(self.window)
         self.lib.projectm_set_log_callback(self.log_callback, True, None)
+        if self.feedback_override is not None:
+            self._burn(self.feedback_override, 1.0)
+            self.feedback_override = None
         frame = image.convert("RGBA")
-        if self.size != self.frame_size:
-            blank = (0, 0, 0, 0) if frame.getchannel("A").getextrema()[0] < 255 else "black"
-            canvas = Image.new("RGBA", self.size, blank)
-            canvas.paste(frame, (self.crop_left, 0))
-            frame = canvas
-        # Preserve source alpha so an unfed layer cannot paint black into feedback.
-        # Fully opaque legacy inputs remain numerically unchanged.
-        frame.putalpha(frame.getchannel("A").point(lambda a: round(a * self.mix)))
-        pixels = frame.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
-        gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
-        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
-        gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, *self.size, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, pixels)
-        gl.glViewport(0, 0, *self.size)
-        gl.glEnable(gl.GL_BLEND)
-        gl.glBlendEquation(gl.GL_FUNC_ADD)
-        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        self._burn(frame, self.mix)
         self.lib.projectm_set_frame_time(self.handle, context.output_seconds)
-        self.lib.projectm_opengl_burn_texture(self.handle, int(self.texture), 0, 0, *self.size)
         audio = (C.c_float * len(pcm)).from_buffer_copy(pcm)
         self.lib.projectm_pcm_add_float(self.handle, audio, len(pcm) // 2, 2)
         self.lib.projectm_opengl_render_frame_fbo(self.handle, int(self.fbo))
@@ -259,6 +246,36 @@ class ProjectMBackend:
         raw = gl.glReadPixels(0, 0, *self.size, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE)
         frame = Image.frombytes("RGBA", self.size, raw).transpose(Image.Transpose.FLIP_TOP_BOTTOM)
         return frame.crop((self.crop_left, 0, self.crop_left + self.frame_size[0], self.frame_size[1]))
+
+    def _burn(self, image, opacity):
+        """Burn an RGBA source into projectM's retained target through its public 4.2 API."""
+        gl = self.gl
+        frame = image.convert("RGBA")
+        if frame.size != self.frame_size:
+            raise ValueError("projectM feedback hook needs frame-sized RGBA")
+        if self.size != self.frame_size:
+            blank = (0, 0, 0, 0) if frame.getchannel("A").getextrema()[0] < 255 else "black"
+            canvas = Image.new("RGBA", self.size, blank)
+            canvas.paste(frame, (self.crop_left, 0))
+            frame = canvas
+        # Preserve source alpha so an unfed layer cannot paint black into feedback.
+        # Fully opaque legacy inputs remain numerically unchanged.
+        frame.putalpha(frame.getchannel("A").point(lambda a: round(a * opacity)))
+        pixels = frame.transpose(Image.Transpose.FLIP_TOP_BOTTOM).tobytes()
+        gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture)
+        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 1)
+        gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, *self.size, gl.GL_RGBA, gl.GL_UNSIGNED_BYTE, pixels)
+        gl.glViewport(0, 0, *self.size)
+        gl.glEnable(gl.GL_BLEND)
+        gl.glBlendEquation(gl.GL_FUNC_ADD)
+        gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+        self.lib.projectm_opengl_burn_texture(self.handle, int(self.texture), 0, 0, *self.size)
+
+    def set_feedback(self, image):
+        if image.mode != "RGBA" or image.size != self.frame_size:
+            raise ValueError("projectM feedback hook needs frame-sized RGBA")
+        self.feedback_override = image.copy()
 
     def close(self):
         global _users

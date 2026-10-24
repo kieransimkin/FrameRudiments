@@ -93,6 +93,35 @@ def test_effect_spec_retains_mesh_and_output_grade(tmp_path):
     )
 
 
+def test_effect_spec_retains_stage_chroma_key_and_matte(tmp_path):
+    p = project(tmp_path)
+    p.data["effects"] = [
+        dict(
+            id="contained",
+            engine="butterchurn",
+            composite={
+                "opacity": 0.75,
+                "chroma_key": {
+                    "colour": "#00FF00",
+                    "similarity": 0.1,
+                    "smoothness": 0.08,
+                    "despill": 0.4,
+                },
+                "matte": {"source": "layer:sprite", "mode": "luminance", "invert": True},
+            },
+        )
+    ]
+    composite = effect_specs(p)[0]["composite"]
+    assert composite["opacity"] == 0.75
+    assert composite["chroma_key"]["colour"] == "#00ff00"
+    assert composite["matte"] == {
+        "source": "layer:sprite",
+        "mode": "luminance",
+        "invert": True,
+        "opacity": 1.0,
+    }
+
+
 def test_pcm_reuses_exact_trim_repeat_chain_and_causal_windows(tmp_path):
     p = project(tmp_path)
     ffmpeg = os.environ["FRAMERUDIMENTS_FFMPEG"]

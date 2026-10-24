@@ -23,7 +23,7 @@ the inputs are checked again before and after a render.
 | `layers` | Ordered sprite, legacy bar and modular rudiment layers described below. |
 | Native radial petals | Use `type: "rudiment", renderer: "rangoli"` with independent scale/spin/lift axes; see [rangoli configuration and actual demo](rangoli.md). |
 | `visualiser_routing` | Optional per-element GPU input/overlay policies. Feed continuously, only for first N native pips after visibility onset, or never; see [routing](visualiser-routing.md). |
-| `effects` | Ordered Butterchurn/projectM stages. Butterchurn may set a denser `mesh_width`/`mesh_height`; any stage may set a multi-stop `output_palette_grade` applied before the next stage or clean routing overlay. projectM stages may use `preset_timeline` for ordered changes at canonical source seconds through the native soft transition on one retained feedback instance. See [visualisers](visualisers.md). |
+| `effects` | Ordered Butterchurn/projectM stages. Butterchurn may set a denser `mesh_width`/`mesh_height`; any stage may set `input_effects`, retained-loop `feedback_effects`, `output_effects`, a multi-stop `output_palette_grade`, and a stage-level `composite` containing chroma key, named alpha/luminance matte and opacity controls. projectM stages may use `preset_timeline` for ordered changes at canonical source seconds through the native soft transition on one retained feedback instance. See [visualisers](visualisers.md). |
 | `lyric_art` | `{items: [{text, asset}], placement: <sprite fields>, fallback: "text" or "error"}`. Exact text lookup preserves canonical lyric association. `error` requires every visible lyric to have an asset. |
 | `stemlab_loop` | `{file: <pinned loops report>, id: <accepted loop id>}`; imports native bounds/rate, verifies source SHA, rejects conflicting explicit audio values. Does not approve a seam. |
 
@@ -156,7 +156,8 @@ see [full schema and examples](rich-lyric-effects.md).
 ## Optional full-frame effects
 
 The top-level `effects` list is additive to v1. See [visualisers.md](visualisers.md)
-for the `id`, `engine`, `preset`, `input_mix`, `seed` and `trusted_preset` fields,
+for the `id`, `engine`, `preset`, `input_mix`, `seed`, `trusted_preset` and
+stage-level `composite` fields,
 runtime setup and sequential feedback contract. Both engines process all existing
 layers, including native moving sprites/atlases, captions and lyric art, before
 encoding. Existing projects without `effects` keep the original composition path.

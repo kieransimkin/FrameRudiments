@@ -57,6 +57,111 @@ Generated test illustration; it demonstrates the colour transform rather than
 evidence from a private campaign. A video is omitted because the grade is a
 stateless per-frame colour operation with no temporal behaviour.
 
+## Stage-level chroma key and track mattes
+
+### Input, retained-feedback and output effect hooks
+
+Every stage accepts three ordered arrays using the same `EffectStage` schema as
+`post_effects.frame`: `input_effects`, `feedback_effects` and
+`output_effects`. They support the complete validated `VisualStyle` set and
+native DanceRudiment modulations.
+
+```json
+{
+  "id": "cloud-feedback",
+  "engine": "butterchurn",
+  "preset": "feedback",
+  "input_effects": [
+    {"id": "source-grade", "visual": {"saturation": 0.7, "contrast": 1.1}}
+  ],
+  "feedback_effects": [
+    {"id": "memory-drift", "visual": {"hue_shift": 4, "blur": 0.6}}
+  ],
+  "output_effects": [
+    {"id": "display-finish", "visual": {"grain": 0.03, "vignette": 0.2}}
+  ]
+}
+```
+
+- `input_effects` changes the source texture before it is injected into that
+  engine's warp/composite pass. It therefore participates in feedback.
+- `feedback_effects` processes the engine frame and writes those pixels back
+  into the engine's retained feedback target before the next frame consumes
+  it. Butterchurn writes to its pinned `targetFrameBuffer`; projectM uses the
+  pinned 4.2 `projectm_opengl_burn_texture` API. This is an actual loop-state
+  mutation and requires one GPU readback/upload per affected stage and frame.
+- `output_effects` changes only the displayed stage result. It does not alter
+  retained feedback unless the same treatment is also declared under
+  `feedback_effects`.
+
+The exact order is stage input injection → `input_effects` → engine render →
+`feedback_effects` branch/writeback → legacy `output_palette_grade` →
+`output_effects` → chroma key → track matte → stage opacity/alpha-over. The
+next engine receives that composited display result. Clean routing overlays
+remain after the final engine.
+
+![Synthetic control frames beside real Butterchurn and projectM retained-feedback writeback results](media/visualiser-feedback-writeback.png)
+
+*Real-engine GPU smoke evidence from the pinned Butterchurn and projectM
+runtimes. The magenta card is deliberately written into each engine's retained
+feedback target; the following frame changes before ordinary output processing.
+Inputs are synthetic and the enlarged nearest-neighbour pixels make the
+difference inspectable. Source hashes are retained in the adjacent
+`visualiser-feedback-writeback.json` receipt.*
+
+Each Butterchurn or projectM stage may declare `composite`. FrameRudiments
+renders the visualiser normally, optionally removes a keyed colour, multiplies
+the remaining alpha by a named isolated compositor layer, then composites that
+result over the image that entered the stage. Both operations can be combined:
+
+```json
+{
+  "id": "coastal-light",
+  "engine": "projectm",
+  "preset": "julia",
+  "composite": {
+    "opacity": 0.82,
+    "chroma_key": {
+      "colour": "#00ff00",
+      "similarity": 0.10,
+      "smoothness": 0.08,
+      "despill": 0.35
+    },
+    "matte": {
+      "source": "layer:moving-clouds",
+      "mode": "luminance",
+      "invert": false,
+      "opacity": 0.9
+    }
+  }
+}
+```
+
+`similarity` is the fully removed maximum per-channel RGB distance from the
+key colour, normalised to 0..1. `smoothness` is the following soft transition
+to fully opaque pixels. A zero smoothness gives a hard key. `despill` blends
+near-key edge pixels toward their luminance without altering distant colours.
+
+The matte `source` names an actual isolated compositor element such as
+`layer:moving-clouds`, `background`, `scene`, `caption` or `lyric-art:0`.
+Unknown names fail during composition setup. `alpha` uses its rendered alpha;
+`luminance` multiplies that alpha by greyscale RGB. `invert`, matte `opacity`
+and stage `opacity` are applied after keying. An invisible or gated matte
+source produces an empty contribution for that frame.
+
+Compositing happens independently after every configured stage. The next
+visualiser receives the already keyed/matted result, so two engines can occupy
+different spatial regions without a release-owned frame loop. The visualiser
+still advances across the full sequential programme even when its visible
+matte is empty; its feedback state and PCM clock therefore remain continuous.
+Clean `visualiser_routing` overlays are drawn after the last stage as before.
+
+Keying is colour removal, not evidence that a preset was authored for a green
+screen. Choose a key colour demonstrated to be isolated in inspected output,
+and inspect edge transparency at delivery size. Track mattes preserve the
+provider's rendered motion and post effects; they do not infer a mask from a
+filename or visual role.
+
 ## Per-element feed and clean overlay routing
 
 FrameRudiments supports an optional project-level `visualiser_routing` object.

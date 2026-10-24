@@ -327,6 +327,22 @@ a browser or projectM. Feedback is sequential, and GPU output can vary by driver
 Inspect processed/encoded glyphs and safe zones; pre-effect text bounds cannot
 prove final legibility.
 
+Each visualiser stage can also be chroma-keyed, constrained by a named animated
+alpha/luminance track matte, faded, or use all three operations together. The
+processed stage is composited over its own input before the next engine, so
+projectM and Butterchurn can occupy different regions while retaining their
+continuous source-time feedback. See [stage-level keying and matting](docs/visualisers.md#stage-level-chroma-key-and-track-mattes).
+
+The same stage can apply the complete FrameRudiments visual-effect pipeline at
+its source input, directly to the retained Butterchurn/projectM feedback state,
+or to display output. These hooks are separate and evidence-recorded; a
+feedback hook is written back for consumption by the next frame.
+
+The [real-engine feedback smoke evidence](docs/media/visualiser-feedback-writeback.png)
+shows the control frame, injected retained state and measured pixel difference
+for both pinned engines. It uses synthetic imagery and is evidence of the hook,
+not a claim about a campaign render.
+
 Version 0.1.4 preserves portrait geometry in pinned projectM legacy presets through a recorded square overscan/crop mapping; the upstream engine remains unmodified. Neutral portrait/landscape/square mapping is tested for both backends.
 
 ![Actual synthetic frame before and after both visualisers](https://raw.githubusercontent.com/kieransimkin/FrameRudiments/v0.1.4/docs/media/full-frame-comparison.png)
