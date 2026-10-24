@@ -1,3 +1,22 @@
+# FrameRudiments 0.4.8
+
+- Butterchurn and projectM stages now support deterministic post-stage chroma
+  keying, edge smoothing and bounded despill.
+- The complete VisualStyle effect set can run on a stage's source input,
+  retained feedback state, or display output. Retained-feedback treatments are
+  written back through Butterchurn's pinned target framebuffer and projectM's
+  pinned 4.2 texture-burn API before the next frame.
+- A stage can use any named isolated compositor element as an alpha or
+  luminance track matte, with inversion and independent matte/stage opacity.
+- Keying and matting compose in a documented order over the image that entered
+  each stage; later engines receive the already contained result while clean
+  routed text remains above the final chain.
+- Focused pixel tests cover hard/soft keys, combined key-plus-matte output,
+  luminance/alpha multiplication and two-engine stage order.
+- Pinned real-engine smoke evidence is included at
+  `docs/media/visualiser-feedback-writeback.png`, with source hashes in the
+  adjacent JSON receipt.
+
 # FrameRudiments 0.4.7
 
 - `preflight --max-frames N` composes a declared sequential prefix for expensive

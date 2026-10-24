@@ -1,0 +1,45 @@
+{
+  "schema": "framerudiments.feedback-contact-sheet.v1",
+  "synthetic_input": true,
+  "purpose": "Visual evidence of retained-feedback writeback in pinned real engines.",
+  "output": "docs\\media\\visualiser-feedback-writeback.png",
+  "output_sha256": "5d35e7555196c539bf669616405f759754472661c7838e2cfe92d74c74b323d5",
+  "sources": [
+    {
+      "engine": "Butterchurn",
+      "state": "control",
+      "file": "butterchurn-control.png",
+      "sha256": "c0210c81e18d3626fddcbae69151c11246879123fef5c27a7b8647c82ffb3225"
+    },
+    {
+      "engine": "Butterchurn",
+      "state": "feedback writeback",
+      "file": "butterchurn-feedback-hook.png",
+      "sha256": "406a7a828b49775a506507b59097588e0bc05d2f63ca28de571df211732f8a2f"
+    },
+    {
+      "engine": "Butterchurn",
+      "state": "pixel difference",
+      "file": "butterchurn-difference.png",
+      "sha256": "9ac9efc47ca3eb0dff21af46aaa5e8f7f7879bb4c5f004c64ca1fe2111a6d08d"
+    },
+    {
+      "engine": "projectM",
+      "state": "control",
+      "file": "projectm-control.png",
+      "sha256": "8ff0c598bde30f1c53f7037a46142c47e9e87a7d68cc66e87871d973d19cd74f"
+    },
+    {
+      "engine": "projectM",
+      "state": "feedback writeback",
+      "file": "projectm-feedback-hook.png",
+      "sha256": "3f8c01f0e568dfe61e691ebddd7a9c714bfc515d59613a6f14bae126950c4b08"
+    },
+    {
+      "engine": "projectM",
+      "state": "pixel difference",
+      "file": "projectm-difference.png",
+      "sha256": "2eac385f46c092d80e71224567f012b108505cc79c92c5a436a033af7e0dd9fc"
+    }
+  ]
+}

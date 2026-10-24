@@ -16,7 +16,7 @@ from .timeline import EventTrack
 from .word_timing import WordTrack
 from .rich_subtitles import RichTextAppearance
 from .lyric_indicator import WordIndicator
-from .visualisers import effect_specs
+from .visualisers import effect_specs, VisualiserEffectHooks
 from .scoped_effects import CompositingEffects
 from .visualiser_routing import VisualiserLayerRouting
 from .layer_masks import LayerMasks
@@ -378,6 +378,15 @@ class Compositor:
             targets.add("word-caption")
         if self.word_indicator:
             targets.add("word-indicator")
+        matte_sources = {
+            spec["composite"]["matte"]["source"]
+            for spec in self.effect_specs
+            if spec.get("composite") and spec["composite"].get("matte")
+        }
+        unknown_mattes = matte_sources - targets
+        if unknown_mattes:
+            raise ValueError(f"Unknown visualiser matte sources: {sorted(unknown_mattes)}")
+        self.visualiser_hooks = VisualiserEffectHooks(project, self.effect_specs, self.context)
         self.post_pipeline = CompositingEffects(
             project, project.data.get("post_effects", {}), self.context, valid_elements=targets
         )
@@ -386,7 +395,9 @@ class Compositor:
         self.layer_masks = LayerMasks(project.data.get("layer_masks", {}), mask_order)
         self.layer_animations = LayerAnimations(project.data.get("layer_animations", {}), mask_order)
         self.layer_displacement = LayerDisplacement(project.data.get("layer_displacement", {}), mask_order)
-        self._isolate_stage_injections = bool(project.data.get("visualiser_stage_injections"))
+        self._isolate_stage_injections = bool(
+            project.data.get("visualiser_stage_injections") or matte_sources
+        )
         self.visualiser_routing = None
         if "visualiser_routing" in project.data:
             if not self.effect_specs:

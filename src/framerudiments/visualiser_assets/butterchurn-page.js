@@ -84,13 +84,19 @@ async function initialise(config) {
     gl.activeTexture(gl.TEXTURE0);
     const oldTexture = gl.getParameter(gl.TEXTURE_BINDING_2D), oldSampler = gl.getParameter(gl.SAMPLER_BINDING);
     gl.bindSampler(0, null); gl.bindTexture(gl.TEXTURE_2D, texture);
-    if (message.rgba) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, config.width, config.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, decode(message.rgba));
-    // target becomes prev on render(): source pixels enter the real warp pass.
-    gl.bindFramebuffer(gl.FRAMEBUFFER, r.targetFrameBuffer);
-    gl.viewport(0, 0, r.texsizeX, r.texsizeY);
-    gl.useProgram(program); gl.bindVertexArray(vao); gl.uniform1i(source, 0); gl.uniform1f(amount, config.mix);
-    gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
+    const inject = (rgba, opacity) => {
+      if (rgba) gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, config.width, config.height, 0,
+        gl.RGBA, gl.UNSIGNED_BYTE, decode(rgba));
+      gl.bindFramebuffer(gl.FRAMEBUFFER, r.targetFrameBuffer);
+      gl.viewport(0, 0, r.texsizeX, r.texsizeY);
+      gl.useProgram(program); gl.bindVertexArray(vao); gl.uniform1i(source, 0); gl.uniform1f(amount, opacity);
+      gl.enable(gl.BLEND); gl.blendEquation(gl.FUNC_ADD); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    };
+    // A feedback hook replaces the retained target before this frame consumes
+    // it. The ordinary source is then injected with its independent input mix.
+    if (message.feedback_rgba) inject(message.feedback_rgba, 1);
+    inject(message.rgba, config.mix);
     gl.bindVertexArray(state.vao); gl.useProgram(state.program);
     gl.bindTexture(gl.TEXTURE_2D, oldTexture); gl.bindSampler(0, oldSampler); gl.activeTexture(state.active);
     gl.bindFramebuffer(gl.FRAMEBUFFER, state.fbo); gl.viewport(...state.viewport);

@@ -14,6 +14,8 @@ from PIL import Image, ImageColor, ImageOps
 
 from .encoding import audio_filters
 from .io import fields, integer, number, sha256
+from .scoped_effects import EffectStage, MAX_STAGES
+from .visualiser_compositing import composite_stage, validate_stage_composite
 
 ASSETS = Path(__file__).with_name("visualiser_assets")
 PRESETS = ("feedback", "kaleidoscope", "julia")
@@ -102,6 +104,10 @@ def effect_specs(project):
                 "mesh_width",
                 "mesh_height",
                 "output_palette_grade",
+                "composite",
+                "input_effects",
+                "feedback_effects",
+                "output_effects",
             },
             "full-frame effect",
         )
@@ -174,9 +180,76 @@ def effect_specs(project):
                 output_palette_grade=_palette_grade(
                     cfg.get("output_palette_grade"), "full-frame effect.output_palette_grade"
                 ),
+                composite=validate_stage_composite(
+                    cfg.get("composite"), "full-frame effect.composite"
+                ),
+                input_effects=cfg.get("input_effects", []),
+                feedback_effects=cfg.get("feedback_effects", []),
+                output_effects=cfg.get("output_effects", []),
             )
         )
     return specs
+
+
+class VisualiserEffectHooks:
+    """Validated VisualStyle pipelines at three explicit visualiser boundaries."""
+
+    POINTS = ("input", "feedback", "output")
+
+    def __init__(self, project, specs, context_at):
+        self.pipelines = []
+        self.last_report = {}
+        files = []
+        for index, spec in enumerate(specs):
+            stage = {}
+            for point in self.POINTS:
+                rows = spec.get(f"{point}_effects", [])
+                if not isinstance(rows, list) or len(rows) > MAX_STAGES:
+                    raise ValueError(f"visualiser {point}_effects must contain <=16 stages")
+                pipeline = [
+                    EffectStage(
+                        project,
+                        row,
+                        context_at,
+                        label=f"effects[{index}].{point}_effects",
+                    )
+                    for row in rows
+                ]
+                ids = [item.id for item in pipeline]
+                if len(ids) != len(set(ids)):
+                    raise ValueError(f"visualiser {point}_effects ids must be unique within a stage")
+                stage[point] = pipeline
+                files.extend(ref for item in pipeline for ref in item.files)
+            self.pipelines.append(stage)
+        project.inputs.extend(files)
+        self.evidence = [
+            {
+                point: [item.evidence for item in pipeline[point]]
+                for point in self.POINTS
+            }
+            for pipeline in self.pipelines
+        ]
+
+    @property
+    def enabled(self):
+        return any(any(stage[point] for point in self.POINTS) for stage in self.pipelines)
+
+    @property
+    def feedback_enabled(self):
+        return any(stage["feedback"] for stage in self.pipelines)
+
+    def begin(self):
+        self.last_report = {}
+
+    def apply(self, stage_index, point, image, context):
+        rows = self.pipelines[stage_index][point]
+        reports = []
+        for item in rows:
+            image, report = item.apply(image.convert("RGBA"), context, frame_scope=True)
+            reports.append(report)
+        if reports:
+            self.last_report[f"stage:{stage_index}:{point}"] = reports
+        return image
 
 
 class EffectAudio:
@@ -258,6 +331,7 @@ class ButterchurnBackend:
         profile_root = Path(os.environ.get("FRAMERUDIMENTS_BROWSER_PROFILE_ROOT") or work).resolve()
         profile_root.mkdir(parents=True, exist_ok=True)
         self.size, self.fps, self.process_handle = size, fps, None
+        self.feedback_pixels = None
         self.log = (
             Path(work) / f"butterchurn-{seed}-{len(list(Path(work).glob('butterchurn-*.log')))}.log"
         ).open("wb")
@@ -324,18 +398,21 @@ class ButterchurnBackend:
         right = bytes(max(0, min(255, round(128 + value * 128))) for value in pcm[1::2])
         mono = bytes(max(0, min(255, round(128 + (lv + rv) * 64))) for lv, rv in zip(pcm[0::2], pcm[1::2]))
         pixels = image.convert("RGBA").tobytes()
-        rgba = None if pixels == getattr(self, "last_pixels", None) else encode(pixels)
+        feedback = self.feedback_pixels
+        rgba = None if feedback is None and pixels == getattr(self, "last_pixels", None) else encode(pixels)
         result = self._request(
             dict(
                 command="frame",
                 time=context.output_seconds,
                 capture=capture,
                 rgba=rgba,
+                feedback_rgba=encode(feedback) if feedback is not None else None,
                 left=encode(left),
                 right=encode(right),
                 mono=encode(mono),
             )
         )
+        self.feedback_pixels = None
         self.last_pixels = pixels
         if abs(result["time"] - context.output_seconds) > 1e-9 or result["fps"] != self.fps:
             raise RuntimeError("Butterchurn did not honour the exact frame clock")
@@ -344,6 +421,11 @@ class ButterchurnBackend:
             if capture
             else None
         )
+
+    def set_feedback(self, image):
+        if image.mode != "RGBA" or image.size != self.size:
+            raise ValueError("Butterchurn feedback hook needs frame-sized RGBA")
+        self.feedback_pixels = image.tobytes()
 
     def close(self):
         proc = self.process_handle
@@ -364,11 +446,12 @@ class ButterchurnBackend:
 
 
 class EffectChain:
-    def __init__(self, project, specs, ffmpeg, output, *, factories=None, routing=None):
+    def __init__(self, project, specs, ffmpeg, output, *, factories=None, routing=None, hooks=None):
         self.backends, self.next_frame, self.audio = [], 0, None
         self.closed = False
         self.specs = specs
         self.routing = routing
+        self.hooks = hooks
         self.preset_timeline_positions = [0 for _ in specs]
         self.preset_switches = []
         self.stage_injections = {}
@@ -435,6 +518,8 @@ class EffectChain:
         surfaces = dict(isolated_layers or [])
         if self.stage_injections and isolated_layers is None:
             raise ValueError("Intermediate stage injection needs isolated layer surfaces")
+        if self.hooks is not None:
+            self.hooks.begin()
         for index, backend in enumerate(self.backends):
             timeline = self.specs[index].get("preset_timeline", [])
             position = self.preset_timeline_positions[index]
@@ -470,10 +555,24 @@ class EffectChain:
                         if opacity != 1:
                             source.putalpha(source.getchannel("A").point(lambda a: round(a * opacity)))
                         image.alpha_composite(source)
-            image = backend.process(image, context, pcm)
+            stage_base = image.convert("RGBA")
+            stage_input = (
+                self.hooks.apply(index, "input", stage_base, context)
+                if self.hooks is not None
+                else stage_base
+            )
+            image = backend.process(stage_input, context, pcm)
             if image.size != (self.audio.project.width, self.audio.project.height) or image.mode != "RGBA":
                 raise ValueError("Visualiser must return frame-sized RGBA")
+            if self.hooks is not None and self.hooks.pipelines[index]["feedback"]:
+                if not hasattr(backend, "set_feedback"):
+                    raise ValueError("Visualiser backend does not support feedback-state writeback")
+                feedback = self.hooks.apply(index, "feedback", image.copy(), context)
+                backend.set_feedback(feedback)
             image = apply_palette_grade(image, self.specs[index].get("output_palette_grade"))
+            if self.hooks is not None:
+                image = self.hooks.apply(index, "output", image, context)
+            image = composite_stage(stage_base, image, self.specs[index].get("composite"), surfaces)
         self.next_frame += 1
         if overlay is not None:
             final = image.convert("RGBA")
@@ -488,6 +587,12 @@ class EffectChain:
             pcm=self.audio.evidence,
             routing=self.routing.evidence if self.routing is not None else None,
             stage_injections={index: entries for index, entries in self.stage_injections.items()},
+            effect_hooks=self.hooks.evidence if self.hooks is not None else None,
+            feedback_hook_writeback=(
+                "processed engine frame is written into the retained feedback target before the next frame"
+                if self.hooks is not None and self.hooks.feedback_enabled
+                else None
+            ),
             preset_switches=self.preset_switches,
             stages=[dict(spec, runtime=backend.evidence) for spec, backend in zip(self.specs, self.backends)],
             limits="GPU/driver and engine noise can vary; not a cross-platform bit-exact contract. Text bounds refer to pre-effect composition.",
