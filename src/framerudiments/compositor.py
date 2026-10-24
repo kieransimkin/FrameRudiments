@@ -18,6 +18,8 @@ from .rich_subtitles import RichTextAppearance
 from .lyric_indicator import WordIndicator
 from .visualisers import effect_specs, VisualiserEffectHooks
 from .scoped_effects import CompositingEffects
+from .effect_graph import EffectGraph
+from .effect_graph_modulation import EffectGraphControls
 from .visualiser_routing import VisualiserLayerRouting
 from .layer_masks import LayerMasks
 from .layer_animation import LayerAnimations
@@ -391,6 +393,16 @@ class Compositor:
         self.post_pipeline = CompositingEffects(
             project, project.data.get("post_effects", {}), self.context, valid_elements=targets
         )
+        self.effect_graph = (
+            EffectGraph(project.data["effect_graph"])
+            if "effect_graph" in project.data else None
+        )
+        if self.effect_graph is None and project.data.get("effect_graph_controls"):
+            raise ValueError("effect_graph_controls requires effect_graph")
+        self.effect_graph_controls = (
+            EffectGraphControls(project, self.effect_graph, project.data.get("effect_graph_controls", []), self.context)
+            if self.effect_graph is not None else None
+        )
         mask_order = ["background"]
         mask_order.extend(f"layer:{layer.id}" for layer in self.layers)
         self.layer_masks = LayerMasks(project.data.get("layer_masks", {}), mask_order)
@@ -581,7 +593,15 @@ class Compositor:
         elif self.word_caption and self.words:
             paint("word-caption", lambda canvas: self._word_caption_draw(canvas, ctx) or None)
 
-        return pipeline.apply_frame(image, ctx)
+        image = pipeline.apply_frame(image, ctx)
+        if self.effect_graph is not None:
+            sources = {"frame": image, **mask_surfaces}
+            for node in self.effect_graph.nodes.values():
+                if node.kind == "source" and node.id not in sources:
+                    raise ValueError(f"Unknown effect graph source: {node.id}")
+            values = self.effect_graph_controls.values(ctx, self.effect_graph)
+            image = self.effect_graph.render(sources, parameter_values=values)
+        return image
 
     def _final_output(self, image, context, apply_quality):
         # Historical shutter samples must not receive a separate AA pass.
@@ -608,6 +628,7 @@ class Compositor:
             or self.layer_animations.enabled
             or self.layer_displacement.enabled
             or self._isolate_stage_injections
+            or self.effect_graph is not None
         ):
             # Final-frame opacity/rotation may leave transparent pixels. The
             # encoded RGB output uses a deterministic black matte, never an

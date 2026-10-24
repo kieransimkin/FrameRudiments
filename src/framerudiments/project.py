@@ -43,6 +43,8 @@ class Project:
                 "identity",
                 "effects",
                 "post_effects",
+                "effect_graph",
+                "effect_graph_controls",
                 "stemlab_loop",
                 "notes",
                 "lyric_art",
