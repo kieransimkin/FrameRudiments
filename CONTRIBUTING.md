@@ -6,10 +6,17 @@ belongs in StemLab; movement definitions and recording playback belong in
 DanceRudiments. Release scenes and private assets remain outside this package.
 
 Use a feature branch, current README and focused regression tests. Install
-`.[dev]`, set `FRAMERUDIMENTS_TEST_FONT` and `FRAMERUDIMENTS_FFMPEG`, run `pytest`,
+`.[dev]`, set `FRAMERUDIMENTS_TEST_FONT` and `FRAMERUDIMENTS_FFMPEG`, run
+`scripts/Invoke-Tests.ps1` (pass focused paths after the script name),
 `ruff check .`, `python -m build` and `python -m twine check --strict dist/*`.
 CI requires real encode/decode integration; skipped render checks do not prove
 rendering. Submit a PR to https://github.com/kieransimkin/FrameRudiments/pulls.
+
+The test wrapper assigns every invocation a unique project-local pytest
+`--basetemp` and removes that exact directory in `finally`, on success or
+failure. Do not invoke pytest with a persistent shared base temp for normal
+development or release validation. Preserve needed failure output in the test
+log or CI artifact rather than retaining generated temp trees.
 
 Maintainers publish new immutable matching versions after exact-head validation.
 Keep source, package, registry, technical QA and creative/listening approval

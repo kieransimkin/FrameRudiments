@@ -5,6 +5,15 @@ from PIL import Image, ImageChops, ImageColor, ImageOps
 from .io import fields, number
 
 
+COMPOSITE_MODULATION_TARGETS = {
+    "composite.opacity",
+    "composite.matte.opacity",
+    "composite.chroma_key.similarity",
+    "composite.chroma_key.smoothness",
+    "composite.chroma_key.despill",
+}
+
+
 def _colour(value, label):
     if not isinstance(value, str):
         raise ValueError(f"{label} must be a CSS colour string")
@@ -21,12 +30,43 @@ def validate_stage_composite(config, label="visualiser composite"):
     """Validate one stage's post-render compositing contract."""
     if config is None:
         return None
-    fields(config, {"opacity", "chroma_key", "matte"}, label)
+    fields(config, {"opacity", "chroma_key", "matte", "modulations"}, label)
     if not config:
         raise ValueError(f"{label} must declare opacity, chroma_key or matte")
     result = {
         "opacity": number(config.get("opacity", 1), f"{label}.opacity", minimum=0, maximum=1)
     }
+    modulations = config.get("modulations", [])
+    if not isinstance(modulations, list) or len(modulations) > 32:
+        raise ValueError(f"{label}.modulations must be a list with <=32 entries")
+    modulation_ids = []
+    for index, row in enumerate(modulations):
+        if not isinstance(row, dict) or row.get("target") not in COMPOSITE_MODULATION_TARGETS:
+            raise ValueError(
+                f"{label}.modulations[{index}] must target a numeric composite parameter"
+            )
+        modulation_id = row.get("id")
+        if not isinstance(modulation_id, str) or not modulation_id:
+            raise ValueError(f"{label}.modulations[{index}].id must be a non-empty string")
+        modulation_ids.append(modulation_id)
+        target = row["target"]
+        if target.startswith("composite.matte.") and config.get("matte") is None:
+            raise ValueError(f"{label}.modulations[{index}] requires a matte")
+        if target.startswith("composite.chroma_key.") and config.get("chroma_key") is None:
+            raise ValueError(f"{label}.modulations[{index}] requires chroma_key")
+        interval = row.get("range", [-1, 1])
+        if (
+            not isinstance(interval, (list, tuple))
+            or len(interval) != 2
+            or any(type(value) not in (int, float) or not 0 <= value <= 1 for value in interval)
+        ):
+            raise ValueError(
+                f"{label}.modulations[{index}].range must stay within zero and one"
+            )
+    if len(set(modulation_ids)) != len(modulation_ids):
+        raise ValueError(f"{label}.modulations ids must be unique")
+    if modulations:
+        result["modulations"] = modulations
     chroma = config.get("chroma_key")
     if chroma is not None:
         fields(chroma, {"colour", "similarity", "smoothness", "despill"}, f"{label}.chroma_key")

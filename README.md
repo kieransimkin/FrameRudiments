@@ -356,6 +356,11 @@ processed stage is composited over its own input before the next engine, so
 projectM and Butterchurn can occupy different regions while retaining their
 continuous source-time feedback. See [stage-level keying and matting](docs/visualisers.md#stage-level-chroma-key-and-track-mattes).
 
+Source-clocked DanceRudiments can modulate stage opacity, matte opacity, key
+similarity, key softness and despill independently. Each driver is bounded to
+0..1, recorded in render evidence and evaluated without interrupting retained
+feedback when the visible composite fades down.
+
 The same stage can apply the complete FrameRudiments visual-effect pipeline at
 its source input, directly to the retained Butterchurn/projectM feedback state,
 or to display output. These hooks are separate and evidence-recorded; a

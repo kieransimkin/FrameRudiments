@@ -2,6 +2,7 @@
 
 from array import array
 import base64
+from copy import deepcopy
 import json
 import math
 import mmap
@@ -14,6 +15,7 @@ from PIL import Image, ImageColor, ImageOps
 
 from .encoding import audio_filters
 from .io import fields, integer, number, sha256
+from .modulation import RudimentModulations
 from .scoped_effects import EffectStage, MAX_STAGES
 from .visualiser_compositing import composite_stage, validate_stage_composite
 
@@ -450,7 +452,18 @@ class ButterchurnBackend:
 
 
 class EffectChain:
-    def __init__(self, project, specs, ffmpeg, output, *, factories=None, routing=None, hooks=None):
+    def __init__(
+        self,
+        project,
+        specs,
+        ffmpeg,
+        output,
+        *,
+        factories=None,
+        routing=None,
+        hooks=None,
+        context_at=None,
+    ):
         self.backends, self.next_frame, self.audio = [], 0, None
         self.closed = False
         self.specs = specs
@@ -459,6 +472,29 @@ class EffectChain:
         self.preset_timeline_positions = [0 for _ in specs]
         self.preset_switches = []
         self.stage_injections = {}
+        self.composite_modulations = []
+        self.composite_modulation_targets = []
+        self.composite_modulation_evidence = []
+        self.composite_modulation_report = {}
+        for spec in specs:
+            rows = (spec.get("composite") or {}).get("modulations", [])
+            if rows and context_at is None:
+                raise ValueError("Visualiser composite modulation needs the project frame context")
+            targets = [row["target"] for row in rows]
+            proxies = []
+            for row in rows:
+                proxy = dict(row)
+                proxy["target"] = "style." + row["target"].removeprefix("composite.").replace(".", "_")
+                proxies.append(proxy)
+            driver = RudimentModulations(project, proxies, context_at) if proxies else None
+            if driver is not None:
+                project.inputs.extend(driver.files)
+            self.composite_modulations.append(driver)
+            self.composite_modulation_targets.append(targets)
+            self.composite_modulation_evidence.append([
+                dict(evidence, target=target, config=row)
+                for evidence, target, row in zip(driver.evidence, targets, rows)
+            ] if driver is not None else [])
         requested = getattr(project, "data", {}).get("visualiser_stage_injections", [])
         if not isinstance(requested, list) or len(requested) > 32 or (requested and not specs):
             raise ValueError("visualiser_stage_injections requires a bounded effect chain")
@@ -576,7 +612,33 @@ class EffectChain:
             image = apply_palette_grade(image, self.specs[index].get("output_palette_grade"))
             if self.hooks is not None:
                 image = self.hooks.apply(index, "output", image, context)
-            image = composite_stage(stage_base, image, self.specs[index].get("composite"), surfaces)
+            composite = self.specs[index].get("composite")
+            driver = self.composite_modulations[index]
+            if driver is not None:
+                composite = deepcopy(composite)
+                base = {"opacity": composite["opacity"]}
+                if "matte" in composite:
+                    base["matte_opacity"] = composite["matte"]["opacity"]
+                if "chroma_key" in composite:
+                    base.update({
+                        "chroma_key_similarity": composite["chroma_key"]["similarity"],
+                        "chroma_key_smoothness": composite["chroma_key"]["smoothness"],
+                        "chroma_key_despill": composite["chroma_key"]["despill"],
+                    })
+                values, _, report = driver.apply(context, base, {})
+                composite["opacity"] = max(0.0, min(1.0, values["opacity"]))
+                if "matte" in composite:
+                    composite["matte"]["opacity"] = max(
+                        0.0, min(1.0, values["matte_opacity"])
+                    )
+                if "chroma_key" in composite:
+                    for name in ("similarity", "smoothness", "despill"):
+                        key = "chroma_key_" + name
+                        composite["chroma_key"][name] = max(0.0, min(1.0, values[key]))
+                for item, target in zip(report.values(), self.composite_modulation_targets[index]):
+                    item["target"] = target
+                self.composite_modulation_report[index] = report
+            image = composite_stage(stage_base, image, composite, surfaces)
         self.next_frame += 1
         if overlay is not None:
             final = image.convert("RGBA")
@@ -592,6 +654,12 @@ class EffectChain:
             routing=self.routing.evidence if self.routing is not None else None,
             stage_injections={index: entries for index, entries in self.stage_injections.items()},
             effect_hooks=self.hooks.evidence if self.hooks is not None else None,
+            composite_modulations={
+                index: evidence
+                for index, evidence in enumerate(self.composite_modulation_evidence)
+                if evidence
+            },
+            composite_modulation_last_values=self.composite_modulation_report,
             feedback_hook_writeback=(
                 "processed engine frame is written into the retained feedback target before the next frame"
                 if self.hooks is not None and self.hooks.feedback_enabled

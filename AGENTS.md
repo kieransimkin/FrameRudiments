@@ -30,3 +30,10 @@ Before any long, costly, model-backed, media-rendering, build, test, packaging o
 Keep temporary data and caches under the owning project on `Z:`; model weights and model-specific caches remain under that project's ignored `models/`. If the probe returns `WinError 5`, access denied, a rename failure or a cleanup failure, stop before the expensive command. Preserve the exact error and use the documented narrowly approved unrestricted recovery from the outset only when the task requires it. Use a fresh output directory and do not repeat the already-failing full job in the restricted shell.
 
 After any unrestricted recovery, verify that the final output is readable and writable from the normal managed environment. If it is not, copy the completed bytes into a pre-created project-local directory that passed the probe, verify hashes, and retain the original failure and recovery evidence. Do not edit global ACLs, switch caches to `C:`, terminate unrelated processes or claim the underlying permission problem is fixed. Repositories that own temporary-directory creation should provide and test a reusable preflight helper rather than relying only on this instruction.
+
+FrameRudiments pytest runs must use `scripts/Invoke-Tests.ps1`. It creates one
+unique project-local `--basetemp` per invocation and removes that exact tree in
+`finally` immediately after pytest exits, including failures. Keep diagnostic
+text in the console or durable logs; do not retain generated pytest trees as
+evidence. A cleanup failure is a failed workflow and must be reported before a
+later substantial test, build or render starts.

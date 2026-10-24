@@ -158,6 +158,41 @@ still advances across the full sequential programme even when its visible
 matte is empty; its feedback state and PCM clock therefore remain continuous.
 Clean `visualiser_routing` overlays are drawn after the last stage as before.
 
+Every useful numeric composite control can follow a source-clocked
+DanceRudiment. Add a bounded `composite.modulations` list using the existing
+modulation fields. Supported targets are `composite.opacity`,
+`composite.matte.opacity`, `composite.chroma_key.similarity`,
+`composite.chroma_key.smoothness` and `composite.chroma_key.despill`. Ranges
+must stay inside 0..1; relative combinations are clamped to those safe bounds.
+Colour, matte source/mode and inversion remain discrete authoring choices. The
+motion may be a named DanceRudiment, a pinned recording or another supported
+motion route. Give every composite driver a unique, non-empty `id` so its
+evidence cannot be overwritten or confused with another driver. FrameRudiments
+records driver provenance and the last evaluated value in the full-frame-effects
+evidence. The visualiser and its feedback keep advancing when the visible
+opacity approaches zero.
+
+![Generated diagram of DanceRudiment-controlled composite parameters](media/composite-modulation-contract.svg)
+
+Generated contract illustration; it explains the API and is not a rendered
+campaign frame or performance benchmark.
+
+```json
+"composite": {
+  "opacity": 0.5,
+  "matte": {"source": "layer:sea", "mode": "luminance"},
+  "modulations": [{
+    "id": "sea-breathe",
+    "motion": {"kind": "named", "pattern": "bounce"},
+    "axis": "x",
+    "target": "composite.opacity",
+    "range": [0.28, 0.82],
+    "curve": "smoothstep",
+    "smoothing_frames": 4
+  }]
+}
+```
+
 Keying is colour removal, not evidence that a preset was authored for a green
 screen. Choose a key colour demonstrated to be isolated in inspected output,
 and inspect edge transparency at delivery size. Track mattes preserve the

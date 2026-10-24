@@ -16,6 +16,9 @@ local/
 .tmp/
 .local-app-data/
 .test-localappdata/
+.test-tmp*/
+.release-qa-temp*/
+.release-artifacts-*/
 .release-localappdata*/
 .release-temp*/
 .build-temp/
