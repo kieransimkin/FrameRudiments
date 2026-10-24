@@ -1,7 +1,7 @@
 # FrameRudiments — Forkable Dance-Modulated Effects Graph: Granular Implementation Plan
 
-**Version:** 1.0 · **24 October 2026** · **Status:** proposed, not implemented.
-**Companion:** `FrameRudiments_Effect_Graph_Design_Specification.md`.
+**Version:** 1.1 · **24 October 2026** · **Status:** active; CPU graph and initial integration merged, full CI gates pending.
+**Companion:** [effect-graph-design.md](effect-graph-design.md); see the [consolidated effects/transitions/rendering roadmap](unified-effects-transitions-rendering-roadmap.md) for newer milestones and integration dependencies.
 
 ## Baseline and verified dependencies
 

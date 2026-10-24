@@ -1,7 +1,7 @@
-"""Experimental, deterministic CPU effect DAG foundation.
+"""Deterministic CPU effect DAG with alpha-correct two-input transitions.
 
-No project-format integration yet: callers provide source RGBA images explicitly.
-Temporal feedback and full DanceNotion bindings are reserved for later phases.
+Compositor integration supplies source RGBA images and per-frame DanceRudiment
+controls. Temporal feedback and GPU graph execution remain later milestones.
 """
 from __future__ import annotations
 
@@ -10,9 +10,21 @@ from collections.abc import Mapping
 from math import isfinite
 from PIL import Image, ImageChops, ImageFilter, ImageColor
 
+from .effect_graph_transitions import render_transition
+
 MAX_NODES = 256
 MAX_INPUTS = 32
-KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement', 'composite'}
+KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement', 'composite', 'transition'}
+TRANSITION_STYLES = {'dissolve', 'wipe', 'radial'}
+TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
+CONTROL_TARGETS = {
+    'opacity': {'opacity'},
+    'matte': {'feather'},
+    'chroma_key': {'tolerance', 'softness', 'despill', 'key_color.r', 'key_color.g', 'key_color.b'},
+    'chromatic_displacement': {f'{c}_offset.{axis}' for c in ('red', 'green', 'blue') for axis in ('x', 'y')},
+    'transition': {'progress', 'feather', 'center.x', 'center.y'},
+}
+
 
 
 @dataclass(frozen=True)
@@ -36,7 +48,7 @@ class EffectGraph:
         for entry in entries:
             if not isinstance(entry, dict) or not {'id', 'type'} <= entry.keys():
                 raise ValueError('invalid node')
-            if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset'}:
+            if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center'}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -46,7 +58,7 @@ class EffectGraph:
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
-            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement'} and len(inputs) != 1) or (kind == 'matte' and len(inputs) != 2) or (kind == 'composite' and len(inputs) < 2):
+            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement'} and len(inputs) != 1) or (kind == 'matte' and len(inputs) != 2) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != 2):
                 raise ValueError(f'wrong input count for {kind}')
             opacity = entry.get('opacity', 1.0)
             if type(opacity) not in (int, float) or not isfinite(opacity) or not 0 <= opacity <= 1:
@@ -71,6 +83,20 @@ class EffectGraph:
                     val = entry.get(param, {'tolerance': 0.1, 'softness': 0.1, 'despill': 0}[param])
                     if type(val) not in (float, int) or not isfinite(val) or not 0 <= val <= 1:
                         raise ValueError(f'invalid chroma key {param}')
+            if kind == 'transition':
+                if entry.get('transition_style', 'dissolve') not in TRANSITION_STYLES:
+                    raise ValueError('unsupported transition style')
+                if entry.get('direction', 'right') not in TRANSITION_DIRECTIONS:
+                    raise ValueError('unsupported transition direction')
+                for name, default, maximum in [('progress', 0.0, 1.0), ('feather', 0.0, 1.0)]:
+                    value = entry.get(name, default)
+                    if type(value) not in (float, int) or not isfinite(value) or not 0 <= value <= maximum:
+                        raise ValueError(f'invalid transition {name}')
+                center = entry.get('center', [0.5, 0.5])
+                if (not isinstance(center, (tuple, list)) or len(center) != 2
+                        or any(type(v) not in (float, int) or not isfinite(v) or not 0 <= v <= 1
+                               for v in center)):
+                    raise ValueError('invalid transition center')
             if entry.get('mode', 'over') not in {'over', 'add'}:
                 raise ValueError('unsupported blend mode')
             self.nodes[key] = Node(key, kind, tuple(inputs), entry)
@@ -97,13 +123,7 @@ class EffectGraph:
 
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)
-        allowed = {
-            'opacity': {'opacity'},
-            'matte': {'feather'},
-            'chroma_key': {'tolerance', 'softness', 'despill', 'key_color.r', 'key_color.g', 'key_color.b'},
-            'chromatic_displacement': {f'{c}_offset.{axis}' for c in ('red', 'green', 'blue') for axis in ('x', 'y')},
-        }
-        if node is None or property_name not in allowed.get(node.kind, set()):
+        if node is None or property_name not in CONTROL_TARGETS.get(node.kind, set()):
             raise ValueError('unknown or inapplicable graph control target')
 
     def base_control_value(self, node_id, property_name):
@@ -111,10 +131,10 @@ class EffectGraph:
         config = self.nodes[node_id].config
         if property_name.endswith(('.x', '.y')):
             key, axis = property_name.rsplit('.', 1)
-            return config.get(key, [0, 0])[0 if axis == 'x' else 1]
+            return config.get(key, [0.5, 0.5] if key == 'center' else [0, 0])[0 if axis == 'x' else 1]
         if property_name.startswith('key_color.'):
             return ImageColor.getrgb(config.get('key_color', '#00ff00'))[{'r': 0, 'g': 1, 'b': 2}[property_name[-1]]]
-        return config.get(property_name, {'opacity': 1, 'feather': 0, 'tolerance': .1, 'softness': .1, 'despill': 0}.get(property_name, 0))
+        return config.get(property_name, {'opacity': 1, 'feather': 0, 'tolerance': .1, 'softness': .1, 'despill': 0, 'progress': 0}.get(property_name, 0))
 
     def render(self, sources: dict[str, Image.Image], *, parameter_values=None) -> Image.Image:
         """Render with optional resolved per-frame controls keyed by (node_id, property).
@@ -131,29 +151,20 @@ class EffectGraph:
                 raise ValueError('graph control target must be (node_id, property)')
             node_id, property_name = target
             node = self.nodes.get(node_id)
-            allowed = {
-                'opacity': {'opacity'},
-                'matte': {'feather'},
-                'chroma_key': {'tolerance', 'softness', 'despill', 'key_color.r', 'key_color.g', 'key_color.b'},
-                'chromatic_displacement': {
-                    'red_offset.x', 'red_offset.y', 'green_offset.x', 'green_offset.y',
-                    'blue_offset.x', 'blue_offset.y',
-                },
-            }
-            if node is None or property_name not in allowed.get(node.kind, set()):
+            if node is None or property_name not in CONTROL_TARGETS.get(node.kind, set()):
                 raise ValueError('unknown or inapplicable graph control target')
             if type(value) not in (float, int) or not isfinite(value):
                 raise ValueError('graph control must be finite numeric')
-            bounds = (-4096, 4096) if property_name.endswith(('.x', '.y')) else (
+            bounds = (0, 1) if property_name.startswith('center.') else ((-4096, 4096) if property_name.endswith(('.x', '.y')) else (
                 (0, 255) if property_name.startswith('key_color.') else (
-                (0, 128) if property_name == 'feather' else (0, 1))
-            )
+                (0, 128) if property_name == 'feather' and node.kind == 'matte' else (0, 1))
+            ))
             if not bounds[0] <= value <= bounds[1]:
                 raise ValueError('graph control out of range')
             config = configs.setdefault(node_id, dict(node.config))
             if property_name.endswith(('.x', '.y')):
                 vector_name, axis = property_name.rsplit('.', 1)
-                vector = list(config.get(vector_name, [0, 0]))
+                vector = list(config.get(vector_name, [0.5, 0.5] if vector_name == 'center' else [0, 0]))
                 vector[0 if axis == 'x' else 1] = value
                 config[vector_name] = vector
             elif property_name.startswith('key_color.'):
@@ -198,6 +209,8 @@ class EffectGraph:
                     result = _chroma_key(inputs[0], config)
                 elif kind == 'chromatic_displacement':
                     result = _chromatic_displacement(inputs[0], config)
+                elif kind == 'transition':
+                    result = render_transition(inputs[0], inputs[1], config)
                 else:
                     result = inputs[0].copy()
                     for layer in inputs[1:]:
