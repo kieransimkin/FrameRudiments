@@ -122,6 +122,35 @@ def test_effect_spec_retains_stage_chroma_key_and_matte(tmp_path):
     }
 
 
+def test_visualiser_matte_provider_is_isolated_but_not_painted(tmp_path):
+    p = project(tmp_path)
+    p.data["effects"] = [
+        dict(
+            id="contained",
+            engine="projectm",
+            composite={"matte": {"source": "layer:native", "mode": "alpha"}},
+        )
+    ]
+    compositor = Compositor(p)
+    rendered, _ = compositor.frame(0)
+    isolated = dict(compositor._route_parts)["layer:native"]
+    assert isolated.getchannel("A").getbbox() is not None
+
+    # The provider survives for the effect chain, while its pixels are absent
+    # from the clean frame that the visualiser will composite onto.
+    provider_rgb = isolated.convert("RGB")
+    background_rgb = compositor.background.convert("RGB")
+    clean_rgb = rendered.convert("RGB")
+    point = next(
+        (x, y)
+        for y in range(isolated.height)
+        for x in range(isolated.width)
+        if isolated.getpixel((x, y))[3] == 255
+        and provider_rgb.getpixel((x, y)) != background_rgb.getpixel((x, y))
+    )
+    assert clean_rgb.getpixel(point) == background_rgb.getpixel(point)
+
+
 def test_pcm_reuses_exact_trim_repeat_chain_and_causal_windows(tmp_path):
     p = project(tmp_path)
     ffmpeg = os.environ["FRAMERUDIMENTS_FFMPEG"]

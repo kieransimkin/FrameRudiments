@@ -386,6 +386,7 @@ class Compositor:
         unknown_mattes = matte_sources - targets
         if unknown_mattes:
             raise ValueError(f"Unknown visualiser matte sources: {sorted(unknown_mattes)}")
+        self.matte_sources = matte_sources
         self.visualiser_hooks = VisualiserEffectHooks(project, self.effect_specs, self.context)
         self.post_pipeline = CompositingEffects(
             project, project.data.get("post_effects", {}), self.context, valid_elements=targets
@@ -514,7 +515,11 @@ class Compositor:
             mask_surfaces[key] = scratch
             actual = scratch.getchannel("A").getbbox()
             self._capture_route(key, scratch)
-            image.alpha_composite(scratch)
+            # Matte providers are compositor data, not visible artwork. Keep
+            # their full isolated RGBA surface for downstream stages without
+            # painting the provider into the clean composition.
+            if key not in self.matte_sources:
+                image.alpha_composite(scratch)
             return actual
 
         for layer in self.layers:

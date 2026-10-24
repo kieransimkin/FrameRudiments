@@ -1,3 +1,14 @@
+# FrameRudiments 0.4.9
+
+- Named visualiser matte providers remain available as isolated RGBA data but
+  no longer paint their black/white mask artwork into the clean composition.
+- A compositor regression test compares the corrected frame with the same
+  scene rendered without its provider layer, while confirming that the effect
+  chain still receives the provider pixels.
+- The existing retained-feedback screenshot in `docs/visualisers.md` remains
+  the relevant visual evidence; this patch corrects provider visibility rather
+  than changing the demonstrated visualiser output contract.
+
 # FrameRudiments 0.4.8
 
 - Butterchurn and projectM stages now support deterministic post-stage chroma
