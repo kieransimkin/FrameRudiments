@@ -1,9 +1,10 @@
 from pathlib import Path
 from types import SimpleNamespace
+import copy
 import os
 
 import pytest
-from PIL import Image
+from PIL import Image, ImageChops
 
 from framerudiments.compositor import Compositor
 from framerudiments.demo import create_demo
@@ -120,6 +121,29 @@ def test_effect_spec_retains_stage_chroma_key_and_matte(tmp_path):
         "invert": True,
         "opacity": 1.0,
     }
+
+
+def test_visualiser_matte_provider_is_isolated_but_not_painted(tmp_path):
+    p = project(tmp_path)
+    expected_data = copy.deepcopy(p.data)
+    expected_data["layers"] = [layer for layer in expected_data["layers"] if layer["id"] != "native"]
+    expected, _ = Compositor(Project(expected_data, p.base)).frame(0)
+
+    p.data["effects"] = [
+        dict(
+            id="contained",
+            engine="projectm",
+            composite={"matte": {"source": "layer:native", "mode": "alpha"}},
+        )
+    ]
+    compositor = Compositor(p)
+    rendered, _ = compositor.frame(0)
+    isolated = dict(compositor._route_parts)["layer:native"]
+    assert isolated.getchannel("A").getbbox() is not None
+
+    # The provider survives for the effect chain, while its pixels are absent
+    # from the clean frame that the visualiser will composite onto.
+    assert ImageChops.difference(rendered, expected).getbbox() is None
 
 
 def test_pcm_reuses_exact_trim_repeat_chain_and_causal_windows(tmp_path):

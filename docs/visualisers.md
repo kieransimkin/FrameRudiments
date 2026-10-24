@@ -146,8 +146,10 @@ The matte `source` names an actual isolated compositor element such as
 `layer:moving-clouds`, `background`, `scene`, `caption` or `lyric-art:0`.
 Unknown names fail during composition setup. `alpha` uses its rendered alpha;
 `luminance` multiplies that alpha by greyscale RGB. `invert`, matte `opacity`
-and stage `opacity` are applied after keying. An invisible or gated matte
-source produces an empty contribution for that frame.
+and stage `opacity` are applied after keying. A named matte provider remains
+available as isolated RGBA data but is not painted into the clean composition;
+this prevents black/white mask artwork leaking into the encoded frame. An
+invisible or gated matte source produces an empty contribution for that frame.
 
 Compositing happens independently after every configured stage. The next
 visualiser receives the already keyed/matted result, so two engines can occupy
