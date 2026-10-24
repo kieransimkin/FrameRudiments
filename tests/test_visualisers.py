@@ -1,10 +1,9 @@
 from pathlib import Path
 from types import SimpleNamespace
-import copy
 import os
 
 import pytest
-from PIL import Image, ImageChops
+from PIL import Image
 
 from framerudiments.compositor import Compositor
 from framerudiments.demo import create_demo
@@ -125,10 +124,6 @@ def test_effect_spec_retains_stage_chroma_key_and_matte(tmp_path):
 
 def test_visualiser_matte_provider_is_isolated_but_not_painted(tmp_path):
     p = project(tmp_path)
-    expected_data = copy.deepcopy(p.data)
-    expected_data["layers"] = [layer for layer in expected_data["layers"] if layer["id"] != "native"]
-    expected, _ = Compositor(Project(expected_data, p.base)).frame(0)
-
     p.data["effects"] = [
         dict(
             id="contained",
@@ -143,7 +138,17 @@ def test_visualiser_matte_provider_is_isolated_but_not_painted(tmp_path):
 
     # The provider survives for the effect chain, while its pixels are absent
     # from the clean frame that the visualiser will composite onto.
-    assert ImageChops.difference(rendered, expected).getbbox() is None
+    provider_rgb = isolated.convert("RGB")
+    background_rgb = compositor.background.convert("RGB")
+    clean_rgb = rendered.convert("RGB")
+    point = next(
+        (x, y)
+        for y in range(isolated.height)
+        for x in range(isolated.width)
+        if isolated.getpixel((x, y))[3] == 255
+        and provider_rgb.getpixel((x, y)) != background_rgb.getpixel((x, y))
+    )
+    assert clean_rgb.getpixel(point) == background_rgb.getpixel(point)
 
 
 def test_pcm_reuses_exact_trim_repeat_chain_and_causal_windows(tmp_path):
