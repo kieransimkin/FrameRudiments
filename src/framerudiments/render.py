@@ -160,6 +160,7 @@ def preflight(
                 out,
                 routing=compositor.visualiser_routing,
                 hooks=compositor.visualiser_hooks,
+                context_at=compositor.context,
             )
             if compositor.effect_specs
             else None
@@ -284,6 +285,7 @@ def _render_single(
                 out,
                 routing=compositor.visualiser_routing,
                 hooks=compositor.visualiser_hooks,
+                context_at=compositor.context,
             )
             if compositor.effect_specs
             else None

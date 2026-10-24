@@ -1,3 +1,24 @@
+# FrameRudiments 0.4.11
+
+- Visualiser composites can now drive stage opacity, matte opacity, chroma-key
+  similarity, key-edge smoothness and despill from named or recorded
+  DanceRudiments on the authoritative source clock.
+- Every driver stays inside an explicit 0..1 range, supports the existing
+  transfer curves, smoothing and combine modes, and records native motion
+  provenance plus its final evaluated value in render evidence.
+- Butterchurn/projectM feedback keeps advancing when a modulated stage becomes
+  faint, so fading a keyed or matted result does not reset its retained state.
+- Focused regression coverage exercises every continuous composite parameter,
+  rejects missing or duplicate evidence IDs and preserves the existing
+  post-stage compositing order.
+- The maintained PowerShell test wrapper now gives every pytest invocation a
+  unique project-local base temp and removes it immediately in `finally`, so
+  successful and failed runs cannot silently accumulate generated fixtures.
+
+![Generated composite-modulation contract diagram](docs/media/composite-modulation-contract.svg)
+
+Generated explanatory diagram; no private campaign media.
+
 # FrameRudiments 0.4.10
 
 - Projects longer than 30 seconds now render as finalized sequential chunks by

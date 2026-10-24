@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">DanceRudiment composite modulation contract</title>
+  <desc id="desc">A source-clocked DanceRudiment drives five bounded numeric controls after a Butterchurn or projectM stage while retained feedback advances continuously.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#111452"/><stop offset="1" stop-color="#371068"/></linearGradient>
+    <linearGradient id="flow" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#52d6dd"/><stop offset=".52" stop-color="#ff4f91"/><stop offset="1" stop-color="#ffb54a"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="8" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    <style>text{font-family:system-ui,sans-serif;fill:#fff}.h{font-size:34px;font-weight:700}.b{font-size:24px}.s{font-size:19px;fill:#d9dcff}.box{fill:#15183f;stroke:#8589ff;stroke-width:2}.knob{fill:#201c55;stroke:#ff72ac;stroke-width:2}</style>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bg)"/>
+  <text x="640" y="66" text-anchor="middle" class="h">Source-clocked composite modulation</text>
+  <rect x="55" y="135" width="260" height="160" rx="26" class="box"/>
+  <text x="185" y="195" text-anchor="middle" class="h">DanceRudiment</text>
+  <text x="185" y="238" text-anchor="middle" class="b">named · recorded · matched</text>
+  <text x="185" y="271" text-anchor="middle" class="s">64 pips per beat · source time</text>
+  <path d="M315 215 H448" stroke="url(#flow)" stroke-width="12" filter="url(#glow)"/>
+  <polygon points="448,215 420,197 420,233" fill="#ff5f9b"/>
+  <rect x="455" y="115" width="370" height="200" rx="30" class="box"/>
+  <text x="640" y="174" text-anchor="middle" class="h">Butterchurn / projectM</text>
+  <path d="M505 226 C555 170 610 282 660 226 S765 282 780 226" fill="none" stroke="url(#flow)" stroke-width="9" filter="url(#glow)"/>
+  <text x="640" y="288" text-anchor="middle" class="s">retained feedback always advances</text>
+  <path d="M825 215 H958" stroke="url(#flow)" stroke-width="12" filter="url(#glow)"/>
+  <polygon points="958,215 930,197 930,233" fill="#ffad50"/>
+  <rect x="965" y="135" width="260" height="160" rx="26" class="box"/>
+  <text x="1095" y="195" text-anchor="middle" class="h">Composite</text>
+  <text x="1095" y="238" text-anchor="middle" class="b">key → matte → opacity</text>
+  <text x="1095" y="271" text-anchor="middle" class="s">every numeric value clamped 0..1</text>
+  <text x="640" y="382" text-anchor="middle" class="h">Continuously modulatable controls</text>
+  <g transform="translate(80 430)"><rect width="208" height="130" rx="22" class="knob"/><circle cx="104" cy="53" r="26" fill="none" stroke="#58d9df" stroke-width="8"/><path d="M104 53 L122 35" stroke="#fff" stroke-width="6"/><text x="104" y="108" text-anchor="middle" class="b">stage opacity</text></g>
+  <g transform="translate(308 430)"><rect width="208" height="130" rx="22" class="knob"/><circle cx="104" cy="53" r="26" fill="none" stroke="#58d9df" stroke-width="8"/><path d="M104 53 L90 31" stroke="#fff" stroke-width="6"/><text x="104" y="108" text-anchor="middle" class="b">matte opacity</text></g>
+  <g transform="translate(536 430)"><rect width="208" height="130" rx="22" class="knob"/><circle cx="104" cy="53" r="26" fill="none" stroke="#ff65a2" stroke-width="8"/><path d="M104 53 L128 47" stroke="#fff" stroke-width="6"/><text x="104" y="108" text-anchor="middle" class="b">key similarity</text></g>
+  <g transform="translate(764 430)"><rect width="208" height="130" rx="22" class="knob"/><circle cx="104" cy="53" r="26" fill="none" stroke="#ff65a2" stroke-width="8"/><path d="M104 53 L115 28" stroke="#fff" stroke-width="6"/><text x="104" y="108" text-anchor="middle" class="b">key softness</text></g>
+  <g transform="translate(992 430)"><rect width="208" height="130" rx="22" class="knob"/><circle cx="104" cy="53" r="26" fill="none" stroke="#ffad50" stroke-width="8"/><path d="M104 53 L84 38" stroke="#fff" stroke-width="6"/><text x="104" y="108" text-anchor="middle" class="b">despill</text></g>
+  <text x="640" y="628" text-anchor="middle" class="b">Discrete authoring choices: matte source · matte mode · inversion · key colour</text>
+  <text x="640" y="671" text-anchor="middle" class="s">Generated API illustration — not a rendered campaign frame or benchmark</text>
+</svg>

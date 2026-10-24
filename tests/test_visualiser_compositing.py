@@ -74,6 +74,16 @@ def test_luminance_matte_multiplies_provider_alpha_and_stage_opacity():
         {"matte": {"source": "layer:x", "mode": "bad"}},
         {"matte": {"source": "layer:x", "invert": 1}},
         {"opacity": 2},
+        {"modulations": {}},
+        {"modulations": [{"target": "visual.glow", "motion": {"kind": "named", "pattern": "bounce"}, "range": [0, 1]}]},
+        {"modulations": [{"id": "bad-range", "target": "composite.opacity", "motion": {"kind": "named", "pattern": "bounce"}, "range": [-0.1, 1]}]},
+        {"modulations": [{"id": "missing-matte", "target": "composite.matte.opacity", "motion": {"kind": "named", "pattern": "bounce"}, "range": [0, 1]}]},
+        {"modulations": [{"id": "missing-key", "target": "composite.chroma_key.despill", "motion": {"kind": "named", "pattern": "bounce"}, "range": [0, 1]}]},
+        {"modulations": [{"id": "", "target": "composite.opacity", "motion": {"kind": "named", "pattern": "bounce"}, "range": [0, 1]}]},
+        {"modulations": [
+            {"id": "same", "target": "composite.opacity", "motion": {"kind": "named", "pattern": "bounce"}, "range": [0, 1]},
+            {"id": "same", "target": "composite.opacity", "motion": {"kind": "named", "pattern": "bounce"}, "range": [0, 1]},
+        ]},
     ],
 )
 def test_composite_validation_rejects_ambiguous_or_out_of_range_values(bad):
@@ -144,6 +154,202 @@ def test_effect_chain_applies_each_stage_composite_before_next_engine(monkeypatc
             isolated_layers=[("layer:half", matte)],
         )
         assert seen[1] == [(255, 0, 0)] * 2 + [(0, 0, 255)] * 2
+    finally:
+        chain.close()
+
+
+def test_dancerudiment_modulates_visualiser_stage_opacity(monkeypatch, tmp_path):
+    size = (1, 1)
+
+    class Audio:
+        def __init__(self, project, *args):
+            self.project = project
+            self.evidence = {}
+
+        def at(self, frame):
+            return [0.0] * 8
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(visualisers, "EffectAudio", Audio)
+
+    class Fake:
+        def __init__(self, *args):
+            self.evidence = {}
+
+        def process(self, image, context, pcm):
+            return Image.new("RGBA", size, "white")
+
+        def close(self):
+            pass
+
+    rows = [{
+        "id": "sea-breathe",
+        "motion": {"kind": "named", "pattern": "bounce"},
+        "axis": "x",
+        "target": "composite.opacity",
+        "range": [0.2, 0.8],
+        "curve": "smoothstep",
+    }]
+    composite = validate_stage_composite({"opacity": 0.5, "modulations": rows})
+    specs = [{
+        "engine": "butterchurn",
+        "preset": {"path": "unused"},
+        "input_mix": 1,
+        "seed": 1,
+        "composite": composite,
+    }]
+    project = SimpleNamespace(
+        width=1,
+        height=1,
+        fps=60,
+        data={},
+        inputs=[],
+        base=tmp_path,
+        clock=SimpleNamespace(beat_at=lambda seconds: seconds * 2),
+    )
+
+    def context(frame):
+        seconds = frame / 60
+        return SimpleNamespace(
+            frame=frame,
+            source_seconds=seconds,
+            output_seconds=seconds,
+            beat=seconds * 2,
+        )
+
+    chain = visualisers.EffectChain(
+        project,
+        specs,
+        None,
+        tmp_path,
+        factories={"butterchurn": Fake},
+        context_at=context,
+    )
+    try:
+        first = chain.process(Image.new("RGB", size, "black"), context(0)).getpixel((0, 0))[0]
+        second = chain.process(Image.new("RGB", size, "black"), context(1)).getpixel((0, 0))[0]
+        assert 51 <= first <= 204
+        assert 51 <= second <= 204
+        assert first != second
+        evidence = chain.evidence()
+        assert evidence["composite_modulations"][0][0]["target"] == "composite.opacity"
+        assert evidence["composite_modulation_last_values"][0]["sea-breathe"]["value"] <= 0.8
+    finally:
+        chain.close()
+
+
+def test_all_numeric_composite_parameters_accept_dancerudiment_modulation(monkeypatch, tmp_path):
+    size = (1, 1)
+
+    class Audio:
+        def __init__(self, project, *args):
+            self.project = project
+            self.evidence = {}
+
+        def at(self, frame):
+            return [0.0] * 8
+
+        def close(self):
+            pass
+
+    class Fake:
+        def __init__(self, *args):
+            self.evidence = {}
+
+        def process(self, image, context, pcm):
+            return image.convert("RGBA")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr(visualisers, "EffectAudio", Audio)
+    observed = []
+    monkeypatch.setattr(
+        visualisers,
+        "composite_stage",
+        lambda base, rendered, composite, surfaces: observed.append(composite) or rendered,
+    )
+    targets = [
+        "composite.opacity",
+        "composite.matte.opacity",
+        "composite.chroma_key.similarity",
+        "composite.chroma_key.smoothness",
+        "composite.chroma_key.despill",
+    ]
+    rows = [
+        {
+            "id": f"driver-{index}",
+            "motion": {"kind": "named", "pattern": "bounce"},
+            "axis": "x",
+            "target": target,
+            "range": [0.1, 0.9],
+        }
+        for index, target in enumerate(targets)
+    ]
+    composite = validate_stage_composite({
+        "opacity": 0.5,
+        "matte": {"source": "layer:sea", "mode": "alpha", "opacity": 0.5},
+        "chroma_key": {
+            "colour": "#00ff00",
+            "similarity": 0.2,
+            "smoothness": 0.2,
+            "despill": 0.2,
+        },
+        "modulations": rows,
+    })
+    project = SimpleNamespace(
+        width=1,
+        height=1,
+        fps=60,
+        data={},
+        inputs=[],
+        base=tmp_path,
+        clock=SimpleNamespace(beat_at=lambda seconds: seconds * 2),
+    )
+
+    def context(frame):
+        seconds = frame / 60
+        return SimpleNamespace(
+            frame=frame,
+            source_seconds=seconds,
+            output_seconds=seconds,
+            beat=seconds * 2,
+        )
+
+    chain = visualisers.EffectChain(
+        project,
+        [{
+            "engine": "projectm",
+            "preset": {"path": "unused"},
+            "input_mix": 1,
+            "seed": 1,
+            "composite": composite,
+        }],
+        None,
+        tmp_path,
+        factories={"projectm": Fake},
+        context_at=context,
+    )
+    try:
+        chain.process(
+            Image.new("RGB", size, "black"),
+            context(0),
+            isolated_layers=[("layer:sea", Image.new("RGBA", size, "white"))],
+        )
+        actual = observed[-1]
+        values = [
+            actual["opacity"],
+            actual["matte"]["opacity"],
+            actual["chroma_key"]["similarity"],
+            actual["chroma_key"]["smoothness"],
+            actual["chroma_key"]["despill"],
+        ]
+        assert all(0.1 <= value <= 0.9 for value in values)
+        assert set(chain.evidence()["composite_modulation_last_values"][0]) == {
+            f"driver-{index}" for index in range(5)
+        }
     finally:
         chain.close()
 
