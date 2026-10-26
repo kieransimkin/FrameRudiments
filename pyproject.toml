@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "framerudiments"
-version = "0.4.12"
+version = "0.4.13"
 description = "Deterministic Shorts and lyric visualisers using DanceRudiments and StemLab evidence."
 requires-python = ">=3.11"
 readme = "README.md"
@@ -13,7 +13,7 @@ authors = [{name = "Kieran Simkin"}]
 dependencies = ["Pillow>=10", "dancerudiments>=0.3.0,<0.4"]
 
 [project.optional-dependencies]
-projectm = ["glfw==2.10.2", "PyOpenGL==3.1.10"]
+projectm = ["glfw==2.10.2", "PyOpenGL==3.1.10", "numpy>=1.26"]
 gpu = ["moderngl>=5.11,<6", "numpy>=1.26"]
 materials = ["numpy>=1.26"]
 effect_graph = ["numpy>=1.26"]
