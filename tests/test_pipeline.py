@@ -236,6 +236,16 @@ def test_chunked_render_resumes_finalized_prefix_with_exact_seams(demo, tmp_path
     receipt = output / "chunks" / "chunk-0000.json"
     assert first.is_file() and receipt.is_file()
     retained = sha256(first)
+    failure = json.loads((output / "failure.json").read_text(encoding="utf-8"))
+    health = json.loads((output / "candidate-health.json").read_text(encoding="utf-8"))
+    assert failure["error"] == "synthetic interruption"
+    assert failure["exception"]["type"] == "RuntimeError"
+    assert failure["phase"] == "replaying finalized prefix and rendering chunks"
+    assert failure["frame"] == 130
+    assert health["state"] == "affected-by-error"
+    assert health["affected_by_error"] is True
+    assert health["review_allowed"] is False
+    assert health["finalized_prefix"]["completed_chunks"] == 1
 
     state["fail"] = False
     result = render(
@@ -253,3 +263,9 @@ def test_chunked_render_resumes_finalized_prefix_with_exact_seams(demo, tmp_path
     assert result["seam_verification"]["all_matched"]
     assert result["verification"]["full_decode"] == "passed"
     assert result["output"]["sha256"] == sha256(output / "video.mp4")
+    health = json.loads((output / "candidate-health.json").read_text(encoding="utf-8"))
+    assert health["state"] == "technical-QA passed"
+    assert health["affected_by_error"] is False
+    assert health["review_allowed"] is True
+    assert health["publication_allowed"] is False
+    assert list(output.glob("candidate-health-before-resume-*.json"))

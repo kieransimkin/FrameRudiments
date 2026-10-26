@@ -5,6 +5,8 @@ import subprocess
 import json
 import hashlib
 import shutil
+import traceback
+import gc
 from datetime import datetime, timezone
 from importlib.metadata import version
 
@@ -17,6 +19,126 @@ from .io import sha256, write_json
 from .project import Project
 from .subtitles import export_subtitles
 from .visualisers import EffectChain
+
+
+def _exception_details(exc):
+    """Return useful structured evidence even when an exception has no message."""
+    type_name = type(exc).__name__
+    module = type(exc).__module__
+    try:
+        try:
+            gc.collect()
+        except BaseException:
+            # Evidence collection must still work when the allocator is exhausted.
+            pass
+        chain = []
+        seen = set()
+        current = exc
+        while current is not None and id(current) not in seen and len(chain) < 8:
+            seen.add(id(current))
+            text = str(current).strip()
+            chain.append(
+                dict(
+                    type=type(current).__name__,
+                    module=type(current).__module__,
+                    message=text or type(current).__name__,
+                    repr=repr(current),
+                    memory_error=isinstance(current, MemoryError),
+                )
+            )
+            current = current.__cause__ or current.__context__
+        return dict(
+            schema="framerudiments.exception.v1",
+            type=type_name,
+            module=module,
+            message=str(exc).strip() or type_name,
+            repr=repr(exc),
+            memory_error=any(item["memory_error"] for item in chain),
+            chain=chain,
+            traceback="".join(traceback.format_exception(type(exc), exc, exc.__traceback__)),
+            evidence_complete=True,
+        )
+    except BaseException as evidence_error:
+        return dict(
+            schema="framerudiments.exception.v1",
+            type=type_name,
+            module=module,
+            message=type_name,
+            repr=type_name,
+            memory_error=isinstance(exc, MemoryError),
+            chain=[],
+            traceback="",
+            evidence_complete=False,
+            evidence_error=type(evidence_error).__name__,
+        )
+
+
+def _candidate_artifacts(output, classification):
+    output = Path(output)
+    paths = sorted(output.glob("*.mp4"))
+    if (output / "chunks").is_dir():
+        paths.extend(sorted((output / "chunks").glob("*.partial.mp4")))
+    return [
+        dict(path=str(path), bytes=path.stat().st_size, classification=classification)
+        for path in paths
+        if path.is_file()
+    ]
+
+
+def _write_candidate_health(
+    output,
+    *,
+    state,
+    affected_by_error,
+    phase,
+    error=None,
+    frame=None,
+    finalized_prefix=None,
+):
+    """Write the machine-readable review gate for every encoded candidate."""
+    value = dict(
+        schema="framerudiments.candidate-health.v1",
+        checked_at=datetime.now(timezone.utc).isoformat(),
+        state=state,
+        affected_by_error=affected_by_error,
+        phase=phase,
+        frame=frame,
+        technical_qa="passed" if state == "technical-QA passed" else "not-passed",
+        review_allowed=state == "technical-QA passed",
+        publication_allowed=False,
+        artifacts=_candidate_artifacts(
+            output,
+            "technical-QA-passed" if state == "technical-QA passed" else "unapproved-candidate",
+        ),
+        finalized_prefix=finalized_prefix,
+        error=error,
+        guidance=(
+            "Candidate passed automated technical QA; attended visual/listening approval is still required."
+            if state == "technical-QA passed"
+            else "Do not review, approve, upload or publish listed candidate artifacts; inspect the error and resume or rerender."
+        ),
+    )
+    _write_json_atomic(Path(output) / "candidate-health.json", value)
+    return value
+
+
+def _record_failure(output, failure, *, health=None):
+    """Persist evidence without replacing the original render exception.
+
+    Low-memory and storage failures can also prevent evidence writes. Missing
+    candidate-health.json is therefore a closed gate, while the original
+    exception remains visible to the caller and scheduler log.
+    """
+    output = Path(output)
+    try:
+        _write_json_atomic(output / "failure.json", failure)
+    except BaseException:
+        pass
+    if health is not None:
+        try:
+            _write_candidate_health(output, **health)
+        except BaseException:
+            pass
 
 
 def checkpoints(project):
@@ -202,7 +324,11 @@ def preflight(
         write_json(out / "manifest.json", result)
         return result
     except BaseException as exc:
-        write_json(out / "failure.json", dict(state="preflight failed", error=str(exc)))
+        details = _exception_details(exc)
+        _record_failure(
+            out,
+            dict(state="preflight failed", error=details["message"], exception=details),
+        )
         raise
     finally:
         if effects:
@@ -226,14 +352,28 @@ def render(
     min_free_bytes=536870912,
 ):
     """Render a project, chunking videos longer than 30 seconds by default."""
-    prepared = Project.load(project) if not isinstance(project, Project) else project
-    use_chunks = should_chunk(prepared) if chunked is None else chunked
-    if type(use_chunks) is not bool:
-        raise ValueError("chunked must be true, false or null")
-    if resume and not use_chunks:
-        raise ValueError("Resume is available only for chunked renders")
-    if use_chunks:
-        return _render_chunked(
+    try:
+        prepared = Project.load(project) if not isinstance(project, Project) else project
+        use_chunks = should_chunk(prepared) if chunked is None else chunked
+        if type(use_chunks) is not bool:
+            raise ValueError("chunked must be true, false or null")
+        if resume and not use_chunks:
+            raise ValueError("Resume is available only for chunked renders")
+        if use_chunks:
+            return _render_chunked(
+                prepared,
+                output,
+                ffmpeg=ffmpeg,
+                ffprobe=ffprobe,
+                scene=scene,
+                renderers=renderers,
+                preset=preset,
+                crf=crf,
+                chunk_seconds=chunk_seconds,
+                resume=resume,
+                min_free_bytes=min_free_bytes,
+            )
+        return _render_single(
             prepared,
             output,
             ffmpeg=ffmpeg,
@@ -242,20 +382,31 @@ def render(
             renderers=renderers,
             preset=preset,
             crf=crf,
-            chunk_seconds=chunk_seconds,
-            resume=resume,
-            min_free_bytes=min_free_bytes,
         )
-    return _render_single(
-        prepared,
-        output,
-        ffmpeg=ffmpeg,
-        ffprobe=ffprobe,
-        scene=scene,
-        renderers=renderers,
-        preset=preset,
-        crf=crf,
-    )
+    except BaseException as exc:
+        # _prepare failures happen before the mode-specific handlers. Fill that
+        # gap, but never replace their more precise evidence.
+        out = Path(output).resolve()
+        if out.is_dir() and not (out / "failure.json").is_file():
+            details = _exception_details(exc)
+            _record_failure(
+                out,
+                dict(
+                    state="render setup failed; any encoded file remains unapproved",
+                    error=details["message"],
+                    exception=details,
+                    phase="preparing render",
+                    frame=None,
+                ),
+                health=dict(
+                    state="affected-by-error",
+                    affected_by_error=True,
+                    phase="preparing render",
+                    error=details,
+                    frame=None,
+                ),
+            )
+        raise
 
 
 def _render_single(
@@ -276,6 +427,14 @@ def _render_single(
     selected = set(checkpoints(p))
     process = None
     effects = None
+    phase = "rendering frames"
+    active_frame = None
+    _write_candidate_health(
+        out,
+        state="rendering",
+        affected_by_error=False,
+        phase=phase,
+    )
     try:
         effects = (
             EffectChain(
@@ -296,6 +455,7 @@ def _render_single(
         ):
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log)
             for n in range(p.frame_count):
+                active_frame = n
                 image, context = compositor.frame(n, apply_quality=False)
                 if effects:
                     if n in selected:
@@ -320,6 +480,7 @@ def _render_single(
             effects.close()
         compositor.close()
         p.verify_inputs()
+        phase = "verifying encoded candidate"
         verified = encoding.verify(candidate, p, ffmpeg, ffprobe)
         source_audio = encoding.probe(p.audio_ref["path"], ffprobe)
         source_channels = next(s["channels"] for s in source_audio["streams"] if s["codec_type"] == "audio")
@@ -328,7 +489,9 @@ def _render_single(
         )
         if source_channels != output_channels:
             raise ValueError("Encoder changed channel count")
+        phase = "promoting verified candidate"
         candidate.rename(final)
+        phase = "extracting encoded checkpoints"
         extract_encoded_checkpoints(ffmpeg, final, out / "qa", selected)
         with Image.open(out / "qa" / "encoded-00000000.png") as first:
             first.save(out / "poster.png")
@@ -351,7 +514,15 @@ def _render_single(
             output={"path": str(final), "sha256": sha256(final), "bytes": final.stat().st_size},
             state="technical-QA passed; creative and attended listening review pending",
         )
+        phase = "writing final manifest"
         write_json(out / "manifest.json", result)
+        _write_candidate_health(
+            out,
+            state="technical-QA passed",
+            affected_by_error=False,
+            phase="complete",
+            frame=p.frame_count - 1,
+        )
         return result
     except BaseException as exc:
         if process and process.poll() is None:
@@ -362,7 +533,25 @@ def _render_single(
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
-        write_json(out / "failure.json", dict(state="failed; any encoded file remains unapproved", error=str(exc)))
+        details = _exception_details(exc)
+        failure = dict(
+            state="failed; any encoded file remains unapproved",
+            error=details["message"],
+            exception=details,
+            phase=phase,
+            frame=active_frame,
+        )
+        _record_failure(
+            out,
+            failure,
+            health=dict(
+                state="affected-by-error",
+                affected_by_error=True,
+                phase=phase,
+                error=details,
+                frame=active_frame,
+            ),
+        )
         raise
     finally:
         if effects:
@@ -545,11 +734,27 @@ def _render_chunked(
         result = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
         if result.get("output", {}).get("sha256") != sha256(out / "video.mp4"):
             raise ValueError("Completed chunked render hash differs from its manifest")
+        _write_candidate_health(
+            out,
+            state="technical-QA passed",
+            affected_by_error=False,
+            phase="complete",
+            frame=p.frame_count - 1,
+            finalized_prefix=dict(
+                completed_chunks=len(completed),
+                total_chunks=len(plan["chunks"]),
+                completed_frames=p.frame_count,
+                total_frames=p.frame_count,
+            ),
+        )
         return result
     first_missing = len(completed)
     if resume and (out / "failure.json").is_file():
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         (out / "failure.json").replace(out / f"failure-before-resume-{stamp}.json")
+    if resume and (out / "candidate-health.json").is_file():
+        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        (out / "candidate-health.json").replace(out / f"candidate-health-before-resume-{stamp}.json")
     if first_missing < len(plan["chunks"]):
         _archive_partial(out, plan["chunks"][first_missing])
     selected = set(checkpoints(p))
@@ -558,7 +763,22 @@ def _render_chunked(
     log = None
     analysis = None
     active_chunk = None
+    active_frame = None
+    phase = "replaying finalized prefix and rendering chunks"
     replayed = completed[-1]["end_frame_exclusive"] if completed else 0
+    prefix = dict(
+        completed_chunks=len(completed),
+        total_chunks=len(plan["chunks"]),
+        completed_frames=replayed,
+        total_frames=p.frame_count,
+    )
+    _write_candidate_health(
+        out,
+        state="rendering",
+        affected_by_error=False,
+        phase=phase,
+        finalized_prefix=prefix,
+    )
     try:
         effects = (
             EffectChain(
@@ -573,6 +793,7 @@ def _render_chunked(
             else None
         )
         for n in range(p.frame_count):
+            active_frame = n
             chunk = next(
                 item
                 for item in plan["chunks"]
@@ -663,6 +884,7 @@ def _render_chunked(
             raise RuntimeError(
                 "Final assembly free-space guard stopped before mux; completed chunks are resumable"
             )
+        phase = "assembling encoded candidate"
         candidate, final = out / "candidate.mp4", out / "video.mp4"
         if candidate.exists():
             candidate.replace(out / f"candidate-failed-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.mp4")
@@ -670,15 +892,19 @@ def _render_chunked(
         _write_json_atomic(out / "assemble-command.json", mux)
         with (out / "assemble.log").open("wb") as log:
             subprocess.run(mux, check=True, stdout=subprocess.DEVNULL, stderr=log)
+        phase = "verifying encoded candidate"
         verified = encoding.verify(candidate, p, ffmpeg, ffprobe)
         source_audio = encoding.probe(p.audio_ref["path"], ffprobe)
         source_channels = next(s["channels"] for s in source_audio["streams"] if s["codec_type"] == "audio")
         output_channels = next(s["channels"] for s in verified["probe"]["streams"] if s["codec_type"] == "audio")
         if source_channels != output_channels:
             raise ValueError("Encoder changed channel count")
+        phase = "promoting verified candidate"
         candidate.replace(final)
+        phase = "verifying decoded seams"
         seams = _verify_seams(ffmpeg, final, out, plan)
         _write_json_atomic(out / "seam-verification.json", seams)
+        phase = "extracting encoded checkpoints"
         extract_encoded_checkpoints(ffmpeg, final, out / "qa", selected)
         with Image.open(out / "qa" / "encoded-00000000.png") as first:
             first.save(out / "poster.png")
@@ -712,7 +938,21 @@ def _render_chunked(
             output={"path": str(final), "sha256": sha256(final), "bytes": final.stat().st_size},
             state="technical-QA passed; creative and attended listening review pending",
         )
+        phase = "writing final manifest"
         _write_json_atomic(out / "manifest.json", result)
+        _write_candidate_health(
+            out,
+            state="technical-QA passed",
+            affected_by_error=False,
+            phase="complete",
+            frame=p.frame_count - 1,
+            finalized_prefix=dict(
+                completed_chunks=len(chunks),
+                total_chunks=len(plan["chunks"]),
+                completed_frames=p.frame_count,
+                total_frames=p.frame_count,
+            ),
+        )
         return result
     except BaseException as exc:
         if process and process.poll() is None:
@@ -727,20 +967,35 @@ def _render_chunked(
             analysis.close()
         if log and not log.closed:
             log.close()
-        try:
-            _write_json_atomic(
-                out / "failure.json",
-                dict(
-                    state="chunked render interrupted; finalized prefix remains resumable",
-                    error=str(exc),
-                    active_chunk=active_chunk,
-                    completed_chunks=len(completed),
-                    total_chunks=len(plan["chunks"]),
-                    resume=True,
-                ),
-            )
-        except OSError:
-            pass
+        details = _exception_details(exc)
+        prefix = dict(
+            completed_chunks=len(completed),
+            total_chunks=len(plan["chunks"]),
+            completed_frames=completed[-1]["end_frame_exclusive"] if completed else 0,
+            total_frames=p.frame_count,
+        )
+        _record_failure(
+            out,
+            dict(
+                state="chunked render interrupted; finalized prefix remains resumable",
+                error=details["message"],
+                exception=details,
+                phase=phase,
+                frame=active_frame,
+                active_chunk=active_chunk,
+                completed_chunks=len(completed),
+                total_chunks=len(plan["chunks"]),
+                resume=True,
+            ),
+            health=dict(
+                state="affected-by-error",
+                affected_by_error=True,
+                phase=phase,
+                error=details,
+                frame=active_frame,
+                finalized_prefix=prefix,
+            ),
+        )
         raise
     finally:
         if effects:
