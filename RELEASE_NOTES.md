@@ -1,3 +1,17 @@
+# FrameRudiments 0.4.13
+
+- The projectM extra now installs NumPy explicitly, matching PyOpenGL's array
+  handler and preventing the misleading `No numpy module present` warning in
+  minimal release-local projectM runtimes.
+- This dependency correction does not change current render pixels or permit a
+  live frozen runtime to be mutated underneath an active render.
+
+![Generated chunked-rendering architecture diagram](docs/media/chunked-rendering.svg)
+
+Generated explanatory diagram; dependency verification is covered by the
+package-metadata test and the release pipeline rather than a UI screenshot or
+video.
+
 # FrameRudiments 0.4.12
 
 - Render failures now retain structured exception type, module, nonempty
