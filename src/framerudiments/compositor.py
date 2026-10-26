@@ -539,8 +539,12 @@ class Compositor:
             # Matte providers are compositor data, not visible artwork. Keep
             # their full isolated RGBA surface for downstream stages without
             # painting the provider into the clean composition.
-            if key not in self.matte_sources:
-                image.alpha_composite(scratch)
+            if key not in self.matte_sources and actual:
+                # Pillow otherwise allocates a frame-sized temporary even for
+                # a bounded caption or sprite. Restricting alpha-over to the
+                # exact non-transparent region preserves pixels and avoids a
+                # repeated native-resolution allocation.
+                image.alpha_composite(scratch, dest=actual[:2], source=actual)
             return actual
 
         for layer in self.layers:

@@ -1,3 +1,30 @@
+# FrameRudiments 0.4.12
+
+- Render failures now retain structured exception type, module, nonempty
+  message, representation, causal chain and traceback evidence. A bare
+  `MemoryError()` is explicitly identified instead of becoming a blank error.
+- Every render directory receives `candidate-health.json`. In-progress,
+  interrupted and unverified MP4s are machine-labelled as unapproved and
+  blocked from review/publication; attended review becomes eligible only after
+  the existing technical QA passes.
+- Setup failures before frame rendering now use the same fail-closed evidence
+  path. If memory or storage exhaustion also prevents evidence output, the
+  original exception remains authoritative and a missing health file stays a
+  closed gate.
+- Resumes archive the prior health record, preserve valid finalized chunks, and
+  replace the current gate only after full decode, seam and final-output checks.
+- Isolated RGBA elements now alpha-composite only their nontransparent bounds,
+  avoiding needless full-frame temporary allocation while retaining exact
+  pixel output.
+- Regression coverage exercises blank memory errors, causal chains, setup
+  failures, candidate inventory/gating, pixel equality and interrupted/resumed
+  integration output.
+
+![Generated chunked-rendering architecture diagram](docs/media/chunked-rendering.svg)
+
+Generated explanatory diagram; the executable demonstration uses synthetic
+media and no private campaign material.
+
 # FrameRudiments 0.4.11
 
 - Visualiser composites can now drive stage opacity, matte opacity, chroma-key

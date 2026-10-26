@@ -1,5 +1,25 @@
 # FrameRudiments
 
+## Error-aware candidate gating
+
+Version 0.4.12 records structured exception evidence for render failures,
+including otherwise blank `MemoryError` messages, exception chains, the active
+phase and frame. Every render directory also gets a machine-readable
+`candidate-health.json`: an interrupted, in-progress or unverified MP4 is
+explicitly blocked from review and publication, while review becomes eligible
+only after the existing full decode and continuity checks pass. Publication
+still requires separate attended visual/listening approval.
+
+The same change bounds isolated-layer alpha compositing to the layer's actual
+nontransparent rectangle. The output is pixel-identical to full-frame alpha
+compositing, but avoids an unnecessary full-frame temporary allocation on each
+affected frame. See [chunked rendering](docs/chunked-rendering.md#error-evidence-and-candidate-health).
+
+The existing generated architecture diagram below remains the useful visual
+for this file-based state contract. The synthetic integration test is the
+actual demonstration; there is no interactive interface to screenshot or
+record without misrepresenting test evidence as a production render.
+
 ## Resumable, music-aware long renders
 
 Version 0.4.10 renders projects longer than 30 seconds as finalized video-only
