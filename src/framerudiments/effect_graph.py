@@ -8,9 +8,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from collections.abc import Mapping
 from math import isfinite
-from PIL import Image, ImageChops, ImageFilter, ImageColor
+from PIL import Image, ImageColor
 
 from .effect_graph_transitions import render_transition
+from .effect_graph_mattes import (
+    MATTE_COMBINES, KEY_SPACES, apply_matte, chroma_key, validate_key, validate_matte,
+)
 
 MAX_NODES = 256
 MAX_INPUTS = 32
@@ -19,11 +22,29 @@ TRANSITION_STYLES = {'dissolve', 'wipe', 'radial'}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
     'opacity': {'opacity'},
-    'matte': {'feather'},
-    'chroma_key': {'tolerance', 'softness', 'despill', 'key_color.r', 'key_color.g', 'key_color.b'},
+    'matte': {'feather', 'expand', 'mask_opacity', 'mask_combine', 'matte_channel', 'invert'},
+    'chroma_key': {'tolerance', 'softness', 'despill', 'edge_expand', 'edge_feather',
+                   'edge_decontaminate', 'edge_radius', 'key_color.r', 'key_color.g', 'key_color.b',
+                   'key_space'},
     'chromatic_displacement': {f'{c}_offset.{axis}' for c in ('red', 'green', 'blue') for axis in ('x', 'y')},
-    'transition': {'progress', 'feather', 'center.x', 'center.y'},
+    'transition': {'progress', 'feather', 'center.x', 'center.y', 'transition_style', 'direction'},
 }
+# Every image-processing node has an independent output-opacity control.
+for _targets in CONTROL_TARGETS.values():
+    _targets.add('opacity')
+CONTROL_TARGETS['source'] = {'opacity'}
+CONTROL_TARGETS['copy'] = {'opacity'}
+CONTROL_TARGETS['composite'] = {'opacity', 'mode'}
+ENUM_CONTROLS = {
+    'matte': {'mask_combine': MATTE_COMBINES, 'matte_channel': frozenset({'alpha', 'luminance'}),
+              'invert': frozenset({True, False})},
+    'chroma_key': {'key_space': KEY_SPACES},
+    'transition': {'transition_style': TRANSITION_STYLES, 'direction': TRANSITION_DIRECTIONS},
+    'composite': {'mode': frozenset({'over', 'add'})},
+}
+ENUM_DEFAULTS = {'mask_combine': 'multiply', 'matte_channel': 'alpha', 'invert': False,
+                 'key_space': 'rgb', 'transition_style': 'dissolve', 'direction': 'right', 'mode': 'over'}
+
 
 
 
@@ -48,7 +69,8 @@ class EffectGraph:
         for entry in entries:
             if not isinstance(entry, dict) or not {'id', 'type'} <= entry.keys():
                 raise ValueError('invalid node')
-            if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center'}:
+            if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
+                               'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius'}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -58,15 +80,13 @@ class EffectGraph:
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
-            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement'} and len(inputs) != 1) or (kind == 'matte' and len(inputs) != 2) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != 2):
+            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != 2):
                 raise ValueError(f'wrong input count for {kind}')
             opacity = entry.get('opacity', 1.0)
             if type(opacity) not in (int, float) or not isfinite(opacity) or not 0 <= opacity <= 1:
                 raise ValueError('opacity must be finite and between 0 and 1')
-            if kind == 'matte' and entry.get('matte_channel', 'alpha') not in {'alpha', 'luminance'}:
-                raise ValueError('matte_channel must be alpha or luminance')
-            if kind == 'matte' and (type(entry.get('invert', False)) is not bool or type(entry.get('feather', 0)) not in (int, float) or not isfinite(entry.get('feather', 0)) or not 0 <= entry.get('feather', 0) <= 128):
-                raise ValueError('invalid matte controls')
+            if kind == 'matte':
+                validate_matte(entry, len(inputs))
             if kind == 'chromatic_displacement':
                 for channel in ('red_offset', 'green_offset', 'blue_offset'):
                     vector = entry.get(channel, [0, 0])
@@ -75,14 +95,7 @@ class EffectGraph:
                                    or abs(v) > 4096 for v in vector)):
                         raise ValueError(f'invalid {channel} displacement vector')
             if kind == 'chroma_key':
-                try:
-                    ImageColor.getrgb(entry.get('key_color', '#00ff00'))
-                except (ValueError, TypeError) as exc:
-                    raise ValueError('invalid chroma key colour') from exc
-                for param in ('tolerance', 'softness', 'despill'):
-                    val = entry.get(param, {'tolerance': 0.1, 'softness': 0.1, 'despill': 0}[param])
-                    if type(val) not in (float, int) or not isfinite(val) or not 0 <= val <= 1:
-                        raise ValueError(f'invalid chroma key {param}')
+                validate_key(entry)
             if kind == 'transition':
                 if entry.get('transition_style', 'dissolve') not in TRANSITION_STYLES:
                     raise ValueError('unsupported transition style')
@@ -129,18 +142,53 @@ class EffectGraph:
 
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)
-        if node is None or property_name not in CONTROL_TARGETS.get(node.kind, set()):
+        if node is None or (property_name not in CONTROL_TARGETS.get(node.kind, set())
+                            and not self._is_extra_key_colour_target(node, property_name)):
             raise ValueError('unknown or inapplicable graph control target')
+
+    @staticmethod
+    def _is_extra_key_colour_target(node, property_name):
+        if node.kind != 'chroma_key' or not isinstance(property_name, str):
+            return False
+        parts = property_name.split('.')
+        return (len(parts) == 3 and parts[0] == 'key_colors' and parts[1].isdigit()
+                and parts[2] in {'r', 'g', 'b'} and
+                int(parts[1]) < len(node.config.get('key_colors', [])))
+
+    def is_categorical_control(self, node_id, property_name):
+        self.validate_control_target(node_id, property_name)
+        return property_name in ENUM_CONTROLS.get(self.nodes[node_id].kind, {})
+
+    def validate_control_choices(self, node_id, property_name, choices):
+        self.validate_control_target(node_id, property_name)
+        node = self.nodes[node_id]
+        accepted = ENUM_CONTROLS.get(node.kind, {}).get(property_name)
+        if accepted is None:
+            raise ValueError('categorical choices require an enum graph control')
+        if (not isinstance(choices, list) or not 2 <= len(choices) <= 32
+                or any(type(v) is not bool and not isinstance(v, str) for v in choices)
+                or any(v not in accepted for v in choices)
+                or len({(type(v), v) for v in choices}) != len(choices)):
+            raise ValueError('invalid categorical graph control choices')
 
     def base_control_value(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
         config = self.nodes[node_id].config
+        if property_name in ENUM_CONTROLS.get(self.nodes[node_id].kind, {}):
+            return config.get(property_name, ENUM_DEFAULTS[property_name])
+        if property_name.startswith('key_colors.'):
+            _, index, component = property_name.split('.')
+            return ImageColor.getrgb(config['key_colors'][int(index)])[{'r': 0, 'g': 1, 'b': 2}[component]]
         if property_name.endswith(('.x', '.y')):
             key, axis = property_name.rsplit('.', 1)
             return config.get(key, [0.5, 0.5] if key == 'center' else [0, 0])[0 if axis == 'x' else 1]
         if property_name.startswith('key_color.'):
-            return ImageColor.getrgb(config.get('key_color', '#00ff00'))[{'r': 0, 'g': 1, 'b': 2}[property_name[-1]]]
-        return config.get(property_name, {'opacity': 1, 'feather': 0, 'tolerance': .1, 'softness': .1, 'despill': 0, 'progress': 0}.get(property_name, 0))
+            primary = config.get('key_color', (config.get('key_colors') or ['#00ff00'])[0])
+            return ImageColor.getrgb(primary)[{'r': 0, 'g': 1, 'b': 2}[property_name[-1]]]
+        return config.get(property_name, {'opacity': 1, 'feather': 0, 'tolerance': .1, 'softness': .1, 'despill': 0,
+                                          'progress': 0, 'expand': 0, 'mask_opacity': 1,
+                                          'edge_expand': 0, 'edge_feather': 0, 'edge_decontaminate': 0,
+                                          'edge_radius': 3}.get(property_name, 0))
 
     def render(self, sources: dict[str, Image.Image], *, parameter_values=None) -> Image.Image:
         """Render with optional resolved per-frame controls keyed by (node_id, property).
@@ -157,14 +205,29 @@ class EffectGraph:
                 raise ValueError('graph control target must be (node_id, property)')
             node_id, property_name = target
             node = self.nodes.get(node_id)
-            if node is None or property_name not in CONTROL_TARGETS.get(node.kind, set()):
-                raise ValueError('unknown or inapplicable graph control target')
+            self.validate_control_target(node_id, property_name)
+            enum_values = ENUM_CONTROLS.get(node.kind, {}).get(property_name)
+            if enum_values is not None:
+                if (type(value) is not bool and not isinstance(value, str)) or value not in enum_values:
+                    raise ValueError('invalid categorical graph control value')
+                configs.setdefault(node_id, dict(node.config))[property_name] = value
+                continue
             if type(value) not in (float, int) or not isfinite(value):
                 raise ValueError('graph control must be finite numeric')
-            bounds = (0, 1) if property_name.startswith('center.') else ((-4096, 4096) if property_name.endswith(('.x', '.y')) else (
-                (0, 255) if property_name.startswith('key_color.') else (
-                (0, 128) if property_name == 'feather' and node.kind == 'matte' else (0, 1))
-            ))
+            if property_name.startswith('center.'):
+                bounds = (0, 1)
+            elif property_name.endswith(('.x', '.y')):
+                bounds = (-4096, 4096)
+            elif property_name.startswith(('key_color.', 'key_colors.')):
+                bounds = (0, 255)
+            elif property_name in {'expand', 'edge_expand'}:
+                bounds = (-64, 64)
+            elif property_name == 'feather' and node.kind == 'matte' or property_name == 'edge_feather':
+                bounds = (0, 128)
+            elif property_name == 'edge_radius':
+                bounds = (0.5, 16)
+            else:
+                bounds = (0, 1)
             if not bounds[0] <= value <= bounds[1]:
                 raise ValueError('graph control out of range')
             config = configs.setdefault(node_id, dict(node.config))
@@ -173,11 +236,28 @@ class EffectGraph:
                 vector = list(config.get(vector_name, [0.5, 0.5] if vector_name == 'center' else [0, 0]))
                 vector[0 if axis == 'x' else 1] = value
                 config[vector_name] = vector
+            elif property_name.startswith('key_colors.'):
+                _, ordinal, component = property_name.split('.')
+                index = int(ordinal)
+                colours = list(config.get('key_colors', []))
+                rgb = list(ImageColor.getrgb(colours[index]))
+                rgb[{'r': 0, 'g': 1, 'b': 2}[component]] = round(value)
+                colours[index] = '#%02x%02x%02x' % tuple(rgb)
+                config['key_colors'] = colours
             elif property_name.startswith('key_color.'):
                 channel = {'r': 0, 'g': 1, 'b': 2}[property_name.rsplit('.', 1)[1]]
-                rgb = list(ImageColor.getrgb(config.get('key_color', '#00ff00')))
-                rgb[channel] = round(value)
-                config['key_color'] = '#%02x%02x%02x' % tuple(rgb)
+                # For key_colors-only configs, key_color.* aliases the first
+                # colour rather than silently injecting an extra key.
+                if 'key_color' not in config and config.get('key_colors'):
+                    colours = list(config['key_colors'])
+                    rgb = list(ImageColor.getrgb(colours[0]))
+                    rgb[channel] = round(value)
+                    colours[0] = '#%02x%02x%02x' % tuple(rgb)
+                    config['key_colors'] = colours
+                else:
+                    rgb = list(ImageColor.getrgb(config.get('key_color', '#00ff00')))
+                    rgb[channel] = round(value)
+                    config['key_color'] = '#%02x%02x%02x' % tuple(rgb)
             else:
                 config[property_name] = value
         results = {}
@@ -196,23 +276,12 @@ class EffectGraph:
                 if kind == 'copy':
                     result = inputs[0].copy()
                 elif kind == 'opacity':
+                    # Applied by the universal per-node output-opacity stage.
                     result = inputs[0].copy()
-                    result.putalpha(result.getchannel('A').point(lambda a: round(a * config.get('opacity', 1))))
                 elif kind == 'matte':
-                    result = inputs[0].copy()
-                    if config.get('matte_channel', 'alpha') == 'luminance':
-                        # Alpha-weighted luminance: transparent bright pixels must not reveal ink.
-                        matte_rgb = inputs[1].convert('RGB').convert('L')
-                        mask = ImageChops.multiply(matte_rgb, inputs[1].getchannel('A'))
-                    else:
-                        mask = inputs[1].getchannel('A')
-                    if config.get('feather', 0):
-                        mask = mask.filter(ImageFilter.GaussianBlur(config['feather']))
-                    if config.get('invert', False):
-                        mask = ImageChops.invert(mask)
-                    result.putalpha(ImageChops.multiply(inputs[0].getchannel('A'), mask))
+                    result = apply_matte(inputs, config)
                 elif kind == 'chroma_key':
-                    result = _chroma_key(inputs[0], config)
+                    result = chroma_key(inputs[0], config)
                 elif kind == 'chromatic_displacement':
                     result = _chromatic_displacement(inputs[0], config)
                 elif kind == 'transition':
@@ -232,37 +301,15 @@ class EffectGraph:
                             premul = np.clip(a[..., :3] * ap + b[..., :3] * bp, 0, alpha)
                             rgb = np.divide(premul, alpha, out=np.zeros_like(premul), where=alpha > 0)
                             result = Image.fromarray(np.uint8(np.rint(np.concatenate([rgb, alpha], axis=-1) * 255)), 'RGBA')
+            # A branch's opacity belongs to its resulting surface, regardless
+            # of effect kind. This also makes source, matte, transition and
+            # composite opacity independently DanceRudiment-addressable.
+            opacity = config.get('opacity', 1)
+            if opacity != 1:
+                result = result.copy()
+                result.putalpha(result.getchannel('A').point(lambda a: round(a * opacity)))
             results[key] = result
         return results[self.output].copy()
-
-
-def _chroma_key(image: Image.Image, config: dict) -> Image.Image:
-    """Soft colour-distance key in straight RGB; preserves existing source alpha.
-
-    This deliberately simple CPU reference is not yet a production-quality
-    perceptual keyer. A later milestone adds OKLab selection and edge cleanup.
-    """
-    import numpy as np
-    pixels = np.asarray(image, dtype=np.float32) / 255.0
-    key = np.asarray(ImageColor.getrgb(config.get('key_color', '#00ff00')), dtype=np.float32) / 255.0
-    distance = np.sqrt(np.mean((pixels[..., :3] - key) ** 2, axis=-1))
-    tolerance = config.get('tolerance', 0.1)
-    softness = config.get('softness', 0.1)
-    if softness == 0:
-        keep = (distance > tolerance).astype(np.float32)
-    else:
-        keep = np.clip((distance - tolerance) / softness, 0, 1)
-        keep = keep * keep * (3 - 2 * keep)
-    out = pixels.copy()
-    out[..., 3] *= keep
-    # Suppress the key-colour contribution in semi-transparent edge pixels.
-    despill = config.get('despill', 0)
-    if despill:
-        dominant = int(np.argmax(key))
-        other = [i for i in range(3) if i != dominant]
-        excess = np.maximum(0, out[..., dominant] - np.maximum(out[..., other[0]], out[..., other[1]]))
-        out[..., dominant] -= excess * despill * (1 - keep)
-    return Image.fromarray(np.uint8(np.rint(np.clip(out, 0, 1) * 255)), 'RGBA')
 
 
 def _chromatic_displacement(image: Image.Image, config: dict) -> Image.Image:

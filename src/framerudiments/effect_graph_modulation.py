@@ -20,7 +20,7 @@ class EffectGraphControls:
         allowed_fields = {
             "id", "node", "property", "motion", "axis", "range", "curve", "steps",
             "power", "invert", "combine", "weight", "lag_frames",
-            "smoothing_frames", "deadzone", "sample_stride",
+            "smoothing_frames", "deadzone", "sample_stride", "choices",
         }
         for row in configs:
             if not isinstance(row, dict) or set(row) - allowed_fields:
@@ -32,26 +32,43 @@ class EffectGraphControls:
                 raise ValueError("duplicate replacement graph control target")
             seen.add((node, prop))
             graph.validate_control_target(node, prop)
-            validated.append((row, node, prop))
+            choices = row.get("choices")
+            if choices is not None:
+                graph.validate_control_choices(node, prop, choices)
+                if row.get("combine", "set") != "set" or row.get("weight", 1) != 1:
+                    raise ValueError("categorical graph controls require set combination and weight 1")
+                if "range" in row:
+                    raise ValueError("categorical graph control range is derived from choices")
+            elif graph.is_categorical_control(node, prop):
+                raise ValueError("categorical graph controls require choices")
+            validated.append((row, node, prop, choices))
 
         self.bindings = []
         self.files = []
-        for row, node, prop in validated:
-            proxy = {k: v for k, v in row.items() if k not in {"node", "property"}}
+        for row, node, prop, choices in validated:
+            proxy = {k: v for k, v in row.items() if k not in {"node", "property", "choices"}}
             proxy["target"] = "style.value"
+            if choices is not None:
+                proxy["range"] = [0, len(choices) - 1]
             driver = _Modulator(proxy, project, context_at)
-            self.bindings.append((node, prop, driver))
+            self.bindings.append((node, prop, driver, choices))
             self.files.extend(driver.motion.files)
 
     def values(self, ctx, graph):
         result = {}
-        for node, prop, driver in self.bindings:
+        for node, prop, driver, choices in self.bindings:
             sample = driver.output(ctx)
             if sample is None:
                 continue
             value, _ = sample
             key = (node, prop)
-            start = result.get(key, graph.base_control_value(node, prop))
-            result[key] = _combine(start, value, driver.combine, driver.weight)
+            if choices is not None:
+                # Stateless nearest-choice selection. Native motion controls
+                # still provide the source clock, curves, smoothing and lag.
+                index = max(0, min(len(choices) - 1, round(value)))
+                result[key] = choices[index]
+            else:
+                start = result.get(key, graph.base_control_value(node, prop))
+                result[key] = _combine(start, value, driver.combine, driver.weight)
         # The graph validates the final numeric range at evaluation time.
         return result

@@ -112,7 +112,6 @@ def test_chromatic_displacement_vector_controls_are_independent_and_ephemeral():
 @pytest.mark.parametrize('target,value', [
     (('split', 'red_offset.x'), 5000),
     (('split', 'blue_offset.y'), float('nan')),
-    (('split', 'opacity'), 0.5),
     (('missing', 'red_offset.x'), 1),
     ('split.red_offset.x', 1),
 ])

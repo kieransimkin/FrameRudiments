@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.2 — 24 October 2026
-**Status:** Active implementation, with independently gated milestones.
+**Version:** 1.3 — 27 October 2026
+**Status:** Active implementation. M3 CPU matte/keying and per-node opacity foundation added; GPU and integration evidence pending.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -26,7 +26,7 @@ Unify alpha-aware per-layer styles, independently forked filter branches, arbitr
 - Existing `src/framerudiments/effect_graph_modulation.py`: native `_Modulator` adapter and immutable per-frame numeric overrides.
 - `src/framerudiments/compositor.py`: opt-in graph execution after legacy element and frame effects, using source `frame`, `background` and captured `layer:<id>` surfaces.
 - `docs/effect-graph-implementation-plan.md`: original granular project plan and dependency gates.
-- Current increment: CPU two-input `transition` node with dissolve, directional wipe and radial reveal, exact endpoints, premultiplied-safe interpolation and native `progress`/`feather`/`center.x`/`center.y` control targets. **Full-project render integration is covered by the M2 tests in v13; CI confirmation is still required.**
+- Current increment: CPU two-input `transition` node with dissolve, directional wipe and radial reveal, exact endpoints, premultiplied-safe interpolation and native `progress`/`feather`/`center.x`/`center.y` control targets. **Full-project rendering is covered by M2 tests; CI must still confirm the latest commit.**
 
 ## Proposed graph API (transition v1)
 
@@ -233,3 +233,19 @@ The M2 acceptance gate remains open until this full suite runs on a complete
 checkout. Future M3 stages add matte combination, perceptual keys, edge refinement
 and the wider DanceNotion control schema. M4 extends spectral displacement beyond
 RGB, M5+ add advanced transitions and temporal effects.
+
+## M3 CPU matte/keying foundation — October 27, 2026
+
+See [effect-graph-m3-mattes-and-keying.md](effect-graph-m3-mattes-and-keying.md) for schema,
+operation ordering, parameter ranges, example project, and acceptance tests.
+This increment implements multi-input mattes (multiply/min/max/add/subtract/difference/screen),
+signed fractional erosion/dilation, independent matte and branch opacity,
+RGB/OKLab multi-key chroma, optional edge feather/despill/decontamination,
+and native DanceRudiment binding for meaningful numeric **and categorical** parameters,
+including per-entry key-colour channels.
+Legacy two-input alpha/luminance matte and default RGB key configurations retain
+existing defaults. `tests/test_effect_graph_mattes.py` supplies reference tests.
+
+**Do not mark all of M3 complete yet:** full parameter metadata discovery, source-alpha
+selection, pre/post placement, GPU parity, 4K/8K benchmarks, editor controls and
+visual regression references are still required.
