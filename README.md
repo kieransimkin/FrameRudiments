@@ -1,5 +1,52 @@
 # FrameRudiments
 
+## Live render progress
+
+Version 0.4.14 writes `render-progress.json` atomically and emits a flushed
+stderr heartbeat every 10 seconds during preflight and render. The heartbeat
+runs independently of frame completion, so a single expensive frame remains
+visibly alive. It records the active phase/frame, completed and finalized frame
+counts, elapsed time, observed seconds per frame and a provisional ETA. Single-
+pass, chunk replay/rendering, assembly, verification and final manifest phases
+use the same schema. Use `--progress-seconds N` to select a bounded interval
+between 0.1 and 3600 seconds; stdout remains reserved for the final CLI result.
+
+The existing generated chunk architecture diagram below remains the useful
+visual for this file-based status contract. Focused tests exercise a real timed
+heartbeat while the active frame does not change; a new screenshot or video
+would merely restage the JSON/terminal evidence rather than show another UI.
+
+## Fast working cache and verified promotion
+
+Version 0.4.14 can stage every checksum-pinned project input and all render,
+chunk, effect, analysis and QA writes under a caller-selected fast working-cache
+root. The requested final output directory is not created until the cached render
+has passed technical QA. FrameRudiments then copies the complete tree to a hidden
+staging directory beside the destination, verifies every file hash/size, adds a
+promotion receipt and renames the staging directory into its final name.
+
+```sh
+framerudiments render project.json --output final/render-001 \
+  --work-cache /fast-device/framerudiments-cache --reserve-gib 12
+framerudiments cache-status --work-cache /fast-device/framerudiments-cache --expect-empty
+```
+
+`FRAMERUDIMENTS_WORK_CACHE` may provide the cache root. `--reserve-gib` is a
+required complete peak estimate when a working cache is selected: include cached
+inputs, retained intermediates and the deliverable. Before preparation starts,
+FrameRudiments physically writes that payload reservation plus a 2% margin at
+both the cache and final locations. Each payload reservation is released only
+when cached rendering or final promotion is about to replace it; both margins
+remain through final hash verification. Sparse placeholders are not used.
+
+Choose a fast physical device separate from the final destination when the final
+storage can become contended. During work, monitor the job's `work-cache.json`
+and cached `render/render-progress.json`; do not enumerate its trees. Successful
+promotion removes the job directory. A failed/interrupted job retains its cache
+evidence for inspection or exact chunk resume but releases reservation files.
+`cache-status --expect-empty` is therefore a safe periodic health check; never
+delete a nonempty job without establishing ownership and recovery state.
+
 ## Error-aware candidate gating
 
 Version 0.4.12 records structured exception evidence for render failures,
@@ -133,6 +180,8 @@ framerudiments preflight demo/project.json --output bounded-preflight --max-fram
 framerudiments render demo/project.json --output render --ffmpeg /path/to/ffmpeg
 framerudiments render demo/project.json --output render --chunk-seconds 30 --ffmpeg /path/to/ffmpeg
 framerudiments render demo/project.json --output render --resume --ffmpeg /path/to/ffmpeg
+framerudiments render demo/project.json --output render --progress-seconds 5 --ffmpeg /path/to/ffmpeg
+framerudiments render demo/project.json --output render --work-cache /fast/cache --reserve-gib 4 --ffmpeg /path/to/ffmpeg
 ```
 
 Use a new output directory for a new render; `--resume` targets the exact
@@ -142,6 +191,15 @@ ffprobe. Environment alternatives are `FRAMERUDIMENTS_FFMPEG` and
 `FRAMERUDIMENTS_FFPROBE`. Fonts are explicit hashed inputs; no platform-specific
 font or FFmpeg location is hardcoded into the engine. The synthetic demo creates
 its own tone, sprite, LRC, CUE and four-dimensional recording.
+
+Read `render-progress.json` for machine monitoring or stderr for a human log.
+Poll the single status file no faster than its configured heartbeat; do not scan
+frame, chunk or QA directories to infer progress because that creates avoidable
+disk contention.
+An ETA is unavailable until at least one frame completes and remains an
+observation-based estimate rather than a completion promise. `finalized_frames`
+is the immutable encoded prefix for chunked work; `completed_frames` is current
+invocation progress and includes replay needed to restore sequential state.
 
 For expensive long projects, `preflight --max-frames N` validates a bounded
 sequential prefix and records the exact incomplete scope in `manifest.json`.

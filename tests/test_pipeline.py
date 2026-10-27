@@ -110,8 +110,39 @@ def test_actual_encode_decode_cfr_and_fractional_sample_repeats(demo, tmp_path, 
     assert result["output"]["sha256"] == sha256(out / "video.mp4")
     assert not result["verification"]["listening_approved"]
     assert Image.open(out / "poster.png").size == dimensions
+    progress = json.loads((out / "render-progress.json").read_text(encoding="utf-8"))
+    assert progress["state"] == "completed"
+    assert progress["completed_frames"] == result["frames"]
+    assert progress["finalized_frames"] == result["frames"]
+    assert progress["mode"] == "single-pass"
     with pytest.raises(FileExistsError):
         render(path, out)
+
+
+def test_actual_render_uses_work_cache_then_promotes_verified_tree(demo, tmp_path):
+    if not os.environ.get("FRAMERUDIMENTS_FFMPEG"):
+        pytest.skip("Set FRAMERUDIMENTS_FFMPEG")
+    cache_root = tmp_path / "fast-cache"
+    output = tmp_path / "final" / "cached-render"
+    result = render(
+        demo,
+        output,
+        preset="ultrafast",
+        chunked=False,
+        min_free_bytes=0,
+        work_cache=cache_root,
+        reserve_bytes=16 * 1024 * 1024,
+        progress_interval_seconds=0.1,
+    )
+    assert result["output"]["path"] == str(output / "video.mp4")
+    assert result["output"]["sha256"] == sha256(output / "video.mp4")
+    assert result["input_cache"]["files"] > 0
+    assert result["cache_promotion"]["state"].startswith("verified cache")
+    health = json.loads((output / "candidate-health.json").read_text(encoding="utf-8"))
+    assert all(Path(item["path"]).is_relative_to(output) for item in health["artifacts"])
+    from framerudiments.work_cache import cache_status
+
+    assert cache_status(cache_root)["empty"] is True
 
 
 def test_inputs_rechecked_after_preparation(demo):
@@ -157,6 +188,12 @@ def test_custom_scene_hook_and_preflight(demo, tmp_path):
     }
     assert "later frames unvalidated" in bounded["state"]
     assert (tmp_path / "bounded-preflight" / "qa" / "source-00000002.png").exists()
+    progress = json.loads(
+        (tmp_path / "bounded-preflight" / "render-progress.json").read_text(encoding="utf-8")
+    )
+    assert progress["state"] == "completed"
+    assert progress["completed_frames"] == 3
+    assert progress["project_total_frames"] == 240
 
 
 @pytest.mark.parametrize("limit", [0, -1, 241, 1.5, True])
@@ -181,6 +218,7 @@ def test_cli_forwards_bounded_preflight_limit(monkeypatch, capsys):
         "output": "out",
         "ffmpeg": None,
         "ffprobe": None,
+        "progress_interval_seconds": 10.0,
         "max_frames": 3,
     }
     assert '"state": "bounded-prefix preflight passed"' in capsys.readouterr().out
@@ -209,6 +247,12 @@ def test_cli_forwards_chunk_controls(monkeypatch):
                 "--resume",
                 "--min-free-gib",
                 "0.75",
+                "--progress-seconds",
+                "2.5",
+                "--work-cache",
+                "fast-cache",
+                "--reserve-gib",
+                "1.25",
             ]
         )
         == 0
@@ -217,6 +261,9 @@ def test_cli_forwards_chunk_controls(monkeypatch):
     assert received["chunk_seconds"] == 42
     assert received["resume"] is True
     assert received["min_free_bytes"] == round(0.75 * 1024**3)
+    assert received["progress_interval_seconds"] == 2.5
+    assert received["work_cache"] == "fast-cache"
+    assert received["reserve_bytes"] == round(1.25 * 1024**3)
 
 
 def test_chunked_render_resumes_finalized_prefix_with_exact_seams(demo, tmp_path):
@@ -269,3 +316,8 @@ def test_chunked_render_resumes_finalized_prefix_with_exact_seams(demo, tmp_path
     assert health["review_allowed"] is True
     assert health["publication_allowed"] is False
     assert list(output.glob("candidate-health-before-resume-*.json"))
+    progress = json.loads((output / "render-progress.json").read_text(encoding="utf-8"))
+    assert progress["state"] == "completed"
+    assert progress["mode"] == "chunked-sequential"
+    assert progress["completed_frames"] == result["frames"]
+    assert progress["finalized_frames"] == result["frames"]

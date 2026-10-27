@@ -75,6 +75,9 @@ class Project:
         if self.purpose not in {"short", "visualiser", "canvas"}:
             raise ValueError("purpose must be short, visualiser or canvas")
         self.inputs = []
+        # Set by the optional working-cache staging pass. Summaries retain the
+        # canonical source identities while render consumers use cached paths.
+        self.canonical_inputs = None
         # Named aliases reference ordinary, checksum-pinned StemLab-compatible
         # recording motions. No analysis data or new DSP is introduced here.
         sources = data.get("stem_sources", {})
@@ -263,7 +266,13 @@ class Project:
         )
 
     def verify_inputs(self):
-        for ref in self.inputs:
+        references = [*(self.canonical_inputs or []), *self.inputs]
+        seen = set()
+        for ref in references:
+            identity = (ref["path"], ref["sha256"])
+            if identity in seen:
+                continue
+            seen.add(identity)
             if sha256(ref["path"]) != ref["sha256"]:
                 raise ValueError(f"Input changed since preparation: {ref['path']}")
 
@@ -319,6 +328,6 @@ class Project:
                 if "visualiser_routing" in self.data
                 else {}
             ),
-            inputs=self.inputs,
+            inputs=self.canonical_inputs or self.inputs,
             state="prepared; perceptual review pending",
         )

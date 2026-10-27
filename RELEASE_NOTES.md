@@ -1,3 +1,32 @@
+# FrameRudiments 0.4.14
+
+- Preflight and render now write an atomic `render-progress.json` and flush a
+  human-readable stderr heartbeat every 10 seconds by default.
+- A dedicated heartbeat thread reports liveness even while one expensive frame
+  is still composing. Status spans single-pass rendering, chunk replay and
+  encoding, assembly, verification and final manifest work.
+- The status schema retains current/finalized frame counts, elapsed time,
+  observed per-frame cost and a provisional ETA. `--progress-seconds` changes
+  the bounded cadence without mixing heartbeat text into final stdout JSON.
+- Focused regression coverage verifies timed updates with an unchanged active
+  frame, durable failure state and final progress state for single-pass,
+  bounded-preflight and resumed chunked integration routes.
+- Optional `--work-cache`/`FRAMERUDIMENTS_WORK_CACHE` staging now moves all
+  checksum-pinned inputs and high-I/O render artifacts to a selected fast
+  workspace, while `--reserve-gib` physically reserves the complete declared
+  peak plus 2% at both cache and final locations.
+- A final output appears only after cached technical QA, complete staging-tree
+  hash/size comparison and final-directory promotion. Successful jobs remove
+  their cache; interrupted jobs retain recovery evidence but release reservations.
+- `cache-status --expect-empty` provides a bounded, non-recursive periodic cache
+  health check. Portable guidance recommends a separate physical device without
+  embedding any deployment-specific drive letters.
+
+![Generated chunked-rendering architecture diagram](docs/media/chunked-rendering.svg)
+
+Generated explanatory diagram. The feature is a file/terminal evidence contract;
+timed tests provide the useful demonstration without manufacturing a UI capture.
+
 # FrameRudiments 0.4.13
 
 - The projectM extra now installs NumPy explicitly, matching PyOpenGL's array
