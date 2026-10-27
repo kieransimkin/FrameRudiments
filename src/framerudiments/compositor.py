@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from functools import lru_cache
+import gc
 import math
 
 from PIL import Image, ImageColor, ImageDraw, ImageFont, ImageOps
@@ -707,8 +708,19 @@ class Compositor:
 
     def close(self):
         for layer in self.layers:
-            if isinstance(layer, (NaturalMaterialLayer,ParticleEmitter)):
+            if isinstance(layer, (NaturalMaterialLayer, ParticleEmitter)):
                 layer.close()
+        # Method-level lru_cache instances retain ``self`` and Pillow font
+        # objects. Clear them explicitly so a staged Windows font can be
+        # removed when a working-cache job completes.
+        TextBlock.layout.cache_clear()
+        Sprite.transformed.cache_clear()
+        if self.word_indicator:
+            type(self.word_indicator)._centre.cache_clear()
+        from .super_sampling import _ScaledText
+
+        _ScaledText.layout.cache_clear()
+        gc.collect()
 
     def evidence(self):
         return dict(

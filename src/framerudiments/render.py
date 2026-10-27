@@ -17,8 +17,10 @@ from .chunking import plan_chunks, should_chunk
 from .compositor import Compositor
 from .io import sha256, write_json
 from .project import Project
+from .progress import ProgressReporter
 from .subtitles import export_subtitles
 from .visualisers import EffectChain
+from .work_cache import WorkingCache, stage_project_inputs
 
 
 def _exception_details(exc):
@@ -205,24 +207,27 @@ def extract_encoded_checkpoints(ffmpeg, video, directory, frames, *, batch_size=
             (directory / f"checkpoint-{i:08}.png").rename(directory / f"encoded-{frame:08}.png")
 
 
-def _prepare(project, output, ffmpeg, ffprobe, scene, renderers, *, resume=False):
+def _prepare(project, output, ffmpeg, ffprobe, scene, renderers, *, resume=False, input_cache=None):
     project = Project.load(project) if not isinstance(project, Project) else project
     ffmpeg, ffprobe = encoding.binaries(ffmpeg, ffprobe)
-    source_probe = encoding.validate_audio(project, ffprobe)
-    # Load every dependency before making the evidence snapshot.
-    compositor = Compositor(project, scene=scene, renderers=renderers)
     project.verify_inputs()
+    canonical_plan = project.summary()
+    cache_evidence = stage_project_inputs(project, input_cache) if input_cache is not None else None
+    source_probe = encoding.validate_audio(project, ffprobe)
+    # Cached references must be installed before any compositor dependency is
+    # opened, otherwise fonts and imagery can still read from final storage.
+    compositor = Compositor(project, scene=scene, renderers=renderers)
     output = Path(output).resolve()
     if resume:
         if not output.is_dir() or not (output / "plan.json").is_file():
             raise ValueError("Chunked resume needs an existing prepared output directory")
         existing = json.loads((output / "plan.json").read_text(encoding="utf-8"))
-        if existing != project.summary():
+        if existing != canonical_plan:
             raise ValueError("Chunked resume project differs from the prepared plan")
-    else:
+    if not resume:
         output.mkdir(parents=True, exist_ok=False)
         (output / "qa").mkdir()
-        write_json(output / "plan.json", project.summary())
+        write_json(output / "plan.json", canonical_plan)
         write_json(output / "source-probe.json", source_probe)
         export_subtitles(project.lyrics, project.fps, project.frame_count, output, project.width, project.height)
         if project.words:
@@ -237,6 +242,8 @@ def _prepare(project, output, ffmpeg, ffprobe, scene, renderers, *, resume=False
                 project.height,
                 basename="word-captions",
             )
+    if cache_evidence is not None:
+        write_json(output / "input-cache.json", cache_evidence)
     return project, output, ffmpeg, ffprobe, compositor
 
 
@@ -249,6 +256,7 @@ def preflight(
     scene=None,
     renderers=None,
     max_frames=None,
+    progress_interval_seconds=10.0,
 ):
     p = Project.load(project) if not isinstance(project, Project) else project
     if max_frames is None:
@@ -273,7 +281,16 @@ def preflight(
         ),
     )
     effects = None
+    progress = None
+    active_frame = None
     try:
+        progress = ProgressReporter(
+            out,
+            frame_count,
+            mode="preflight",
+            interval_seconds=progress_interval_seconds,
+            project_total_frames=p.frame_count,
+        ).start("composing preflight frames")
         effects = (
             EffectChain(
                 p,
@@ -289,6 +306,8 @@ def preflight(
         )
         with (out / "rudiment-analysis.jsonl").open("w", encoding="utf-8") as analysis:
             for n in range(frame_count):
+                active_frame = n
+                progress.active(n)
                 image, context = compositor.frame(n, apply_quality=False)
                 if effects:
                     if n in selected:
@@ -305,6 +324,7 @@ def preflight(
                 _analysis(analysis, compositor, context)
                 if n in selected:
                     image.save(out / "qa" / f"source-{n:08}.png")
+                progress.advance(n + 1)
         if effects:
             effects.close()
         compositor.close()
@@ -321,7 +341,9 @@ def preflight(
                 else "bounded-prefix preflight passed; later frames unvalidated; no encoded video"
             ),
         )
+        progress.phase("writing preflight manifest", completed_frames=frame_count)
         write_json(out / "manifest.json", result)
+        progress.finish()
         return result
     except BaseException as exc:
         details = _exception_details(exc)
@@ -329,8 +351,15 @@ def preflight(
             out,
             dict(state="preflight failed", error=details["message"], exception=details),
         )
+        if progress:
+            try:
+                progress.fail(details["message"], phase="preflight failed", frame=active_frame)
+            except BaseException:
+                pass
         raise
     finally:
+        if progress:
+            progress.close()
         if effects:
             effects.close()
         compositor.close()
@@ -350,8 +379,14 @@ def render(
     chunk_seconds=30.0,
     resume=False,
     min_free_bytes=536870912,
+    progress_interval_seconds=10.0,
+    work_cache=None,
+    reserve_bytes=None,
 ):
     """Render a project, chunking videos longer than 30 seconds by default."""
+    cache = None
+    cache_active = False
+    active_output = Path(output).resolve()
     try:
         prepared = Project.load(project) if not isinstance(project, Project) else project
         use_chunks = should_chunk(prepared) if chunked is None else chunked
@@ -359,10 +394,25 @@ def render(
             raise ValueError("chunked must be true, false or null")
         if resume and not use_chunks:
             raise ValueError("Resume is available only for chunked renders")
-        if use_chunks:
-            return _render_chunked(
-                prepared,
+        if work_cache is None and reserve_bytes is not None:
+            raise ValueError("reserve_bytes requires work_cache")
+        if work_cache is not None:
+            if reserve_bytes is None:
+                raise ValueError("work_cache requires a complete peak reserve_bytes estimate")
+            cache = WorkingCache(
+                work_cache,
                 output,
+                reserve_bytes=reserve_bytes,
+                min_free_bytes=min_free_bytes,
+                status_interval=progress_interval_seconds,
+            )
+            active_output = cache.prepare(resume=resume)
+            cache_active = True
+            cache.begin_render()
+        if use_chunks:
+            result = _render_chunked(
+                prepared,
+                active_output,
                 ffmpeg=ffmpeg,
                 ffprobe=ffprobe,
                 scene=scene,
@@ -372,21 +422,30 @@ def render(
                 chunk_seconds=chunk_seconds,
                 resume=resume,
                 min_free_bytes=min_free_bytes,
+                progress_interval_seconds=progress_interval_seconds,
+                input_cache=cache.inputs if cache else None,
             )
-        return _render_single(
-            prepared,
-            output,
-            ffmpeg=ffmpeg,
-            ffprobe=ffprobe,
-            scene=scene,
-            renderers=renderers,
-            preset=preset,
-            crf=crf,
-        )
+        else:
+            result = _render_single(
+                prepared,
+                active_output,
+                ffmpeg=ffmpeg,
+                ffprobe=ffprobe,
+                scene=scene,
+                renderers=renderers,
+                preset=preset,
+                crf=crf,
+                progress_interval_seconds=progress_interval_seconds,
+                input_cache=cache.inputs if cache else None,
+            )
+        if cache:
+            result = cache.promote(result)
+            cache.finish()
+        return result
     except BaseException as exc:
         # _prepare failures happen before the mode-specific handlers. Fill that
         # gap, but never replace their more precise evidence.
-        out = Path(output).resolve()
+        out = active_output
         if out.is_dir() and not (out / "failure.json").is_file():
             details = _exception_details(exc)
             _record_failure(
@@ -406,6 +465,8 @@ def render(
                     frame=None,
                 ),
             )
+        if cache_active:
+            cache.fail(exc)
         raise
 
 
@@ -419,8 +480,12 @@ def _render_single(
     renderers=None,
     preset="fast",
     crf=20,
+    progress_interval_seconds=10.0,
+    input_cache=None,
 ):
-    p, out, ffmpeg, ffprobe, compositor = _prepare(project, output, ffmpeg, ffprobe, scene, renderers)
+    p, out, ffmpeg, ffprobe, compositor = _prepare(
+        project, output, ffmpeg, ffprobe, scene, renderers, input_cache=input_cache
+    )
     candidate, final = out / "candidate.mp4", out / "video.mp4"
     cmd = encoding.command(p, candidate, ffmpeg, preset=preset, crf=crf)
     write_json(out / "encode-command.json", cmd)
@@ -429,6 +494,7 @@ def _render_single(
     effects = None
     phase = "rendering frames"
     active_frame = None
+    progress = None
     _write_candidate_health(
         out,
         state="rendering",
@@ -436,6 +502,12 @@ def _render_single(
         phase=phase,
     )
     try:
+        progress = ProgressReporter(
+            out,
+            p.frame_count,
+            mode="single-pass",
+            interval_seconds=progress_interval_seconds,
+        ).start(phase)
         effects = (
             EffectChain(
                 p,
@@ -456,6 +528,7 @@ def _render_single(
             process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=log)
             for n in range(p.frame_count):
                 active_frame = n
+                progress.active(n)
                 image, context = compositor.frame(n, apply_quality=False)
                 if effects:
                     if n in selected:
@@ -473,6 +546,7 @@ def _render_single(
                 if n in selected:
                     image.save(out / "qa" / f"source-{n:08}.png")
                 process.stdin.write(image.tobytes())
+                progress.advance(n + 1)
             process.stdin.close()
             if process.wait() != 0:
                 raise RuntimeError(f"FFmpeg failed; see {out / 'encode.log'}")
@@ -481,6 +555,7 @@ def _render_single(
         compositor.close()
         p.verify_inputs()
         phase = "verifying encoded candidate"
+        progress.phase(phase, completed_frames=p.frame_count)
         verified = encoding.verify(candidate, p, ffmpeg, ffprobe)
         source_audio = encoding.probe(p.audio_ref["path"], ffprobe)
         source_channels = next(s["channels"] for s in source_audio["streams"] if s["codec_type"] == "audio")
@@ -490,8 +565,10 @@ def _render_single(
         if source_channels != output_channels:
             raise ValueError("Encoder changed channel count")
         phase = "promoting verified candidate"
+        progress.phase(phase)
         candidate.rename(final)
         phase = "extracting encoded checkpoints"
+        progress.phase(phase)
         extract_encoded_checkpoints(ffmpeg, final, out / "qa", selected)
         with Image.open(out / "qa" / "encoded-00000000.png") as first:
             first.save(out / "poster.png")
@@ -501,6 +578,7 @@ def _render_single(
         result = dict(
             p.summary(),
             render_mode="single-pass",
+            input_cache=getattr(p, "input_cache_evidence", None),
             composition=compositor.evidence(),
             full_frame_effects=effects.evidence() if effects else None,
             analysis_sidecar=_sidecar(out),
@@ -515,6 +593,7 @@ def _render_single(
             state="technical-QA passed; creative and attended listening review pending",
         )
         phase = "writing final manifest"
+        progress.phase(phase)
         write_json(out / "manifest.json", result)
         _write_candidate_health(
             out,
@@ -523,6 +602,7 @@ def _render_single(
             phase="complete",
             frame=p.frame_count - 1,
         )
+        progress.finish(finalized_frames=p.frame_count)
         return result
     except BaseException as exc:
         if process and process.poll() is None:
@@ -552,8 +632,15 @@ def _render_single(
                 frame=active_frame,
             ),
         )
+        if progress:
+            try:
+                progress.fail(details["message"], frame=active_frame)
+            except BaseException:
+                pass
         raise
     finally:
+        if progress:
+            progress.close()
         if effects:
             effects.close()
         compositor.close()
@@ -714,11 +801,20 @@ def _render_chunked(
     chunk_seconds=30.0,
     resume=False,
     min_free_bytes=536870912,
+    progress_interval_seconds=10.0,
+    input_cache=None,
 ):
     if type(min_free_bytes) is not int or min_free_bytes < 0:
         raise ValueError("min_free_bytes must be a nonnegative integer")
     p, out, ffmpeg, ffprobe, compositor = _prepare(
-        project, output, ffmpeg, ffprobe, scene, renderers, resume=resume
+        project,
+        output,
+        ffmpeg,
+        ffprobe,
+        scene,
+        renderers,
+        resume=resume,
+        input_cache=input_cache,
     )
     plan = plan_chunks(p, target_seconds=chunk_seconds)
     plan_path = out / "chunk-plan.json"
@@ -747,6 +843,17 @@ def _render_chunked(
                 total_frames=p.frame_count,
             ),
         )
+        progress = ProgressReporter(
+            out,
+            p.frame_count,
+            mode="chunked-sequential",
+            interval_seconds=progress_interval_seconds,
+        ).start(
+            "checking completed render",
+            completed_frames=p.frame_count,
+            finalized_frames=p.frame_count,
+        )
+        progress.finish(finalized_frames=p.frame_count)
         return result
     first_missing = len(completed)
     if resume and (out / "failure.json").is_file():
@@ -772,6 +879,7 @@ def _render_chunked(
         completed_frames=replayed,
         total_frames=p.frame_count,
     )
+    progress = None
     _write_candidate_health(
         out,
         state="rendering",
@@ -780,6 +888,15 @@ def _render_chunked(
         finalized_prefix=prefix,
     )
     try:
+        progress = ProgressReporter(
+            out,
+            p.frame_count,
+            mode="chunked-sequential",
+            interval_seconds=progress_interval_seconds,
+        ).start(
+            "replaying finalized prefix" if replayed else "rendering chunks",
+            finalized_frames=replayed,
+        )
         effects = (
             EffectChain(
                 p,
@@ -794,6 +911,9 @@ def _render_chunked(
         )
         for n in range(p.frame_count):
             active_frame = n
+            progress.active(n)
+            if replayed and n == replayed:
+                progress.phase("rendering chunks", completed_frames=n, finalized_frames=replayed)
             chunk = next(
                 item
                 for item in plan["chunks"]
@@ -869,7 +989,13 @@ def _render_chunked(
                         replayed_frames=replayed,
                     ),
                 )
+                progress.phase(
+                    "rendering chunks",
+                    completed_frames=n + 1,
+                    finalized_frames=chunk["end_frame_exclusive"],
+                )
                 active_chunk = None
+            progress.advance(n + 1)
         if effects:
             effects.close()
         compositor.close()
@@ -885,6 +1011,7 @@ def _render_chunked(
                 "Final assembly free-space guard stopped before mux; completed chunks are resumable"
             )
         phase = "assembling encoded candidate"
+        progress.phase(phase, completed_frames=p.frame_count, finalized_frames=p.frame_count)
         candidate, final = out / "candidate.mp4", out / "video.mp4"
         if candidate.exists():
             candidate.replace(out / f"candidate-failed-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}.mp4")
@@ -893,6 +1020,7 @@ def _render_chunked(
         with (out / "assemble.log").open("wb") as log:
             subprocess.run(mux, check=True, stdout=subprocess.DEVNULL, stderr=log)
         phase = "verifying encoded candidate"
+        progress.phase(phase)
         verified = encoding.verify(candidate, p, ffmpeg, ffprobe)
         source_audio = encoding.probe(p.audio_ref["path"], ffprobe)
         source_channels = next(s["channels"] for s in source_audio["streams"] if s["codec_type"] == "audio")
@@ -900,11 +1028,14 @@ def _render_chunked(
         if source_channels != output_channels:
             raise ValueError("Encoder changed channel count")
         phase = "promoting verified candidate"
+        progress.phase(phase)
         candidate.replace(final)
         phase = "verifying decoded seams"
+        progress.phase(phase)
         seams = _verify_seams(ffmpeg, final, out, plan)
         _write_json_atomic(out / "seam-verification.json", seams)
         phase = "extracting encoded checkpoints"
+        progress.phase(phase)
         extract_encoded_checkpoints(ffmpeg, final, out / "qa", selected)
         with Image.open(out / "qa" / "encoded-00000000.png") as first:
             first.save(out / "poster.png")
@@ -918,6 +1049,7 @@ def _render_chunked(
         result = dict(
             p.summary(),
             render_mode="chunked-sequential",
+            input_cache=getattr(p, "input_cache_evidence", None),
             chunk_plan=plan,
             chunk_receipts=[
                 json.loads(_chunk_paths(out / "chunks", item["index"])[2].read_text(encoding="utf-8"))
@@ -939,6 +1071,7 @@ def _render_chunked(
             state="technical-QA passed; creative and attended listening review pending",
         )
         phase = "writing final manifest"
+        progress.phase(phase)
         _write_json_atomic(out / "manifest.json", result)
         _write_candidate_health(
             out,
@@ -953,6 +1086,7 @@ def _render_chunked(
                 total_frames=p.frame_count,
             ),
         )
+        progress.finish(finalized_frames=p.frame_count)
         return result
     except BaseException as exc:
         if process and process.poll() is None:
@@ -996,8 +1130,15 @@ def _render_chunked(
                 finalized_prefix=prefix,
             ),
         )
+        if progress:
+            try:
+                progress.fail(details["message"], frame=active_frame)
+            except BaseException:
+                pass
         raise
     finally:
+        if progress:
+            progress.close()
         if effects:
             effects.close()
         compositor.close()

@@ -47,13 +47,64 @@ framerudiments render project.json --output render-001 --resume --chunk-seconds 
 
 `--min-free-gib` reserves disk space before each new chunk and before final
 assembly. An interrupted active chunk is archived on resume; finalized chunks
-with valid receipts remain immutable. Keep a long or high-quality invocation
-under an operating-system scheduler or service so the render survives the
-calling application.
+with valid receipts remain immutable. The shared workflow keeps an invocation
+inside Codex unless it is a full-length video or a calibrated preflight predicts
+more than 15 minutes. Those two classes use an operating-system scheduler or
+service so the render survives the calling application. Decide ownership before
+production encoding and never migrate a live render merely because its estimate
+changes.
 
-The documentation uses a generated SVG because the feature is an execution and
-evidence contract. Synthetic integration tests encode, interrupt, resume,
-assemble and fully decode real video; no private release footage is included.
+## Regular status
+
+Preflight and render write one atomic `render-progress.json` using schema
+`framerudiments.render-progress.v1`. A separate heartbeat thread refreshes it and
+flushes the same summary to stderr every 10 seconds even when composition is
+still inside one expensive frame. `--progress-seconds` accepts 0.1 through 3600.
+The snapshot covers replay, composition, chunk finalization, assembly and QA:
+
+```json
+{
+  "state": "running",
+  "mode": "chunked-sequential",
+  "phase": "rendering chunks",
+  "completed_frames": 421,
+  "total_frames": 873,
+  "active_frame": 421,
+  "finalized_frames": 360,
+  "percent": 48.225,
+  "estimated_remaining_seconds": 812.4
+}
+```
+
+The ETA is derived from observed whole-invocation frame throughput and is not a
+guarantee. During resume, `completed_frames` includes replay while
+`finalized_frames` identifies the immutable encoded prefix. A failed run writes a
+final failed progress snapshot in addition to the authoritative failure and
+candidate-health evidence. Monitors should read only this status file, no faster
+than the configured heartbeat, rather than repeatedly enumerating frame, chunk or
+QA trees and adding disk contention to the render.
+
+## Working-cache placement
+
+Use `--work-cache` with a required `--reserve-gib` estimate to keep checksum-
+pinned inputs and the complete high-I/O render tree on a selected fast device.
+For a contended final destination, prefer a cache on a different physical device;
+drive names and mount points are deployment-specific and do not belong in this
+portable workflow. FrameRudiments physically reserves the declared peak plus 2%
+at both locations, renders and technically verifies in cache, then performs a
+hash/size-verified copy into hidden final-side staging before one directory rename.
+
+On success, the cache job is removed and `cache-promotion.json` remains in the
+final output. On interruption, exact chunk state and cache evidence remain while
+reservation files are released. Use `framerudiments cache-status --work-cache
+PATH --expect-empty` before a new unrelated job and after handoff; a nonempty
+cache without a known live owner is a hold for inspection, not permission to
+delete it.
+
+The documentation uses the generated SVG above because chunking and heartbeat
+state are execution/evidence contracts rather than an interactive UI. Synthetic
+tests exercise the timed heartbeat, encode, interrupt, resume, assemble and fully
+decode real video; no private release footage is included.
 
 ## Error evidence and candidate health
 

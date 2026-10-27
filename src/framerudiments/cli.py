@@ -1,5 +1,6 @@
 import argparse
 import json
+import os
 import sys
 import subprocess
 
@@ -9,6 +10,7 @@ from .io import write_json
 from .project import Project
 from .rudiment_renderers import default_renderers
 from .render import preflight, render
+from .work_cache import cache_status
 
 
 def main(argv=None):
@@ -16,6 +18,13 @@ def main(argv=None):
     parser.add_argument("--version", action="version", version=__version__)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("visualisers", help="Show pinned optional effect engines and presets")
+    cache = commands.add_parser("cache-status", help="Inspect a FrameRudiments working-cache root")
+    cache.add_argument(
+        "--work-cache",
+        default=os.environ.get("FRAMERUDIMENTS_WORK_CACHE"),
+        required=os.environ.get("FRAMERUDIMENTS_WORK_CACHE") is None,
+    )
+    cache.add_argument("--expect-empty", action="store_true")
     setup = commands.add_parser(
         "effects-setup", help="Explicitly download/build a pinned optional effect runtime"
     )
@@ -76,6 +85,12 @@ def main(argv=None):
         item.add_argument("--output", required=True, help="A new evidence/output directory; never overwrites")
         item.add_argument("--ffmpeg")
         item.add_argument("--ffprobe")
+        item.add_argument(
+            "--progress-seconds",
+            type=float,
+            default=10.0,
+            help="Seconds between atomic progress heartbeats (default: 10)",
+        )
         if name == "preflight":
             item.add_argument(
                 "--max-frames",
@@ -100,6 +115,16 @@ def main(argv=None):
             item.add_argument(
                 "--min-free-gib", type=float, default=0.5, help="Reserved free disk space"
             )
+            item.add_argument(
+                "--work-cache",
+                default=os.environ.get("FRAMERUDIMENTS_WORK_CACHE"),
+                help="Fast working-cache root; may also use FRAMERUDIMENTS_WORK_CACHE",
+            )
+            item.add_argument(
+                "--reserve-gib",
+                type=float,
+                help="Complete peak cache bytes to reserve at both cache and final locations",
+            )
     args = parser.parse_args(argv)
     try:
         if args.command == "demo":
@@ -122,6 +147,11 @@ def main(argv=None):
             from .visualiser_setup import runtime_pins, format_result
 
             print(format_result(runtime_pins()))
+        elif args.command == "cache-status":
+            result = cache_status(args.work_cache)
+            print(json.dumps(result, sort_keys=True))
+            if args.expect_empty and not result["empty"]:
+                return 2
         elif args.command == "effects-setup":
             from .visualiser_setup import setup_butterchurn, setup_projectm, format_result
 
@@ -190,11 +220,22 @@ def main(argv=None):
                     "chunk_seconds": args.chunk_seconds,
                     "resume": args.resume,
                     "min_free_bytes": round(args.min_free_gib * 1024**3),
+                    "work_cache": args.work_cache,
+                    "reserve_bytes": (
+                        round(args.reserve_gib * 1024**3) if args.reserve_gib is not None else None
+                    ),
                 }
                 if args.command == "render"
                 else {"max_frames": args.max_frames}
             )
-            result = runner(args.project, args.output, ffmpeg=args.ffmpeg, ffprobe=args.ffprobe, **extra)
+            result = runner(
+                args.project,
+                args.output,
+                ffmpeg=args.ffmpeg,
+                ffprobe=args.ffprobe,
+                progress_interval_seconds=args.progress_seconds,
+                **extra,
+            )
             print(json.dumps({"state": result["state"], "frames": result["frames"], "output": args.output}))
         return 0
     except (ValueError, OSError, RuntimeError, KeyError, IndexError, subprocess.SubprocessError) as exc:
