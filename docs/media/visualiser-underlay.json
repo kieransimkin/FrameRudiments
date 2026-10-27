@@ -1,0 +1,38 @@
+{
+  "version": "0.4.15",
+  "scope": "Render a synthetic native alpha-underlay demonstration; no GPU preset or song.",
+  "frames": 120,
+  "fps": 60,
+  "audio": "none",
+  "checks": [
+    {
+      "frame": 0,
+      "corner": [
+        93,
+        36,
+        25,
+        255
+      ]
+    },
+    {
+      "frame": 60,
+      "corner": [
+        80,
+        184,
+        197,
+        255
+      ]
+    },
+    {
+      "frame": 119,
+      "corner": [
+        80,
+        184,
+        197,
+        255
+      ]
+    }
+  ],
+  "final_exact_underlay": true,
+  "video_sha256": "1bb92a5fde3f3a851a35fe535235a26faa28e32a2ae497477b907222ac0b1ddc"
+}

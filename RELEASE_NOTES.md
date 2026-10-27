@@ -1,3 +1,13 @@
+# FrameRudiments 0.4.15
+
+- Visualiser stages accept `composite.underlay.source`, a named isolated RGBA
+  compositor surface beneath their processed output.
+- Layer providers stay out of the clean composition; alpha order, hidden-source
+  fallback, shape/mode validation and unknown-source rejection are covered by
+  regressions. Existing stage configurations retain their previous behaviour.
+- [Actual synthetic frames and video](docs/visualisers.md#isolated-underlay)
+  demonstrate shrinking/rotating/fading output revealing a persistent underlay.
+
 # FrameRudiments 0.4.14
 
 - Preflight and render now write an atomic `render-progress.json` and flush a

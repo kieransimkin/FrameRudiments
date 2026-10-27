@@ -391,6 +391,15 @@ class Compositor:
         if unknown_mattes:
             raise ValueError(f"Unknown visualiser matte sources: {sorted(unknown_mattes)}")
         self.matte_sources = matte_sources
+        underlay_sources = {
+            spec["composite"]["underlay"]["source"]
+            for spec in self.effect_specs
+            if spec.get("composite") and spec["composite"].get("underlay")
+        }
+        unknown_underlays = underlay_sources - targets
+        if unknown_underlays:
+            raise ValueError(f"Unknown visualiser underlay sources: {sorted(unknown_underlays)}")
+        self.composite_providers = matte_sources | underlay_sources
         self.visualiser_hooks = VisualiserEffectHooks(project, self.effect_specs, self.context)
         self.post_pipeline = CompositingEffects(
             project, project.data.get("post_effects", {}), self.context, valid_elements=targets
@@ -412,7 +421,7 @@ class Compositor:
         self.layer_animations = LayerAnimations(project.data.get("layer_animations", {}), mask_order)
         self.layer_displacement = LayerDisplacement(project.data.get("layer_displacement", {}), mask_order)
         self._isolate_stage_injections = bool(
-            project.data.get("visualiser_stage_injections") or matte_sources
+            project.data.get("visualiser_stage_injections") or self.composite_providers
         )
         self.visualiser_routing = None
         if "visualiser_routing" in project.data:
@@ -537,10 +546,10 @@ class Compositor:
             mask_surfaces[key] = scratch
             actual = scratch.getchannel("A").getbbox()
             self._capture_route(key, scratch)
-            # Matte providers are compositor data, not visible artwork. Keep
+            # Matte/underlay providers are compositor data, not visible artwork. Keep
             # their full isolated RGBA surface for downstream stages without
             # painting the provider into the clean composition.
-            if key not in self.matte_sources and actual:
+            if key not in self.composite_providers and actual:
                 # Pillow otherwise allocates a frame-sized temporary even for
                 # a bounded caption or sprite. Restricting alpha-over to the
                 # exact non-transparent region preserves pixels and avoids a

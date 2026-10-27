@@ -27,6 +27,11 @@ the inputs are checked again before and after a render.
 | `lyric_art` | `{items: [{text, asset}], placement: <sprite fields>, fallback: "text" or "error"}`. Exact text lookup preserves canonical lyric association. `error` requires every visible lyric to have an asset. |
 | `stemlab_loop` | `{file: <pinned loops report>, id: <accepted loop id>}`; imports native bounds/rate, verifies source SHA, rejects conflicting explicit audio values. Does not approve a seam. |
 
+Visualiser stages may also set `composite.underlay.source` to a named isolated
+surface beneath their RGBA output. See the [underlay contract and real synthetic
+demo](visualisers.md#isolated-underlay); output opacity reveals the underlay,
+whereas opaque black output covers it.
+
 Sprites use `id`, `asset`, `center` [x,y], `width` and optional `bounds`
 [left,top,right,bottom]. Optional `crop_alpha`, `opacity`, `motion`, `mapping`,
 `atlas`, `trail`, source-time `start_seconds`/`end_seconds` and `cue_labels`

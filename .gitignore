@@ -12,6 +12,7 @@ dist/
 !docs/media/beat-alignment.mp4
 !docs/media/rangoli.mp4
 !docs/media/natural-materials.mp4
+!docs/media/visualiser-underlay.mp4
 local/
 .tmp/
 .local-app-data/
