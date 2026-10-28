@@ -65,11 +65,14 @@ jobs:
       - run: ruff check .
       - name: Verify patch validation workflow contract
         run: python -m pytest -q tests/test_patch_validation.py
-      - run: python -m pytest -q --junitxml=test-results.xml
+      - run: python -m pytest -q --ignore=tests/test_effect_graph_gpu_parity.py --junitxml=test-results.xml
       - name: No skipped rendering checks
         run: python -c "import xml.etree.ElementTree as E; r=E.parse('test-results.xml'); assert not r.findall('.//skipped')"
       - run: python -m build
       - run: python -m twine check --strict dist/*
+
+  effect-graph-parity:
+    uses: ./.github/workflows/effect-graph-gpu.yml
 
   visualiser-acceptance:
     runs-on: ubuntu-24.04

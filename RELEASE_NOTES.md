@@ -5,6 +5,9 @@
 - The immutable 0.4.15 tag remains preserved. Its package publication was
   blocked by lint; 0.4.16 reruns the required full CI, packaging and installed-wheel
   encoding gates before GitHub/PyPI publication.
+- Real GPU parity tests now run in the existing EGL-qualified workflow as a
+  required part of CI and release validation. CPU/font/FFmpeg matrices select
+  the remaining complete suite; both CPU and GPU routes reject skipped tests.
 - Existing [actual underlay frames and video](docs/visualisers.md#isolated-underlay)
   remain the relevant media; the identifier-only repair adds no visual behaviour.
 
