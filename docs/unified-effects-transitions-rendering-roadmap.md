@@ -249,3 +249,29 @@ existing defaults. `tests/test_effect_graph_mattes.py` supplies reference tests.
 **Do not mark all of M3 complete yet:** full parameter metadata discovery, source-alpha
 selection, pre/post placement, GPU parity, 4K/8K benchmarks, editor controls and
 visual regression references are still required.
+
+
+### M3.2 — Alpha lineage / configurable matte placement (increment following v14)
+
+- [x] Carry immutable source alpha across unary effects; reset lineage on multi-input merge and transition.
+- [x] `alpha_source=current|original` on matte and chroma key nodes, with strict early validation.
+- [x] Native categorical DanceRudiment binding for `alpha_source` and unchanged v14 defaults.
+- [x] Pre/post processing matte placement through explicit graph connections and forked branches.
+- [x] Pixel-level regression fixtures plus deterministic synthetic visual evidence generator.
+- [ ] Full project CI matrix and actual GPU execution parity for alpha/matte/keying operations.
+
+Implementation details: [effect-graph-m3-alpha-lineage.md](effect-graph-m3-alpha-lineage.md).
+
+
+## M3.3 GPU matte/keying backend (v16 incremental patch, 27 October 2026)
+
+Implementation: optional ModernGL node accelerator, opt-in project backend
+(`cpu`/`gpu`/`auto`), 8-input alpha/luma matte shader, multi-key RGB/OKLab
+shader, bounded separable morphology and Gaussian blur, alpha lineage and
+despill. See [effect-graph-m3-3-gpu-mattes.md](effect-graph-m3-3-gpu-mattes.md).
+
+No shader performance or GPU parity claims are made until the dedicated
+Mesa/EGL CI job and independent hardware jobs have executed. The existing
+Pillow implementation remains the compatibility baseline. Deferred: GPU
+edge decontamination, radii beyond GPU limits, texture-resident graph
+scheduling, advanced HDR colour management and GPU-temporal feedback.

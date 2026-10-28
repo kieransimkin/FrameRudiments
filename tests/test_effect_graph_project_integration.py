@@ -108,3 +108,48 @@ def test_inactive_layer_source_returns_transparent_and_does_not_reuse_old_frame(
     b, _ = comp.frame(235, apply_quality=False)
     assert a.size == b.size == (180, 320)
     assert comp.frame(0, apply_quality=False)[0].tobytes() == a.tobytes()
+
+
+def test_project_original_alpha_restores_pre_matte_source_at_selected_frame(demo_project):
+    """Exercise graph alpha metadata through the actual compositor surfaces."""
+    baseline = Compositor(configured(demo_project, [
+        {"id": "layer:native", "type": "source"},
+        {"id": "dim", "type": "copy", "inputs": ["layer:native"], "opacity": .2},
+        {"id": "background", "type": "source"},
+        {"id": "out", "type": "matte", "inputs": ["dim", "background"]},
+    ], "out"))
+    restored = Compositor(configured(demo_project, [
+        {"id": "layer:native", "type": "source"},
+        {"id": "dim", "type": "copy", "inputs": ["layer:native"], "opacity": .2},
+        {"id": "background", "type": "source"},
+        {"id": "out", "type": "matte", "inputs": ["dim", "background"],
+         "alpha_source": "original"},
+    ], "out"))
+    current, _ = baseline.frame(45, apply_quality=False)
+    original, _ = restored.frame(45, apply_quality=False)
+    assert current.size == original.size == (180, 320)
+    assert current.tobytes() != original.tobytes()
+    assert restored.frame(12, apply_quality=False)[0].size == original.size
+    assert restored.frame(45, apply_quality=False)[0].tobytes() == original.tobytes()
+
+
+def test_project_graph_explicit_pre_post_matte_changes_composition(demo_project):
+    """The DAG, not an implicit stage switch, fixes matte evaluation order."""
+    source = [
+        {"id": "background", "type": "source"},
+        {"id": "layer:bands", "type": "source"},
+        {"id": "layer:native", "type": "source"},
+    ]
+    pre = Compositor(configured(demo_project, source + [
+        {"id": "pre", "type": "matte", "inputs": ["background", "layer:native"]},
+        {"id": "out", "type": "transition", "inputs": ["pre", "layer:bands"], "progress": .5},
+    ], "out"))
+    post = Compositor(configured(demo_project, source + [
+        {"id": "mixed", "type": "transition", "inputs": ["background", "layer:bands"],
+         "progress": .5},
+        {"id": "out", "type": "matte", "inputs": ["mixed", "layer:native"]},
+    ], "out"))
+    before, _ = pre.frame(40, apply_quality=False)
+    after, _ = post.frame(40, apply_quality=False)
+    assert before.tobytes() != after.tobytes()
+    assert post.frame(40, apply_quality=False)[0].tobytes() == after.tobytes()

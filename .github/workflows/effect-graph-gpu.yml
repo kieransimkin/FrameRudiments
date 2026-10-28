@@ -1,0 +1,64 @@
+name: Effect graph GPU matte and chroma parity
+
+on:
+  workflow_dispatch:
+    inputs:
+      benchmarks:
+        description: 'Include 4K and 8K GPU benchmarks (high resource use)'
+        type: boolean
+        default: false
+  push:
+    paths:
+      - 'src/framerudiments/effect_graph*'
+      - 'tests/test_effect_graph_gpu*'
+      - 'integration/benchmark_effect_graph_gpu.py'
+      - '.github/workflows/effect-graph-gpu.yml'
+  pull_request:
+    paths:
+      - 'src/framerudiments/effect_graph*'
+      - 'tests/test_effect_graph_gpu*'
+      - 'integration/benchmark_effect_graph_gpu.py'
+      - '.github/workflows/effect-graph-gpu.yml'
+
+jobs:
+  cpu-gpu-parity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LIBGL_ALWAYS_SOFTWARE: '1'
+      MESA_GL_VERSION_OVERRIDE: '3.3'
+      FRAMERUDIMENTS_GPU_BACKEND: 'egl'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install software OpenGL/EGL
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1-mesa-dri libglx-mesa0 mesa-utils
+      - name: Install dependencies
+        run: python -m pip install -e '.[gpu,dev]'
+      - name: Require functioning ModernGL/EGL context (no skip-only pass)
+        run: |
+          python - <<'PY'
+          from framerudiments.effect_graph_gpu import GLMatteBackend
+          with GLMatteBackend(backend='egl') as gpu:
+              print('GPU renderer:', gpu.capabilities.renderer)
+              print('OpenGL version:', gpu.capabilities.context_version)
+          PY
+      - name: Run real GPU-versus-CPU parity tests
+        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py
+      - name: Benchmark HD CPU and GPU
+        run: |
+          python integration/benchmark_effect_graph_gpu.py --backend egl --size hd --cpu --require-gpu --repeats 3 --output gpu-benchmark-hd.json
+      - name: Optional GPU benchmark 4K and 8K
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.benchmarks }}
+        run: |
+          python integration/benchmark_effect_graph_gpu.py --backend egl --all --gpu-budget-mib 1024 --require-gpu --repeats 2 --output gpu-benchmark-extended.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: effect-graph-gpu-benchmarks
+          path: gpu-benchmark-*.json
+          if-no-files-found: ignore

@@ -10,6 +10,7 @@ import math
 
 from PIL import Image, ImageChops, ImageColor, ImageFilter
 
+ALPHA_SOURCES = frozenset({"current", "original"})
 MATTE_COMBINES = frozenset({"multiply", "min", "max", "add", "subtract", "difference", "screen"})
 KEY_SPACES = frozenset({"rgb", "oklab"})
 MAX_MATTE_INPUTS = 8
@@ -21,7 +22,22 @@ def _finite(value, name, low, high):
         raise ValueError(f"{name} must be finite and in [{low}, {high}]")
 
 
+def validate_alpha_source(config):
+    mode = config.get("alpha_source", "current")
+    if not isinstance(mode, str) or mode not in ALPHA_SOURCES:
+        raise ValueError("alpha_source must be current or original")
+
+
+def _base_alpha(image, alpha):
+    if alpha is None:
+        return image.getchannel("A")
+    if not isinstance(alpha, Image.Image) or alpha.mode != "L" or alpha.size != image.size:
+        raise ValueError("original alpha must be a same-sized L image")
+    return alpha
+
+
 def validate_matte(config, input_count):
+    validate_alpha_source(config)
     if not 2 <= input_count <= MAX_MATTE_INPUTS + 1:
         raise ValueError("matte requires one image and 1..8 mask inputs")
     channel = config.get("matte_channel", "alpha")
@@ -38,6 +54,7 @@ def validate_matte(config, input_count):
 
 
 def validate_key(config):
+    validate_alpha_source(config)
     space = config.get("key_space", "rgb")
     if not isinstance(space, str) or space not in KEY_SPACES:
         raise ValueError("invalid key_space")
@@ -110,7 +127,7 @@ def _combine(a, b, method):
     return ImageChops.invert(ImageChops.multiply(ImageChops.invert(a), ImageChops.invert(b)))
 
 
-def apply_matte(images: list[Image.Image], config: dict) -> Image.Image:
+def apply_matte(images: list[Image.Image], config: dict, *, original_alpha=None) -> Image.Image:
     """Apply 1..8 track masks to one foreground, preserving its straight RGB."""
     result = images[0].copy()
     mask = _mask(images[1], config.get("matte_channel", "alpha"))
@@ -125,7 +142,10 @@ def apply_matte(images: list[Image.Image], config: dict) -> Image.Image:
     weight = config.get("mask_opacity", 1)
     if weight != 1:
         mask = Image.blend(Image.new("L", mask.size, 255), mask, weight)
-    result.putalpha(ImageChops.multiply(result.getchannel("A"), mask))
+    # "original" deliberately restores the inherited unfiltered source silhouette;
+    # "current" masks the processed input. Both are clamped by the matte.
+    alpha = _base_alpha(result, original_alpha if config.get("alpha_source", "current") == "original" else None)
+    result.putalpha(ImageChops.multiply(alpha, mask))
     return result
 
 
@@ -150,7 +170,7 @@ def _oklab(rgb):
     ], dtype=np.float32).T
 
 
-def chroma_key(image: Image.Image, config: dict) -> Image.Image:
+def chroma_key(image: Image.Image, config: dict, *, original_alpha=None) -> Image.Image:
     """Legacy RGB-distance or perceptual OKLab multi-key, with optional edge work.
 
     Key colours select pixels to remove. Masks are applied to source alpha;
@@ -192,6 +212,8 @@ def chroma_key(image: Image.Image, config: dict) -> Image.Image:
         matte = Image.fromarray(np.uint8(np.rint(keep * 255)), "L")
         keep = np.asarray(matte.filter(ImageFilter.GaussianBlur(config["edge_feather"])), dtype=np.float32) / 255
     result = pixels.copy()
+    if config.get("alpha_source", "current") == "original" and original_alpha is not None:
+        result[..., 3] = np.asarray(_base_alpha(image, original_alpha), dtype=np.float32) / 255
     result[..., 3] *= keep
     despill = config.get("despill", 0)
     if despill:

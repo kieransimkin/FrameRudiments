@@ -45,6 +45,7 @@ class Project:
                 "post_effects",
                 "effect_graph",
                 "effect_graph_controls",
+                "effect_graph_backend",
                 "stemlab_loop",
                 "notes",
                 "lyric_art",
@@ -64,6 +65,11 @@ class Project:
         )
         if data.get("schema") != "framerudiments.project.v1":
             raise ValueError("Expected framerudiments.project.v1")
+        if "effect_graph_backend" in data:
+            if data["effect_graph_backend"] not in ("cpu", "gpu", "auto"):
+                raise ValueError("effect_graph_backend must be cpu, gpu or auto")
+            if "effect_graph" not in data:
+                raise ValueError("effect_graph_backend requires effect_graph")
         self.width = integer(data.get("width", 1080), "width", minimum=16, maximum=7680)
         self.height = integer(data.get("height", 1920), "height", minimum=16, maximum=7680)
         if self.width % 2 or self.height % 2:
@@ -322,6 +328,8 @@ class Project:
                 {"effect_graph_controls": self.data["effect_graph_controls"]}
                 if "effect_graph_controls" in self.data else {}
             ),
+            **({"effect_graph_backend": self.data["effect_graph_backend"]}
+               if "effect_graph_backend" in self.data else {}),
             render_quality=self.output_quality.evidence,
             **(
                 {"visualiser_routing": self.data["visualiser_routing"]}

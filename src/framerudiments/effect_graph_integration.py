@@ -20,7 +20,23 @@ def validate_graph_sources(graph, available_elements):
         raise ValueError(f"Unknown effect graph source: {', '.join(sorted(unknown))}")
 
 
-def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str, Image.Image]):
+def create_gpu_backend(mode='cpu'):
+    """Explicit opt-in. `auto` uses CPU when no GL context is available."""
+    if mode not in {'cpu', 'gpu', 'auto'}:
+        raise ValueError('effect_graph_backend must be cpu, gpu or auto')
+    if mode == 'cpu':
+        return None
+    from .effect_graph_gpu import GLMatteBackend
+    try:
+        return GLMatteBackend()
+    except (RuntimeError, ImportError):
+        if mode == 'gpu':
+            raise
+        return None
+
+
+def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str, Image.Image],
+                          *, gpu_backend=None, gpu_strict=False):
     """Resolve a frame without transferring ownership of any input surface."""
     if graph is None:
         return frame
@@ -32,4 +48,5 @@ def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str
         # the source identity and its transparent alpha rather than raising.
         sources.setdefault(source_id, Image.new('RGBA', frame.size))
     values = controls.values(context, graph) if controls is not None else {}
-    return graph.render(sources, parameter_values=values)
+    return graph.render(sources, parameter_values=values,
+                        gpu_backend=gpu_backend, gpu_strict=gpu_strict)

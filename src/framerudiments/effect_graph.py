@@ -12,7 +12,7 @@ from PIL import Image, ImageColor
 
 from .effect_graph_transitions import render_transition
 from .effect_graph_mattes import (
-    MATTE_COMBINES, KEY_SPACES, apply_matte, chroma_key, validate_key, validate_matte,
+    ALPHA_SOURCES, MATTE_COMBINES, KEY_SPACES, apply_matte, chroma_key, validate_key, validate_matte,
 )
 
 MAX_NODES = 256
@@ -22,10 +22,10 @@ TRANSITION_STYLES = {'dissolve', 'wipe', 'radial'}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
     'opacity': {'opacity'},
-    'matte': {'feather', 'expand', 'mask_opacity', 'mask_combine', 'matte_channel', 'invert'},
+    'matte': {'feather', 'expand', 'mask_opacity', 'mask_combine', 'matte_channel', 'invert', 'alpha_source'},
     'chroma_key': {'tolerance', 'softness', 'despill', 'edge_expand', 'edge_feather',
                    'edge_decontaminate', 'edge_radius', 'key_color.r', 'key_color.g', 'key_color.b',
-                   'key_space'},
+                   'key_space', 'alpha_source'},
     'chromatic_displacement': {f'{c}_offset.{axis}' for c in ('red', 'green', 'blue') for axis in ('x', 'y')},
     'transition': {'progress', 'feather', 'center.x', 'center.y', 'transition_style', 'direction'},
 }
@@ -37,12 +37,13 @@ CONTROL_TARGETS['copy'] = {'opacity'}
 CONTROL_TARGETS['composite'] = {'opacity', 'mode'}
 ENUM_CONTROLS = {
     'matte': {'mask_combine': MATTE_COMBINES, 'matte_channel': frozenset({'alpha', 'luminance'}),
+              'alpha_source': ALPHA_SOURCES,
               'invert': frozenset({True, False})},
-    'chroma_key': {'key_space': KEY_SPACES},
+    'chroma_key': {'key_space': KEY_SPACES, 'alpha_source': ALPHA_SOURCES},
     'transition': {'transition_style': TRANSITION_STYLES, 'direction': TRANSITION_DIRECTIONS},
     'composite': {'mode': frozenset({'over', 'add'})},
 }
-ENUM_DEFAULTS = {'mask_combine': 'multiply', 'matte_channel': 'alpha', 'invert': False,
+ENUM_DEFAULTS = {'alpha_source': 'current', 'mask_combine': 'multiply', 'matte_channel': 'alpha', 'invert': False,
                  'key_space': 'rgb', 'transition_style': 'dissolve', 'direction': 'right', 'mode': 'over'}
 
 
@@ -70,13 +71,15 @@ class EffectGraph:
             if not isinstance(entry, dict) or not {'id', 'type'} <= entry.keys():
                 raise ValueError('invalid node')
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
-                               'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius'}:
+                               'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source'}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
                 raise ValueError('duplicate or invalid node id')
             if kind not in KINDS:
                 raise ValueError(f'unsupported node type: {kind}')
+            if 'alpha_source' in entry and kind not in {'matte', 'chroma_key'}:
+                raise ValueError('alpha_source is only supported on matte and chroma_key nodes')
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
@@ -190,7 +193,8 @@ class EffectGraph:
                                           'edge_expand': 0, 'edge_feather': 0, 'edge_decontaminate': 0,
                                           'edge_radius': 3}.get(property_name, 0))
 
-    def render(self, sources: dict[str, Image.Image], *, parameter_values=None) -> Image.Image:
+    def render(self, sources: dict[str, Image.Image], *, parameter_values=None,
+               gpu_backend=None, gpu_strict=False) -> Image.Image:
         """Render with optional resolved per-frame controls keyed by (node_id, property).
 
         Values are already evaluated by the host modulation engine. Never mutate
@@ -261,6 +265,13 @@ class EffectGraph:
             else:
                 config[property_name] = value
         results = {}
+        if gpu_backend is not None:
+            # Last completed evaluation only; no feedback into deterministic effects.
+            gpu_backend.last_dispatch = {'gpu_nodes': 0, 'cpu_fallbacks': 0}
+        # Carry each branch's source alpha as immutable metadata. Unary effects,
+        # including mattes and colour keys, inherit it through arbitrary forks.
+        # A merge/transition starts a new source silhouette at its output.
+        original_alphas = {}
         for key in self.order:
             node = self.nodes[key]
             kind = node.kind
@@ -279,9 +290,33 @@ class EffectGraph:
                     # Applied by the universal per-node output-opacity stage.
                     result = inputs[0].copy()
                 elif kind == 'matte':
-                    result = apply_matte(inputs, config)
+                    if gpu_backend is not None:
+                        from .effect_graph_gpu import GPUUnsupported
+                        try:
+                            result = gpu_backend.apply_matte(
+                                inputs, config, original_alpha=original_alphas[node.inputs[0]])
+                            gpu_backend.last_dispatch['gpu_nodes'] += 1
+                        except GPUUnsupported:
+                            if gpu_strict:
+                                raise
+                            gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                            result = apply_matte(inputs, config, original_alpha=original_alphas[node.inputs[0]])
+                    else:
+                        result = apply_matte(inputs, config, original_alpha=original_alphas[node.inputs[0]])
                 elif kind == 'chroma_key':
-                    result = chroma_key(inputs[0], config)
+                    if gpu_backend is not None:
+                        from .effect_graph_gpu import GPUUnsupported
+                        try:
+                            result = gpu_backend.chroma_key(
+                                inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
+                            gpu_backend.last_dispatch['gpu_nodes'] += 1
+                        except GPUUnsupported:
+                            if gpu_strict:
+                                raise
+                            gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                            result = chroma_key(inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
+                    else:
+                        result = chroma_key(inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
                 elif kind == 'chromatic_displacement':
                     result = _chromatic_displacement(inputs[0], config)
                 elif kind == 'transition':
@@ -309,6 +344,10 @@ class EffectGraph:
                 result = result.copy()
                 result.putalpha(result.getchannel('A').point(lambda a: round(a * opacity)))
             results[key] = result
+            if kind == 'source' or kind in {'transition', 'composite'}:
+                original_alphas[key] = result.getchannel('A')
+            else:
+                original_alphas[key] = original_alphas[node.inputs[0]]
         return results[self.output].copy()
 
 

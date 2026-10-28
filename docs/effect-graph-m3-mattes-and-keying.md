@@ -103,3 +103,13 @@ Options are validated before any native motion source is loaded. Selection is st
 5. M3.9: editor controls, live previews and visual proof across sprites, text, 3D and video sources.
 
 No new hard dependency is introduced. The new helpers remain within the existing Python/Pillow/optional NumPy setup; GPU and external model integrations are independent later milestones.
+
+## M3.2 update: inherited alpha versus input alpha
+
+The original v14 statement that a matte uses the foreground's "original alpha"
+meant the alpha of the image *provided to that matte node*. Starting with M3.2,
+`alpha_source` makes the distinction explicit: `current` (default) uses that
+processed input alpha, while `original` follows the first source's alpha through
+unary effects. After a transition or composite, the resulting image begins a
+new alpha lineage. See [M3.2 alpha lineage and matte ordering](effect-graph-m3-alpha-lineage.md)
+for reference graphs, exact guarantees and visual acceptance cases.

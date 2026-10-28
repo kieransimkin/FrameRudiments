@@ -21,7 +21,7 @@ from .visualisers import effect_specs, VisualiserEffectHooks
 from .scoped_effects import CompositingEffects
 from .effect_graph import EffectGraph
 from .effect_graph_modulation import EffectGraphControls
-from .effect_graph_integration import validate_graph_sources, evaluate_effect_graph
+from .effect_graph_integration import validate_graph_sources, evaluate_effect_graph, create_gpu_backend
 from .visualiser_routing import VisualiserLayerRouting
 from .layer_masks import LayerMasks
 from .layer_animation import LayerAnimations
@@ -406,6 +406,11 @@ class Compositor:
             if self.effect_graph is not None else None
         )
         validate_graph_sources(self.effect_graph, targets)
+        self.effect_graph_backend_mode = project.data.get("effect_graph_backend", "cpu")
+        self.effect_graph_gpu = (
+            create_gpu_backend(self.effect_graph_backend_mode)
+            if self.effect_graph is not None else None
+        )
         mask_order = ["background"]
         mask_order.extend(f"layer:{layer.id}" for layer in self.layers)
         self.layer_masks = LayerMasks(project.data.get("layer_masks", {}), mask_order)
@@ -609,7 +614,9 @@ class Compositor:
 
         image = pipeline.apply_frame(image, ctx)
         return evaluate_effect_graph(
-            self.effect_graph, self.effect_graph_controls, ctx, image, mask_surfaces
+            self.effect_graph, self.effect_graph_controls, ctx, image, mask_surfaces,
+            gpu_backend=self.effect_graph_gpu,
+            gpu_strict=self.effect_graph_backend_mode == "gpu",
         )
 
     def _final_output(self, image, context, apply_quality):
@@ -707,6 +714,8 @@ class Compositor:
         return dict(self.post_pipeline.last_report) if self.post_pipeline.enabled else {}
 
     def close(self):
+        if self.effect_graph_gpu is not None:
+            self.effect_graph_gpu.close()
         for layer in self.layers:
             if isinstance(layer, (NaturalMaterialLayer, ParticleEmitter)):
                 layer.close()
@@ -727,6 +736,18 @@ class Compositor:
             transformed_alpha_extents=self.extents,
             text_states=self.text_states,
             render_quality=self.output_quality.evidence,
+            **({"effect_graph_backend": {
+                "requested": self.effect_graph_backend_mode,
+                "actual": "gpu" if self.effect_graph_gpu is not None else "cpu",
+                "capabilities": (
+                    vars(self.effect_graph_gpu.capabilities)
+                    if self.effect_graph_gpu is not None else None
+                ),
+                "last_dispatch": (
+                    self.effect_graph_gpu.last_dispatch
+                    if self.effect_graph_gpu is not None else None
+                ),
+            }} if self.effect_graph is not None else {}),
             motions={x.id: x.motion.evidence for x in [*self.layers, *self.lyric_art.values()] if x.motion},
             rudiment_renderers={x.id: x.evidence for x in self.layers if isinstance(x, RudimentLayer)},
             **(
