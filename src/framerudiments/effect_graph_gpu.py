@@ -367,14 +367,16 @@ class GLMatteBackend:
         self._check_budget(size, len(images) + 5 + int(original_alpha is not None))
         allocations = []
         try:
-            fg = self._input(images[0]); allocations.append(fg)
+            fg = self._input(images[0])
+            allocations.append(fg)
             mask_inputs = []
             for im in images[1:]:
                 tex = self._input(im)
                 allocations.append(tex)
                 mask_inputs.append(tex)
             origin = self._input(original_alpha.convert('RGBA')) if original_alpha is not None else fg
-            if origin is not fg: allocations.append(origin)
+            if origin is not fg:
+                allocations.append(origin)
             # Separate shader sampler array assignments: bind an additional
             # dummy image to unused slots only if the driver requires it.
             program, vao = self._get_shader('mask_init', MASK_INIT)
@@ -383,7 +385,8 @@ class GLMatteBackend:
             fb.use()
             self.ctx.viewport = (0, 0, *size)
             self.ctx.disable(self._moderngl.BLEND)
-            for i, tex in enumerate(mask_inputs): tex.use(location=i)
+            for i, tex in enumerate(mask_inputs):
+                tex.use(location=i)
             program['masks'].value = tuple(range(len(mask_inputs))) + (0,) * (8-len(mask_inputs))
             program['nmask'].value = len(mask_inputs)
             program['channel_mode'].value = int(config.get('matte_channel', 'alpha') == 'luminance')
@@ -413,9 +416,11 @@ class GLMatteBackend:
         colors = [tuple(x / 255 for x in ImageColor.getrgb(k)) + (1,) for k in keys]
         allocations = []
         try:
-            fg = self._input(image); allocations.append(fg)
+            fg = self._input(image)
+            allocations.append(fg)
             origin = self._input(original_alpha.convert('RGBA')) if original_alpha is not None else fg
-            if origin is not fg: allocations.append(origin)
+            if origin is not fg:
+                allocations.append(origin)
             shader, vao = self._get_shader('key_init', KEY_INIT)
             mask, fb = self._target(size)
             allocations.extend((mask, fb))
@@ -448,10 +453,16 @@ class GLMatteBackend:
     def close(self):
         if self.closed:
             return
-        for vao in self._vaos.values(): vao.release()
-        for program in self._programs.values(): program.release()
-        if self._owns_context: self.ctx.release()
+        for vao in self._vaos.values():
+            vao.release()
+        for program in self._programs.values():
+            program.release()
+        if self._owns_context:
+            self.ctx.release()
         self.closed = True
 
-    def __enter__(self): return self
-    def __exit__(self, *_): self.close()
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        self.close()

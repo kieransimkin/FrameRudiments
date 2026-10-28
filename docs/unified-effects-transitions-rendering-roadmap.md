@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.3 — 27 October 2026
-**Status:** Active implementation. M3 CPU matte/keying and per-node opacity foundation added; GPU and integration evidence pending.
+**Version:** 1.4 — 28 October 2026
+**Status:** Active implementation. M3 GPU parity CI is green; M4.1 spectral-band CPU reference and controls added; M4 GPU parity remains pending.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -270,8 +270,21 @@ Implementation: optional ModernGL node accelerator, opt-in project backend
 shader, bounded separable morphology and Gaussian blur, alpha lineage and
 despill. See [effect-graph-m3-3-gpu-mattes.md](effect-graph-m3-3-gpu-mattes.md).
 
-No shader performance or GPU parity claims are made until the dedicated
-Mesa/EGL CI job and independent hardware jobs have executed. The existing
-Pillow implementation remains the compatibility baseline. Deferred: GPU
-edge decontamination, radii beyond GPU limits, texture-resident graph
+The M3.3 Mesa/EGL shader parity workflow passed for commit `96e7ab3`. Independent
+hardware profiling and edge-decontamination parity remain pending. Deferred:
+GPU edge decontamination, radii beyond GPU limits, texture-resident graph
 scheduling, advanced HDR colour management and GPU-temporal feedback.
+
+### M4.1 — arbitrary spectral bands (new CPU increment)
+
+The `spectral_displacement` graph node provides up to eight independent RGB,
+HSV or OKLab colour-selective bands with recolouring, XY displacement, per-band
+opacity, output alpha modes and animated controls. Existing RGB splitting is
+unchanged. This is a CPU reference, and GPU strict mode rejects it until an
+independent parity-tested shader is provided. See
+[effect-graph-m4-spectral.md](effect-graph-m4-spectral.md) for the complete
+schema, performance constraints and M4.2–M4.4 development gates.
+
+The general CI of `96e7ab3` failed at Ruff before pytest because of eight
+single-line statements in `effect_graph_gpu.py`. The same M4 patch fixes them;
+full CI must now pass before M4.1 is considered fully integrated.

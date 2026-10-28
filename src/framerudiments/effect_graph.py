@@ -14,10 +14,16 @@ from .effect_graph_transitions import render_transition
 from .effect_graph_mattes import (
     ALPHA_SOURCES, MATTE_COMBINES, KEY_SPACES, apply_matte, chroma_key, validate_key, validate_matte,
 )
+from .effect_graph_spectral import (
+    SPECTRAL_ALPHA_MODES, SPECTRAL_MODES, SPECTRAL_SPACES,
+    spectral_control_apply, spectral_control_base, spectral_control_parts,
+    spectral_displacement, validate_spectral,
+)
 
 MAX_NODES = 256
 MAX_INPUTS = 32
-KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement', 'composite', 'transition'}
+KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement',
+         'spectral_displacement', 'composite', 'transition'}
 TRANSITION_STYLES = {'dissolve', 'wipe', 'radial'}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
@@ -27,6 +33,7 @@ CONTROL_TARGETS = {
                    'edge_decontaminate', 'edge_radius', 'key_color.r', 'key_color.g', 'key_color.b',
                    'key_space', 'alpha_source'},
     'chromatic_displacement': {f'{c}_offset.{axis}' for c in ('red', 'green', 'blue') for axis in ('x', 'y')},
+    'spectral_displacement': {'mix', 'spectral_mode', 'alpha_mode'},
     'transition': {'progress', 'feather', 'center.x', 'center.y', 'transition_style', 'direction'},
 }
 # Every image-processing node has an independent output-opacity control.
@@ -41,10 +48,12 @@ ENUM_CONTROLS = {
               'invert': frozenset({True, False})},
     'chroma_key': {'key_space': KEY_SPACES, 'alpha_source': ALPHA_SOURCES},
     'transition': {'transition_style': TRANSITION_STYLES, 'direction': TRANSITION_DIRECTIONS},
+    'spectral_displacement': {'spectral_mode': SPECTRAL_MODES, 'alpha_mode': SPECTRAL_ALPHA_MODES},
     'composite': {'mode': frozenset({'over', 'add'})},
 }
 ENUM_DEFAULTS = {'alpha_source': 'current', 'mask_combine': 'multiply', 'matte_channel': 'alpha', 'invert': False,
-                 'key_space': 'rgb', 'transition_style': 'dissolve', 'direction': 'right', 'mode': 'over'}
+                 'key_space': 'rgb', 'transition_style': 'dissolve', 'direction': 'right', 'mode': 'over',
+                 'spectral_mode': 'overlay', 'alpha_mode': 'expanded'}
 
 
 
@@ -71,7 +80,8 @@ class EffectGraph:
             if not isinstance(entry, dict) or not {'id', 'type'} <= entry.keys():
                 raise ValueError('invalid node')
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
-                               'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source'}:
+                               'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
+                               'bands', 'spectral_mode', 'alpha_mode', 'mix'}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -83,7 +93,7 @@ class EffectGraph:
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
-            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != 2):
+            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement', 'spectral_displacement'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != 2):
                 raise ValueError(f'wrong input count for {kind}')
             opacity = entry.get('opacity', 1.0)
             if type(opacity) not in (int, float) or not isfinite(opacity) or not 0 <= opacity <= 1:
@@ -99,6 +109,8 @@ class EffectGraph:
                         raise ValueError(f'invalid {channel} displacement vector')
             if kind == 'chroma_key':
                 validate_key(entry)
+            if kind == 'spectral_displacement':
+                validate_spectral(entry)
             if kind == 'transition':
                 if entry.get('transition_style', 'dissolve') not in TRANSITION_STYLES:
                     raise ValueError('unsupported transition style')
@@ -145,8 +157,11 @@ class EffectGraph:
 
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)
-        if node is None or (property_name not in CONTROL_TARGETS.get(node.kind, set())
-                            and not self._is_extra_key_colour_target(node, property_name)):
+        if node is None or not isinstance(property_name, str) or (
+                property_name not in CONTROL_TARGETS.get(node.kind, set())
+                and not self._is_extra_key_colour_target(node, property_name)
+                and not (node.kind == 'spectral_displacement'
+                         and spectral_control_parts(node.config, property_name) is not None)):
             raise ValueError('unknown or inapplicable graph control target')
 
     @staticmethod
@@ -160,12 +175,20 @@ class EffectGraph:
 
     def is_categorical_control(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
-        return property_name in ENUM_CONTROLS.get(self.nodes[node_id].kind, {})
+        node = self.nodes[node_id]
+        return (property_name in ENUM_CONTROLS.get(node.kind, {})
+                or (node.kind == 'spectral_displacement'
+                    and spectral_control_parts(node.config, property_name) is not None
+                    and property_name.endswith('.space')))
 
     def validate_control_choices(self, node_id, property_name, choices):
         self.validate_control_target(node_id, property_name)
         node = self.nodes[node_id]
         accepted = ENUM_CONTROLS.get(node.kind, {}).get(property_name)
+        if (accepted is None and node.kind == 'spectral_displacement'
+                and spectral_control_parts(node.config, property_name) is not None
+                and property_name.endswith('.space')):
+            accepted = SPECTRAL_SPACES
         if accepted is None:
             raise ValueError('categorical choices require an enum graph control')
         if (not isinstance(choices, list) or not 2 <= len(choices) <= 32
@@ -177,6 +200,8 @@ class EffectGraph:
     def base_control_value(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
         config = self.nodes[node_id].config
+        if self.nodes[node_id].kind == 'spectral_displacement' and property_name.startswith('bands.'):
+            return spectral_control_base(config, property_name)
         if property_name in ENUM_CONTROLS.get(self.nodes[node_id].kind, {}):
             return config.get(property_name, ENUM_DEFAULTS[property_name])
         if property_name.startswith('key_colors.'):
@@ -188,7 +213,8 @@ class EffectGraph:
         if property_name.startswith('key_color.'):
             primary = config.get('key_color', (config.get('key_colors') or ['#00ff00'])[0])
             return ImageColor.getrgb(primary)[{'r': 0, 'g': 1, 'b': 2}[property_name[-1]]]
-        return config.get(property_name, {'opacity': 1, 'feather': 0, 'tolerance': .1, 'softness': .1, 'despill': 0,
+        return config.get(property_name, {'opacity': 1, 'mix': 1, 'feather': 0, 'tolerance': .1,
+                                          'softness': .1, 'despill': 0,
                                           'progress': 0, 'expand': 0, 'mask_opacity': 1,
                                           'edge_expand': 0, 'edge_feather': 0, 'edge_decontaminate': 0,
                                           'edge_radius': 3}.get(property_name, 0))
@@ -210,6 +236,11 @@ class EffectGraph:
             node_id, property_name = target
             node = self.nodes.get(node_id)
             self.validate_control_target(node_id, property_name)
+            if node.kind == 'spectral_displacement' and property_name.startswith('bands.'):
+                configs[node_id] = spectral_control_apply(
+                    configs.get(node_id, node.config), property_name, value
+                )
+                continue
             enum_values = ENUM_CONTROLS.get(node.kind, {}).get(property_name)
             if enum_values is not None:
                 if (type(value) is not bool and not isinstance(value, str)) or value not in enum_values:
@@ -319,6 +350,13 @@ class EffectGraph:
                         result = chroma_key(inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
                 elif kind == 'chromatic_displacement':
                     result = _chromatic_displacement(inputs[0], config)
+                elif kind == 'spectral_displacement':
+                    if gpu_backend is not None:
+                        from .effect_graph_gpu import GPUUnsupported
+                        if gpu_strict:
+                            raise GPUUnsupported('spectral displacement GPU shader is not yet implemented')
+                        gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                    result = spectral_displacement(inputs[0], config)
                 elif kind == 'transition':
                     result = render_transition(inputs[0], inputs[1], config)
                 else:
