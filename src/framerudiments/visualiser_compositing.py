@@ -30,9 +30,9 @@ def validate_stage_composite(config, label="visualiser composite"):
     """Validate one stage's post-render compositing contract."""
     if config is None:
         return None
-    fields(config, {"opacity", "chroma_key", "matte", "modulations"}, label)
+    fields(config, {"opacity", "chroma_key", "matte", "underlay", "modulations"}, label)
     if not config:
-        raise ValueError(f"{label} must declare opacity, chroma_key or matte")
+        raise ValueError(f"{label} must declare opacity, chroma_key, matte or underlay")
     result = {
         "opacity": number(config.get("opacity", 1), f"{label}.opacity", minimum=0, maximum=1)
     }
@@ -67,6 +67,13 @@ def validate_stage_composite(config, label="visualiser composite"):
         raise ValueError(f"{label}.modulations ids must be unique")
     if modulations:
         result["modulations"] = modulations
+    underlay = config.get("underlay")
+    if underlay is not None:
+        fields(underlay, {"source"}, f"{label}.underlay")
+        source = underlay.get("source")
+        if not isinstance(source, str) or not source:
+            raise ValueError(f"{label}.underlay.source must name an isolated compositor element")
+        result["underlay"] = {"source": source}
     chroma = config.get("chroma_key")
     if chroma is not None:
         fields(chroma, {"colour", "similarity", "smoothness", "despill"}, f"{label}.chroma_key")
@@ -182,5 +189,12 @@ def composite_stage(base, rendered, config, surfaces):
         alpha = alpha.point(lambda value: round(value * config["opacity"]))
     keyed.putalpha(alpha)
     result = base.convert("RGBA")
+    underlay = config.get("underlay")
+    if underlay is not None:
+        source = surfaces.get(underlay["source"])
+        if source is not None:
+            if source.mode != "RGBA" or source.size != keyed.size:
+                raise ValueError("Visualiser underlay source must be full-frame RGBA")
+            result.alpha_composite(source)
     result.alpha_composite(keyed)
     return result

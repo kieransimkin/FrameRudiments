@@ -1,5 +1,15 @@
 # FrameRudiments
 
+## A background beneath a transformed visualiser
+
+Version 0.4.15 adds `composite.underlay.source`: an isolated compositor surface
+can remain visible beneath transparent visualiser output. A shrinking, rotated
+or faded stage can reveal a chosen backdrop while its sequential feedback and
+source audio clock continue normally. Existing stages keep their old compositing.
+See the [contract and actual synthetic demonstration](docs/visualisers.md#isolated-underlay).
+
+![Actual native underlay demo at the start, midpoint and end](docs/media/visualiser-underlay.png)
+
 ## Live render progress
 
 Version 0.4.14 writes `render-progress.json` atomically and emits a flushed

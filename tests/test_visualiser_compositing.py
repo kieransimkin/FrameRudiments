@@ -62,6 +62,43 @@ def test_luminance_matte_multiplies_provider_alpha_and_stage_opacity():
     assert result.getpixel((0, 0))[0] in range(31, 34)
 
 
+def test_transparent_visualiser_output_reveals_opaque_underlay_instead_of_input():
+    base = Image.new("RGBA", (2, 1), "red")
+    rendered = Image.new("RGBA", (2, 1), (0, 255, 0, 0))
+    rendered.putpixel((1, 0), (0, 255, 0, 255))
+    underlay = Image.new("RGBA", (2, 1), "blue")
+    setting = validate_stage_composite({"underlay": {"source": "layer:backdrop"}})
+    result = composite_stage(base, rendered, setting, {"layer:backdrop": underlay})
+    assert result.getpixel((0, 0)) == (0, 0, 255, 255)
+    assert result.getpixel((1, 0)) == (0, 255, 0, 255)
+
+
+def test_underlay_alpha_then_rendered_alpha_preserve_compositing_order():
+    base = Image.new("RGBA", (1, 1), "red")
+    underlay = Image.new("RGBA", (1, 1), (0, 0, 255, 128))
+    rendered = Image.new("RGBA", (1, 1), (0, 255, 0, 128))
+    setting = validate_stage_composite({"underlay": {"source": "layer:backdrop"}})
+    result = composite_stage(base, rendered, setting, {"layer:backdrop": underlay})
+    assert result.getpixel((0, 0)) == (63, 128, 64, 255)
+
+
+def test_hidden_underlay_does_not_reuse_an_earlier_provider_surface():
+    base = Image.new("RGBA", (1, 1), "red")
+    rendered = Image.new("RGBA", (1, 1), (0, 255, 0, 0))
+    setting = validate_stage_composite({"underlay": {"source": "layer:backdrop"}})
+    shown = composite_stage(base, rendered, setting, {"layer:backdrop": Image.new("RGBA", (1, 1), "blue")})
+    hidden = composite_stage(base, rendered, setting, {})
+    assert shown.getpixel((0, 0)) == (0, 0, 255, 255)
+    assert hidden.getpixel((0, 0)) == (255, 0, 0, 255)
+
+
+@pytest.mark.parametrize("source", [Image.new("RGB", (1, 1)), Image.new("RGBA", (2, 1))])
+def test_underlay_provider_requires_frame_size_and_rgba(source):
+    setting = validate_stage_composite({"underlay": {"source": "layer:backdrop"}})
+    with pytest.raises(ValueError, match="underlay source must be full-frame RGBA"):
+        composite_stage(Image.new("RGBA", (1, 1)), Image.new("RGBA", (1, 1)), setting, {"layer:backdrop": source})
+
+
 @pytest.mark.parametrize(
     "bad",
     [
@@ -73,6 +110,9 @@ def test_luminance_matte_multiplies_provider_alpha_and_stage_opacity():
         {"matte": {"source": "", "mode": "alpha"}},
         {"matte": {"source": "layer:x", "mode": "bad"}},
         {"matte": {"source": "layer:x", "invert": 1}},
+        {"underlay": {}},
+        {"underlay": {"source": ""}},
+        {"underlay": {"source": "layer:x", "path": "unreviewed.png"}},
         {"opacity": 2},
         {"modulations": {}},
         {"modulations": [{"target": "visual.glow", "motion": {"kind": "named", "pattern": "bounce"}, "range": [0, 1]}]},
