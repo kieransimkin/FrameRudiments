@@ -1,5 +1,9 @@
 # FrameRudiments
 
+Version 0.4.16 fixes the spectral colour conversion identifier that blocked the
+0.4.15 release lint gate. Its numerical operations are unchanged. Immutable
+0.4.15 tags are preserved; the new version reruns the full release checks.
+
 ## A background beneath a transformed visualiser
 
 Version 0.4.15 adds `composite.underlay.source`: an isolated compositor surface

@@ -1,3 +1,13 @@
+# FrameRudiments 0.4.16
+
+- Rename the ambiguous spectral colour-conversion `l` variable to `l_channel`.
+  This resolves Ruff E741 without changing the numerical conversion.
+- The immutable 0.4.15 tag remains preserved. Its package publication was
+  blocked by lint; 0.4.16 reruns the required full CI, packaging and installed-wheel
+  encoding gates before GitHub/PyPI publication.
+- Existing [actual underlay frames and video](docs/visualisers.md#isolated-underlay)
+  remain the relevant media; the identifier-only repair adds no visual behaviour.
+
 # FrameRudiments 0.4.15
 
 - Visualiser stages accept `composite.underlay.source`, a named isolated RGBA
