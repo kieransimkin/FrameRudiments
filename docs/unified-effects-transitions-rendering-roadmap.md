@@ -304,3 +304,22 @@ full CI must now pass before M4.1 is considered fully integrated.
 
 Details and acceptance gates: [effect-graph-m4-2-gpu-spectral.md](effect-graph-m4-2-gpu-spectral.md).
 These effects still use the node-level CPU/GPU bridge, not a GPU-resident DAG.
+
+
+### M5.1 — Matte/luminance/chroma-driven transition foundation (v19)
+
+- [x] `transition_style=matte` requires 3 graph inputs: outgoing RGBA, incoming RGBA and independent matte source.
+- [x] Existing 2-input dissolve/wipe/radial transition styles preserve their inputs and rendering behaviour.
+- [x] Matte selection from alpha, alpha-weighted luminance or colour-key selection (RGB/OKLab).
+- [x] Numeric DanceRudiment control of `progress`, `threshold`, `feather`, `mask_gamma`, key-colour RGB components, tolerance, softness and per-node opacity.
+- [x] Categorical DanceRudiment control of matte mode, inversion and RGB/OKLab key-space.
+- [x] Exact transition endpoints, premultiplied-alpha colour interpolation and deterministic arbitrary-timestamp rendering.
+- [x] Unit tests, real-project synthetic-media tests and 12-panel deterministic evidence generator.
+- [ ] Full repository CI acceptance, then GPU-native matte-transition shaders (M8.3).
+
+Detailed schema and tests: [effect-graph-m5-1-matte-transitions.md](effect-graph-m5-1-matte-transitions.md).
+
+**Existing CI repair:** the main CPU matrix must ignore the GPU-only
+`tests/test_effect_graph_gpu_spectral.py` module, which runs in the required
+reusable `effect-graph-parity` workflow. Keep the no-skips assertion for the
+remaining CPU suite and require both CI jobs for acceptance.

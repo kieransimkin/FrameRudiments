@@ -11,6 +11,7 @@ from math import isfinite
 from PIL import Image, ImageColor
 
 from .effect_graph_transitions import render_transition
+from .effect_graph_transition_mattes import MATTE_TRANSITION_CHANNELS, validate_transition_matte
 from .effect_graph_mattes import (
     ALPHA_SOURCES, MATTE_COMBINES, KEY_SPACES, apply_matte, chroma_key, validate_key, validate_matte,
 )
@@ -24,7 +25,7 @@ MAX_NODES = 256
 MAX_INPUTS = 32
 KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement',
          'spectral_displacement', 'composite', 'transition'}
-TRANSITION_STYLES = {'dissolve', 'wipe', 'radial'}
+TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte'}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
     'opacity': {'opacity'},
@@ -34,7 +35,9 @@ CONTROL_TARGETS = {
                    'key_space', 'alpha_source'},
     'chromatic_displacement': {f'{c}_offset.{axis}' for c in ('red', 'green', 'blue') for axis in ('x', 'y')},
     'spectral_displacement': {'mix', 'spectral_mode', 'alpha_mode'},
-    'transition': {'progress', 'feather', 'center.x', 'center.y', 'transition_style', 'direction'},
+    'transition': {'progress', 'feather', 'center.x', 'center.y', 'transition_style', 'direction',
+                   'threshold', 'mask_gamma', 'matte_channel', 'invert', 'key_color.r',
+                   'key_color.g', 'key_color.b', 'key_space', 'tolerance', 'softness'},
 }
 # Every image-processing node has an independent output-opacity control.
 for _targets in CONTROL_TARGETS.values():
@@ -47,7 +50,9 @@ ENUM_CONTROLS = {
               'alpha_source': ALPHA_SOURCES,
               'invert': frozenset({True, False})},
     'chroma_key': {'key_space': KEY_SPACES, 'alpha_source': ALPHA_SOURCES},
-    'transition': {'transition_style': TRANSITION_STYLES, 'direction': TRANSITION_DIRECTIONS},
+    'transition': {'transition_style': TRANSITION_STYLES, 'direction': TRANSITION_DIRECTIONS,
+                   'matte_channel': MATTE_TRANSITION_CHANNELS, 'invert': frozenset({True, False}),
+                   'key_space': KEY_SPACES},
     'spectral_displacement': {'spectral_mode': SPECTRAL_MODES, 'alpha_mode': SPECTRAL_ALPHA_MODES},
     'composite': {'mode': frozenset({'over', 'add'})},
 }
@@ -81,7 +86,7 @@ class EffectGraph:
                 raise ValueError('invalid node')
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
-                               'bands', 'spectral_mode', 'alpha_mode', 'mix'}:
+                               'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma'}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -93,7 +98,7 @@ class EffectGraph:
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
-            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement', 'spectral_displacement'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != 2):
+            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement', 'spectral_displacement'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != (3 if entry.get('transition_style') == 'matte' else 2)):
                 raise ValueError(f'wrong input count for {kind}')
             opacity = entry.get('opacity', 1.0)
             if type(opacity) not in (int, float) or not isfinite(opacity) or not 0 <= opacity <= 1:
@@ -114,6 +119,7 @@ class EffectGraph:
             if kind == 'transition':
                 if entry.get('transition_style', 'dissolve') not in TRANSITION_STYLES:
                     raise ValueError('unsupported transition style')
+                validate_transition_matte(entry)
                 if entry.get('direction', 'right') not in TRANSITION_DIRECTIONS:
                     raise ValueError('unsupported transition direction')
                 for name, default, maximum in [('progress', 0.0, 1.0), ('feather', 0.0, 1.0)]:
@@ -196,6 +202,11 @@ class EffectGraph:
                 or any(v not in accepted for v in choices)
                 or len({(type(v), v) for v in choices}) != len(choices)):
             raise ValueError('invalid categorical graph control choices')
+        # A transition's input arity is immutable; categorical style changes
+        # cannot swap a two-input effect into a three-input matte node.
+        if node.kind == 'transition' and property_name == 'transition_style':
+            if any((style == 'matte') != (len(node.inputs) == 3) for style in choices):
+                raise ValueError('transition style choice changes input count')
 
     def base_control_value(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
@@ -215,7 +226,8 @@ class EffectGraph:
             return ImageColor.getrgb(primary)[{'r': 0, 'g': 1, 'b': 2}[property_name[-1]]]
         return config.get(property_name, {'opacity': 1, 'mix': 1, 'feather': 0, 'tolerance': .1,
                                           'softness': .1, 'despill': 0,
-                                          'progress': 0, 'expand': 0, 'mask_opacity': 1,
+                                          'progress': 0, 'threshold': .5, 'mask_gamma': 1,
+                                          'expand': 0, 'mask_opacity': 1,
                                           'edge_expand': 0, 'edge_feather': 0, 'edge_decontaminate': 0,
                                           'edge_radius': 3}.get(property_name, 0))
 
@@ -261,6 +273,8 @@ class EffectGraph:
                 bounds = (0, 128)
             elif property_name == 'edge_radius':
                 bounds = (0.5, 16)
+            elif property_name == 'mask_gamma':
+                bounds = (0.1, 8)
             else:
                 bounds = (0, 1)
             if not bounds[0] <= value <= bounds[1]:
@@ -366,7 +380,12 @@ class EffectGraph:
                             gpu_backend.last_dispatch['cpu_fallbacks'] += 1
                             result = spectral_displacement(inputs[0], config)
                 elif kind == 'transition':
-                    result = render_transition(inputs[0], inputs[1], config)
+                    # Revalidate after resolving DanceRudiment overrides.
+                    validate_transition_matte(config)
+                    result = render_transition(
+                        inputs[0], inputs[1], config,
+                        matte_image=inputs[2] if len(inputs) == 3 else None,
+                    )
                 else:
                     result = inputs[0].copy()
                     for layer in inputs[1:]:

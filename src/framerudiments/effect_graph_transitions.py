@@ -2,8 +2,11 @@
 
 from PIL import Image
 
+from .effect_graph_transition_mattes import transition_matte_weight
 
-def render_transition(from_image: Image.Image, to_image: Image.Image, config: dict) -> Image.Image:
+
+def render_transition(from_image: Image.Image, to_image: Image.Image, config: dict,
+                      *, matte_image: Image.Image | None = None) -> Image.Image:
     """Two-input source-over *interpolation* in premultiplied RGBA.
 
     Graph transitions are deterministic at arbitrary progress and preserve
@@ -21,7 +24,13 @@ def render_transition(from_image: Image.Image, to_image: Image.Image, config: di
 
     height, width = from_image.height, from_image.width
     style = config.get('transition_style', 'dissolve')
-    if style == 'dissolve':
+    if style == 'matte':
+        if matte_image is None:
+            raise ValueError('matte transition needs a third mask input')
+        if matte_image.size != from_image.size:
+            raise ValueError('matte transition inputs need equal dimensions')
+        weight = transition_matte_weight(matte_image, config, progress)
+    elif style == 'dissolve':
         weight = np.full((height, width), progress, dtype=np.float32)
     else:
         yy, xx = np.indices((height, width), dtype=np.float32)
