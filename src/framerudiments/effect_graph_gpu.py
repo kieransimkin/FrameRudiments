@@ -450,6 +450,12 @@ class GLMatteBackend:
             for resource in reversed(allocations):
                 resource.release()
 
+    def spectral_displacement(self, image, config):
+        """Render spectral bands on GPU using bounded reusable framebuffers."""
+        from .effect_graph_gpu_spectral import render_spectral
+
+        return render_spectral(self, image, config)
+
     def close(self):
         if self.closed:
             return

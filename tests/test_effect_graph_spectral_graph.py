@@ -102,16 +102,41 @@ def test_native_motion_driver_bindings_are_frame_local(monkeypatch):
     assert g.base_control_value("colour", "bands.reds.offset.x") == 0
 
 
-def test_explicit_gpu_mode_rejects_missing_spectral_shader():
+def test_gpu_dispatch_supports_spectral_node_without_mutating_source():
+    from framerudiments.effect_graph_spectral import spectral_displacement
+
     class Backend:
         last_dispatch = None
+
+        def spectral_displacement(self, source, config):
+            assert source.mode == "RGBA"
+            return spectral_displacement(source, config)
+
     backend = Backend()
     g = make_graph()
-    with pytest.raises(ValueError, match="spectral.*GPU"):
+    original = image()
+    result = g.render({"source": original}, gpu_backend=backend, gpu_strict=True)
+    assert result.getpixel((0, 0)) == (0, 255, 255, 255)
+    assert original.getpixel((0, 0)) == (255, 0, 0, 255)
+    assert backend.last_dispatch == {"gpu_nodes": 1, "cpu_fallbacks": 0}
+
+
+def test_gpu_unsupported_spectral_falls_back_only_in_auto_mode():
+    from framerudiments.effect_graph_gpu import GPUUnsupported
+
+    class Backend:
+        last_dispatch = None
+
+        def spectral_displacement(self, source, config):
+            raise GPUUnsupported("spectral GPU resource limit")
+
+    backend = Backend()
+    g = make_graph()
+    with pytest.raises(GPUUnsupported, match="spectral GPU resource limit"):
         g.render({"source": image()}, gpu_backend=backend, gpu_strict=True)
     result = g.render({"source": image()}, gpu_backend=backend, gpu_strict=False)
     assert result.getpixel((0, 0)) == (0, 255, 255, 255)
-    assert backend.last_dispatch["cpu_fallbacks"] == 1
+    assert backend.last_dispatch == {"gpu_nodes": 0, "cpu_fallbacks": 1}
 
 
 def test_spectral_output_feeds_two_input_transition_with_alpha_correctness():

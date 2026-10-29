@@ -351,12 +351,20 @@ class EffectGraph:
                 elif kind == 'chromatic_displacement':
                     result = _chromatic_displacement(inputs[0], config)
                 elif kind == 'spectral_displacement':
-                    if gpu_backend is not None:
+                    if gpu_backend is None or config.get('mix', 1) == 0:
+                        # Zero mix is an exact, allocation-free source pass-through.
+                        result = (inputs[0].copy() if config.get('mix', 1) == 0
+                                  else spectral_displacement(inputs[0], config))
+                    else:
                         from .effect_graph_gpu import GPUUnsupported
-                        if gpu_strict:
-                            raise GPUUnsupported('spectral displacement GPU shader is not yet implemented')
-                        gpu_backend.last_dispatch['cpu_fallbacks'] += 1
-                    result = spectral_displacement(inputs[0], config)
+                        try:
+                            result = gpu_backend.spectral_displacement(inputs[0], config)
+                            gpu_backend.last_dispatch['gpu_nodes'] += 1
+                        except GPUUnsupported:
+                            if gpu_strict:
+                                raise
+                            gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                            result = spectral_displacement(inputs[0], config)
                 elif kind == 'transition':
                     result = render_transition(inputs[0], inputs[1], config)
                 else:

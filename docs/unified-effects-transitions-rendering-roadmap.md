@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.4 — 28 October 2026
+**Version:** 1.5 — 28 October 2026
 **Status:** Active implementation. M3 GPU parity CI is green; M4.1 spectral-band CPU reference and controls added; M4 GPU parity remains pending.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
@@ -288,3 +288,19 @@ schema, performance constraints and M4.2–M4.4 development gates.
 The general CI of `96e7ab3` failed at Ruff before pytest because of eight
 single-line statements in `effect_graph_gpu.py`. The same M4 patch fixes them;
 full CI must now pass before M4.1 is considered fully integrated.
+
+
+### M4.2 — GPU spectral displacement (increment following M4.1)
+
+- [x] OpenGL 3.3 per-band sampling, RGB/HSV/OKLab selection, recolouring,
+  alpha clipping, overlay/replace, independent XY offsets and global mix.
+- [x] Bounded ping-pong framebuffer execution and lazy optional ModernGL use.
+- [x] CPU/GPU dispatch and unsupported-resource fallback tests.
+- [x] Real EGL parity and deterministic repeat tests added to the GPU CI job.
+- [x] M4.1 Ruff E741 naming regression fixed without changing CPU calculation.
+- [x] HD end-to-end CPU/GPU benchmark in CI; optional gated 4K and 8K runs.
+- [ ] Require a green actual ModernGL/EGL parity run before marking M4.2 complete.
+- [ ] Evaluate cross-vendor GPU parity and record measured 4K/8K throughput.
+
+Details and acceptance gates: [effect-graph-m4-2-gpu-spectral.md](effect-graph-m4-2-gpu-spectral.md).
+These effects still use the node-level CPU/GPU bridge, not a GPU-resident DAG.
