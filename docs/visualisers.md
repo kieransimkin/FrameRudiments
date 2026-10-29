@@ -199,6 +199,42 @@ and inspect edge transparency at delivery size. Track mattes preserve the
 provider's rendered motion and post effects; they do not infer a mask from a
 filename or visual role.
 
+### Isolated underlay
+
+Version 0.4.15 can put a named isolated surface beneath one stage's processed
+RGBA output. This is useful when output scale, rotation or opacity creates
+transparent pixels which should reveal another image:
+
+```json
+"composite": {
+  "underlay": {"source": "layer:backdrop"},
+  "opacity": 1
+}
+```
+
+The order is stage input, underlay alpha-over, then keyed/matted stage output
+alpha-over. A fully opaque underlay replaces the stage input; a partly transparent
+underlay preserves the input beneath it. A hidden or gated provider contributes
+nothing in that frame. The source must exist at setup, and any supplied surface
+must be frame-sized RGBA. Layer providers remain isolated rather than appearing
+in the clean composition. With explicit `visualiser_routing`, also give the
+provider `feed: "never"` and `overlay: false` to keep it out of the GPU input and
+the final clean overlays. Later stages receive the composited result normally.
+
+Use output **opacity**, rather than brightness, to disappear into the underlay;
+an opaque black output still covers it. The underlay does not change the
+visualiser's retained feedback pixels or replace its source-clock contract.
+
+![Actual synthetic native alpha-underlay frames: start, midpoint, end](media/visualiser-underlay.png)
+
+[Play the actual two-second demonstration](media/visualiser-underlay.mp4).
+The orange grid rotates, contracts and fades to reveal the blue grid. This
+silent 320×180/60fps example uses native `VisualStyle` and `composite_stage`;
+it demonstrates post-processing and alpha order, not a GPU preset, campaign
+film or performance benchmark. The final RGBA frame exactly equals the underlay.
+The adjacent [receipt](media/visualiser-underlay.json) records version, checkpoints
+and encoded-file hash. Reproduce with `scripts/demo_visualiser_underlay.py`.
+
 ## Per-element feed and clean overlay routing
 
 FrameRudiments supports an optional project-level `visualiser_routing` object.

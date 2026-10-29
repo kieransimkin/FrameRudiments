@@ -175,12 +175,12 @@ def _srgb_to_linear(rgb):
 def _oklab(rgb):
     np = _numpy()
     linear = _srgb_to_linear(rgb)
-    lms_l = np.cbrt(.4122214708 * linear[..., 0] + .5363325363 * linear[..., 1] + .0514459929 * linear[..., 2])
-    lms_m = np.cbrt(.2119034982 * linear[..., 0] + .6806995451 * linear[..., 1] + .1073969566 * linear[..., 2])
-    lms_s = np.cbrt(.0883024619 * linear[..., 0] + .2817188376 * linear[..., 1] + .6299787005 * linear[..., 2])
-    return np.stack((.2104542553 * lms_l + .7936177850 * lms_m - .0040720468 * lms_s,
-                     1.9779984951 * lms_l - 2.4285922050 * lms_m + .4505937099 * lms_s,
-                     .0259040371 * lms_l + .7827717662 * lms_m - .8086757660 * lms_s), axis=-1)
+    l_channel = np.cbrt(.4122214708 * linear[..., 0] + .5363325363 * linear[..., 1] + .0514459929 * linear[..., 2])
+    m = np.cbrt(.2119034982 * linear[..., 0] + .6806995451 * linear[..., 1] + .1073969566 * linear[..., 2])
+    s = np.cbrt(.0883024619 * linear[..., 0] + .2817188376 * linear[..., 1] + .6299787005 * linear[..., 2])
+    return np.stack((.2104542553 * l_channel + .7936177850 * m - .0040720468 * s,
+                     1.9779984951 * l_channel - 2.4285922050 * m + .4505937099 * s,
+                     .0259040371 * l_channel + .7827717662 * m - .8086757660 * s), axis=-1)
 
 
 def _hsv(rgb):

@@ -1,6 +1,7 @@
 name: Effect graph GPU matte and chroma parity
 
 on:
+  workflow_call:
   workflow_dispatch:
     inputs:
       benchmarks:

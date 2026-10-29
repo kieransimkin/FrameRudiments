@@ -1,3 +1,26 @@
+# FrameRudiments 0.4.16
+
+- Rename the ambiguous spectral colour-conversion `l` variable to `l_channel`.
+  This resolves Ruff E741 without changing the numerical conversion.
+- The immutable 0.4.15 tag remains preserved. Its package publication was
+  blocked by lint; 0.4.16 reruns the required full CI, packaging and installed-wheel
+  encoding gates before GitHub/PyPI publication.
+- Real GPU parity tests now run in the existing EGL-qualified workflow as a
+  required part of CI and release validation. CPU/font/FFmpeg matrices select
+  the remaining complete suite; both CPU and GPU routes reject skipped tests.
+- Existing [actual underlay frames and video](docs/visualisers.md#isolated-underlay)
+  remain the relevant media; the identifier-only repair adds no visual behaviour.
+
+# FrameRudiments 0.4.15
+
+- Visualiser stages accept `composite.underlay.source`, a named isolated RGBA
+  compositor surface beneath their processed output.
+- Layer providers stay out of the clean composition; alpha order, hidden-source
+  fallback, shape/mode validation and unknown-source rejection are covered by
+  regressions. Existing stage configurations retain their previous behaviour.
+- [Actual synthetic frames and video](docs/visualisers.md#isolated-underlay)
+  demonstrate shrinking/rotating/fading output revealing a persistent underlay.
+
 # FrameRudiments 0.4.14
 
 - Preflight and render now write an atomic `render-progress.json` and flush a

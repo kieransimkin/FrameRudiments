@@ -122,13 +122,14 @@ def test_effect_spec_retains_stage_chroma_key_and_matte(tmp_path):
     }
 
 
-def test_visualiser_matte_provider_is_isolated_but_not_painted(tmp_path):
+@pytest.mark.parametrize("provider", ["matte", "underlay"])
+def test_visualiser_composite_provider_is_isolated_but_not_painted(tmp_path, provider):
     p = project(tmp_path)
     p.data["effects"] = [
         dict(
             id="contained",
             engine="projectm",
-            composite={"matte": {"source": "layer:native", "mode": "alpha"}},
+            composite={provider: {"source": "layer:native"}},
         )
     ]
     compositor = Compositor(p)
@@ -149,6 +150,16 @@ def test_visualiser_matte_provider_is_isolated_but_not_painted(tmp_path):
         and provider_rgb.getpixel((x, y)) != background_rgb.getpixel((x, y))
     )
     assert clean_rgb.getpixel(point) == background_rgb.getpixel(point)
+
+
+def test_unknown_visualiser_underlay_fails_before_runtime_startup(tmp_path):
+    p = project(tmp_path)
+    p.data["effects"] = [dict(
+        id="contained", engine="projectm",
+        composite={"underlay": {"source": "layer:missing"}},
+    )]
+    with pytest.raises(ValueError, match="Unknown visualiser underlay sources"):
+        Compositor(p)
 
 
 def test_pcm_reuses_exact_trim_repeat_chain_and_causal_windows(tmp_path):
