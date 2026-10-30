@@ -72,18 +72,36 @@ def test_native_clock_modulates_matte_transition_progress(project):
         "motion": {"kind": "named", "pattern": "circle"},
         "axis": "x", "range": [0, 1],
     }]
-    static = Compositor(configured(project))
-    animated = Compositor(configured(project, controls=controls))
-    at_frame = 45
-    baseline, _ = static.frame(at_frame, apply_quality=False)
-    changed, _ = animated.frame(at_frame, apply_quality=False)
-    assert isinstance(changed, Image.Image)
-    assert changed.tobytes() != baseline.tobytes()
-    animated.frame(8, apply_quality=False)
-    assert animated.frame(at_frame, apply_quality=False)[0].tobytes() == changed.tobytes()
-    assert animated.effect_graph.nodes["mix"].config["progress"] == .5
-    static.close()
-    animated.close()
+    static_project = configured(project)
+    animated_project = configured(project, controls=controls)
+    # A crisp 0/255 alpha mask reveals identical regions for most progress
+    # values. Use a full feather to verify actual modulation in rendered pixels.
+    static_project.data["effect_graph"]["nodes"][-1]["feather"] = 1.0
+    animated_project.data["effect_graph"]["nodes"][-1]["feather"] = 1.0
+    static = Compositor(static_project)
+    animated = Compositor(animated_project)
+    try:
+        changed_frames = []
+        for at_frame in (12, 25, 35, 45, 65):
+            baseline, _ = static.frame(at_frame, apply_quality=False)
+            changed, _ = animated.frame(at_frame, apply_quality=False)
+            assert isinstance(changed, Image.Image)
+            assert changed.mode == baseline.mode == "RGB"
+            resolved = animated.effect_graph_controls.values(
+                animated.context(at_frame), animated.effect_graph
+            )
+            if resolved[("mix", "progress")] != .5:
+                changed_frames.append((at_frame, changed))
+                if changed.tobytes() != baseline.tobytes():
+                    break
+        assert changed_frames, "native clock did not alter transition progress"
+        assert changed.tobytes() != baseline.tobytes(), "feathered transition ignored native motion"
+        animated.frame(8, apply_quality=False)
+        assert animated.frame(at_frame, apply_quality=False)[0].tobytes() == changed.tobytes()
+        assert animated.effect_graph.nodes["mix"].config["progress"] == .5
+    finally:
+        static.close()
+        animated.close()
 
 
 def test_unknown_third_source_rejected_before_render(project):

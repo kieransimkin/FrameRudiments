@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.5 — 28 October 2026
-**Status:** Active implementation. M3 GPU parity CI is green; M4.1 spectral-band CPU reference and controls added; M4 GPU parity remains pending.
+**Version:** 1.6 — 29 October 2026
+**Status:** Active implementation. M4.2 ModernGL/EGL spectral-displacement parity succeeded; M5.1 merged; M5.2 CPU spectral transitions implemented locally, full CI pending.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -323,3 +323,18 @@ Detailed schema and tests: [effect-graph-m5-1-matte-transitions.md](effect-graph
 `tests/test_effect_graph_gpu_spectral.py` module, which runs in the required
 reusable `effect-graph-parity` workflow. Keep the no-skips assertion for the
 remaining CPU suite and require both CI jobs for acceptance.
+
+
+### M5.2 — spectral colour-band transitions (v20, 29 October 2026)
+
+- [x] `transition_style=spectral` with exactly two inputs and up to eight stable-ID colour bands.
+- [x] Separate RGB/HSV/OKLab selection colours for outgoing/incoming layers, independent reveal timing, source/expanded alpha, arbitrary selection masks and bounded recolouring.
+- [x] Fractional outgoing/incoming XY displacement and stateless spatial echoes (not previous-frame video feedback).
+- [x] Native numeric and categorical DanceRudiment control paths for per-band parameters and transition mix, with frame-local validation.
+- [x] CPU reference, deterministic visual QA generator, benchmark script and new regression tests.
+- [x] CI regression test correction for the over-saturated M5.1 native-matte fixture without changing production defaults.
+- [ ] Full project compositor smoke tests and full CI on the committed result.
+- [ ] GPU transition shader, CPU/GPU parity across RGB/HSV/OKLab, and actual HD/4K/8K measurements. These are distinct from the already verified M4 spectral-*displacement* GPU shaders.
+
+Details: [effect-graph-m5-2-spectral-transitions.md](effect-graph-m5-2-spectral-transitions.md).
+This is a CPU-first transition increment; strict GPU rejects spectral transition nodes until a dedicated implementation is verified.

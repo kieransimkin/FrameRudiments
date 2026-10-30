@@ -3,6 +3,7 @@
 from PIL import Image
 
 from .effect_graph_transition_mattes import transition_matte_weight
+from .effect_graph_transition_spectral import spectral_transition
 
 
 def render_transition(from_image: Image.Image, to_image: Image.Image, config: dict,
@@ -16,6 +17,10 @@ def render_transition(from_image: Image.Image, to_image: Image.Image, config: di
     """
     import numpy as np
 
+    if config.get('transition_style', 'dissolve') == 'spectral':
+        if matte_image is not None:
+            raise ValueError('spectral transition accepts exactly two inputs')
+        return spectral_transition(from_image, to_image, config)
     progress = config.get('progress', 0.0)
     if progress <= 0:
         return from_image.copy()
