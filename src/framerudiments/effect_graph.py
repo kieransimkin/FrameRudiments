@@ -11,6 +11,9 @@ from math import isfinite
 from PIL import Image, ImageColor
 
 from .effect_graph_transitions import render_transition
+from .effect_graph_transition_geometry import (
+    GEOMETRIC_STYLES, GEOMETRY_DEFAULTS, GEOMETRY_RANGES, validate_transition_geometry,
+)
 from .effect_graph_transition_mattes import MATTE_TRANSITION_CHANNELS, validate_transition_matte
 from .effect_graph_transition_spectral import (
     control_apply as spectral_transition_control_apply,
@@ -31,7 +34,7 @@ MAX_NODES = 256
 MAX_INPUTS = 32
 KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement',
          'spectral_displacement', 'composite', 'transition'}
-TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte', 'spectral'}
+TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte', 'spectral', *GEOMETRIC_STYLES}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
     'opacity': {'opacity'},
@@ -43,7 +46,8 @@ CONTROL_TARGETS = {
     'spectral_displacement': {'mix', 'spectral_mode', 'alpha_mode'},
     'transition': {'progress', 'feather', 'center.x', 'center.y', 'transition_style', 'direction',
                    'threshold', 'mask_gamma', 'matte_channel', 'invert', 'key_color.r',
-                   'key_color.g', 'key_color.b', 'key_space', 'tolerance', 'softness'},
+                   'key_color.g', 'key_color.b', 'key_space', 'tolerance', 'softness',
+                   *GEOMETRY_RANGES},
 }
 # Every image-processing node has an independent output-opacity control.
 for _targets in CONTROL_TARGETS.values():
@@ -92,7 +96,8 @@ class EffectGraph:
                 raise ValueError('invalid node')
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
-                               'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma'}:
+                               'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma',
+                               *GEOMETRY_RANGES}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -127,6 +132,7 @@ class EffectGraph:
                     raise ValueError('unsupported transition style')
                 validate_transition_matte(entry)
                 validate_transition_spectral(entry)
+                validate_transition_geometry(entry)
                 if entry.get('direction', 'right') not in TRANSITION_DIRECTIONS:
                     raise ValueError('unsupported transition direction')
                 for name, default, maximum in [('progress', 0.0, 1.0), ('feather', 0.0, 1.0)]:
@@ -170,6 +176,10 @@ class EffectGraph:
 
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)
+        if (node is not None and node.kind == 'transition'
+                and property_name in GEOMETRY_RANGES
+                and node.config.get('transition_style', 'dissolve') not in GEOMETRIC_STYLES):
+            raise ValueError('geometric control target requires geometric transition style')
         if node is None or not isinstance(property_name, str) or (
                 property_name not in CONTROL_TARGETS.get(node.kind, set())
                 and not self._is_extra_key_colour_target(node, property_name)
@@ -224,6 +234,9 @@ class EffectGraph:
                 raise ValueError('transition style choice changes input count')
             if any((style == 'spectral') != ('bands' in node.config) for style in choices):
                 raise ValueError('transition style choice changes spectral bands')
+            if GEOMETRY_RANGES.keys() & node.config.keys():
+                if any(style not in GEOMETRIC_STYLES for style in choices):
+                    raise ValueError('geometric transition settings require geometric style')
 
     def base_control_value(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
@@ -243,6 +256,8 @@ class EffectGraph:
         if property_name.startswith('key_color.'):
             primary = config.get('key_color', (config.get('key_colors') or ['#00ff00'])[0])
             return ImageColor.getrgb(primary)[{'r': 0, 'g': 1, 'b': 2}[property_name[-1]]]
+        if self.nodes[node_id].kind == 'transition' and property_name in GEOMETRY_RANGES:
+            return config.get(property_name, GEOMETRY_DEFAULTS[property_name])
         return config.get(property_name, {'opacity': 1, 'mix': 1, 'feather': 0, 'tolerance': .1,
                                           'softness': .1, 'despill': 0,
                                           'progress': 0, 'threshold': .5, 'mask_gamma': 1,
@@ -285,7 +300,9 @@ class EffectGraph:
                 continue
             if type(value) not in (float, int) or not isfinite(value):
                 raise ValueError('graph control must be finite numeric')
-            if property_name.startswith('center.'):
+            if node.kind == 'transition' and property_name in GEOMETRY_RANGES:
+                bounds = GEOMETRY_RANGES[property_name]
+            elif property_name.startswith('center.'):
                 bounds = (0, 1)
             elif property_name.endswith(('.x', '.y')):
                 bounds = (-4096, 4096)
@@ -332,7 +349,8 @@ class EffectGraph:
                     rgb[channel] = round(value)
                     config['key_color'] = '#%02x%02x%02x' % tuple(rgb)
             else:
-                config[property_name] = value
+                config[property_name] = (round(value) if property_name == 'segments'
+                                         and node.kind == 'transition' else value)
         results = {}
         if gpu_backend is not None:
             # Last completed evaluation only; no feedback into deterministic effects.
@@ -407,12 +425,13 @@ class EffectGraph:
                     # Revalidate after resolving DanceRudiment overrides.
                     validate_transition_matte(config)
                     validate_transition_spectral(config)
-                    if config.get('transition_style') == 'spectral' and gpu_backend is not None:
+                    validate_transition_geometry(config)
+                    if config.get('transition_style') in ({'spectral'} | GEOMETRIC_STYLES) and gpu_backend is not None:
                         # No GPU shader for this style yet. Never report a CPU
                         # transition as a successful strict GPU operation.
                         if gpu_strict:
                             from .effect_graph_gpu import GPUUnsupported
-                            raise GPUUnsupported('spectral transition GPU shader is not implemented')
+                            raise GPUUnsupported('spectral/geometric transition GPU shader is not implemented')
                         gpu_backend.last_dispatch['cpu_fallbacks'] += 1
                     result = render_transition(
                         inputs[0], inputs[1], config,

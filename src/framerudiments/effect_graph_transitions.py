@@ -4,6 +4,7 @@ from PIL import Image
 
 from .effect_graph_transition_mattes import transition_matte_weight
 from .effect_graph_transition_spectral import spectral_transition
+from .effect_graph_transition_geometry import GEOMETRIC_STYLES, geometric_transition
 
 
 def render_transition(from_image: Image.Image, to_image: Image.Image, config: dict,
@@ -17,6 +18,10 @@ def render_transition(from_image: Image.Image, to_image: Image.Image, config: di
     """
     import numpy as np
 
+    if config.get('transition_style', 'dissolve') in GEOMETRIC_STYLES:
+        if matte_image is not None:
+            raise ValueError('geometric transition accepts exactly two inputs')
+        return geometric_transition(from_image, to_image, config)
     if config.get('transition_style', 'dissolve') == 'spectral':
         if matte_image is not None:
             raise ValueError('spectral transition accepts exactly two inputs')

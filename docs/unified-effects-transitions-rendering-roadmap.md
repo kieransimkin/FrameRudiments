@@ -338,3 +338,19 @@ remaining CPU suite and require both CI jobs for acceptance.
 
 Details: [effect-graph-m5-2-spectral-transitions.md](effect-graph-m5-2-spectral-transitions.md).
 This is a CPU-first transition increment; strict GPU rejects spectral transition nodes until a dedicated implementation is verified.
+
+
+### M5.3 — Geometric transition families (v21, 30 October 2026)
+
+- [x] Five deterministic two-source CPU styles: zoom, rotate, polar, kaleidoscope and liquid.
+- [x] Validated control schema: progress, strength, zoom, rotation, twist, segments,
+  frequency, amplitude, phase, centre and direction.
+- [x] Native DanceRudiment numeric modulation through the existing graph adapter.
+- [x] Tile-bounded alpha-correct bilinear transforms with exact endpoints and
+  explicit transparent-border policy.
+- [x] Fork/composite, random-access and colour-fringe regression tests; visual
+  evidence generator and bounded CPU benchmarking.
+- [ ] Full project-render and strict CI matrix confirmation after merge.
+- [ ] Optional ModernGL GPU implementation and measured HD/4K/8K parity (M8).
+
+Details: [effect-graph-m5-3-geometric-transitions.md](effect-graph-m5-3-geometric-transitions.md).
