@@ -1,0 +1,103 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {
+        "id": "layer:native",
+        "type": "source"
+      },
+      {
+        "id": "warm",
+        "type": "layer_style",
+        "inputs": [
+          "layer:native"
+        ],
+        "style_type": "gradient_overlay",
+        "gradient_space": "oklab",
+        "gradient_angle": 35,
+        "gradient_stops": [
+          {
+            "id": "cold",
+            "position": 0,
+            "color": "#18d7ff"
+          },
+          {
+            "id": "hot",
+            "position": 1,
+            "color": "#ff458f"
+          }
+        ]
+      },
+      {
+        "id": "mesh",
+        "type": "layer_style",
+        "inputs": [
+          "layer:native"
+        ],
+        "style_type": "pattern_overlay",
+        "pattern_kind": "grid",
+        "pattern_scale": [
+          18,
+          18
+        ],
+        "style_color": "#fff0a0",
+        "pattern_background_opacity": 0,
+        "style_output": "effect",
+        "style_strength": 0.4
+      },
+      {
+        "id": "combined",
+        "type": "composite",
+        "inputs": [
+          "warm",
+          "mesh"
+        ],
+        "mode": "screen"
+      }
+    ],
+    "output": "combined"
+  },
+  "effect_graph_controls": [
+    {
+      "id": "turn",
+      "node": "warm",
+      "property": "gradient_angle",
+      "motion": {
+        "kind": "named",
+        "pattern": "circle"
+      },
+      "axis": "x",
+      "range": [
+        -90,
+        90
+      ]
+    },
+    {
+      "id": "hot-hue",
+      "node": "warm",
+      "property": "gradient_stops.hot.color.g",
+      "motion": {
+        "kind": "named",
+        "pattern": "circle"
+      },
+      "axis": "y",
+      "range": [
+        32,
+        224
+      ]
+    },
+    {
+      "id": "grid-move",
+      "node": "mesh",
+      "property": "pattern_offset.x",
+      "motion": {
+        "kind": "named",
+        "pattern": "circle"
+      },
+      "axis": "y",
+      "range": [
+        -18,
+        18
+      ]
+    }
+  ]
+}

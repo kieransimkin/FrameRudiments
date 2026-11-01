@@ -10,8 +10,10 @@ from collections.abc import Mapping
 from math import isfinite
 from PIL import Image, ImageColor
 
+from .effect_graph_blend import COMPOSITE_MODES, composite_blend
 from .effect_graph_layer_styles import (
     STYLE_CONTROLS, STYLE_ENUMS, STYLE_FIELDS, render_layer_style,
+    style_control_valid, validate_style_inputs,
     style_control_apply, style_control_base, style_parameter_descriptors, validate_style,
 )
 from .effect_graph_transitions import render_transition
@@ -75,7 +77,7 @@ ENUM_CONTROLS = {
                    'matte_channel': MATTE_TRANSITION_CHANNELS, 'invert': frozenset({True, False}),
                    'key_space': KEY_SPACES, 'alpha_mode': SPECTRAL_ALPHA_MODES},
     'spectral_displacement': {'spectral_mode': SPECTRAL_MODES, 'alpha_mode': SPECTRAL_ALPHA_MODES},
-    'composite': {'mode': frozenset({'over', 'add'})},
+    'composite': {'mode': COMPOSITE_MODES},
 }
 ENUM_DEFAULTS = {'alpha_source': 'current', 'mask_combine': 'multiply', 'matte_channel': 'alpha', 'invert': False,
                  'key_space': 'rgb', 'transition_style': 'dissolve', 'direction': 'right', 'mode': 'over',
@@ -127,8 +129,10 @@ class EffectGraph:
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
-            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement', 'spectral_displacement', 'layer_style'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != (3 if entry.get('transition_style') == 'matte' else 2)):
+            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement', 'spectral_displacement'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != (3 if entry.get('transition_style') == 'matte' else 2)):
                 raise ValueError(f'wrong input count for {kind}')
+            if kind == 'layer_style':
+                validate_style_inputs(entry, len(inputs))
             opacity = entry.get('opacity', 1.0)
             if type(opacity) not in (int, float) or not isfinite(opacity) or not 0 <= opacity <= 1:
                 raise ValueError('opacity must be finite and between 0 and 1')
@@ -164,7 +168,8 @@ class EffectGraph:
                         or any(type(v) not in (float, int) or not isfinite(v) or not 0 <= v <= 1
                                for v in center)):
                     raise ValueError('invalid transition center')
-            if entry.get('mode', 'over') not in {'over', 'add'}:
+            accepted_modes = COMPOSITE_MODES if kind == 'composite' else {'over', 'add'}
+            if not isinstance(entry.get('mode', 'over'), str) or entry.get('mode', 'over') not in accepted_modes:
                 raise ValueError('unsupported blend mode')
             self.nodes[key] = Node(key, kind, tuple(inputs), entry)
         self.output = spec['output']
@@ -196,6 +201,10 @@ class EffectGraph:
 
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)
+        if node is not None and node.kind == 'layer_style':
+            if property_name == 'opacity' or style_control_valid(node.config, property_name):
+                return
+            raise ValueError('unknown or inapplicable layer_style control target')
         if (node is not None and node.kind == 'transition'
                 and isinstance(property_name, str) and property_name.startswith('timing.')
                 and isinstance(node.config.get('timing'), dict)
@@ -258,6 +267,9 @@ class EffectGraph:
                 or any(v not in accepted for v in choices)
                 or len({(type(v), v) for v in choices}) != len(choices)):
             raise ValueError('invalid categorical graph control choices')
+        if node.kind == 'layer_style' and property_name in {'style_type', 'pattern_kind'}:
+            for value in choices:
+                validate_style_inputs(style_control_apply(node.config, property_name, value), len(node.inputs))
         # A transition's input arity is immutable; categorical style changes
         # cannot swap a two-input effect into a three-input matte node.
         if node.kind == 'transition' and property_name == 'transition_style':
@@ -428,6 +440,10 @@ class EffectGraph:
                     source_beat=getattr(context, 'source_beat', None),
                 )
                 configs.setdefault(key, dict(node.config))['progress'] = progress
+        for key, config in configs.items():
+            if self.nodes[key].kind == 'layer_style':
+                validate_style(config)
+                validate_style_inputs(config, len(self.nodes[key].inputs))
         results = {}
         if gpu_backend is not None:
             # Last completed evaluation only; no feedback into deterministic effects.
@@ -446,7 +462,7 @@ class EffectGraph:
                 result = sources[key].copy()
             else:
                 inputs = [results[name] for name in node.inputs]
-                if any(im.size != inputs[0].size for im in inputs):
+                if kind != 'layer_style' and any(im.size != inputs[0].size for im in inputs):
                     raise ValueError('graph input dimensions must match')
                 if kind == 'copy':
                     result = inputs[0].copy()
@@ -489,7 +505,8 @@ class EffectGraph:
                     if gpu_backend is not None:
                         gpu_backend.last_dispatch['cpu_fallbacks'] += 1
                     result = render_layer_style(
-                        inputs[0], config, original_alpha=original_alphas[node.inputs[0]]
+                        inputs[0], config, original_alpha=original_alphas[node.inputs[0]],
+                        pattern_image=inputs[1] if len(inputs) == 2 else None,
                     )
                 elif kind == 'chromatic_displacement':
                     result = _chromatic_displacement(inputs[0], config)
@@ -529,6 +546,8 @@ class EffectGraph:
                     for layer in inputs[1:]:
                         if config.get('mode', 'over') == 'over':
                             result = Image.alpha_composite(result, layer)
+                        elif config.get('mode', 'over') != 'add':
+                            result = composite_blend(result, layer, config['mode'])
                         else:
                             # Additive blend in premultiplied space, then unassociate.
                             import numpy as np

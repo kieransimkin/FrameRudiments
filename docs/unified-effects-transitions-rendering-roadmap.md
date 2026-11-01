@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.11 — 1 November 2026
-**Status:** Active implementation. M6.1–M6.2 merged; M6.3 CPU relief/extrusion implemented in v25. Full native/CI acceptance and GPU-native layer styles remain separately gated.
+**Version:** 1.12 — 1 November 2026
+**Status:** Active implementation. M6.3 merged; M6.4 CPU overlays/blending implemented in v26. Full native/CI acceptance and GPU-native styles remain separately gated.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -438,3 +438,21 @@ The distance-field area cap and sweep work limits remain explicit; do not infer
 unrestricted full-frame 4K/8K support or native-mesh extrusion.
 
 Next: **M6.4 — alpha-masked colour/gradient/pattern overlays and blend modes**.
+
+
+## M6.4 — Alpha-masked overlays and blending (v26, 1 November 2026)
+
+- [x] Colour, five gradient geometries and four procedural pattern overlays.
+- [x] Live RGBA graph-source textures with repeat/mirror/clamp and alpha-safe bilinear filtering.
+- [x] Stable-ID gradient stops: position, colour and opacity control; sRGB/linear-sRGB/OKLab interpolation.
+- [x] Sixteen shared colour-blend functions for overlays and ordered graph composites.
+- [x] Coverage-preserving combined paint and original/current alpha effect-only exports.
+- [x] Native binding target validation, metadata, branch/chain reuse and row-tiled bounded kernels.
+- [x] Focused numerical, alpha, graph, bounds and real visual-regression tests.
+- [ ] Execute supplied real-project/native-control acceptance and full repository CI on merged v26.
+- [ ] GPU-native overlay/blend variants and cross-vendor image parity (later GPU milestone).
+
+See [M6.4 specification](effect-graph-m6-4-overlays-and-blending.md) and
+`examples/effect-graph-m6-4-overlays.json`. The next planned M6.5 work consolidates
+style-control/capability and bounds reporting with cross-renderer acceptance;
+it must not treat these CPU kernels as GPU-resident implementations.

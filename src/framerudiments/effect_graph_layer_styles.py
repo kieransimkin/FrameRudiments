@@ -1,4 +1,4 @@
-"""M6.1–M6.3 alpha-derived styles for any unary effect-graph surface.
+"""M6.1–M6.4 alpha-derived styles for any unary effect-graph surface.
 
 CPU reference in the existing display-referred, straight-RGBA contract. Shape
 comes exclusively from selected alpha; RGB under transparency is never sampled
@@ -20,10 +20,18 @@ from .effect_graph_layer_relief import (
     RELIEF_TYPES, SWEEP_TYPES, relief_bounds, render_lighting, satin_mask, sweep_surface,
 )
 
-STYLE_TYPES = frozenset({'drop_shadow', 'inner_shadow', 'outer_glow', 'inner_glow', 'outline'}) | RELIEF_TYPES
-COLOUR_FIELDS = frozenset({'style_color'}) | RELIEF_COLOURS
+from .effect_graph_layer_overlays import (
+    OVERLAY_TYPES, OVERLAY_COLOURS, OVERLAY_ENUMS, OVERLAY_RANGES, OVERLAY_DEFAULTS,
+    OVERLAY_CONTROLS, overlay_control_base, overlay_control_apply,
+    overlay_parameter_descriptors, render_overlay, requires_texture, stop_control_parts,
+    validate_overlay,
+)
+
+STYLE_TYPES = frozenset({'drop_shadow', 'inner_shadow', 'outer_glow', 'inner_glow', 'outline'}) | RELIEF_TYPES | OVERLAY_TYPES
+COLOUR_FIELDS = frozenset({'style_color'}) | RELIEF_COLOURS | OVERLAY_COLOURS
 STYLE_ENUMS = {
     **RELIEF_ENUMS,
+    **OVERLAY_ENUMS,
     'style_type': STYLE_TYPES,
     'style_output': frozenset({'combined', 'effect'}),
     'outline_position': frozenset({'outer', 'inner', 'center'}),
@@ -31,6 +39,7 @@ STYLE_ENUMS = {
 }
 STYLE_RANGES = {
     **RELIEF_RANGES,
+    **OVERLAY_RANGES,
     'style_width': (0, 64),
     'style_blur': (0, 128),
     'style_spread': (-64, 64),
@@ -42,6 +51,7 @@ STYLE_RANGES = {
 }
 STYLE_DEFAULTS = {
     **RELIEF_DEFAULTS,
+    **OVERLAY_DEFAULTS,
     'style_type': 'drop_shadow', 'style_output': 'combined',
     'outline_position': 'outer', 'alpha_source': 'current',
     'style_width': 3, 'style_blur': 0, 'style_spread': 0,
@@ -68,6 +78,7 @@ def _colour(value, name='style_color'):
 def validate_style(config):
     if not isinstance(config, dict) or set(config) - STYLE_FIELDS - _GRAPH_FIELDS:
         raise ValueError('unknown layer_style property')
+    validate_overlay(config)
     for name, accepted in STYLE_ENUMS.items():
         value = config.get(name, STYLE_DEFAULTS[name])
         if not isinstance(value, str) or value not in accepted:
@@ -85,6 +96,8 @@ def validate_style(config):
 
 
 def style_control_base(config, name):
+    if name in OVERLAY_CONTROLS or stop_control_parts(config, name) is not None:
+        return overlay_control_base(config, name)
     if name not in STYLE_CONTROLS:
         raise ValueError('unknown layer_style control target')
     if name.startswith('style_offset.'):
@@ -97,6 +110,8 @@ def style_control_base(config, name):
 
 def style_control_apply(config, name, value):
     """Frame-local updates; never mutate authored nested vectors or colours."""
+    if name in OVERLAY_CONTROLS or stop_control_parts(config, name) is not None:
+        return overlay_control_apply(config, name, value)
     if name not in STYLE_CONTROLS:
         raise ValueError('unknown layer_style control target')
     if name in STYLE_ENUMS:
@@ -127,8 +142,10 @@ def style_parameter_descriptors(config=None):
     """
     config = config or {}
     validate_style(config)
-    descriptors = {}
+    descriptors = overlay_parameter_descriptors(config)
     for name in sorted(STYLE_CONTROLS):
+        if name in OVERLAY_CONTROLS:
+            continue
         item = {'default': style_control_base(config, name), 'animatable': True}
         if name in STYLE_ENUMS:
             item.update(type='enum', choices=sorted(STYLE_ENUMS[name]), interpolation='discrete')
@@ -179,6 +196,8 @@ def style_bounds(alpha, config):
     if box is None:
         return None
     kind = config.get('style_type', STYLE_DEFAULTS['style_type'])
+    if kind in OVERLAY_TYPES:
+        return box
     if kind in RELIEF_TYPES:
         return relief_bounds(alpha, config)
     width = config.get('style_width', 3)
@@ -236,7 +255,7 @@ def _inner_surface(image, inner_mask, reference, colour, strength, fill):
     return result
 
 
-def render_layer_style(image, config, *, original_alpha=None):
+def render_layer_style(image, config, *, original_alpha=None, pattern_image=None):
     """Process one immutable RGBA input; return a same-size independent image.
 
     Styles extend beyond the source ink bounds, but the project canvas remains
@@ -254,6 +273,10 @@ def render_layer_style(image, config, *, original_alpha=None):
                 or original_alpha.size != image.size):
             raise ValueError('layer_style original alpha must be a same-size L image')
         selected = original_alpha
+    if config.get('style_type') in OVERLAY_TYPES:
+        return render_overlay(image, selected, config, pattern_image=pattern_image)
+    if pattern_image is not None:
+        raise ValueError('only texture patterns accept a second input')
     effect_only = config.get('style_output', 'combined') == 'effect'
     fill = config.get('fill_opacity', 1)
     strength = config.get('style_strength', 1)
@@ -306,3 +329,17 @@ def render_layer_style(image, config, *, original_alpha=None):
     if outer.getbbox() is None:
         return source
     return Image.alpha_composite(_tint(outer, colour, strength), source)
+
+
+def style_control_valid(config, name):
+    if not isinstance(name, str):
+        return False
+    if name.startswith('gradient_stops.'):
+        return config.get('style_type') == 'gradient_overlay' and stop_control_parts(config, name) is not None
+    return name in STYLE_CONTROLS
+
+
+def validate_style_inputs(config, count):
+    expected = 2 if requires_texture(config) else 1
+    if count != expected:
+        raise ValueError(f'layer_style requires {expected} input(s) for this style')
