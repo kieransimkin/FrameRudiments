@@ -354,3 +354,23 @@ This is a CPU-first transition increment; strict GPU rejects spectral transition
 - [ ] Optional ModernGL GPU implementation and measured HD/4K/8K parity (M8).
 
 Details: [effect-graph-m5-3-geometric-transitions.md](effect-graph-m5-3-geometric-transitions.md).
+
+### M5.4 — Multi-source transition chains and independent input effects (v22)
+
+- [x] Declarative `transition_chain` expansion into the ordinary effect DAG,
+  preserving source rendering and avoiding a second execution engine.
+- [x] Two to eight ordered input sources with one individually controlled
+  transition stage per adjacent input; the output is reusable by other nodes.
+- [x] Up to four optional unary preprocessing effects per input, with stable
+  compiled node addresses for native DanceRudiment controls.
+- [x] Arbitrary earlier graph outputs can serve as inputs, including nested
+  chains, independently processed forks and track-matte inputs.
+- [x] Full graph validation (cycles, missing inputs, IDs, limits, parameter
+  ranges), deterministic random-access rendering and source immutability tests.
+- [x] CPU chain-vs-explicit-DAG parity, parallel branch tests, generated-project
+  integration fixtures and reproducible visual evidence tooling.
+- [ ] Run full Windows/Linux CI and real-project integration in the complete
+  repository after merge; optional GPU acceleration belongs to M8.
+
+Details: [effect-graph-m5-4-transition-chains.md](effect-graph-m5-4-transition-chains.md).
+M5.5 follows with beat-locked and non-monotonic progress presets.

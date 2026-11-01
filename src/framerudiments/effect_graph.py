@@ -11,6 +11,7 @@ from math import isfinite
 from PIL import Image, ImageColor
 
 from .effect_graph_transitions import render_transition
+from .effect_graph_transition_chains import expand_transition_chains
 from .effect_graph_transition_geometry import (
     GEOMETRIC_STYLES, GEOMETRY_DEFAULTS, GEOMETRY_RANGES, validate_transition_geometry,
 )
@@ -85,6 +86,7 @@ class EffectGraph:
     """Validate a bounded DAG and execute using immutable-by-contract RGBA inputs."""
 
     def __init__(self, spec: dict):
+        spec, self.chain_expansions = expand_transition_chains(spec, max_nodes=MAX_NODES)
         if not isinstance(spec, dict) or set(spec) != {'nodes', 'output'}:
             raise ValueError('graph must contain exactly nodes and output')
         entries = spec['nodes']
