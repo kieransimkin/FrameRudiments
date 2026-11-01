@@ -1,0 +1,18 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {"id": "frame", "type": "source"},
+      {"id": "sorted", "type": "raster_effect", "inputs": ["frame"], "raster_type": "pixel_sort", "sort_key": "luminance", "sort_low": 0.3, "sort_high": 0.85, "sort_span": 128},
+      {"id": "display", "type": "raster_effect", "inputs": ["frame"], "raster_type": "crt", "crt_curvature": 0.12, "scan_strength": 0.4, "crt_mask_strength": 0.3},
+      {"id": "switch", "type": "transition", "inputs": ["sorted", "display"], "transition_style": "dissolve", "progress": 0.5},
+      {"id": "tearing", "type": "raster_effect", "inputs": ["switch"], "raster_type": "glitch", "glitch_density": 0.2, "glitch_offset": [14, 0], "glitch_chromatic": 3, "raster_seed": 17, "raster_mix": 0.5}
+    ],
+    "output": "tearing"
+  },
+  "effect_graph_controls": [
+    {"id": "sort-mix", "node": "sorted", "property": "raster_mix", "motion": {"kind": "named", "pattern": "circle"}, "axis": "x", "range": [0, 1]},
+    {"id": "branch-blend", "node": "switch", "property": "progress", "motion": {"kind": "named", "pattern": "circle", "rate": 0.25}, "axis": "x", "range": [0, 1]},
+    {"id": "tear-state", "node": "tearing", "property": "raster_phase", "motion": {"kind": "named", "pattern": "circle"}, "axis": "x", "range": [0, 16]},
+    {"id": "scan-travel", "node": "display", "property": "scan_phase", "motion": {"kind": "named", "pattern": "circle"}, "axis": "y", "range": [0, 1]}
+  ]
+}

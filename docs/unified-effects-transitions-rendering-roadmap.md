@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.14 — 1 November 2026
-**Status:** Active implementation. M6.5 merged; v28 adds M7.3 reusable CPU spatial warps. Native/full CI and GPU-native spatial effects remain separately gated.
+**Version:** 1.15 — 1 November 2026
+**Status:** M7.3 merged. v29 implements M7.4 CPU pixel, scanline, CRT and glitch effects. Native/full CI acceptance and GPU-native raster kernels remain separate gates.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -498,3 +498,21 @@ validated native control paths, descriptors and topology-safe category choices.
 Details: [effect-graph-m7-3-spatial-warps.md](effect-graph-m7-3-spatial-warps.md).
 M7.4 glitch/pixel effects and M7.5 procedural control textures remain next; this
 change does not mark all of M7 complete.
+
+
+### M7.4 — stylised pixel and raster effects (v29)
+
+- [x] Unary `raster_effect` node: pixelation, segmented stable pixel sorting,
+  ordered/noise dithering, pixel-integrated scanlines, CRT styling and seeded glitch bands.
+- [x] Alpha-safe cell means, bilinear resampling, RGB splitting and fractional mix;
+  original-alpha lineage follows spatial operations and sort permutations.
+- [x] Native numeric/categorical controls, descriptors, reachable-node manifest,
+  fork/chain integration, resource limits and explicit CPU/GPU policy.
+- [x] Focused reference tests, real native acceptance cases, executable example,
+  deterministic rendered evidence and benchmark tooling.
+- [ ] Run the new native cases and complete cross-platform lint/test CI.
+- [ ] GPU-native raster kernels, cross-vendor parity and GPU-resident DAG (M8).
+
+See [M7.4 specification](effect-graph-m7-4-raster-effects.md). These are stylised
+image operations, not physical CRT emulation, video-codec corruption or temporal
+datamoshing. M7.5 procedural texture/control-field nodes are next.
