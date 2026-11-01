@@ -51,7 +51,22 @@ jobs:
               print('OpenGL version:', gpu.capabilities.context_version)
           PY
       - name: Run real GPU-versus-CPU parity tests
-        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py
+        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py --junitxml=gpu-transfer-results.xml
+      - name: Require real GPU transport and parity tests with no skips
+        run: |
+          python - <<'PYTEST'
+          import xml.etree.ElementTree as ET
+          root = ET.parse('gpu-transfer-results.xml').getroot()
+          tests = root.findall('.//testcase')
+          if not tests:
+              raise SystemExit('No real GPU tests executed')
+          if root.findall('.//skipped') or root.findall('.//failure') or root.findall('.//error'):
+              raise SystemExit('GPU parity cannot pass with skipped/failed tests')
+          transport = [t for t in tests if 'test_effect_graph_gpu_transport' in t.attrib.get('classname', '')]
+          if len(transport) < 2:
+              raise SystemExit('M8.2 real GPU transport tests were not collected')
+          print(f'{len(tests)} GPU tests, {len(transport)} M8.2 transport checks; none skipped')
+          PYTEST
       - name: Benchmark spectral HD GPU and CPU (end-to-end)
         run: |
           python integration/benchmark_effect_graph_spectral_gpu.py --size hd --backend egl --cpu --repeats 2 --output spectral-gpu-benchmark-hd.json

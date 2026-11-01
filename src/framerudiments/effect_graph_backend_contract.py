@@ -12,6 +12,8 @@ from copy import deepcopy
 from dataclasses import asdict, dataclass
 from importlib import metadata, util
 
+from .effect_graph_surface_transport import bridge_contract, transport_capabilities
+
 GPU_KINDS = frozenset({'matte', 'chroma_key', 'spectral_displacement'})
 CPU_EFFECTS = frozenset({'layer_style', 'spatial_warp', 'raster_effect', 'procedural_field'})
 HOST_KINDS = frozenset({'source', 'copy', 'opacity', 'composite', 'chromatic_displacement', 'transition'})
@@ -210,6 +212,7 @@ def backend_registry(gpu_backend=None):
                                     'key_colours': MAX_GPU_KEY_COLOURS,
                                     'input_mattes': MAX_GPU_INPUT_MATTES}},
         },
+        'surface_transport': transport_capabilities(),
         'node_kinds': sorted(KNOWN_KINDS),
         'external_backends': [],
         'probe_policy': 'no context creation, shader compilation, rendering or model downloads',
@@ -359,6 +362,10 @@ def plan_effect_graph(graph, source_surfaces, *, mode='cpu', gpu_backend=None,
             'lifetime': {'birth_step': index[key], 'last_consumer_step': last,
                          'consumer_edges': len(consumers[key]), 'consumers': list(consumers[key])},
             'parameters': deepcopy(node.config),
+            'transport': {**bridge_contract(surface.size).describe(),
+                          'uploads': req.upload_count if selected == 'gpu_bridge' else 0,
+                          'readbacks': req.readback_count if selected == 'gpu_bridge' else 0,
+                          'contract': 'per-node RGBA8 bridge; not a resident device texture'},
         }
     # The current executor keeps ALL results and lineages until return. Report
     # that reality, not the smaller memory usage a future last-use release could achieve.

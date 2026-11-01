@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.17 — 1 November 2026
-**Status:** M7.5 merged. v31 implements M8.1 backend/surface/resource contracts and allocation-free preflight. GPU-resident execution, new kernels and full native/CI acceptance remain separately gated.
+**Version:** 1.18 — 1 November 2026
+**Status:** M8.1 merged; v32 implements M8.2 explicit surface byte transport and opt-in alpha/linear-sRGB host conversions. Required real GPU transport parity and native/full CI acceptance remain separate gates; GPU-resident execution is not implemented.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -554,3 +554,24 @@ contracts, followed by GPU graph execution and bounded resource reuse.
 Details: [effect-graph-m8-1-backend-contracts.md](effect-graph-m8-1-backend-contracts.md).
 The planner reports existing host operations under legacy GPU mode honestly; it
 is not a new executor, a whole-process memory bound or proof of shader parity.
+
+
+### M8.2 — explicit byte transport, alpha and colour format handling (v32)
+
+M8.1's existing graph-port contract remains host **straight RGBA8** and
+display-referred. M8.2 adds independent validated byte-payload descriptions for
+RGBA8 straight/premultiplied, R8 coverage and explicitly declared linear-sRGB
+float32 staging. Row layout, padding, association, colour-space assumptions and
+low-alpha precision loss are explicit; no inference, new graph port or shader
+colour conversion occurs.
+
+- [x] Frozen payload/stride/format contracts and host conversion routines.
+- [x] Actual ModernGL RGBA8 upload/readback validated through that contract;
+      per-graph-sample physical payload counters.
+- [x] Registry/plan report physical transfer format and colour/alpha policy.
+- [x] CPU format/row/alpha tests and a required real EGL transfer parity gate.
+- [ ] Merge-time native Project/Compositor tests, Ruff and full repository suite.
+- [ ] R8 device alpha, float device surfaces, GPU-resident scheduling and
+      texture reuse; separate implementation and parity gates in M8.3–M8.5.
+
+See [effect-graph-m8-2-surface-transport.md](effect-graph-m8-2-surface-transport.md).

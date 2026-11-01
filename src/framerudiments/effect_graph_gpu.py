@@ -15,6 +15,10 @@ from dataclasses import dataclass
 import math
 from PIL import Image, ImageColor
 
+from .effect_graph_surface_transport import (
+    TransportPayload, bridge_contract, pack_image, unpack_image,
+)
+
 from .effect_graph_backend_contract import (
     MAX_GPU_MORPH_RADIUS, MAX_GPU_GAUSSIAN_RADIUS,
     MAX_GPU_KEY_COLOURS as MAX_GPU_KEY_COLOURS,
@@ -268,6 +272,7 @@ class GLMatteBackend:
             renderer=str(self.ctx.info.get('GL_RENDERER', 'unknown')),
         )
         self.last_dispatch = {'gpu_nodes': 0, 'cpu_fallbacks': 0}
+        self.begin_transfer_sample()
         self.closed = False
 
     @staticmethod
@@ -302,14 +307,50 @@ class GLMatteBackend:
             self._vaos[name] = self.ctx.vertex_array(program, [])
         return self._programs[name], self._vaos[name]
 
+    def begin_transfer_sample(self):
+        """Reset measured *payload* bytes, not reported total VRAM/RSS usage."""
+        self.last_transport = {
+            'schema': 'framerudiments.surface-transfer-sample.v1',
+            'upload_bytes': 0, 'readback_bytes': 0,
+            'uploads': 0, 'readbacks': 0,
+            'format': 'rgba8', 'alpha': 'straight',
+            'colour_space': 'display-referred', 'row_order': 'top-first',
+            'row_alignment': 1, 'gpu_resident_graph': False,
+            'measured_vram': False,
+        }
+
+    def _record_transfer(self, direction, count):
+        report = getattr(self, 'last_transport', None)
+        if report is None:
+            return
+        if direction == 'upload':
+            report['upload_bytes'] += count
+            report['uploads'] += 1
+        elif direction == 'readback':
+            report['readback_bytes'] += count
+            report['readbacks'] += 1
+        else:
+            raise ValueError('unknown transfer direction')
+
     def _input(self, image):
-        if image.mode != 'RGBA':
-            raise ValueError('GPU input must be RGBA')
-        texture = self.ctx.texture(image.size, 4, image.tobytes(), alignment=1)
+        # Same on-wire bytes as the original Pillow RGBA8 bridge. A typed
+        # contract prevents implicit premultiplication, gamma/ICC conversion,
+        # row flipping or stride padding from entering the shader path.
+        contract = bridge_contract(image.size)
+        payload = pack_image(image, contract)
+        texture = self.ctx.texture(contract.size, 4, payload.data, alignment=1)
         texture.filter = (self._moderngl.NEAREST, self._moderngl.NEAREST)
         texture.repeat_x = False
         texture.repeat_y = False
+        self._record_transfer('upload', len(payload.data))
         return texture
+
+    def _readback_rgba(self, framebuffer, size):
+        contract = bridge_contract(size)
+        payload = TransportPayload(contract, framebuffer.read(components=4, alignment=1))
+        image = unpack_image(payload)
+        self._record_transfer('readback', len(payload.data))
+        return image
 
     def _target(self, size):
         texture = self.ctx.texture(size, 4)
@@ -404,7 +445,7 @@ class GLMatteBackend:
                                dict(original_mode=int(config.get('alpha_source','current')=='original'),
                                     inverted=int(config.get('invert',False)),
                                     mask_opacity=config.get('mask_opacity',1)), allocations)
-            return Image.frombytes('RGBA', size, fb.read(components=4, alignment=1))
+            return self._readback_rgba(fb, size)
         finally:
             for resource in reversed(allocations):
                 resource.release()
@@ -451,7 +492,7 @@ class GLMatteBackend:
                                {'source_tex': fg, 'mask_tex': mask, 'original_tex': origin}, size,
                                dict(original_mode=int(config.get('alpha_source','current')=='original'),
                                     despill=config.get('despill',0), nkey=len(colors)), allocations)
-            return Image.frombytes('RGBA', size, fb.read(components=4, alignment=1))
+            return self._readback_rgba(fb, size)
         finally:
             for resource in reversed(allocations):
                 resource.release()

@@ -269,7 +269,7 @@ def render_spectral(backend, image: Image.Image, config: dict) -> Image.Image:
              {"original_tex": src, "processed_tex": textures[last]},
              {"clip_to_source": int(config.get("alpha_mode", "expanded") == "source"),
               "amount": config.get("mix", 1.0)})
-        return Image.frombytes("RGBA", size, final_fb.read(components=4, alignment=1))
+        return backend._readback_rgba(final_fb, size)
     except MemoryError as exc:
         raise GPUUnsupported("Spectral GPU allocation exhausted") from exc
     finally:
