@@ -595,3 +595,14 @@ GPU-resident processing.
 - [ ] GPU-resident fork scheduling, persistent surfaces, pooled textures and cross-vendor runs (M8.4–M8.5).
 
 See [M8.3 implementation specification](effect-graph-m8-3-gpu-kernels.md).
+
+### M8.4 — first GPU-resident closed DAG island (v34)
+
+- [x] Resident source/copy/opacity/common-transition/over-composite graph execution, immutable shared fork textures, one final readback.
+- [x] Conservative budget preflight before allocations; per-frame target recycling and guaranteed cleanup.
+- [x] Resolved DanceRudiment controls, zero-shader endpoint aliasing, transfer and peak-live telemetry.
+- [x] Required EGL parity tests for forked output and budget failure; legacy graph fallback.
+- [ ] Expand resident kernels to mattes, keys, spectral, spatial and filter nodes; mixed-graph scheduling and persistent texture pool.
+- [ ] Measured VRAM and cross-vendor 4K/8K performance, full CI acceptance.
+
+See [M8.4 GPU residency](effect-graph-m8-4-residency.md).

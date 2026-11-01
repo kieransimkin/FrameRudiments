@@ -609,6 +609,12 @@ class EffectGraph:
             gpu_backend.last_dispatch = {'gpu_nodes': 0, 'cpu_fallbacks': 0}
             if callable(getattr(gpu_backend, 'begin_transfer_sample', None)):
                 gpu_backend.begin_transfer_sample()
+        # M8.4 closed GPU island. Unsupported DAGs keep their proven v33 path.
+        if gpu_backend is not None and style_report is None and callable(
+                getattr(gpu_backend, 'render_resident_graph', None)):
+            from .effect_graph_gpu_resident import supported
+            if supported(self, configs):
+                return gpu_backend.render_resident_graph(self, sources, configs)
         # Carry each branch's source alpha as immutable metadata. Unary effects,
         # including mattes and colour keys, inherit it through arbitrary forks.
         # A merge/transition starts a new source silhouette at its output.

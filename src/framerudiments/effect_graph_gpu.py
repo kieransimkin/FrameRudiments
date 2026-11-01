@@ -518,6 +518,10 @@ class GLMatteBackend:
         from .effect_graph_gpu_kernels import render_filter
         return render_filter(self, image, config)
 
+    def render_resident_graph(self, graph, sources, configs):
+        from .effect_graph_gpu_resident import render_resident
+        return render_resident(self, graph, sources, configs)
+
     def close(self):
         if self.closed:
             return

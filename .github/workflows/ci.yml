@@ -66,7 +66,7 @@ jobs:
       - name: Verify patch validation workflow contract
         run: python -m pytest -q tests/test_patch_validation.py
       # Hardware-dependent GPU tests run in required effect-graph-parity; keep the CPU no-skip gate strict.
-      - run: python -m pytest -q --ignore=tests/test_effect_graph_gpu_parity.py --ignore=tests/test_effect_graph_gpu_spectral.py --ignore=tests/test_effect_graph_gpu_transport.py --ignore=tests/test_effect_graph_gpu_kernels.py --junitxml=test-results.xml
+      - run: python -m pytest -q --ignore=tests/test_effect_graph_gpu_parity.py --ignore=tests/test_effect_graph_gpu_spectral.py --ignore=tests/test_effect_graph_gpu_transport.py --ignore=tests/test_effect_graph_gpu_resident_egl.py --ignore=tests/test_effect_graph_gpu_kernels.py --junitxml=test-results.xml
       - name: No skipped rendering checks
         run: python -c "import xml.etree.ElementTree as E; r=E.parse('test-results.xml'); assert not r.findall('.//skipped')"
       - run: python -m build

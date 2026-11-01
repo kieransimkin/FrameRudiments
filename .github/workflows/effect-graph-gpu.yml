@@ -51,7 +51,7 @@ jobs:
               print('OpenGL version:', gpu.capabilities.context_version)
           PY
       - name: Run real GPU-versus-CPU parity tests
-        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py tests/test_effect_graph_gpu_kernels.py --junitxml=gpu-transfer-results.xml
+        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py tests/test_effect_graph_gpu_kernels.py tests/test_effect_graph_gpu_resident_egl.py --junitxml=gpu-transfer-results.xml
       - name: Require real GPU transport and parity tests with no skips
         run: |
           python - <<'PYTEST'
@@ -68,6 +68,9 @@ jobs:
           kernels = [t for t in tests if 'test_effect_graph_gpu_kernels' in t.attrib.get('classname', '')]
           if len(kernels) < 15:
               raise SystemExit('M8.3 shader parity cases were not collected')
+          resident = [t for t in tests if 'test_effect_graph_gpu_resident_egl' in t.attrib.get('classname','')]
+          if len(resident) < 2:
+              raise SystemExit('M8.4 resident GPU checks were not collected')
           print(f'{len(tests)} GPU tests, {len(transport)} M8.2 transfers, {len(kernels)} M8.3 kernels; none skipped')
           PYTEST
       - name: Benchmark spectral HD GPU and CPU (end-to-end)
