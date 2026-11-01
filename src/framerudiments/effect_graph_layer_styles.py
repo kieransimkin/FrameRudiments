@@ -1,4 +1,4 @@
-"""M6.1/M6.2 alpha-derived styles for any unary effect-graph surface.
+"""M6.1–M6.3 alpha-derived styles for any unary effect-graph surface.
 
 CPU reference in the existing display-referred, straight-RGBA contract. Shape
 comes exclusively from selected alpha; RGB under transparency is never sampled
@@ -15,14 +15,22 @@ from .effect_graph_alpha_geometry import (
     blur_alpha, check_alpha, contour_masks, finite, morph_alpha, padded_alpha, place_mask,
 )
 
-STYLE_TYPES = frozenset({'drop_shadow', 'inner_shadow', 'outer_glow', 'inner_glow', 'outline'})
+from .effect_graph_layer_relief import (
+    LIGHT_TYPES, RELIEF_COLOURS, RELIEF_DEFAULTS, RELIEF_ENUMS, RELIEF_RANGES,
+    RELIEF_TYPES, SWEEP_TYPES, relief_bounds, render_lighting, satin_mask, sweep_surface,
+)
+
+STYLE_TYPES = frozenset({'drop_shadow', 'inner_shadow', 'outer_glow', 'inner_glow', 'outline'}) | RELIEF_TYPES
+COLOUR_FIELDS = frozenset({'style_color'}) | RELIEF_COLOURS
 STYLE_ENUMS = {
+    **RELIEF_ENUMS,
     'style_type': STYLE_TYPES,
     'style_output': frozenset({'combined', 'effect'}),
     'outline_position': frozenset({'outer', 'inner', 'center'}),
     'alpha_source': frozenset({'current', 'original'}),
 }
 STYLE_RANGES = {
+    **RELIEF_RANGES,
     'style_width': (0, 64),
     'style_blur': (0, 128),
     'style_spread': (-64, 64),
@@ -33,6 +41,7 @@ STYLE_RANGES = {
     **{f'style_color.{c}': (0, 255) for c in 'rgb'},
 }
 STYLE_DEFAULTS = {
+    **RELIEF_DEFAULTS,
     'style_type': 'drop_shadow', 'style_output': 'combined',
     'outline_position': 'outer', 'alpha_source': 'current',
     'style_width': 3, 'style_blur': 0, 'style_spread': 0,
@@ -44,15 +53,15 @@ STYLE_CONTROLS = frozenset(STYLE_ENUMS) | frozenset(STYLE_RANGES)
 _GRAPH_FIELDS = frozenset({'id', 'type', 'inputs', 'opacity'})
 
 
-def _colour(value):
+def _colour(value, name='style_color'):
     if not isinstance(value, str):
-        raise ValueError('style_color must be an opaque CSS RGB colour')
+        raise ValueError(f'{name} must be an opaque CSS RGB colour')
     try:
         result = ImageColor.getrgb(value)
     except (ValueError, TypeError) as exc:
-        raise ValueError('invalid style_color') from exc
+        raise ValueError(f'invalid {name}') from exc
     if len(result) != 3:
-        raise ValueError('style_color must not include alpha; use style_strength')
+        raise ValueError(f'{name} must not include alpha; use style_strength')
     return result
 
 
@@ -63,7 +72,8 @@ def validate_style(config):
         value = config.get(name, STYLE_DEFAULTS[name])
         if not isinstance(value, str) or value not in accepted:
             raise ValueError(f'invalid layer_style {name}')
-    _colour(config.get('style_color', STYLE_DEFAULTS['style_color']))
+    for name in COLOUR_FIELDS:
+        _colour(config.get(name, STYLE_DEFAULTS[name]), name)
     offset = config.get('style_offset', STYLE_DEFAULTS['style_offset'])
     if not isinstance(offset, (list, tuple)) or len(offset) != 2:
         raise ValueError('style_offset must be a two-component vector')
@@ -79,8 +89,9 @@ def style_control_base(config, name):
         raise ValueError('unknown layer_style control target')
     if name.startswith('style_offset.'):
         return config.get('style_offset', STYLE_DEFAULTS['style_offset'])[0 if name.endswith('.x') else 1]
-    if name.startswith('style_color.'):
-        return _colour(config.get('style_color', STYLE_DEFAULTS['style_color']))['rgb'.index(name[-1])]
+    colour_field = name.split('.')[0]
+    if colour_field in COLOUR_FIELDS:
+        return _colour(config.get(colour_field, STYLE_DEFAULTS[colour_field]), colour_field)['rgb'.index(name[-1])]
     return config.get(name, STYLE_DEFAULTS[name])
 
 
@@ -98,10 +109,11 @@ def style_control_apply(config, name, value):
         offset = list(config.get('style_offset', STYLE_DEFAULTS['style_offset']))
         offset[0 if name.endswith('.x') else 1] = value
         out['style_offset'] = offset
-    elif name.startswith('style_color.'):
-        rgb = list(_colour(config.get('style_color', STYLE_DEFAULTS['style_color'])))
+    elif name.split('.')[0] in COLOUR_FIELDS:
+        field = name.split('.')[0]
+        rgb = list(_colour(config.get(field, STYLE_DEFAULTS[field]), field))
         rgb['rgb'.index(name[-1])] = round(value)
-        out['style_color'] = '#%02x%02x%02x' % tuple(rgb)
+        out[field] = '#%02x%02x%02x' % tuple(rgb)
     else:
         out[name] = value
     return out
@@ -121,16 +133,34 @@ def style_parameter_descriptors(config=None):
         if name in STYLE_ENUMS:
             item.update(type='enum', choices=sorted(STYLE_ENUMS[name]), interpolation='discrete')
         else:
-            unit = ('channel_255' if name.startswith('style_color.') else
-                    'ratio' if name in {'style_strength', 'fill_opacity'} else 'pixels')
+            unit = ('channel_255' if name.split('.')[0] in COLOUR_FIELDS else
+                    'degrees' if name in {'light_angle', 'light_elevation', 'extrude_angle'} else
+                    'ratio' if name in {'style_strength', 'fill_opacity', 'relief_threshold',
+                                       'highlight_strength', 'shadow_strength', 'extrude_fade'} else 'pixels')
             item.update(type='number', range=list(STYLE_RANGES[name]), units=unit,
                         interpolation='linear')
         if name.startswith('style_offset.'):
-            item['styles'] = ['drop_shadow', 'inner_shadow']
-        elif name in {'style_width', 'outline_position'}:
-            item['styles'] = ['outline']
-        elif name in {'style_blur', 'style_spread'}:
-            item['styles'] = sorted(STYLE_TYPES - {'outline'})
+            item['styles'] = ['drop_shadow', 'inner_shadow', 'satin']
+        elif name == 'style_width':
+            item['styles'] = ['outline', *sorted(LIGHT_TYPES)]
+        elif name == 'outline_position':
+            item['styles'] = ['outline', 'edge_light']
+        elif name == 'style_blur':
+            item['styles'] = ['drop_shadow', 'inner_shadow', 'outer_glow', 'inner_glow', 'satin']
+        elif name == 'style_spread':
+            item['styles'] = ['drop_shadow', 'inner_shadow', 'outer_glow', 'inner_glow']
+        elif name.startswith('extrude_'):
+            item['styles'] = ['extrusion'] if name.startswith('extrude_color.') else sorted(SWEEP_TYPES)
+        elif name.startswith('satin_'):
+            item['styles'] = ['satin']
+        elif name.startswith('bevel_'):
+            item['styles'] = sorted(LIGHT_TYPES) if name == 'bevel_softness' else ['bevel', 'emboss']
+        elif name.startswith('shadow_'):
+            item['styles'] = ['bevel', 'emboss']
+        elif name.startswith(('light_', 'highlight_')) or name == 'relief_threshold':
+            item['styles'] = sorted(LIGHT_TYPES)
+        elif name.startswith('style_color.'):
+            item['styles'] = sorted(STYLE_TYPES - LIGHT_TYPES)
         else:
             item['styles'] = sorted(STYLE_TYPES)
         descriptors[name] = item
@@ -149,6 +179,8 @@ def style_bounds(alpha, config):
     if box is None:
         return None
     kind = config.get('style_type', STYLE_DEFAULTS['style_type'])
+    if kind in RELIEF_TYPES:
+        return relief_bounds(alpha, config)
     width = config.get('style_width', 3)
     radius = (width if kind == 'outline' else
               abs(config.get('style_spread', 0)) + 4*config.get('style_blur', 0))
@@ -228,6 +260,20 @@ def render_layer_style(image, config, *, original_alpha=None):
     if not strength or selected.getbbox() is None:
         return Image.new('RGBA', image.size) if effect_only else _filled_source(image, fill)
     kind = config.get('style_type', 'drop_shadow')
+    if kind in LIGHT_TYPES:
+        if config.get('style_width', 3) == 0 or (kind != 'edge_light' and config.get('bevel_depth', 4) == 0):
+            return Image.new('RGBA', image.size) if effect_only else _filled_source(image, fill)
+        return render_lighting(image, selected, config)
+    if kind in SWEEP_TYPES:
+        if config.get('extrude_length', 16) == 0:
+            return Image.new('RGBA', image.size) if effect_only else _filled_source(image, fill)
+        effect = sweep_surface(selected, config)
+        return effect if effect_only else Image.alpha_composite(effect, _filled_source(image, fill))
+    if kind == 'satin':
+        inner = satin_mask(selected, config)
+        colour = _colour(config.get('style_color', '#000000'))
+        return (_tint(inner, colour, strength) if effect_only else
+                _inner_surface(image, inner, selected, colour, strength, fill))
     spread, blur = config.get('style_spread', 0), config.get('style_blur', 0)
     width = config.get('style_width', 3)
     halo = math.ceil((width if kind == 'outline' else abs(spread) + 4*blur)) + 2

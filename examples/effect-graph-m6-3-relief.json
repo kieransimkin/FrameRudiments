@@ -1,0 +1,25 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {"id": "layer:native", "type": "source"},
+      {
+        "id": "depth", "type": "layer_style", "inputs": ["layer:native"],
+        "style_type": "extrusion", "extrude_length": 22.5, "extrude_angle": 40,
+        "style_color": "#f47c20", "extrude_color": "#231c60",
+        "style_output": "effect", "alpha_source": "original", "opacity": 0.8
+      },
+      {
+        "id": "lit-body", "type": "layer_style", "inputs": ["layer:native"],
+        "style_type": "bevel", "style_width": 8, "bevel_depth": 10,
+        "bevel_softness": 1, "light_angle": 225, "light_elevation": 30,
+        "highlight_color": "#ffe9b0", "shadow_color": "#15233d"
+      },
+      {"id": "out", "type": "composite", "inputs": ["depth", "lit-body"], "mode": "over"}
+    ],
+    "output": "out"
+  },
+  "effect_graph_controls": [
+    {"id": "moving-light", "node": "lit-body", "property": "light_angle", "motion": {"kind": "named", "pattern": "circle"}, "axis": "x", "range": [-180, 180]},
+    {"id": "moving-depth", "node": "depth", "property": "extrude_length", "motion": {"kind": "named", "pattern": "circle", "phase_beats": 1}, "axis": "x", "range": [4, 32]}
+  ]
+}

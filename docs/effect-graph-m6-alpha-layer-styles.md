@@ -4,6 +4,12 @@ Implementation increment v24, 1 November 2026. Base: `de0b4bb37e3b0b827f3367dac4
 This is the CPU reference and graph integration for the first two M6 stages,
 not completion of M6, a GPU implementation, or a published package release.
 
+## M6.3 extension
+
+The additional bevel/emboss, edge-lighting, satin, extrusion and long-shadow
+styles are specified in [M6.3](effect-graph-m6-3-relief-and-extrusion.md).
+The five v24 styles below retain their existing calculations and defaults.
+
 ## Delivered behaviour
 
 A unary `layer_style` node accepts any same-canvas RGBA graph source: sprites,
@@ -206,8 +212,8 @@ and application checks. Do not treat included-but-unexecuted tests as passes.
 
 ## Next increments
 
-M6.3 builds bevel/emboss, directional edge lighting and controlled extrusion on
-this geometry layer. M6.4 supplies overlays and additional blend modes. Remaining
+M6.3 now has its CPU implementation in the linked extension: bevel/emboss,
+directional edge lighting, satin and controlled extrusion on this geometry layer. M6.4 supplies overlays and additional blend modes. Remaining
 M6.5 work generalises parameter discovery and bounds-aware scheduling; the new
 style parameters already have native bindings. M8 owns GPU-native execution and
 texture-resident resource reuse. Avoid claiming all of M6 complete before these

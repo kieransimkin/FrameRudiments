@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.7 — 1 November 2026
-**Status:** M5.5 merged with green baseline CI at `de0b4bb`. M6.1–M6.2 CPU alpha-derived styles implemented; this increment still requires full-project CI acceptance.
+**Version:** 1.11 — 1 November 2026
+**Status:** Active implementation. M6.1–M6.2 merged; M6.3 CPU relief/extrusion implemented in v25. Full native/CI acceptance and GPU-native layer styles remain separately gated.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -416,3 +416,25 @@ Example: [`examples/effect-graph-m6-styles.json`](../examples/effect-graph-m6-st
 (project fragment using existing source IDs, not an unpinned standalone project).
 The v24 package is incremental on `de0b4bb`; it does not require replacing the
 project loader, compositor, native motion definitions or GPU workflow.
+
+## M6.3 — bevel, emboss, directional rim, satin, extrusion and long shadow (v25)
+
+Base: `1cb7c216029ccd17cf89088fd51f77882c7ba24f` (v24).
+See [the full M6.3 contract](effect-graph-m6-3-relief-and-extrusion.md).
+
+- [x] Extend the existing `layer_style` registry; no new compositor or signal engine.
+- [x] Signed-distance height/ridge normals, directional highlight/shadow colours.
+- [x] Inner/outer/centred edge lighting and displaced-alpha satin.
+- [x] Fractional, bounded max-coverage silhouette sweeps and depth fade/colour.
+- [x] Discoverable numeric and categorical controls, original/current alpha,
+  effect-only output, fill/output opacity, forks and chain preprocessing.
+- [x] Independent image/graph assertions, resource guards and reproducible QA.
+- [ ] Run the real native-project tests and full repository lint/test matrix on v25.
+- [ ] GPU-native style execution/parity (later acceleration milestone, not delivered).
+
+Local evidence is in the delivery's verification report: focused snapshot tests
+and exact-baseline patch checks are not a substitute for full repository CI.
+The distance-field area cap and sweep work limits remain explicit; do not infer
+unrestricted full-frame 4K/8K support or native-mesh extrusion.
+
+Next: **M6.4 — alpha-masked colour/gradient/pattern overlays and blend modes**.
