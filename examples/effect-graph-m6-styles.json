@@ -1,0 +1,103 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {
+        "id": "layer:native",
+        "type": "source"
+      },
+      {
+        "id": "shadow",
+        "type": "layer_style",
+        "inputs": [
+          "layer:native"
+        ],
+        "style_type": "drop_shadow",
+        "style_color": "#050817",
+        "style_offset": [
+          8,
+          10
+        ],
+        "style_blur": 5,
+        "style_output": "effect",
+        "style_strength": 0.65
+      },
+      {
+        "id": "glow",
+        "type": "layer_style",
+        "inputs": [
+          "layer:native"
+        ],
+        "style_type": "outer_glow",
+        "style_color": "#00d9ff",
+        "style_spread": 2,
+        "style_blur": 8,
+        "style_output": "effect",
+        "alpha_source": "original"
+      },
+      {
+        "id": "edge",
+        "type": "layer_style",
+        "inputs": [
+          "layer:native"
+        ],
+        "style_type": "outline",
+        "style_color": "#fff0b3",
+        "style_width": 2
+      },
+      {
+        "id": "styled",
+        "type": "composite",
+        "inputs": [
+          "shadow",
+          "glow",
+          "edge"
+        ]
+      }
+    ],
+    "output": "styled"
+  },
+  "effect_graph_controls": [
+    {
+      "id": "glow-radius",
+      "node": "glow",
+      "property": "style_blur",
+      "motion": {
+        "kind": "named",
+        "pattern": "circle"
+      },
+      "axis": "x",
+      "range": [
+        3,
+        14
+      ]
+    },
+    {
+      "id": "shadow-x",
+      "node": "shadow",
+      "property": "style_offset.x",
+      "motion": {
+        "kind": "named",
+        "pattern": "circle"
+      },
+      "axis": "y",
+      "range": [
+        -5,
+        12
+      ]
+    },
+    {
+      "id": "edge-width",
+      "node": "edge",
+      "property": "style_width",
+      "motion": {
+        "kind": "named",
+        "pattern": "circle"
+      },
+      "axis": "x",
+      "range": [
+        1,
+        4
+      ]
+    }
+  ]
+}

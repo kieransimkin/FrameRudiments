@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.6 — 29 October 2026
-**Status:** Active implementation. M4.2 ModernGL/EGL spectral-displacement parity succeeded; M5.1 merged; M5.2 CPU spectral transitions implemented locally, full CI pending.
+**Version:** 1.7 — 1 November 2026
+**Status:** M5.5 merged with green baseline CI at `de0b4bb`. M6.1–M6.2 CPU alpha-derived styles implemented; this increment still requires full-project CI acceptance.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -375,7 +375,7 @@ Details: [effect-graph-m5-3-geometric-transitions.md](effect-graph-m5-3-geometri
 Details: [effect-graph-m5-4-transition-chains.md](effect-graph-m5-4-transition-chains.md).
 M5.5 follows with beat-locked and non-monotonic progress presets.
 
-### M5.5 — Beat-authoritative transition timing (v23 candidate)
+### M5.5 — Beat-authoritative transition timing (v23 merged)
 
 - [x] Optional, validated `timing` object on every transition, including expanded `transition_chain` stages.
 - [x] Reuse existing source and continuous beat authorities (including variable BPM maps and repeated audio).
@@ -384,10 +384,35 @@ M5.5 follows with beat-locked and non-monotonic progress presets.
 - [x] Every meaningful timing scalar/enum accessible through the existing native `effect_graph_controls` interface; explicit progress control takes precedence.
 - [x] Stateless exact-frame/random-access behaviour; original graph configuration stays unchanged.
 - [x] Focused graph, chain and visual-fixture tests plus hash manifest; synthetic project tests added.
-- [ ] Full CI matrix and real-project test execution on the merged commit.
+- [x] Baseline `de0b4bb` main CI, Windows/Linux Python matrices, visualiser acceptance and dedicated GPU parity succeeded (run `41275482304`).
 
 Detailed contract: [effect-graph-m5-5-beat-timed-transitions.md](effect-graph-m5-5-beat-timed-transitions.md).
 
 v22's general CI initially failed at Ruff F401 for an unused `ImageFont` import in
 `integration/build_effect_graph_m5_4_visuals.py`; the v23 patch removes the
 unused import. The dedicated GPU parity workflow was green on the v22 baseline.
+
+
+### M6.1–M6.2 — Alpha geometry and first layer styles (v24)
+
+- [x] Checked alpha-only crops, transparent padding, fractional morphology,
+  inside/outside contour bands and subpixel placement.
+- [x] Bounded pixel-centre signed Euclidean distance helper, verified against an
+  independent brute-force reference; normal styles preserve soft alpha directly.
+- [x] Drop shadow, inner shadow, outer glow, inner glow and outer/inner/centred
+  outline using one unary `layer_style` node.
+- [x] Original/current-alpha selection, effect-only branches, independent source
+  fill and universal output opacity; inner effects preserve soft coverage.
+- [x] Discoverable typed controls and existing native scalar/colour/enum binding
+  paths, including transition-chain input preprocessing.
+- [x] Synthetic render gallery and focused graph regression coverage.
+- [ ] Execute the included real-project/native-clock/supersampling tests and full
+  package suite on the complete checkout; pass Ruff and exact-head CI.
+- [ ] GPU-native styles, CPU/GPU parity, broader blend modes, bevel/emboss and
+  distance-aware resource optimisation remain later milestones.
+
+Contract: [effect-graph-m6-alpha-layer-styles.md](effect-graph-m6-alpha-layer-styles.md).
+Example: [`examples/effect-graph-m6-styles.json`](../examples/effect-graph-m6-styles.json)
+(project fragment using existing source IDs, not an unpinned standalone project).
+The v24 package is incremental on `de0b4bb`; it does not require replacing the
+project loader, compositor, native motion definitions or GPU workflow.

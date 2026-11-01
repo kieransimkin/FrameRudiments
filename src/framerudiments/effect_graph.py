@@ -10,6 +10,10 @@ from collections.abc import Mapping
 from math import isfinite
 from PIL import Image, ImageColor
 
+from .effect_graph_layer_styles import (
+    STYLE_CONTROLS, STYLE_ENUMS, STYLE_FIELDS, render_layer_style,
+    style_control_apply, style_control_base, style_parameter_descriptors, validate_style,
+)
 from .effect_graph_transitions import render_transition
 from .effect_graph_transition_chains import expand_transition_chains
 from .effect_graph_transition_timing import (
@@ -38,10 +42,11 @@ from .effect_graph_spectral import (
 MAX_NODES = 256
 MAX_INPUTS = 32
 KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement',
-         'spectral_displacement', 'composite', 'transition'}
+         'spectral_displacement', 'composite', 'transition', 'layer_style'}
 TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte', 'spectral', *GEOMETRIC_STYLES}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
+    'layer_style': set(STYLE_CONTROLS),
     'opacity': {'opacity'},
     'matte': {'feather', 'expand', 'mask_opacity', 'mask_combine', 'matte_channel', 'invert', 'alpha_source'},
     'chroma_key': {'tolerance', 'softness', 'despill', 'edge_expand', 'edge_feather',
@@ -61,6 +66,7 @@ CONTROL_TARGETS['source'] = {'opacity'}
 CONTROL_TARGETS['copy'] = {'opacity'}
 CONTROL_TARGETS['composite'] = {'opacity', 'mode'}
 ENUM_CONTROLS = {
+    'layer_style': STYLE_ENUMS,
     'matte': {'mask_combine': MATTE_COMBINES, 'matte_channel': frozenset({'alpha', 'luminance'}),
               'alpha_source': ALPHA_SOURCES,
               'invert': frozenset({True, False})},
@@ -103,21 +109,25 @@ class EffectGraph:
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
                                'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma',
-                               'timing', *GEOMETRY_RANGES}:
+                               'timing', *GEOMETRY_RANGES, *STYLE_FIELDS}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
                 raise ValueError('duplicate or invalid node id')
             if kind not in KINDS:
                 raise ValueError(f'unsupported node type: {kind}')
-            if 'alpha_source' in entry and kind not in {'matte', 'chroma_key'}:
-                raise ValueError('alpha_source is only supported on matte and chroma_key nodes')
+            if 'alpha_source' in entry and kind not in {'matte', 'chroma_key', 'layer_style'}:
+                raise ValueError('alpha_source is only supported on matte, chroma_key and layer_style nodes')
+            if kind != 'layer_style' and (STYLE_FIELDS - {'alpha_source'}) & entry.keys():
+                raise ValueError('layer-style properties require a layer_style node')
+            if kind == 'layer_style':
+                validate_style(entry)
             if 'timing' in entry and kind != 'transition':
                 raise ValueError('timing is only supported on transition nodes')
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
-            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement', 'spectral_displacement'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != (3 if entry.get('transition_style') == 'matte' else 2)):
+            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement', 'spectral_displacement', 'layer_style'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != (3 if entry.get('transition_style') == 'matte' else 2)):
                 raise ValueError(f'wrong input count for {kind}')
             opacity = entry.get('opacity', 1.0)
             if type(opacity) not in (int, float) or not isfinite(opacity) or not 0 <= opacity <= 1:
@@ -259,9 +269,18 @@ class EffectGraph:
                 if any(style not in GEOMETRIC_STYLES for style in choices):
                     raise ValueError('geometric transition settings require geometric style')
 
+    def control_descriptors(self, node_id):
+        """Typed M6 controls for authoring; legacy node descriptors remain separate."""
+        node = self.nodes.get(node_id)
+        if node is None or node.kind != 'layer_style':
+            raise ValueError('descriptor discovery currently requires a layer_style node')
+        return style_parameter_descriptors(node.config)
+
     def base_control_value(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
         config = self.nodes[node_id].config
+        if self.nodes[node_id].kind == 'layer_style' and property_name != 'opacity':
+            return style_control_base(config, property_name)
         if self.nodes[node_id].kind == 'transition' and property_name.startswith('timing.'):
             name = property_name.removeprefix('timing.')
             return config['timing'].get(name, TIMING_DEFAULTS.get(name, config['timing'].get('duration_beats', 4)))
@@ -306,6 +325,11 @@ class EffectGraph:
             node_id, property_name = target
             node = self.nodes.get(node_id)
             self.validate_control_target(node_id, property_name)
+            if node.kind == 'layer_style' and property_name != 'opacity':
+                configs[node_id] = style_control_apply(
+                    configs.get(node_id, node.config), property_name, value
+                )
+                continue
             if node.kind == 'transition' and property_name.startswith('timing.'):
                 part = property_name.removeprefix('timing.')
                 if part in TIMING_ENUMS:
@@ -457,6 +481,16 @@ class EffectGraph:
                             result = chroma_key(inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
                     else:
                         result = chroma_key(inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
+                elif kind == 'layer_style':
+                    # M6 CPU reference: no claim of GPU-native style execution.
+                    if gpu_strict:
+                        from .effect_graph_gpu import GPUUnsupported
+                        raise GPUUnsupported('layer_style GPU execution is not implemented; use cpu or auto')
+                    if gpu_backend is not None:
+                        gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                    result = render_layer_style(
+                        inputs[0], config, original_alpha=original_alphas[node.inputs[0]]
+                    )
                 elif kind == 'chromatic_displacement':
                     result = _chromatic_displacement(inputs[0], config)
                 elif kind == 'spectral_displacement':
