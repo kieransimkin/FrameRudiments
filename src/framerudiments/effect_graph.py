@@ -35,6 +35,11 @@ from .effect_graph_layer_styles import (
     style_control_valid, validate_style_inputs,
     style_control_apply, style_control_base, validate_style,
 )
+from .effect_graph_filter import (
+    FILTER_FIELDS, FILTER_CONTROLS, FILTER_ENUMS, filter_capabilities,
+    filter_control_apply, filter_control_base, filter_parameter_descriptors,
+    render_filter, validate_filter,
+)
 from .effect_graph_transitions import render_transition
 from .effect_graph_transition_chains import expand_transition_chains
 from .effect_graph_transition_timing import (
@@ -63,10 +68,11 @@ from .effect_graph_spectral import (
 MAX_NODES = 256
 MAX_INPUTS = 32
 KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement',
-         'spectral_displacement', 'composite', 'transition', 'layer_style', 'spatial_warp', 'raster_effect', 'procedural_field'}
+         'spectral_displacement', 'composite', 'transition', 'layer_style', 'spatial_warp', 'raster_effect', 'procedural_field', 'filter'}
 TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte', 'spectral', *GEOMETRIC_STYLES}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
+    'filter': set(FILTER_CONTROLS),
     'procedural_field': set(FIELD_CONTROLS),
     'raster_effect': set(RASTER_CONTROLS),
     'spatial_warp': set(WARP_CONTROLS),
@@ -90,6 +96,7 @@ CONTROL_TARGETS['source'] = {'opacity'}
 CONTROL_TARGETS['copy'] = {'opacity'}
 CONTROL_TARGETS['composite'] = {'opacity', 'mode'}
 ENUM_CONTROLS = {
+    'filter': FILTER_ENUMS,
     'procedural_field': FIELD_ENUMS,
     'raster_effect': RASTER_ENUMS,
     'spatial_warp': WARP_ENUMS,
@@ -136,7 +143,7 @@ class EffectGraph:
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
                                'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma',
-                               'timing', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS, *FIELD_FIELDS}:
+                               'timing', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS, *FIELD_FIELDS, *FILTER_FIELDS}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -155,15 +162,19 @@ class EffectGraph:
                 raise ValueError('field properties require a procedural_field node')
             if kind != 'raster_effect' and RASTER_FIELDS & entry.keys():
                 raise ValueError('raster properties require a raster_effect node')
+            if kind != 'filter' and FILTER_FIELDS & entry.keys():
+                raise ValueError('filter properties require a filter node')
             if 'timing' in entry and kind != 'transition':
                 raise ValueError('timing is only supported on transition nodes')
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
-            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement', 'spectral_displacement'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != (3 if entry.get('transition_style') == 'matte' else 2)):
+            if (kind == 'source' and inputs) or (kind in {'copy', 'opacity', 'chroma_key', 'chromatic_displacement', 'spectral_displacement', 'filter'} and len(inputs) != 1) or (kind == 'matte' and not 2 <= len(inputs) <= 9) or (kind == 'composite' and len(inputs) < 2) or (kind == 'transition' and len(inputs) != (3 if entry.get('transition_style') == 'matte' else 2)):
                 raise ValueError(f'wrong input count for {kind}')
             if kind == 'layer_style':
                 validate_style_inputs(entry, len(inputs))
+            if kind == 'filter':
+                validate_filter(entry, len(inputs))
             if kind == 'procedural_field':
                 validate_field(entry, len(inputs))
             if kind == 'raster_effect':
@@ -340,6 +351,8 @@ class EffectGraph:
             return raster_parameter_descriptors(node.config, input_count=len(node.inputs))
         if node is not None and node.kind == 'spatial_warp':
             return spatial_parameter_descriptors(node.config, input_count=len(node.inputs))
+        if node is not None and node.kind == 'filter':
+            return filter_parameter_descriptors(node.config)
         if node is None or node.kind != 'layer_style':
             raise ValueError('descriptor discovery requires a style, spatial, raster or procedural node')
         return style_control_schema(node.config, input_count=len(node.inputs))
@@ -359,6 +372,11 @@ class EffectGraph:
                   **raster_capabilities(self.nodes[key].config, input_count=len(self.nodes[key].inputs))}
             for key in self.order if self.nodes[key].kind == 'raster_effect'
         }
+
+    def filter_manifest(self):
+        """Detached capability/control inventory for GPU-eligible effect filters."""
+        return {key: filter_capabilities(self.nodes[key].config)
+                for key in self.order if self.nodes[key].kind == 'filter'}
 
     def spatial_manifest(self):
         """Detached capability/control report for reachable spatial-warp nodes."""
@@ -392,6 +410,8 @@ class EffectGraph:
             return raster_control_base(config, property_name)
         if self.nodes[node_id].kind == 'spatial_warp' and property_name != 'opacity':
             return spatial_control_base(config, property_name)
+        if self.nodes[node_id].kind == 'filter' and property_name != 'opacity':
+            return filter_control_base(config, property_name)
         if self.nodes[node_id].kind == 'layer_style' and property_name != 'opacity':
             return style_control_base(config, property_name)
         if self.nodes[node_id].kind == 'transition' and property_name.startswith('timing.'):
@@ -450,6 +470,9 @@ class EffectGraph:
                 continue
             if node.kind == 'spatial_warp' and property_name != 'opacity':
                 configs[node_id] = spatial_control_apply(configs.get(node_id, node.config), property_name, value)
+                continue
+            if node.kind == 'filter' and property_name != 'opacity':
+                configs[node_id] = filter_control_apply(configs.get(node_id, node.config), property_name, value)
                 continue
             if node.kind == 'layer_style' and property_name != 'opacity':
                 configs[node_id] = style_control_apply(
@@ -555,6 +578,8 @@ class EffectGraph:
                 )
                 configs.setdefault(key, dict(node.config))['progress'] = progress
         for key, config in configs.items():
+            if self.nodes[key].kind == 'filter':
+                validate_filter(config, len(self.nodes[key].inputs))
             if self.nodes[key].kind == 'procedural_field':
                 validate_field(config, len(self.nodes[key].inputs))
             if self.nodes[key].kind == 'raster_effect':
@@ -676,7 +701,34 @@ class EffectGraph:
                         pattern_image=inputs[1] if len(inputs) == 2 else None,
                     )
                 elif kind == 'chromatic_displacement':
-                    result = _chromatic_displacement(inputs[0], config)
+                    if gpu_backend is None or not any(any(config.get(f'{c}_offset', [0, 0]))
+                                                      for c in ('red', 'green', 'blue')):
+                        result = _chromatic_displacement(inputs[0], config)
+                    else:
+                        from .effect_graph_gpu import GPUUnsupported
+                        try:
+                            result = gpu_backend.chromatic_displacement(inputs[0], config)
+                            gpu_backend.last_dispatch['gpu_nodes'] += 1
+                        except GPUUnsupported:
+                            if gpu_strict:
+                                raise
+                            gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                            result = _chromatic_displacement(inputs[0], config)
+                elif kind == 'filter':
+                    if (gpu_backend is None or config.get('filter_mix', 1) == 0
+                            or config.get('filter_type', 'blur') == 'blur' and config.get('filter_radius', 1.5) == 0
+                            or config.get('filter_type', 'blur') == 'bloom' and config.get('filter_strength', 1) == 0):
+                        result = render_filter(inputs[0], config)
+                    else:
+                        from .effect_graph_gpu import GPUUnsupported
+                        try:
+                            result = gpu_backend.render_filter(inputs[0], config)
+                            gpu_backend.last_dispatch['gpu_nodes'] += 1
+                        except GPUUnsupported:
+                            if gpu_strict:
+                                raise
+                            gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                            result = render_filter(inputs[0], config)
                 elif kind == 'spectral_displacement':
                     if gpu_backend is None or config.get('mix', 1) == 0:
                         # Zero mix is an exact, allocation-free source pass-through.
@@ -697,17 +749,29 @@ class EffectGraph:
                     validate_transition_matte(config)
                     validate_transition_spectral(config)
                     validate_transition_geometry(config)
-                    if config.get('transition_style') in ({'spectral'} | GEOMETRIC_STYLES) and gpu_backend is not None:
-                        # No GPU shader for this style yet. Never report a CPU
-                        # transition as a successful strict GPU operation.
-                        if gpu_strict:
+                    style = config.get('transition_style', 'dissolve')
+                    if gpu_backend is not None and 0 < config.get('progress', 0) < 1:
+                        if style not in {'dissolve', 'wipe', 'radial'}:
                             from .effect_graph_gpu import GPUUnsupported
-                            raise GPUUnsupported('spectral/geometric transition GPU shader is not implemented')
-                        gpu_backend.last_dispatch['cpu_fallbacks'] += 1
-                    result = render_transition(
-                        inputs[0], inputs[1], config,
-                        matte_image=inputs[2] if len(inputs) == 3 else None,
-                    )
+                            if gpu_strict:
+                                raise GPUUnsupported(f'{style} geometric/spectral/matte transition GPU shader is not implemented')
+                            gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                            result = render_transition(inputs[0], inputs[1], config,
+                                                       matte_image=inputs[2] if len(inputs) == 3 else None)
+                        else:
+                            from .effect_graph_gpu import GPUUnsupported
+                            try:
+                                result = gpu_backend.render_transition(inputs[0], inputs[1], config)
+                                gpu_backend.last_dispatch['gpu_nodes'] += 1
+                            except GPUUnsupported:
+                                if gpu_strict:
+                                    raise
+                                gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                                result = render_transition(inputs[0], inputs[1], config)
+                    else:
+                        # Exact endpoints never need a GPU upload.
+                        result = render_transition(inputs[0], inputs[1], config,
+                                                   matte_image=inputs[2] if len(inputs) == 3 else None)
                 else:
                     result = inputs[0].copy()
                     for layer in inputs[1:]:

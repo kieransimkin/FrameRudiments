@@ -575,3 +575,23 @@ colour conversion occurs.
       texture reuse; separate implementation and parity gates in M8.3–M8.5.
 
 See [effect-graph-m8-2-surface-transport.md](effect-graph-m8-2-surface-transport.md).
+
+### M8.3 — transition, chromatic and blur/bloom GPU bridge kernels (v33)
+
+The current executable graph remains host RGBA8 between nodes. M8.3 adds three
+legacy transition styles (`dissolve`, `wipe`, `radial`), RGB-channel displacement
+and a new alpha-safe `filter` family (`blur`, `bloom`) as bounded, explicitly
+accounted ModernGL per-node kernels. It does not claim to implement matte,
+spectral or geometric transition shaders, scene-linear bloom or persistent
+GPU-resident processing.
+
+- [x] CPU-reference blur and bloom with threshold, strength, radius, border and mix.
+- [x] Native filter controls, typed descriptors and transition-chain preprocessing.
+- [x] GPU shaders for common transition, RGB offset, blur and bloom; exact identity shortcuts.
+- [x] Shared `GPURequirements` for texture counts, passes and transfer budgets.
+- [x] Regression tests for graph dispatch, fork isolation, alpha edges and native project controls.
+- [x] New real-EGL parity tests and mandatory no-skip checks in dedicated CI.
+- [ ] Merge-time real EGL shader parity, native motion, full Ruff/FFmpeg CI and HD measurements.
+- [ ] GPU-resident fork scheduling, persistent surfaces, pooled textures and cross-vendor runs (M8.4–M8.5).
+
+See [M8.3 implementation specification](effect-graph-m8-3-gpu-kernels.md).

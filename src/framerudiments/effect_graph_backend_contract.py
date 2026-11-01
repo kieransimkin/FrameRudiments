@@ -14,9 +14,10 @@ from importlib import metadata, util
 
 from .effect_graph_surface_transport import bridge_contract, transport_capabilities
 
-GPU_KINDS = frozenset({'matte', 'chroma_key', 'spectral_displacement'})
+GPU_KINDS = frozenset({'matte', 'chroma_key', 'spectral_displacement',
+                       'transition', 'chromatic_displacement', 'filter'})
 CPU_EFFECTS = frozenset({'layer_style', 'spatial_warp', 'raster_effect', 'procedural_field'})
-HOST_KINDS = frozenset({'source', 'copy', 'opacity', 'composite', 'chromatic_displacement', 'transition'})
+HOST_KINDS = frozenset({'source', 'copy', 'opacity', 'composite'})
 KNOWN_KINDS = GPU_KINDS | CPU_EFFECTS | HOST_KINDS
 MAX_GPU_MORPH_RADIUS = 16
 MAX_GPU_GAUSSIAN_RADIUS = 12
@@ -127,6 +128,35 @@ def gpu_requirements(kind, config, input_count, *, original_alpha=True):
         raise ValueError('GPU node kind must be a string')
     if kind not in GPU_KINDS:
         return GPURequirements(False, 'kernel_not_implemented')
+    if kind == 'filter':
+        from .effect_graph_filter import validate_filter
+        validate_filter(dict(config), input_count)
+        style = config.get('filter_type', 'blur')
+        if (config.get('filter_mix', 1) == 0
+                or style == 'blur' and config.get('filter_radius', 1.5) == 0
+                or style == 'bloom' and config.get('filter_strength', 1) == 0):
+            return GPURequirements(True, 'exact_host_identity')
+        passes = 4 if style == 'bloom' else 3
+        return GPURequirements(True, texture_count=passes + 1, upload_count=1,
+                               readback_count=1, draw_passes=passes)
+    if kind == 'transition':
+        if input_count not in (2, 3):
+            raise ValueError('transition must receive two or three inputs')
+        if config.get('transition_style', 'dissolve') not in {'dissolve', 'wipe', 'radial'}:
+            return GPURequirements(False, 'transition_style_not_implemented')
+        if input_count != 2:
+            raise ValueError('GPU transition styles require two inputs')
+        if config.get('progress', 0) in (0, 1):
+            return GPURequirements(True, 'exact_host_identity')
+        return GPURequirements(True, texture_count=3, upload_count=2,
+                               readback_count=1, draw_passes=1)
+    if kind == 'chromatic_displacement':
+        if input_count != 1:
+            raise ValueError('chromatic displacement needs one input')
+        if not any(any(config.get(f'{c}_offset', (0, 0))) for c in ('red','green','blue')):
+            return GPURequirements(True, 'exact_host_identity')
+        return GPURequirements(True, texture_count=2, upload_count=1,
+                               readback_count=1, draw_passes=1)
     if kind == 'spectral_displacement':
         from .effect_graph_spectral import validate_spectral
         validate_spectral(dict(config))
@@ -235,7 +265,7 @@ def _gpu_legacy_rejects(node):
     if node.kind in CPU_EFFECTS:
         return True
     if node.kind == 'transition':
-        return node.config.get('transition_style', 'dissolve') not in {'dissolve', 'wipe', 'radial', 'matte'}
+        return node.config.get('transition_style', 'dissolve') not in {'dissolve', 'wipe', 'radial'}
     return False
 
 
@@ -340,6 +370,8 @@ def plan_effect_graph(graph, source_surfaces, *, mode='cpu', gpu_backend=None,
         cpu_impl = 'numpy' if _numpy_needed(node) else 'pillow'
         if selected == 'cpu' and not registry['packages'][cpu_impl]['module_discoverable']:
             errors.append(_diagnostic('cpu_dependency_missing', f'{cpu_impl} is required by this CPU contract', key))
+        if node.kind == 'filter' and surface.width * surface.height > 16_777_216:
+            errors.append(_diagnostic('filter_pixel_limit', 'Filter canvas exceeds 16M pixel budget', key))
         if node.kind in {'spatial_warp', 'raster_effect', 'procedural_field'}:
             # Their public kernels all enforce 8K pixel/16K dimension ceilings.
             if surface.width * surface.height > 33_177_600:
@@ -388,7 +420,7 @@ def plan_effect_graph(graph, source_surfaces, *, mode='cpu', gpu_backend=None,
     report = {
         'schema': 'framerudiments.backend-plan.v1', 'mode': mode,
         'eligible': not errors, 'scope': 'single resolved graph sample; not shader/runtime certification',
-        'gpu_resident_graph': False, 'new_kernels': False,
+        'gpu_resident_graph': False, 'new_kernels': True,
         'parameters_resolved': parameter_values is not None,
         'context_supplied': context is not None,
         'output': effective.output, 'order': list(effective.order),

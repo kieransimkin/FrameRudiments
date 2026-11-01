@@ -12,7 +12,6 @@ RGBA8 and does not flip image rows. Conversion never mutates caller images.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-import math
 
 from PIL import Image
 

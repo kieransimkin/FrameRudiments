@@ -1,0 +1,14 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {"id":"frame","type":"source"},
+      {"id":"blurred","type":"filter","inputs":["frame"],"filter_type":"blur","filter_radius":1.8},
+      {"id":"shine","type":"filter","inputs":["frame"],"filter_type":"bloom","filter_radius":2.3,"filter_threshold":0.7,"filter_strength":1.2},
+      {"id":"blend","type":"composite","inputs":["blurred","shine"],"mode":"screen"}
+    ],
+    "output":"blend"
+  },
+  "effect_graph_controls": [
+    {"node":"blurred","property":"filter_radius","motion":{"kind":"named","pattern":"circle"},"axis":"x","range":[0.5,3.0]}
+  ]
+}

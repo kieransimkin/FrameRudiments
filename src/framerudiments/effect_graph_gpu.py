@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import math
-from PIL import Image, ImageColor
+from PIL import ImageColor
 
 from .effect_graph_surface_transport import (
     TransportPayload, bridge_contract, pack_image, unpack_image,
@@ -502,6 +502,21 @@ class GLMatteBackend:
         from .effect_graph_gpu_spectral import render_spectral
 
         return render_spectral(self, image, config)
+
+    def render_transition(self, outgoing, incoming, config):
+        """M8.3 bounded two-input dissolve, wipe and radial shaders."""
+        from .effect_graph_gpu_kernels import render_transition
+        return render_transition(self, outgoing, incoming, config)
+
+    def chromatic_displacement(self, image, config):
+        """M8.3 RGB channel offsets with the historical CPU pixel semantics."""
+        from .effect_graph_gpu_kernels import render_chromatic
+        return render_chromatic(self, image, config)
+
+    def render_filter(self, image, config):
+        """M8.3 premultiplied Gaussian blur or thresholded bloom."""
+        from .effect_graph_gpu_kernels import render_filter
+        return render_filter(self, image, config)
 
     def close(self):
         if self.closed:

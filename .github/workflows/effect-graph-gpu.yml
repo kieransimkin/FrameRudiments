@@ -51,7 +51,7 @@ jobs:
               print('OpenGL version:', gpu.capabilities.context_version)
           PY
       - name: Run real GPU-versus-CPU parity tests
-        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py --junitxml=gpu-transfer-results.xml
+        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py tests/test_effect_graph_gpu_kernels.py --junitxml=gpu-transfer-results.xml
       - name: Require real GPU transport and parity tests with no skips
         run: |
           python - <<'PYTEST'
@@ -65,7 +65,10 @@ jobs:
           transport = [t for t in tests if 'test_effect_graph_gpu_transport' in t.attrib.get('classname', '')]
           if len(transport) < 2:
               raise SystemExit('M8.2 real GPU transport tests were not collected')
-          print(f'{len(tests)} GPU tests, {len(transport)} M8.2 transport checks; none skipped')
+          kernels = [t for t in tests if 'test_effect_graph_gpu_kernels' in t.attrib.get('classname', '')]
+          if len(kernels) < 15:
+              raise SystemExit('M8.3 shader parity cases were not collected')
+          print(f'{len(tests)} GPU tests, {len(transport)} M8.2 transfers, {len(kernels)} M8.3 kernels; none skipped')
           PYTEST
       - name: Benchmark spectral HD GPU and CPU (end-to-end)
         run: |
@@ -73,6 +76,9 @@ jobs:
       - name: Benchmark HD CPU and GPU
         run: |
           python integration/benchmark_effect_graph_gpu.py --backend egl --size hd --cpu --require-gpu --repeats 3 --output gpu-benchmark-hd.json
+      - name: Benchmark M8.3 HD transition, channel, blur and bloom bridges
+        run: |
+          python integration/benchmark_effect_graph_m8_3_gpu.py --size hd --output m83-gpu-benchmark-hd.json
       - name: Optional GPU benchmark 4K and 8K
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.benchmarks }}
         run: |
@@ -85,4 +91,5 @@ jobs:
           path: |
             gpu-benchmark-*.json
             spectral-gpu-benchmark-*.json
+            m83-gpu-benchmark-*.json
           if-no-files-found: ignore
