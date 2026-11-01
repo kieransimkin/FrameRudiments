@@ -11,6 +11,11 @@ from collections.abc import Mapping
 from math import isfinite
 from PIL import Image, ImageColor
 
+from .effect_graph_spatial import (
+    WARP_CONTROLS, WARP_ENUMS, WARP_FIELDS, spatial_capabilities,
+    spatial_control_apply, spatial_control_base, spatial_parameter_descriptors,
+    render_spatial_warp_with_alpha, validate_spatial,
+)
 from .effect_graph_blend import COMPOSITE_MODES, composite_blend
 from .effect_graph_style_contract import (
     completed_style_report, graph_style_manifest, style_control_schema, style_node_report,
@@ -48,10 +53,11 @@ from .effect_graph_spectral import (
 MAX_NODES = 256
 MAX_INPUTS = 32
 KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement',
-         'spectral_displacement', 'composite', 'transition', 'layer_style'}
+         'spectral_displacement', 'composite', 'transition', 'layer_style', 'spatial_warp'}
 TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte', 'spectral', *GEOMETRIC_STYLES}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
+    'spatial_warp': set(WARP_CONTROLS),
     'layer_style': set(STYLE_CONTROLS),
     'opacity': {'opacity'},
     'matte': {'feather', 'expand', 'mask_opacity', 'mask_combine', 'matte_channel', 'invert', 'alpha_source'},
@@ -72,6 +78,7 @@ CONTROL_TARGETS['source'] = {'opacity'}
 CONTROL_TARGETS['copy'] = {'opacity'}
 CONTROL_TARGETS['composite'] = {'opacity', 'mode'}
 ENUM_CONTROLS = {
+    'spatial_warp': WARP_ENUMS,
     'layer_style': STYLE_ENUMS,
     'matte': {'mask_combine': MATTE_COMBINES, 'matte_channel': frozenset({'alpha', 'luminance'}),
               'alpha_source': ALPHA_SOURCES,
@@ -115,7 +122,7 @@ class EffectGraph:
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
                                'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma',
-                               'timing', *GEOMETRY_RANGES, *STYLE_FIELDS}:
+                               'timing', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -128,6 +135,8 @@ class EffectGraph:
                 raise ValueError('layer-style properties require a layer_style node')
             if kind == 'layer_style':
                 validate_style(entry)
+            if kind != 'spatial_warp' and WARP_FIELDS & entry.keys():
+                raise ValueError('warp properties require a spatial_warp node')
             if 'timing' in entry and kind != 'transition':
                 raise ValueError('timing is only supported on transition nodes')
             inputs = entry.get('inputs', [])
@@ -137,6 +146,8 @@ class EffectGraph:
                 raise ValueError(f'wrong input count for {kind}')
             if kind == 'layer_style':
                 validate_style_inputs(entry, len(inputs))
+            if kind == 'spatial_warp':
+                validate_spatial(entry, len(inputs))
             opacity = entry.get('opacity', 1.0)
             if type(opacity) not in (int, float) or not isfinite(opacity) or not 0 <= opacity <= 1:
                 raise ValueError('opacity must be finite and between 0 and 1')
@@ -277,6 +288,9 @@ class EffectGraph:
                 or any(v not in accepted for v in choices)
                 or len({(type(v), v) for v in choices}) != len(choices)):
             raise ValueError('invalid categorical graph control choices')
+        if node.kind == 'spatial_warp' and property_name == 'warp_type':
+            for value in choices:
+                validate_spatial({**node.config, 'warp_type': value}, len(node.inputs))
         if node.kind == 'layer_style' and property_name in {'style_type', 'pattern_kind'}:
             for value in choices:
                 validate_style_inputs(style_control_apply(node.config, property_name, value), len(node.inputs))
@@ -292,11 +306,21 @@ class EffectGraph:
                     raise ValueError('geometric transition settings require geometric style')
 
     def control_descriptors(self, node_id):
-        """Typed M6 controls for authoring; legacy node descriptors remain separate."""
+        """Typed M6/M7 controls for authoring; other node descriptors remain separate."""
         node = self.nodes.get(node_id)
+        if node is not None and node.kind == 'spatial_warp':
+            return spatial_parameter_descriptors(node.config, input_count=len(node.inputs))
         if node is None or node.kind != 'layer_style':
-            raise ValueError('descriptor discovery currently requires a layer_style node')
+            raise ValueError('descriptor discovery currently requires a layer_style node or spatial_warp')
         return style_control_schema(node.config, input_count=len(node.inputs))
+
+    def spatial_manifest(self):
+        """Detached capability/control report for reachable spatial-warp nodes."""
+        return {
+            key: {'inputs': list(self.nodes[key].inputs),
+                  **spatial_capabilities(self.nodes[key].config, input_count=len(self.nodes[key].inputs))}
+            for key in self.order if self.nodes[key].kind == 'spatial_warp'
+        }
 
     def style_manifest(self, *, include_unreachable=False, active_only=False):
         """Detached M6 capability/control inventory, including expanded chain IDs."""
@@ -316,6 +340,8 @@ class EffectGraph:
     def base_control_value(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
         config = self.nodes[node_id].config
+        if self.nodes[node_id].kind == 'spatial_warp' and property_name != 'opacity':
+            return spatial_control_base(config, property_name)
         if self.nodes[node_id].kind == 'layer_style' and property_name != 'opacity':
             return style_control_base(config, property_name)
         if self.nodes[node_id].kind == 'transition' and property_name.startswith('timing.'):
@@ -368,6 +394,9 @@ class EffectGraph:
             node_id, property_name = target
             node = self.nodes.get(node_id)
             self.validate_control_target(node_id, property_name)
+            if node.kind == 'spatial_warp' and property_name != 'opacity':
+                configs[node_id] = spatial_control_apply(configs.get(node_id, node.config), property_name, value)
+                continue
             if node.kind == 'layer_style' and property_name != 'opacity':
                 configs[node_id] = style_control_apply(
                     configs.get(node_id, node.config), property_name, value
@@ -528,6 +557,17 @@ class EffectGraph:
                             result = chroma_key(inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
                     else:
                         result = chroma_key(inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
+                elif kind == 'spatial_warp':
+                    validate_spatial(config, len(inputs))
+                    if gpu_strict:
+                        from .effect_graph_gpu import GPUUnsupported
+                        raise GPUUnsupported('spatial_warp GPU execution is not implemented; use cpu or auto')
+                    if gpu_backend is not None:
+                        gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                    result, warped_alpha = render_spatial_warp_with_alpha(
+                        inputs[0], config, map_image=inputs[1] if len(inputs) == 2 else None,
+                        original_alpha=original_alphas[node.inputs[0]],
+                    )
                 elif kind == 'layer_style':
                     # M6 CPU reference: no claim of GPU-native style execution.
                     if gpu_strict:
@@ -602,7 +642,9 @@ class EffectGraph:
                     original_alpha=original_alphas[node.inputs[0]], gpu_backend=gpu_backend,
                 )
             results[key] = result
-            if kind == 'source' or kind in {'transition', 'composite'}:
+            if kind == 'spatial_warp':
+                original_alphas[key] = warped_alpha
+            elif kind == 'source' or kind in {'transition', 'composite'}:
                 original_alphas[key] = result.getchannel('A')
             else:
                 original_alphas[key] = original_alphas[node.inputs[0]]

@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.13 — 1 November 2026
-**Status:** Active implementation. M6.4 merged; v27 implements M6.5 style controls, capability/bounds reports and acceptance coverage. Native/full CI and GPU-native styles remain separately gated.
+**Version:** 1.14 — 1 November 2026
+**Status:** Active implementation. M6.5 merged; v28 adds M7.3 reusable CPU spatial warps. Native/full CI and GPU-native spatial effects remain separately gated.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -477,3 +477,24 @@ The static capability catalogue and sample reports do not create new effects or
 change the canvas. The underlying raster primitives and source clocks are unchanged.
 M6 is not release-accepted solely on the isolated snapshot tests. Next: M7 spatial
 and procedural effects, reusing M4 spectral primitives rather than duplicating them.
+
+
+### M7.3 — reusable spatial warps (v28)
+
+M7.1–M7.2 reuse the existing M4 spectral selection/displacement implementation.
+M7.3 introduces a normal `spatial_warp` node: wave, coherent turbulence, swirl,
+radial pinch/bulge, mirror, kaleidoscope, polar wrap/unwrap and two-input RGBA-map
+displacement. It reuses the established alpha-safe samplers and transports source
+alpha lineage through the same coordinate map. All meaningful parameters have
+validated native control paths, descriptors and topology-safe category choices.
+
+- [x] CPU coordinate fields, row-tiled sampling and explicit border modes.
+- [x] Original-alpha transport, independent forks and chain preprocessing.
+- [x] Exact neutral shortcuts, source immutability and deterministic seek tests.
+- [x] Executable example, actual rendered evidence and capability discovery.
+- [ ] Real native Project/Compositor tests, full repository lint/tests and CI.
+- [ ] GPU kernels, cross-vendor parity and hardware performance (M8).
+
+Details: [effect-graph-m7-3-spatial-warps.md](effect-graph-m7-3-spatial-warps.md).
+M7.4 glitch/pixel effects and M7.5 procedural control textures remain next; this
+change does not mark all of M7 complete.

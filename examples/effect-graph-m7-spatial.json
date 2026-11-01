@@ -1,0 +1,21 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {"id": "layer:native", "type": "source"},
+      {"id": "wave", "type": "spatial_warp", "inputs": ["layer:native"],
+       "warp_type": "wave", "warp_amplitude": [12, 6], "warp_scale": [96, 72],
+       "warp_border": "transparent", "warp_phase": 0},
+      {"id": "glow", "type": "layer_style", "inputs": ["wave"],
+       "style_type": "outer_glow", "alpha_source": "original", "style_color": "#00ddff",
+       "style_blur": 5, "style_strength": 0.7, "style_output": "effect"},
+      {"id": "final", "type": "composite", "inputs": ["glow", "wave"], "mode": "over"}
+    ],
+    "output": "final"
+  },
+  "effect_graph_controls": [
+    {"id": "wave-phase", "node": "wave", "property": "warp_phase",
+     "motion": {"kind": "named", "pattern": "circle"}, "axis": "x", "range": [0, 6.283185307179586]},
+    {"id": "wave-width", "node": "wave", "property": "warp_amplitude.x",
+     "motion": {"kind": "named", "pattern": "circle"}, "axis": "y", "range": [0, 24]}
+  ]
+}
