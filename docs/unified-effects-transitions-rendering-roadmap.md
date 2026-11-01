@@ -374,3 +374,20 @@ Details: [effect-graph-m5-3-geometric-transitions.md](effect-graph-m5-3-geometri
 
 Details: [effect-graph-m5-4-transition-chains.md](effect-graph-m5-4-transition-chains.md).
 M5.5 follows with beat-locked and non-monotonic progress presets.
+
+### M5.5 — Beat-authoritative transition timing (v23 candidate)
+
+- [x] Optional, validated `timing` object on every transition, including expanded `transition_chain` stages.
+- [x] Reuse existing source and continuous beat authorities (including variable BPM maps and repeated audio).
+- [x] Beat-aligned start, duration, phase offset, once/loop/pingpong cycling, independent period and optional stepped progression.
+- [x] Reversible/non-monotonic presets and authorable bounded keyframe curves.
+- [x] Every meaningful timing scalar/enum accessible through the existing native `effect_graph_controls` interface; explicit progress control takes precedence.
+- [x] Stateless exact-frame/random-access behaviour; original graph configuration stays unchanged.
+- [x] Focused graph, chain and visual-fixture tests plus hash manifest; synthetic project tests added.
+- [ ] Full CI matrix and real-project test execution on the merged commit.
+
+Detailed contract: [effect-graph-m5-5-beat-timed-transitions.md](effect-graph-m5-5-beat-timed-transitions.md).
+
+v22's general CI initially failed at Ruff F401 for an unused `ImageFont` import in
+`integration/build_effect_graph_m5_4_visuals.py`; the v23 patch removes the
+unused import. The dedicated GPU parity workflow was green on the v22 baseline.

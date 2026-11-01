@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 import sys
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'src'))
 from framerudiments.effect_graph import EffectGraph  # noqa: E402

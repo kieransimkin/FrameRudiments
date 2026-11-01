@@ -48,5 +48,5 @@ def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str
         # the source identity and its transparent alpha rather than raising.
         sources.setdefault(source_id, Image.new('RGBA', frame.size))
     values = controls.values(context, graph) if controls is not None else {}
-    return graph.render(sources, parameter_values=values,
+    return graph.render(sources, parameter_values=values, context=context,
                         gpu_backend=gpu_backend, gpu_strict=gpu_strict)

@@ -39,6 +39,7 @@ class FrameContext:
     word: dict | None = None
     lyric_next: dict | None = None
     lyric_next_beat: float | None = None
+    source_beat: float | None = None
 
 
 class TextBlock:
@@ -468,6 +469,7 @@ class Compositor:
             word,
             lyric_next,
             p.continuous_beat(lyric_next["frame"]) if lyric_next is not None else None,
+            source_beat=p.clock.beat_at(p.source_time(frame)),
         )
 
     def _caption_draw(self, image, text, ctx):

@@ -12,6 +12,10 @@ from PIL import Image, ImageColor
 
 from .effect_graph_transitions import render_transition
 from .effect_graph_transition_chains import expand_transition_chains
+from .effect_graph_transition_timing import (
+    TIMING_DEFAULTS, TIMING_ENUMS, TIMING_RANGES,
+    transition_timing_progress, validate_transition_timing,
+)
 from .effect_graph_transition_geometry import (
     GEOMETRIC_STYLES, GEOMETRY_DEFAULTS, GEOMETRY_RANGES, validate_transition_geometry,
 )
@@ -99,7 +103,7 @@ class EffectGraph:
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
                                'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma',
-                               *GEOMETRY_RANGES}:
+                               'timing', *GEOMETRY_RANGES}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -108,6 +112,8 @@ class EffectGraph:
                 raise ValueError(f'unsupported node type: {kind}')
             if 'alpha_source' in entry and kind not in {'matte', 'chroma_key'}:
                 raise ValueError('alpha_source is only supported on matte and chroma_key nodes')
+            if 'timing' in entry and kind != 'transition':
+                raise ValueError('timing is only supported on transition nodes')
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
@@ -135,6 +141,8 @@ class EffectGraph:
                 validate_transition_matte(entry)
                 validate_transition_spectral(entry)
                 validate_transition_geometry(entry)
+                if 'timing' in entry:
+                    validate_transition_timing(entry['timing'])
                 if entry.get('direction', 'right') not in TRANSITION_DIRECTIONS:
                     raise ValueError('unsupported transition direction')
                 for name, default, maximum in [('progress', 0.0, 1.0), ('feather', 0.0, 1.0)]:
@@ -179,6 +187,13 @@ class EffectGraph:
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)
         if (node is not None and node.kind == 'transition'
+                and isinstance(property_name, str) and property_name.startswith('timing.')
+                and isinstance(node.config.get('timing'), dict)
+                and property_name.removeprefix('timing.') in (TIMING_ENUMS.keys() | TIMING_RANGES.keys())):
+            if property_name == 'timing.preset' and 'keys' in node.config['timing']:
+                raise ValueError('timing preset cannot override keyframes')
+            return
+        if (node is not None and node.kind == 'transition'
                 and property_name in GEOMETRY_RANGES
                 and node.config.get('transition_style', 'dissolve') not in GEOMETRIC_STYLES):
             raise ValueError('geometric control target requires geometric transition style')
@@ -204,7 +219,9 @@ class EffectGraph:
     def is_categorical_control(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
         node = self.nodes[node_id]
-        return (property_name in ENUM_CONTROLS.get(node.kind, {})
+        return (node.kind == 'transition' and property_name.startswith('timing.')
+                and property_name.removeprefix('timing.') in TIMING_ENUMS
+                or property_name in ENUM_CONTROLS.get(node.kind, {})
                 or (node.kind == 'spectral_displacement'
                     and spectral_control_parts(node.config, property_name) is not None
                     and property_name.endswith('.space'))
@@ -215,6 +232,8 @@ class EffectGraph:
         self.validate_control_target(node_id, property_name)
         node = self.nodes[node_id]
         accepted = ENUM_CONTROLS.get(node.kind, {}).get(property_name)
+        if node.kind == 'transition' and property_name.startswith('timing.'):
+            accepted = TIMING_ENUMS.get(property_name.removeprefix('timing.'))
         if (accepted is None and node.kind == 'spectral_displacement'
                 and spectral_control_parts(node.config, property_name) is not None
                 and property_name.endswith('.space')):
@@ -243,6 +262,9 @@ class EffectGraph:
     def base_control_value(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
         config = self.nodes[node_id].config
+        if self.nodes[node_id].kind == 'transition' and property_name.startswith('timing.'):
+            name = property_name.removeprefix('timing.')
+            return config['timing'].get(name, TIMING_DEFAULTS.get(name, config['timing'].get('duration_beats', 4)))
         if self.nodes[node_id].kind == 'spectral_displacement' and property_name.startswith('bands.'):
             return spectral_control_base(config, property_name)
         if self.nodes[node_id].kind == 'transition' and property_name.startswith('bands.'):
@@ -268,7 +290,7 @@ class EffectGraph:
                                           'edge_radius': 3}.get(property_name, 0))
 
     def render(self, sources: dict[str, Image.Image], *, parameter_values=None,
-               gpu_backend=None, gpu_strict=False) -> Image.Image:
+               gpu_backend=None, gpu_strict=False, context=None) -> Image.Image:
         """Render with optional resolved per-frame controls keyed by (node_id, property).
 
         Values are already evaluated by the host modulation engine. Never mutate
@@ -284,6 +306,21 @@ class EffectGraph:
             node_id, property_name = target
             node = self.nodes.get(node_id)
             self.validate_control_target(node_id, property_name)
+            if node.kind == 'transition' and property_name.startswith('timing.'):
+                part = property_name.removeprefix('timing.')
+                if part in TIMING_ENUMS:
+                    if (type(value) is not bool and not isinstance(value, str)) or value not in TIMING_ENUMS[part]:
+                        raise ValueError('invalid categorical timing control')
+                elif (type(value) not in (int, float) or not isfinite(value)
+                      or not TIMING_RANGES[part][0] <= value <= TIMING_RANGES[part][1]):
+                    raise ValueError('transition timing control out of range')
+                if part == 'steps':
+                    if not float(value).is_integer() or value == 1:
+                        raise ValueError('timing steps must be 0 or 2..64')
+                    value = int(value)
+                cfg = configs.setdefault(node_id, dict(node.config))
+                cfg['timing'] = {**cfg.get('timing', {}), part: value}
+                continue
             if node.kind == 'spectral_displacement' and property_name.startswith('bands.'):
                 configs[node_id] = spectral_control_apply(
                     configs.get(node_id, node.config), property_name, value
@@ -353,6 +390,20 @@ class EffectGraph:
             else:
                 config[property_name] = (round(value) if property_name == 'segments'
                                          and node.kind == 'transition' else value)
+        # The host clock drives timing without accumulating mutable state.
+        # An explicit native progress binding takes priority over the timer.
+        for key in self.order:
+            node = self.nodes[key]
+            if node.kind != 'transition' or 'timing' not in node.config:
+                continue
+            effective = configs.get(key, node.config)
+            validate_transition_timing(effective['timing'])
+            if context is not None and (key, 'progress') not in parameter_values:
+                progress = transition_timing_progress(
+                    effective['timing'], continuous_beat=context.beat,
+                    source_beat=getattr(context, 'source_beat', None),
+                )
+                configs.setdefault(key, dict(node.config))['progress'] = progress
         results = {}
         if gpu_backend is not None:
             # Last completed evaluation only; no feedback into deterministic effects.
