@@ -1,0 +1,26 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {"id": "frame", "type": "source"},
+      {"id": "mask", "type": "procedural_field", "inputs": ["frame"],
+       "field_type": "fbm", "field_output": "grayscale", "field_scale": [96, 96],
+       "field_seed": 23, "field_contrast": 2},
+      {"id": "cut", "type": "matte", "inputs": ["frame", "mask"], "matte_channel": "luminance"},
+      {"id": "flow", "type": "procedural_field", "inputs": ["frame"],
+       "field_type": "fbm", "field_output": "vector", "field_vector": "curl",
+       "field_scale": [96, 96], "field_vector_gain": 32, "field_seed": 7},
+      {"id": "warp", "type": "spatial_warp", "inputs": ["cut", "flow"],
+       "warp_type": "displacement", "warp_amplitude": [20, 12], "warp_neutral": 0.5019607843137255},
+      {"id": "glow", "type": "layer_style", "inputs": ["warp"],
+       "style_type": "outer_glow", "style_color": "#24d7cc", "style_blur": 5,
+       "style_spread": 2, "alpha_source": "current"}
+    ],
+    "output": "glow"
+  },
+  "effect_graph_controls": [
+    {"id": "mask-motion", "node": "mask", "property": "field_phase",
+     "motion": {"kind": "named", "pattern": "circle"}, "axis": "x", "range": [-1, 2]},
+    {"id": "flow-motion", "node": "flow", "property": "field_phase",
+     "motion": {"kind": "named", "pattern": "circle"}, "axis": "y", "range": [-0.5, 1.5]}
+  ]
+}

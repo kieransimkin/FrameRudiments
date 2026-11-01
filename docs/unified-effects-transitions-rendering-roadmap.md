@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.15 — 1 November 2026
-**Status:** M7.3 merged. v29 implements M7.4 CPU pixel, scanline, CRT and glitch effects. Native/full CI acceptance and GPU-native raster kernels remain separate gates.
+**Version:** 1.16 — 1 November 2026
+**Status:** M7.4 merged. v30 implements M7.5 CPU procedural textures, mattes and vector fields. Native/full CI acceptance and GPU-native execution remain separate gates.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -516,3 +516,24 @@ change does not mark all of M7 complete.
 See [M7.4 specification](effect-graph-m7-4-raster-effects.md). These are stylised
 image operations, not physical CRT emulation, video-codec corruption or temporal
 datamoshing. M7.5 procedural texture/control-field nodes are next.
+
+
+### M7.5 — procedural textures, masks and control fields (v30)
+
+- [x] Same-canvas `procedural_field` generator using one dimension/coverage reference.
+- [x] Constant, linear/radial/angular, stripe/ring/checker, value-noise/fBm/ridged and cellular fields.
+- [x] Explicit grayscale, white-RGB alpha-mask, premultiplied palette and signed-RG vector output.
+- [x] Independent, gradient and curl-derived vectors with exact byte-128 neutral encoding.
+- [x] Native controls, stable palette IDs, detached descriptors and reachable-node capability manifest.
+- [x] Reuse existing noise, palette, matte, transition, pattern-overlay and displacement mechanisms.
+- [x] New generated-alpha lineage, immutable forks, chain preprocessing and bounded row-tile execution.
+- [x] Focused reference/consumer tests, real native test module and reproducible visual/benchmark tools.
+- [ ] Run real-project/recorded-frequency-lane acceptance, Ruff and full cross-platform CI.
+- [ ] GPU kernels, surface lifetimes/pooling, cross-vendor parity and hardware measurements (M8).
+
+See [M7.5 specification](effect-graph-m7-5-procedural-fields.md) and
+`examples/effect-graph-procedural-fields.json`. Value noise is not Perlin/simplex;
+curl-derived maps are not fluid simulation. No audio analysis, hidden clock,
+shader execution or scene-linear/HDR pipeline is introduced. M7 is not declared
+release-accepted from isolated tests. Next: M8.1 backend capability and surface
+contracts, followed by GPU graph execution and bounded resource reuse.

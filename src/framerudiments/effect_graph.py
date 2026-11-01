@@ -11,6 +11,11 @@ from collections.abc import Mapping
 from math import isfinite
 from PIL import Image, ImageColor
 
+from .effect_graph_fields import (
+    FIELD_CONTROLS, FIELD_ENUMS, FIELD_FIELDS, field_capabilities,
+    field_control_apply, field_control_base, field_control_valid,
+    field_parameter_descriptors, render_procedural_field, validate_field,
+)
 from .effect_graph_raster import (
     RASTER_CONTROLS, RASTER_ENUMS, RASTER_FIELDS, raster_capabilities,
     raster_control_apply, raster_control_base, raster_parameter_descriptors,
@@ -58,10 +63,11 @@ from .effect_graph_spectral import (
 MAX_NODES = 256
 MAX_INPUTS = 32
 KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement',
-         'spectral_displacement', 'composite', 'transition', 'layer_style', 'spatial_warp', 'raster_effect'}
+         'spectral_displacement', 'composite', 'transition', 'layer_style', 'spatial_warp', 'raster_effect', 'procedural_field'}
 TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte', 'spectral', *GEOMETRIC_STYLES}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
+    'procedural_field': set(FIELD_CONTROLS),
     'raster_effect': set(RASTER_CONTROLS),
     'spatial_warp': set(WARP_CONTROLS),
     'layer_style': set(STYLE_CONTROLS),
@@ -84,6 +90,7 @@ CONTROL_TARGETS['source'] = {'opacity'}
 CONTROL_TARGETS['copy'] = {'opacity'}
 CONTROL_TARGETS['composite'] = {'opacity', 'mode'}
 ENUM_CONTROLS = {
+    'procedural_field': FIELD_ENUMS,
     'raster_effect': RASTER_ENUMS,
     'spatial_warp': WARP_ENUMS,
     'layer_style': STYLE_ENUMS,
@@ -129,7 +136,7 @@ class EffectGraph:
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
                                'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma',
-                               'timing', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS}:
+                               'timing', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS, *FIELD_FIELDS}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -144,6 +151,8 @@ class EffectGraph:
                 validate_style(entry)
             if kind != 'spatial_warp' and WARP_FIELDS & entry.keys():
                 raise ValueError('warp properties require a spatial_warp node')
+            if kind != 'procedural_field' and FIELD_FIELDS & entry.keys():
+                raise ValueError('field properties require a procedural_field node')
             if kind != 'raster_effect' and RASTER_FIELDS & entry.keys():
                 raise ValueError('raster properties require a raster_effect node')
             if 'timing' in entry and kind != 'transition':
@@ -155,6 +164,8 @@ class EffectGraph:
                 raise ValueError(f'wrong input count for {kind}')
             if kind == 'layer_style':
                 validate_style_inputs(entry, len(inputs))
+            if kind == 'procedural_field':
+                validate_field(entry, len(inputs))
             if kind == 'raster_effect':
                 validate_raster(entry, len(inputs))
             if kind == 'spatial_warp':
@@ -233,6 +244,10 @@ class EffectGraph:
 
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)
+        if node is not None and node.kind == 'procedural_field':
+            if property_name == 'opacity' or field_control_valid(node.config, property_name):
+                return
+            raise ValueError('unknown procedural_field control target')
         if node is not None and node.kind == 'layer_style':
             if property_name == 'opacity' or style_control_valid(node.config, property_name):
                 return
@@ -319,13 +334,23 @@ class EffectGraph:
     def control_descriptors(self, node_id):
         """Typed M6/M7 controls for authoring; other node descriptors remain separate."""
         node = self.nodes.get(node_id)
+        if node is not None and node.kind == 'procedural_field':
+            return field_parameter_descriptors(node.config, input_count=len(node.inputs))
         if node is not None and node.kind == 'raster_effect':
             return raster_parameter_descriptors(node.config, input_count=len(node.inputs))
         if node is not None and node.kind == 'spatial_warp':
             return spatial_parameter_descriptors(node.config, input_count=len(node.inputs))
         if node is None or node.kind != 'layer_style':
-            raise ValueError('descriptor discovery currently requires a layer_style node or spatial_warp')
+            raise ValueError('descriptor discovery requires a style, spatial, raster or procedural node')
         return style_control_schema(node.config, input_count=len(node.inputs))
+
+    def field_manifest(self):
+        """Detached M7.5 capabilities and controls for reachable generated fields."""
+        return {
+            key: {'inputs': list(self.nodes[key].inputs),
+                  **field_capabilities(self.nodes[key].config, input_count=len(self.nodes[key].inputs))}
+            for key in self.order if self.nodes[key].kind == 'procedural_field'
+        }
 
     def raster_manifest(self):
         """Detached M7.4 capability/control report for reachable raster nodes."""
@@ -361,6 +386,8 @@ class EffectGraph:
     def base_control_value(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
         config = self.nodes[node_id].config
+        if self.nodes[node_id].kind == 'procedural_field' and property_name != 'opacity':
+            return field_control_base(config, property_name)
         if self.nodes[node_id].kind == 'raster_effect' and property_name != 'opacity':
             return raster_control_base(config, property_name)
         if self.nodes[node_id].kind == 'spatial_warp' and property_name != 'opacity':
@@ -417,6 +444,9 @@ class EffectGraph:
             node_id, property_name = target
             node = self.nodes.get(node_id)
             self.validate_control_target(node_id, property_name)
+            if node.kind == 'procedural_field' and property_name != 'opacity':
+                configs[node_id] = field_control_apply(configs.get(node_id, node.config), property_name, value)
+                continue
             if node.kind == 'raster_effect' and property_name != 'opacity':
                 configs[node_id] = raster_control_apply(configs.get(node_id, node.config), property_name, value)
                 continue
@@ -527,6 +557,8 @@ class EffectGraph:
                 )
                 configs.setdefault(key, dict(node.config))['progress'] = progress
         for key, config in configs.items():
+            if self.nodes[key].kind == 'procedural_field':
+                validate_field(config, len(self.nodes[key].inputs))
             if self.nodes[key].kind == 'raster_effect':
                 validate_raster(config, len(self.nodes[key].inputs))
             if self.nodes[key].kind == 'layer_style':
@@ -585,6 +617,15 @@ class EffectGraph:
                             result = chroma_key(inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
                     else:
                         result = chroma_key(inputs[0], config, original_alpha=original_alphas[node.inputs[0]])
+                elif kind == 'procedural_field':
+                    if gpu_strict:
+                        from .effect_graph_gpu import GPUUnsupported
+                        raise GPUUnsupported('procedural_field GPU execution is not implemented; use cpu or auto')
+                    if gpu_backend is not None:
+                        gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                    result = render_procedural_field(
+                        inputs[0], config, original_alpha=original_alphas[node.inputs[0]],
+                    )
                 elif kind == 'raster_effect':
                     # CPU reference, including identity operations in strict mode.
                     # Never advertise a raster node as an executed GPU shader.
@@ -685,7 +726,7 @@ class EffectGraph:
                 original_alphas[key] = raster_alpha
             elif kind == 'spatial_warp':
                 original_alphas[key] = warped_alpha
-            elif kind == 'source' or kind in {'transition', 'composite'}:
+            elif kind == 'source' or kind in {'transition', 'composite', 'procedural_field'}:
                 original_alphas[key] = result.getchannel('A')
             else:
                 original_alphas[key] = original_alphas[node.inputs[0]]

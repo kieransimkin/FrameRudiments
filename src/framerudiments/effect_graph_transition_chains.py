@@ -13,7 +13,7 @@ MAX_CHAIN_INPUTS = 8
 MAX_INPUT_EFFECTS = 4
 CHAIN_PROPERTIES = frozenset({'id', 'type', 'inputs', 'stages', 'input_effects', 'opacity'})
 UNARY_EFFECTS = frozenset({
-    'copy', 'opacity', 'chromatic_displacement', 'spectral_displacement', 'chroma_key', 'layer_style', 'spatial_warp', 'raster_effect',
+    'copy', 'opacity', 'chromatic_displacement', 'spectral_displacement', 'chroma_key', 'layer_style', 'spatial_warp', 'raster_effect', 'procedural_field',
 })
 _ID = re.compile(r'[a-z][a-z0-9_-]{0,31}\Z')
 
