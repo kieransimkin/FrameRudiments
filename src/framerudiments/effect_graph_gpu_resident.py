@@ -1,4 +1,4 @@
-"""Bounded GPU-resident effect DAG execution (M8.4–M8.5).
+"""Bounded GPU-resident effect DAG execution (M8.4–M8.6).
 
 Supported graphs keep shared, immutable RGBA8 source textures on the GPU and
 read back only their final surface. A dry execution uses the *same* lifetime
@@ -6,17 +6,29 @@ scheduler as real rendering, so resource preflight accounts for multi-pass
 filters, composite temporaries and aliasing before uploading any pixels.
 
 This is deliberately an all-or-nothing resident island: unsupported mattes,
-keys, spectral, spatial or custom nodes retain the established node bridge.
+keys, spatial or custom nodes retain the established node bridge.
 The GPU backend owns shaders/context; the scheduler only owns frame resources.
 """
 from __future__ import annotations
 
 from collections import Counter
+from struct import pack
+
+from PIL import ImageColor
 
 from .effect_graph_gpu_kernels import (
     BLOOM_SELECT, CHROMATIC, FILTER_FINAL, GAUSSIAN, TRANSITION,
 )
 from .effect_graph_filter import MAX_FILTER_DIMENSION, MAX_FILTER_PIXELS
+from .effect_graph_gpu_spectral import (
+    BASE as SPECTRAL_BASE,
+    COPY as SPECTRAL_COPY,
+    BAND as SPECTRAL_BAND,
+    FINAL as SPECTRAL_FINAL,
+    SPACE_INDEX as SPECTRAL_SPACE_INDEX,
+    _bind_band as bind_spectral_band,
+)
+from .effect_graph_spectral import validate_spectral
 
 OPACITY = '''#version 330
 uniform sampler2D source_tex;
@@ -46,6 +58,8 @@ def _identity(kind, config):
     if kind == 'chromatic_displacement':
         return not any(any(config.get(f'{c}_offset', (0, 0)))
                        for c in ('red', 'green', 'blue'))
+    if kind == 'spectral_displacement':
+        return config.get('mix', 1) == 0
     if kind == 'filter':
         style = config.get('filter_type', 'blur')
         return (config.get('filter_mix', 1) == 0
@@ -57,7 +71,7 @@ def _identity(kind, config):
 def supported(graph, configs):
     """Only closed DAGs whose every operation has a resident GLSL equivalent."""
     kinds = {'source', 'copy', 'opacity', 'transition', 'composite',
-             'chromatic_displacement', 'filter'}
+             'chromatic_displacement', 'filter', 'spectral_displacement'}
     for key in graph.order:
         node = graph.nodes[key]
         cfg = configs.get(key, node.config)
@@ -70,6 +84,8 @@ def supported(graph, configs):
             return False
         if node.kind == 'filter' and cfg.get('filter_type', 'blur') not in {'blur', 'bloom'}:
             return False
+        if node.kind == 'spectral_displacement':
+            validate_spectral(cfg)
     return True
 
 
@@ -122,7 +138,7 @@ class _ResidentRun:
             self.pool.append(pair)
             self.peak_pool = max(self.peak_pool, len(self.pool))
 
-    def _draw(self, name, shader_code, bindings, uniforms):
+    def _draw(self, name, shader_code, bindings, uniforms, *, prepare_shader=None):
         if self.pool:
             result = self.pool.pop()
         else:
@@ -137,6 +153,10 @@ class _ResidentRun:
         self._track(texture)
         if not self.dry:
             shader, vao = self.backend._get_shader(name, shader_code)
+            # M8.6 spectral passes need fixed-size vec4 uniform arrays and
+            # per-band metadata. Never mutate shader state during dry preflight.
+            if prepare_shader is not None:
+                prepare_shader(shader)
             framebuffer.use()
             self.backend.ctx.viewport = (0, 0, *self.size)
             self.backend.ctx.disable(self.backend._moderngl.BLEND)
@@ -178,6 +198,55 @@ class _ResidentRun:
         self._recycle(vertical)
         return output
 
+    def _spectral(self, source, config):
+        """Render all spectral bands on GPU, recycling two ping-pong targets.
+
+        Reuse the same validated GLSL and per-band bindings as the M4.2 GPU
+        bridge. Only *owned* temporaries are recycled: the original is a
+        shared graph input whose texture may be referenced by other branches.
+        Band passes always read the immutable original, never the previous
+        band's transformed output as their colour-selection source.
+        """
+        validate_spectral(config)
+        bands = config['bands']
+        mode = config.get('spectral_mode', 'overlay')
+
+        if mode == 'replace':
+            def bind_base(shader):
+                colours = [(*[v / 255 for v in ImageColor.getrgb(b['source_color'])], 1.0)
+                           for b in bands]
+                controls = [(b.get('tolerance', .08), b.get('softness', .08),
+                             b.get('opacity', 1.0), SPECTRAL_SPACE_INDEX[b.get('space', 'oklab')])
+                            for b in bands]
+                padding = (0.0, 0.0, 0.0, 0.0)
+                shader['source_colours'].write(pack(
+                    '<32f', *(v for row in (colours + [padding] * (8 - len(bands))) for v in row)))
+                shader['controls'].write(pack(
+                    '<32f', *(v for row in (controls + [padding] * (8 - len(bands))) for v in row)))
+
+            previous = self._draw(
+                'm86_spectral_base', SPECTRAL_BASE, {'original_tex': source[0]},
+                {'band_count': len(bands)}, prepare_shader=bind_base)
+        else:
+            previous = self._draw('m86_spectral_copy', SPECTRAL_COPY,
+                                  {'original_tex': source[0]}, {})
+
+        for band in bands:
+            next_pair = self._draw(
+                'm86_spectral_band', SPECTRAL_BAND,
+                {'original_tex': source[0], 'previous_tex': previous[0]}, {},
+                prepare_shader=lambda shader, band=band: bind_spectral_band(shader, band))
+            self._recycle(previous)
+            previous = next_pair
+
+        result = self._draw(
+            'm86_spectral_final', SPECTRAL_FINAL,
+            {'original_tex': source[0], 'processed_tex': previous[0]},
+            {'clip_to_source': int(config.get('alpha_mode', 'expanded') == 'source'),
+             'amount': config.get('mix', 1.0)})
+        self._recycle(previous)
+        return result
+
     def _render_node(self, key):
         node = self.graph.nodes[key]
         cfg = self.configs.get(key, node.config)
@@ -211,6 +280,11 @@ class _ResidentRun:
                             for c in ('red', 'green', 'blue')}
                 pair = self._draw('m85_chromatic', CHROMATIC,
                                   {'source_tex': pair[0]}, uniforms)
+                owned = True
+        elif kind == 'spectral_displacement':
+            pair = self.texture_of[node.inputs[0]]
+            if not _identity(kind, cfg):
+                pair = self._spectral(pair, cfg)
                 owned = True
         elif kind == 'filter':
             pair = self.texture_of[node.inputs[0]]

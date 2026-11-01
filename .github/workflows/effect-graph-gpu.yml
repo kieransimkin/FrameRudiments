@@ -15,6 +15,7 @@ on:
       - 'integration/benchmark_effect_graph_gpu.py'
       - 'integration/benchmark_effect_graph_spectral_gpu.py'
       - 'integration/benchmark_effect_graph_m8_5_gpu.py'
+      - 'integration/benchmark_effect_graph_m8_6_gpu.py'
       - '.github/workflows/effect-graph-gpu.yml'
   pull_request:
     paths:
@@ -23,6 +24,7 @@ on:
       - 'integration/benchmark_effect_graph_gpu.py'
       - 'integration/benchmark_effect_graph_spectral_gpu.py'
       - 'integration/benchmark_effect_graph_m8_5_gpu.py'
+      - 'integration/benchmark_effect_graph_m8_6_gpu.py'
       - '.github/workflows/effect-graph-gpu.yml'
 
 jobs:
@@ -53,7 +55,7 @@ jobs:
               print('OpenGL version:', gpu.capabilities.context_version)
           PY
       - name: Run real GPU-versus-CPU parity tests
-        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py tests/test_effect_graph_gpu_kernels.py tests/test_effect_graph_gpu_resident_egl.py --junitxml=gpu-transfer-results.xml
+        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py tests/test_effect_graph_gpu_kernels.py tests/test_effect_graph_gpu_resident_egl.py tests/test_effect_graph_gpu_resident_m86_egl.py --junitxml=gpu-transfer-results.xml
       - name: Require real GPU transport and parity tests with no skips
         run: |
           python - <<'PYTEST'
@@ -73,6 +75,9 @@ jobs:
           resident = [t for t in tests if 'test_effect_graph_gpu_resident_egl' in t.attrib.get('classname','')]
           if len(resident) < 4:
               raise SystemExit('M8.5 resident shader parity/budget checks were not collected')
+          spectral = [t for t in tests if 'test_effect_graph_gpu_resident_m86_egl' in t.attrib.get('classname','')]
+          if len(spectral) < 9:
+              raise SystemExit('M8.6 real resident spectral parity, budgets and recovery were not collected')
           print(f'{len(tests)} GPU tests, {len(transport)} M8.2 transfers, {len(kernels)} M8.3 kernels; none skipped')
           PYTEST
       - name: Benchmark spectral HD GPU and CPU (end-to-end)
@@ -87,6 +92,9 @@ jobs:
       - name: Benchmark M8.5 HD resident graph, transfers and CPU parity
         run: |
           python integration/benchmark_effect_graph_m8_5_gpu.py --size hd --cpu --repeats 2 --output m85-resident-gpu-hd.json
+      - name: Benchmark M8.6 HD resident spectral bands and CPU parity
+        run: |
+          python integration/benchmark_effect_graph_m8_6_gpu.py --size hd --cpu --repeats 2 --output m86-resident-spectral-hd.json
       - name: Optional GPU benchmark 4K and 8K
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.benchmarks }}
         run: |
@@ -94,6 +102,8 @@ jobs:
           python integration/benchmark_effect_graph_spectral_gpu.py --size all --backend egl --allow-large --budget-mib 1024 --repeats 2 --output spectral-gpu-benchmark-extended.json
           python integration/benchmark_effect_graph_m8_5_gpu.py --size 4k --gpu-budget-mib 1024 --output m85-resident-gpu-4k.json
           python integration/benchmark_effect_graph_m8_5_gpu.py --size 8k --gpu-budget-mib 1024 --output m85-resident-gpu-8k.json
+          python integration/benchmark_effect_graph_m8_6_gpu.py --size 4k --gpu-budget-mib 1024 --output m86-resident-spectral-4k.json
+          python integration/benchmark_effect_graph_m8_6_gpu.py --size 8k --gpu-budget-mib 1024 --output m86-resident-spectral-8k.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -103,4 +113,5 @@ jobs:
             spectral-gpu-benchmark-*.json
             m83-gpu-benchmark-*.json
             m85-resident-gpu-*.json
+            m86-resident-spectral-*.json
           if-no-files-found: ignore

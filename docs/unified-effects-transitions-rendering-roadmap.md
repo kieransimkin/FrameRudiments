@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.19 — 1 November 2026
-**Status:** M8.4 merged; M8.5 v35 adds resident chromatic/blur/bloom kernels, dry-run resource preflight and explicit strict/auto budget behaviour. Hardware/CI acceptance, mixed-graph residency and cross-vendor measurements remain open.
+**Version:** 1.20 — 1 November 2026
+**Status:** M8.5 merged; M8.6 v36 adds GPU-resident spectral bands and repairs observed merged-head Ruff/GPU parity CI failures. Exact-head hardware acceptance, mixed-graph residency and cross-vendor measurements remain open.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -614,6 +614,18 @@ See [M8.4 GPU residency](effect-graph-m8-4-residency.md).
 - [x] Strict GPU budget failures reject before upload; non-strict mode returns the whole CPU reference graph without partial per-node GPU fallback.
 - [x] Hardware-independent lifetime/cleanup tests and required real-EGL parity/transfer test cases added.
 - [x] HD CPU/GPU parity benchmark in CI, with opt-in 4K/8K renderer/profile JSON artifacts.
-- [ ] Verify hardware CI gates and collect real measurements; add resident matte/key, spectral, spatial and mixed-graph scheduling; cross-vendor validation remains unclaimed.
+- [ ] Verify hardware CI gates and collect real measurements; add resident matte/key, spatial and mixed-graph scheduling; cross-vendor validation remains unclaimed.
 
 See [M8.5 resident kernels and profiling](effect-graph-m8-5-resident-kernels-and-profiling.md).
+
+### M8.6 — closed GPU-resident spectral bands and baseline CI repairs (v36)
+
+- [x] Reuse the M4.2 GLSL selection/displacement kernels for 1–8 RGB, HSV and OKLab colour bands, independent offsets, recolour/opacity, replace/overlay and alpha policies inside closed resident DAGs.
+- [x] Preserve source texture immutability across forks and original-colour selection across every band; recycle the two alternating intermediate targets, with one final readback.
+- [x] Dry-run spectral pass planning and caller-budget checks before upload; zero-mix identity aliases its source.
+- [x] Native band-ID control resolution, shader uniform packing, failure cleanup, parity/transfer tests and headless EGL benchmarks.
+- [x] Resolve seven Ruff findings and update two stale GPU dispatch/transfer assertions observed on the v35 merged-head CI runs (`41342641164`, `41342641134`).
+- [ ] Confirm full CI including real EGL shaders on the merged v36 commit; collect hardware benchmark evidence.
+- [ ] Next: M8.7 GPU-resident matte/key with inherited original-alpha lineage and bounded mask processing; M8.8 mixed CPU/GPU graph islands and spatial processing.
+
+See [M8.6 spectral residency](effect-graph-m8-6-spectral-residency.md).

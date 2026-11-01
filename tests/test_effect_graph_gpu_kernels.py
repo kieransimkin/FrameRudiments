@@ -105,9 +105,11 @@ def test_gpu_filter_in_graph_and_stable_alpha(backend):
     before_a=a.tobytes()
     out=g.render({'a':a,'b':b},gpu_backend=backend,gpu_strict=True)
     near(out,g.render({'a':a,'b':b}),6)
-    assert backend.last_dispatch=={'gpu_nodes':2,'cpu_fallbacks':0}
-    assert backend.last_transport['uploads']==3
-    assert backend.last_transport['readbacks']==2
+    # M8.5 resident DAG counts shader draws, not graph effect nodes.
+    assert backend.last_transport['gpu_resident_graph'] is True
+    assert backend.last_dispatch=={'gpu_nodes':backend.last_transport['resident_draws'],'cpu_fallbacks':0}
+    assert backend.last_transport['uploads']==2
+    assert backend.last_transport['readbacks']==1
     assert a.tobytes()==before_a
 
 

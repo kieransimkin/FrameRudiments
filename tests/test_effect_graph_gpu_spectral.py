@@ -103,7 +103,11 @@ def test_real_gpu_repeatable_and_graph_forks(gl):
     second = graph.render({"s": source}, gpu_backend=gl, gpu_strict=True)
     compare(pure, first)
     assert first.tobytes() == second.tobytes()
-    assert gl.last_dispatch == {"gpu_nodes": 1, "cpu_fallbacks": 0}
+    assert gl.last_transport['gpu_resident_graph'] is True
+    assert gl.last_dispatch == {'gpu_nodes': 5, 'cpu_fallbacks': 0}
+    assert gl.last_transport['resident_draws'] == 5
+    assert gl.last_transport['uploads'] == 1
+    assert gl.last_transport['readbacks'] == 1
 
 
 def test_gpu_zero_mix_is_exact_no_op(gl):

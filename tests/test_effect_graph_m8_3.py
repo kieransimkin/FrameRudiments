@@ -64,7 +64,8 @@ def test_invalid_filter_rejected_early(bad):
 def test_blur_does_not_bleed_hidden_transparent_rgb():
     a=np.zeros((13,13,4),dtype='uint8')
     a[6,6]=[40,90,210,255]
-    b=a.copy(); b[2:4,3:7,:3]=[255,0,255]
+    b=a.copy()
+    b[2:4,3:7,:3]=[255,0,255]
     for mode in ['clamp','transparent']:
         conf=dict(filter_type='blur',filter_radius=2,filter_border=mode)
         assert render_filter(Image.fromarray(a,'RGBA'),conf).tobytes()==render_filter(Image.fromarray(b,'RGBA'),conf).tobytes()
@@ -155,7 +156,8 @@ def test_dispatch_and_auto_fallback(kind,cfg):
     no=ProxyGPU(fail=True)
     assert baseline.tobytes()==g.render(src,gpu_backend=no).tobytes()
     assert no.last_dispatch=={'gpu_nodes':0,'cpu_fallbacks':1}
-    with pytest.raises(GPUUnsupported):g.render(src,gpu_backend=ProxyGPU(fail=True),gpu_strict=True)
+    with pytest.raises(GPUUnsupported):
+        g.render(src,gpu_backend=ProxyGPU(fail=True),gpu_strict=True)
 
 
 def test_unsupported_transition_gpu_auto_and_strict():
@@ -165,7 +167,8 @@ def test_unsupported_transition_gpu_auto_and_strict():
     assert g.render(sources,gpu_backend=fake).tobytes()==g.render(sources).tobytes()
     assert fake.seen==[]
     assert fake.last_dispatch=={'gpu_nodes':0,'cpu_fallbacks':1}
-    with pytest.raises(GPUUnsupported):g.render(sources,gpu_backend=fake,gpu_strict=True)
+    with pytest.raises(GPUUnsupported):
+        g.render(sources,gpu_backend=fake,gpu_strict=True)
 
 
 @pytest.mark.parametrize('kind,cfg,count,textures,uploads,draws', [

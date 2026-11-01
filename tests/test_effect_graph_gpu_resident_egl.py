@@ -42,7 +42,8 @@ def test_resident_budget_fails_without_partial_uploads():
                        'output':'out'})
         images={k:Image.new('RGBA',(32,32),'#ffffff') for k in ('a','b')}
         from framerudiments.effect_graph_gpu import GPUUnsupported
-        with pytest.raises(GPUUnsupported):g.render(images,gpu_backend=backend,gpu_strict=True)
+        with pytest.raises(GPUUnsupported):
+            g.render(images,gpu_backend=backend,gpu_strict=True)
         assert backend.last_transport['uploads']==0
 
 

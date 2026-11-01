@@ -1,6 +1,5 @@
 """GPU-resident M8.4 tests; hardware acceptance belongs to EGL workflow."""
 from PIL import Image
-import pytest
 
 from framerudiments.effect_graph import EffectGraph
 from framerudiments.effect_graph_gpu_resident import supported
@@ -34,7 +33,9 @@ def test_resident_dispatch_receives_resolved_controls_without_mutation():
     g = graph()
     sources = {n:Image.new('RGBA',(12,9),(20,30,40,255)) for n in ('a','b')}
     class Dummy:
-        def __init__(self): self.last_dispatch={};self.last_transport={}
+        def __init__(self):
+            self.last_dispatch={}
+            self.last_transport={}
         def begin_transfer_sample(self): self.last_transport={}
         def render_resident_graph(self, graph, supplied, configs):
             assert configs['fade']['progress'] == .7
@@ -49,7 +50,9 @@ def test_resident_dispatch_receives_resolved_controls_without_mutation():
 def test_unsupported_graph_uses_existing_dispatch():
     g=graph()
     class Dummy:
-        def __init__(self):self.last_dispatch={};self.last_transport={}
+        def __init__(self):
+            self.last_dispatch={}
+            self.last_transport={}
         def begin_transfer_sample(self):self.last_transport={}
         def render_resident_graph(self,*args):raise AssertionError('must not execute')
         def render_transition(self,a,b,c):
