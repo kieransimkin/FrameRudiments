@@ -16,6 +16,7 @@ on:
       - 'integration/benchmark_effect_graph_spectral_gpu.py'
       - 'integration/benchmark_effect_graph_m8_5_gpu.py'
       - 'integration/benchmark_effect_graph_m8_6_gpu.py'
+      - 'integration/benchmark_effect_graph_m8_7_gpu.py'
       - '.github/workflows/effect-graph-gpu.yml'
   pull_request:
     paths:
@@ -25,6 +26,7 @@ on:
       - 'integration/benchmark_effect_graph_spectral_gpu.py'
       - 'integration/benchmark_effect_graph_m8_5_gpu.py'
       - 'integration/benchmark_effect_graph_m8_6_gpu.py'
+      - 'integration/benchmark_effect_graph_m8_7_gpu.py'
       - '.github/workflows/effect-graph-gpu.yml'
 
 jobs:
@@ -55,7 +57,7 @@ jobs:
               print('OpenGL version:', gpu.capabilities.context_version)
           PY
       - name: Run real GPU-versus-CPU parity tests
-        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py tests/test_effect_graph_gpu_kernels.py tests/test_effect_graph_gpu_resident_egl.py tests/test_effect_graph_gpu_resident_m86_egl.py --junitxml=gpu-transfer-results.xml
+        run: python -m pytest -q tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py tests/test_effect_graph_gpu_kernels.py tests/test_effect_graph_gpu_resident_egl.py tests/test_effect_graph_gpu_resident_m86_egl.py tests/test_effect_graph_gpu_resident_m87_egl.py --junitxml=gpu-transfer-results.xml
       - name: Require real GPU transport and parity tests with no skips
         run: |
           python - <<'PYTEST'
@@ -78,6 +80,9 @@ jobs:
           spectral = [t for t in tests if 'test_effect_graph_gpu_resident_m86_egl' in t.attrib.get('classname','')]
           if len(spectral) < 9:
               raise SystemExit('M8.6 real resident spectral parity, budgets and recovery were not collected')
+          matte = [t for t in tests if 'test_effect_graph_gpu_resident_m87_egl' in t.attrib.get('classname', '')]
+          if len(matte) < 12:
+              raise SystemExit('M8.7 real GPU matte/chroma and lineage tests were not collected')
           print(f'{len(tests)} GPU tests, {len(transport)} M8.2 transfers, {len(kernels)} M8.3 kernels; none skipped')
           PYTEST
       - name: Benchmark spectral HD GPU and CPU (end-to-end)
@@ -95,6 +100,9 @@ jobs:
       - name: Benchmark M8.6 HD resident spectral bands and CPU parity
         run: |
           python integration/benchmark_effect_graph_m8_6_gpu.py --size hd --cpu --repeats 2 --output m86-resident-spectral-hd.json
+      - name: Benchmark M8.7 resident matte/key with inherited alpha and CPU parity
+        run: |
+          python integration/benchmark_effect_graph_m8_7_gpu.py --size hd --cpu --repeats 2 --output m87-resident-matte-key-hd.json
       - name: Optional GPU benchmark 4K and 8K
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.benchmarks }}
         run: |
@@ -104,6 +112,8 @@ jobs:
           python integration/benchmark_effect_graph_m8_5_gpu.py --size 8k --gpu-budget-mib 1024 --output m85-resident-gpu-8k.json
           python integration/benchmark_effect_graph_m8_6_gpu.py --size 4k --gpu-budget-mib 1024 --output m86-resident-spectral-4k.json
           python integration/benchmark_effect_graph_m8_6_gpu.py --size 8k --gpu-budget-mib 1024 --output m86-resident-spectral-8k.json
+          python integration/benchmark_effect_graph_m8_7_gpu.py --size 4k --gpu-budget-mib 1024 --output m87-resident-matte-key-4k.json
+          python integration/benchmark_effect_graph_m8_7_gpu.py --size 8k --gpu-budget-mib 1024 --output m87-resident-matte-key-8k.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -114,4 +124,5 @@ jobs:
             m83-gpu-benchmark-*.json
             m85-resident-gpu-*.json
             m86-resident-spectral-*.json
+            m87-resident-matte-key-*.json
           if-no-files-found: ignore

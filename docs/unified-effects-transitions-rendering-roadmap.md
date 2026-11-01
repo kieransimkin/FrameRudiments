@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.20 — 1 November 2026
-**Status:** M8.5 merged; M8.6 v36 adds GPU-resident spectral bands and repairs observed merged-head Ruff/GPU parity CI failures. Exact-head hardware acceptance, mixed-graph residency and cross-vendor measurements remain open.
+**Version:** 1.21 — 1 November 2026
+**Status:** M8.6 resident spectral parity passed the dedicated real-EGL GPU workflow (91 tests). M8.7 v37 adds resident matte/chroma and inherited original-alpha texture lineage; its full CI and driver parity gates are pending. Mixed CPU/GPU graph partitions remain planned.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -629,3 +629,15 @@ See [M8.5 resident kernels and profiling](effect-graph-m8-5-resident-kernels-and
 - [ ] Next: M8.7 GPU-resident matte/key with inherited original-alpha lineage and bounded mask processing; M8.8 mixed CPU/GPU graph islands and spatial processing.
 
 See [M8.6 spectral residency](effect-graph-m8-6-spectral-residency.md).
+
+### M8.7 — GPU-resident matte and chroma-key alpha lineage (v37)
+
+- [x] GPU-resident 1–8-input alpha/luma mattes; seven mask-combination modes, invert/opacity, fractional expand/erode and separable feather.
+- [x] Resident RGB/OKLab multi-colour chroma key with tolerance, softness, edge expand/feather and nearest-key despill.
+- [x] Original-alpha immutable RGBA texture lineage through unary effects; post-opacity reset on source, composite and transition nodes; guaranteed branch-safety under pooling.
+- [x] Reuse M3.3 GLSL kernels with resident `.a` original-alpha sampling while preserving existing per-node `.r` L-image semantics.
+- [x] Resident graph dry-run budgets, resource cleanup, CPU-only scheduling tests, real-EGL no-skip parity cases and HD/extended benchmarks.
+- [ ] Merge-time full CI plus measured EGL parity and benchmark artifacts on the exact head; cross-vendor hardware acceptance.
+- [ ] M8.8: GPU edge decontamination, mixed CPU/GPU island partitioning, spatial transforms, measured VRAM and intelligent persistent pooling.
+
+See [M8.7 matte/chroma residency](effect-graph-m8-7-matte-key-residency.md).

@@ -1,17 +1,19 @@
-"""Bounded GPU-resident effect DAG execution (M8.4–M8.6).
+"""Bounded GPU-resident effect DAG execution (M8.4–M8.7).
 
 Supported graphs keep shared, immutable RGBA8 source textures on the GPU and
 read back only their final surface. A dry execution uses the *same* lifetime
 scheduler as real rendering, so resource preflight accounts for multi-pass
 filters, composite temporaries and aliasing before uploading any pixels.
 
-This is deliberately an all-or-nothing resident island: unsupported mattes,
-keys, spatial or custom nodes retain the established node bridge.
+This is deliberately an all-or-nothing resident island: unsupported spatial
+or custom nodes retain the established node bridge. Matte/key refinement beyond
+the established M3.3 shader radius and edge-decontamination limits stays on CPU.
 The GPU backend owns shaders/context; the scheduler only owns frame resources.
 """
 from __future__ import annotations
 
 from collections import Counter
+from math import ceil, floor
 from struct import pack
 
 from PIL import ImageColor
@@ -20,6 +22,12 @@ from .effect_graph_gpu_kernels import (
     BLOOM_SELECT, CHROMATIC, FILTER_FINAL, GAUSSIAN, TRANSITION,
 )
 from .effect_graph_filter import MAX_FILTER_DIMENSION, MAX_FILTER_PIXELS
+from .effect_graph_backend_contract import gpu_requirements
+from .effect_graph_gpu import (
+    BLUR as MASK_BLUR,
+    KEY_FINAL, KEY_INIT, MASK_INIT, MATTE_FINAL,
+    MORPH_HORIZONTAL, MORPH_VERTICAL,
+)
 from .effect_graph_gpu_spectral import (
     BASE as SPECTRAL_BASE,
     COPY as SPECTRAL_COPY,
@@ -29,6 +37,17 @@ from .effect_graph_gpu_spectral import (
     _bind_band as bind_spectral_band,
 )
 from .effect_graph_spectral import validate_spectral
+
+# The M3.3 bridge uploads an L original-alpha image as RGBA and reads .r.
+# Resident lineage points to a *shared RGBA graph surface*, so alpha is .a.
+# Use dedicated shader names: never change the per-node bridge's ABI.
+_ALPHA_SAMPLE = 'texelFetch(original_tex,pos,0).r'
+if _ALPHA_SAMPLE not in MATTE_FINAL or _ALPHA_SAMPLE not in KEY_FINAL:
+    raise RuntimeError('M3.3 alpha shader contract changed; resident kernel requires review')
+MATTE_FINAL_RESIDENT = MATTE_FINAL.replace(_ALPHA_SAMPLE, 'texelFetch(original_tex,pos,0).a')
+KEY_FINAL_RESIDENT = KEY_FINAL.replace(_ALPHA_SAMPLE, 'texelFetch(original_tex,pos,0).a')
+
+MATTE_COMBINE_ORDER = ('multiply', 'min', 'max', 'add', 'subtract', 'difference', 'screen')
 
 OPACITY = '''#version 330
 uniform sampler2D source_tex;
@@ -71,7 +90,8 @@ def _identity(kind, config):
 def supported(graph, configs):
     """Only closed DAGs whose every operation has a resident GLSL equivalent."""
     kinds = {'source', 'copy', 'opacity', 'transition', 'composite',
-             'chromatic_displacement', 'filter', 'spectral_displacement'}
+             'chromatic_displacement', 'filter', 'spectral_displacement',
+             'matte', 'chroma_key'}
     for key in graph.order:
         node = graph.nodes[key]
         cfg = configs.get(key, node.config)
@@ -86,6 +106,12 @@ def supported(graph, configs):
             return False
         if node.kind == 'spectral_displacement':
             validate_spectral(cfg)
+        if node.kind in {'matte', 'chroma_key'}:
+            # This checks the *resolved* control values and honours M3.3
+            # morphological, blur, key-colour and decontamination limits.
+            # No implicit clamping or alternate shader behaviour.
+            if not gpu_requirements(node.kind, cfg, len(node.inputs)).supported:
+                return False
     return True
 
 
@@ -107,6 +133,10 @@ class _ResidentRun:
         self.pool = []
         self.all_resources = []
         self.texture_of = {}
+        # A lineage handle aliases the original alpha-bearing RGBA texture.
+        # It is inherited through unary effects, but reset after a source,
+        # transition or composite (including the universal output opacity).
+        self.alpha_of = {}
         self.inputs_left = Counter(i for key in graph.order for i in graph.nodes[key].inputs)
         self.live = set()
         self.allocated = 0
@@ -247,6 +277,97 @@ class _ResidentRun:
         self._recycle(previous)
         return result
 
+    def _refine_mask(self, mask, *, expand=0, feather=0):
+        """M3.3 bounded morphology and Gaussian on resident mask surfaces.
+
+        The mask G channel carries the nearest key index for despill through
+        morphology/blur. Targets are recycled only *after* their consuming draw.
+        """
+        if expand:
+            radius = abs(expand)
+            low, high = floor(radius), ceil(radius)
+            horizontal = self._draw(
+                'm87_mask_morph_h', MORPH_HORIZONTAL, {'source_tex': mask[0]},
+                {'inner_radius': low, 'outer_radius': high,
+                 'dilation': int(expand > 0)})
+            self._recycle(mask)
+            vertical = self._draw(
+                'm87_mask_morph_v', MORPH_VERTICAL,
+                {'source_tex': horizontal[0]},
+                {'inner_radius': low, 'outer_radius': high,
+                 'dilation': int(expand > 0), 'fraction': radius - low})
+            self._recycle(horizontal)
+            mask = vertical
+        if feather:
+            for direction in ((1, 0), (0, 1)):
+                blurred = self._draw(
+                    'm87_mask_blur', MASK_BLUR, {'source_tex': mask[0]},
+                    {'direction': direction, 'sigma': feather})
+                self._recycle(mask)
+                mask = blurred
+        return mask
+
+    def _matte(self, inputs, cfg, original):
+        """One foreground plus 1–8 alpha/luminance mask graph inputs."""
+        mask_count = len(inputs) - 1
+
+        def bind_masks(shader):
+            # GLSL 3.30 sampler arrays need explicit fixed-size bindings.
+            shader['masks'].value = tuple(range(mask_count)) + (0,) * (8 - mask_count)
+
+        mask = self._draw(
+            'm87_mask_init', MASK_INIT,
+            {f'mask_slot_{i}': pair[0] for i, pair in enumerate(inputs[1:])},
+            {'nmask': mask_count,
+             'channel_mode': int(cfg.get('matte_channel', 'alpha') == 'luminance'),
+             'combine_mode': MATTE_COMBINE_ORDER.index(cfg.get('mask_combine', 'multiply'))},
+            prepare_shader=bind_masks)
+        mask = self._refine_mask(
+            mask, expand=cfg.get('expand', 0), feather=cfg.get('feather', 0))
+        result = self._draw(
+            'm87_matte_final', MATTE_FINAL_RESIDENT,
+            {'source_tex': inputs[0][0], 'mask_tex': mask[0],
+             'original_tex': original[0]},
+            {'original_mode': int(cfg.get('alpha_source', 'current') == 'original'),
+             'inverted': int(cfg.get('invert', False)),
+             'mask_opacity': cfg.get('mask_opacity', 1)})
+        self._recycle(mask)
+        return result
+
+    def _key(self, image, cfg, original):
+        """Bounded RGB/OKLab multi-key GPU processing without host transfers."""
+        keys = cfg.get('key_colors') or [cfg.get('key_color', '#00ff00')]
+        if 'key_colors' in cfg and 'key_color' in cfg:
+            keys = [cfg['key_color'], *cfg['key_colors']]
+        colours = [(*[channel / 255 for channel in ImageColor.getrgb(key)], 1.0)
+                   for key in keys]
+        pad = (0.0, 0.0, 0.0, 1.0)
+        packed = pack('<32f', *(v for colour in
+                               (colours + [pad] * (8 - len(colours))) for v in colour))
+
+        def bind_colours(shader):
+            shader['keys'].write(packed)
+
+        mask = self._draw(
+            'm87_key_init', KEY_INIT, {'source_tex': image[0]},
+            {'nkey': len(colours),
+             'space_mode': int(cfg.get('key_space', 'rgb') == 'oklab'),
+             'tolerance': cfg.get('tolerance', .1),
+             'softness': cfg.get('softness', .1)},
+            prepare_shader=bind_colours)
+        mask = self._refine_mask(
+            mask, expand=cfg.get('edge_expand', 0),
+            feather=cfg.get('edge_feather', 0))
+        result = self._draw(
+            'm87_key_final', KEY_FINAL_RESIDENT,
+            {'source_tex': image[0], 'mask_tex': mask[0],
+             'original_tex': original[0]},
+            {'original_mode': int(cfg.get('alpha_source', 'current') == 'original'),
+             'despill': cfg.get('despill', 0), 'nkey': len(colours)},
+            prepare_shader=bind_colours)
+        self._recycle(mask)
+        return result
+
     def _render_node(self, key):
         node = self.graph.nodes[key]
         cfg = self.configs.get(key, node.config)
@@ -286,6 +407,15 @@ class _ResidentRun:
             if not _identity(kind, cfg):
                 pair = self._spectral(pair, cfg)
                 owned = True
+        elif kind == 'matte':
+            pair = self._matte(
+                [self.texture_of[name] for name in node.inputs], cfg,
+                self.alpha_of[node.inputs[0]])
+            owned = True
+        elif kind == 'chroma_key':
+            pair = self._key(self.texture_of[node.inputs[0]], cfg,
+                             self.alpha_of[node.inputs[0]])
+            owned = True
         elif kind == 'filter':
             pair = self.texture_of[node.inputs[0]]
             if not _identity(kind, cfg):
@@ -310,16 +440,29 @@ class _ResidentRun:
             pair = new
 
         self.texture_of[key] = pair
+        if kind in {'source', 'transition', 'composite'}:
+            # CPU graph resets lineage to output alpha after these nodes.
+            self.alpha_of[key] = pair
+        else:
+            self.alpha_of[key] = self.alpha_of[node.inputs[0]]
         for name in node.inputs:
             self.inputs_left[name] -= 1
-        # A texture can have many graph aliases. A target becomes recyclable only
-        # after the LAST alias or consuming edge, never merely the first copy.
-        pinned = {id(tex[0]) for name, tex in self.texture_of.items()
-                  if name == self.graph.output or self.inputs_left[name] > 0}
+        # Image and *original-alpha* references are independently pinned.
+        # In particular, a source's processed image may become unreachable
+        # before a downstream 'alpha_source=original' mask has consumed it.
+        retained = [name for name in self.texture_of
+                    if name == self.graph.output or self.inputs_left[name] > 0]
+        pinned = {id(pair[0]) for name in retained
+                  for pair in (self.texture_of[name], self.alpha_of[name])}
         for name, tex in list(self.texture_of.items()):
             if name != self.graph.output and self.inputs_left[name] == 0:
-                if id(tex[0]) not in pinned:
-                    self._recycle(tex)
+                lineage = self.alpha_of.pop(name)
+                # Recycle orphaned lineage targets as soon as the *last*
+                # descendant releases them; the source uploads themselves
+                # are retained for final cleanup, never pooled for drawing.
+                for pair in (tex, lineage):
+                    if id(pair[0]) not in pinned:
+                        self._recycle(pair)
                 del self.texture_of[name]
 
     def run(self, sources):
