@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.18 — 1 November 2026
-**Status:** M8.1 merged; v32 implements M8.2 explicit surface byte transport and opt-in alpha/linear-sRGB host conversions. Required real GPU transport parity and native/full CI acceptance remain separate gates; GPU-resident execution is not implemented.
+**Version:** 1.19 — 1 November 2026
+**Status:** M8.4 merged; M8.5 v35 adds resident chromatic/blur/bloom kernels, dry-run resource preflight and explicit strict/auto budget behaviour. Hardware/CI acceptance, mixed-graph residency and cross-vendor measurements remain open.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -606,3 +606,14 @@ See [M8.3 implementation specification](effect-graph-m8-3-gpu-kernels.md).
 - [ ] Measured VRAM and cross-vendor 4K/8K performance, full CI acceptance.
 
 See [M8.4 GPU residency](effect-graph-m8-4-residency.md).
+
+### M8.5 — resident filters, exact allocation planning, parity and profiling (v35)
+
+- [x] Existing M8.3 RGB-channel displacement, Gaussian blur and bloom kernels execute inside closed GPU-resident DAGs with one source upload and one final readback.
+- [x] A device-independent dry scheduler preflights the **allocated RGBA8 texture high-water mark** including multi-pass intermediates, aliased forks, ordered composites and opacity.
+- [x] Strict GPU budget failures reject before upload; non-strict mode returns the whole CPU reference graph without partial per-node GPU fallback.
+- [x] Hardware-independent lifetime/cleanup tests and required real-EGL parity/transfer test cases added.
+- [x] HD CPU/GPU parity benchmark in CI, with opt-in 4K/8K renderer/profile JSON artifacts.
+- [ ] Verify hardware CI gates and collect real measurements; add resident matte/key, spectral, spatial and mixed-graph scheduling; cross-vendor validation remains unclaimed.
+
+See [M8.5 resident kernels and profiling](effect-graph-m8-5-resident-kernels-and-profiling.md).

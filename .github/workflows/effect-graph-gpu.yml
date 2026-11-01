@@ -14,6 +14,7 @@ on:
       - 'tests/test_effect_graph_gpu*'
       - 'integration/benchmark_effect_graph_gpu.py'
       - 'integration/benchmark_effect_graph_spectral_gpu.py'
+      - 'integration/benchmark_effect_graph_m8_5_gpu.py'
       - '.github/workflows/effect-graph-gpu.yml'
   pull_request:
     paths:
@@ -21,6 +22,7 @@ on:
       - 'tests/test_effect_graph_gpu*'
       - 'integration/benchmark_effect_graph_gpu.py'
       - 'integration/benchmark_effect_graph_spectral_gpu.py'
+      - 'integration/benchmark_effect_graph_m8_5_gpu.py'
       - '.github/workflows/effect-graph-gpu.yml'
 
 jobs:
@@ -69,8 +71,8 @@ jobs:
           if len(kernels) < 15:
               raise SystemExit('M8.3 shader parity cases were not collected')
           resident = [t for t in tests if 'test_effect_graph_gpu_resident_egl' in t.attrib.get('classname','')]
-          if len(resident) < 2:
-              raise SystemExit('M8.4 resident GPU checks were not collected')
+          if len(resident) < 4:
+              raise SystemExit('M8.5 resident shader parity/budget checks were not collected')
           print(f'{len(tests)} GPU tests, {len(transport)} M8.2 transfers, {len(kernels)} M8.3 kernels; none skipped')
           PYTEST
       - name: Benchmark spectral HD GPU and CPU (end-to-end)
@@ -82,11 +84,16 @@ jobs:
       - name: Benchmark M8.3 HD transition, channel, blur and bloom bridges
         run: |
           python integration/benchmark_effect_graph_m8_3_gpu.py --size hd --output m83-gpu-benchmark-hd.json
+      - name: Benchmark M8.5 HD resident graph, transfers and CPU parity
+        run: |
+          python integration/benchmark_effect_graph_m8_5_gpu.py --size hd --cpu --repeats 2 --output m85-resident-gpu-hd.json
       - name: Optional GPU benchmark 4K and 8K
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.benchmarks }}
         run: |
           python integration/benchmark_effect_graph_gpu.py --backend egl --all --gpu-budget-mib 1024 --require-gpu --repeats 2 --output gpu-benchmark-extended.json
           python integration/benchmark_effect_graph_spectral_gpu.py --size all --backend egl --allow-large --budget-mib 1024 --repeats 2 --output spectral-gpu-benchmark-extended.json
+          python integration/benchmark_effect_graph_m8_5_gpu.py --size 4k --gpu-budget-mib 1024 --output m85-resident-gpu-4k.json
+          python integration/benchmark_effect_graph_m8_5_gpu.py --size 8k --gpu-budget-mib 1024 --output m85-resident-gpu-8k.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -95,4 +102,5 @@ jobs:
             gpu-benchmark-*.json
             spectral-gpu-benchmark-*.json
             m83-gpu-benchmark-*.json
+            m85-resident-gpu-*.json
           if-no-files-found: ignore
