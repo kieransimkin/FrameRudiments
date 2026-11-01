@@ -4,6 +4,7 @@ Reuses the existing motion clock, smoothing, curves and source provenance.
 No new oscillator or mutable per-frame state is introduced.
 """
 from .modulation import _Modulator, _combine
+from .effect_graph_style_contract import remap_style_driver, style_driver_interval
 
 
 class EffectGraphControls:
@@ -41,26 +42,37 @@ class EffectGraphControls:
                     raise ValueError("categorical graph control range is derived from choices")
             elif graph.is_categorical_control(node, prop):
                 raise ValueError("categorical graph controls require choices")
-            validated.append((row, node, prop, choices))
+            interval = None
+            if choices is None and graph.nodes[node].kind == 'layer_style':
+                interval = style_driver_interval(row.get('range', [-1, 1]))
+            validated.append((row, node, prop, choices, interval))
 
         self.bindings = []
         self.files = []
-        for row, node, prop, choices in validated:
+        self.range_evidence = []
+        self._style_ranges = {}
+        for index, (row, node, prop, choices, interval) in enumerate(validated):
             proxy = {k: v for k, v in row.items() if k not in {"node", "property", "choices"}}
             proxy["target"] = "style.value"
             if choices is not None:
                 proxy["range"] = [0, len(choices) - 1]
+            if interval is not None:
+                proxy['range'] = [0, 1]
+                self._style_ranges[index] = interval
+                self.range_evidence.append({'node': node, 'property': prop,
+                                            'authored_range': list(interval), 'native_range': [0, 1]})
             driver = _Modulator(proxy, project, context_at)
             self.bindings.append((node, prop, driver, choices))
             self.files.extend(driver.motion.files)
 
     def values(self, ctx, graph):
         result = {}
-        for node, prop, driver, choices in self.bindings:
+        for index, (node, prop, driver, choices) in enumerate(self.bindings):
             sample = driver.output(ctx)
             if sample is None:
                 continue
             value, _ = sample
+            value = remap_style_driver(value, self._style_ranges.get(index))
             key = (node, prop)
             if choices is not None:
                 # Stateless nearest-choice selection. Native motion controls

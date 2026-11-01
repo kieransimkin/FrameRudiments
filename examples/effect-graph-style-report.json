@@ -1,0 +1,21 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {"id": "frame", "type": "source"},
+      {"id": "paint", "type": "layer_style", "inputs": ["frame"],
+       "style_type": "gradient_overlay", "style_strength": 0.35,
+       "style_blend": "screen", "gradient_kind": "linear", "gradient_repeat": "repeat",
+       "gradient_stops": [
+         {"id": "cool", "position": 0, "color": "#1840cc"},
+         {"id": "hot", "position": 1, "color": "#ff9828"}
+       ]},
+      {"id": "edge", "type": "layer_style", "inputs": ["paint"],
+       "style_type": "outline", "style_width": 3, "style_color": "#55bbff"}
+    ],
+    "output": "edge"
+  },
+  "effect_graph_controls": [
+    {"id": "colour-phase", "node": "paint", "property": "gradient_phase",
+     "motion": {"kind": "named", "pattern": "circle"}, "axis": "x", "range": [0, 0.75]}
+  ]
+}

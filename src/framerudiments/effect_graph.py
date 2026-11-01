@@ -6,15 +6,19 @@ controls. Temporal feedback and GPU graph execution remain later milestones.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from copy import deepcopy
 from collections.abc import Mapping
 from math import isfinite
 from PIL import Image, ImageColor
 
 from .effect_graph_blend import COMPOSITE_MODES, composite_blend
+from .effect_graph_style_contract import (
+    completed_style_report, graph_style_manifest, style_control_schema, style_node_report,
+)
 from .effect_graph_layer_styles import (
     STYLE_CONTROLS, STYLE_ENUMS, STYLE_FIELDS, render_layer_style,
     style_control_valid, validate_style_inputs,
-    style_control_apply, style_control_base, style_parameter_descriptors, validate_style,
+    style_control_apply, style_control_base, validate_style,
 )
 from .effect_graph_transitions import render_transition
 from .effect_graph_transition_chains import expand_transition_chains
@@ -198,6 +202,12 @@ class EffectGraph:
         self.source_ids = frozenset(
             key for key in self.order if self.nodes[key].kind == 'source'
         )
+        self.layer_style_ids = frozenset(
+            key for key in self.order if self.nodes[key].kind == 'layer_style'
+        )
+        # Diagnostics only: never read by rendering or native motion evaluation.
+        self._style_render_report = {}
+
 
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)
@@ -286,7 +296,22 @@ class EffectGraph:
         node = self.nodes.get(node_id)
         if node is None or node.kind != 'layer_style':
             raise ValueError('descriptor discovery currently requires a layer_style node')
-        return style_parameter_descriptors(node.config)
+        return style_control_schema(node.config, input_count=len(node.inputs))
+
+    def style_manifest(self, *, include_unreachable=False, active_only=False):
+        """Detached M6 capability/control inventory, including expanded chain IDs."""
+        return graph_style_manifest(self, include_unreachable=include_unreachable, active_only=active_only)
+
+    def style_render_report(self):
+        """Last successful adapter-mediated graph sample (not project success).
+
+        The adapter clears this before attempting a new graph evaluation. A
+        failure elsewhere in the compositor may leave the previous sample here;
+        inspect its sample_context. Direct render() callers use their own report.
+        Capture is sample-local, not a temporal-shutter bounds union. Use
+        separate compositor instances when rendering in concurrent workers.
+        """
+        return deepcopy(self._style_render_report)
 
     def base_control_value(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
@@ -321,12 +346,18 @@ class EffectGraph:
                                           'edge_radius': 3}.get(property_name, 0))
 
     def render(self, sources: dict[str, Image.Image], *, parameter_values=None,
-               gpu_backend=None, gpu_strict=False, context=None) -> Image.Image:
+               gpu_backend=None, gpu_strict=False, context=None, style_report=None) -> Image.Image:
         """Render with optional resolved per-frame controls keyed by (node_id, property).
 
         Values are already evaluated by the host modulation engine. Never mutate
         the validated graph or its configuration during frame evaluation.
         """
+        if style_report is not None:
+            if not isinstance(style_report, dict):
+                raise ValueError('style_report must be a dictionary')
+            # Clear stale caller diagnostics before validating this evaluation.
+            style_report.clear()
+        style_rows = {} if style_report is not None else None
         parameter_values = parameter_values or {}
         if not isinstance(parameter_values, Mapping):
             raise ValueError('parameter_values must be a mapping')
@@ -565,12 +596,20 @@ class EffectGraph:
             if opacity != 1:
                 result = result.copy()
                 result.putalpha(result.getchannel('A').point(lambda a: round(a * opacity)))
+            if kind == 'layer_style' and style_rows is not None:
+                style_rows[key] = style_node_report(
+                    node, config, inputs[0], result,
+                    original_alpha=original_alphas[node.inputs[0]], gpu_backend=gpu_backend,
+                )
             results[key] = result
             if kind == 'source' or kind in {'transition', 'composite'}:
                 original_alphas[key] = result.getchannel('A')
             else:
                 original_alphas[key] = original_alphas[node.inputs[0]]
-        return results[self.output].copy()
+        final = results[self.output].copy()
+        if style_report is not None:
+            style_report.update(completed_style_report(self, style_rows, final, context=context))
+        return final
 
 
 def _chromatic_displacement(image: Image.Image, config: dict) -> Image.Image:

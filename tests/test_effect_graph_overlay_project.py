@@ -11,6 +11,12 @@ from framerudiments.compositor import Compositor
 from framerudiments.demo import create_demo
 
 
+# At 120 BPM/60 fps, multiples of 15 frames repeatedly sample circle's
+# zero crossings. Include sub-beat phases; do not change native motion to
+# make an aliased test fixture appear animated.
+SAMPLE_FRAMES = (0, 1, 4, 9, 13, 22, 37, 53)
+
+
 @pytest.fixture
 def project(tmp_path):
     font = os.environ.get('FRAMERUDIMENTS_TEST_FONT')
@@ -48,7 +54,10 @@ def test_native_gradient_phase_is_reproducible_and_does_not_modify_project(proje
     saved = deepcopy(authored.data)
     comp = Compositor(authored)
     try:
-        frames = [0, 15, 30, 45, 60, 90, 120, 180]
+        frames = SAMPLE_FRAMES
+        resolved = [comp.effect_graph_controls.values(comp.context(frame), comp.effect_graph)[
+            ('paint', 'gradient_phase')] for frame in frames]
+        assert max(resolved) > min(resolved)
         images = {frame: comp.frame(frame, apply_quality=False)[0].tobytes() for frame in frames}
         assert len(set(images.values())) > 1
         for frame in reversed(frames):
@@ -64,7 +73,7 @@ def test_native_stop_colour_component_binding_is_not_a_stub(project):
     comp = Compositor(configured(project, {'style_type': 'gradient_overlay'}, controls))
     try:
         values, images = [], []
-        for frame in (0, 15, 30, 45, 60, 90, 120, 180):
+        for frame in SAMPLE_FRAMES:
             values.append(comp.effect_graph_controls.values(comp.context(frame), comp.effect_graph)[
                 ('paint', 'gradient_stops.start.color.r')])
             images.append(comp.frame(frame, apply_quality=False)[0].tobytes())
@@ -126,7 +135,10 @@ def test_transition_chain_preprocessing_uses_native_overlay_controls(project):
                                         motion={'kind': 'named', 'pattern': 'circle'}, axis='x', range=[0, 12])]
     comp = Compositor(Project(data, project.base))
     try:
-        images = [comp.frame(f, apply_quality=False)[0].tobytes() for f in (0, 15, 30, 45, 60, 90)]
+        resolved = [comp.effect_graph_controls.values(comp.context(f), comp.effect_graph)[
+            ('chain::input::0::paint', 'pattern_offset.x')] for f in SAMPLE_FRAMES]
+        assert max(resolved) > min(resolved)
+        images = [comp.frame(f, apply_quality=False)[0].tobytes() for f in SAMPLE_FRAMES]
         assert len(set(images)) > 1
     finally:
         comp.close()

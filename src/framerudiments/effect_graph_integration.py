@@ -40,13 +40,45 @@ def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str
     """Resolve a frame without transferring ownership of any input surface."""
     if graph is None:
         return frame
+    graph._style_render_report = {}
     if frame.mode != 'RGBA':
         raise ValueError('Effect graph requires a composited RGBA frame')
     sources = {'frame': frame, **surfaces}
     for source_id in graph.source_ids:
         # Valid source IDs may legitimately have no ink on this frame. Keep
         # the source identity and its transparent alpha rather than raising.
-        sources.setdefault(source_id, Image.new('RGBA', frame.size))
+        if source_id not in sources:
+            sources[source_id] = Image.new('RGBA', frame.size)
     values = controls.values(context, graph) if controls is not None else {}
+    if getattr(graph, 'layer_style_ids', ()):
+        report = {}
+        result = graph.render(sources, parameter_values=values, context=context,
+                              gpu_backend=gpu_backend, gpu_strict=gpu_strict, style_report=report)
+        graph._style_render_report = report
+        return result
     return graph.render(sources, parameter_values=values, context=context,
                         gpu_backend=gpu_backend, gpu_strict=gpu_strict)
+
+
+def compositor_style_report(compositor):
+    """Last evaluated style sample, including the high-fps sampling compositor.
+
+    This accessor never renders, unions shutter samples or asserts a whole
+    project succeeded. At temporal sample counts >1, graph-local bounds belong
+    to the last completed subframe, whose original clock values are retained.
+    """
+    owner = compositor
+    quality = getattr(compositor, 'output_quality', None)
+    virtual = getattr(compositor, '_temporal_virtual', None)
+    if virtual is not None and getattr(quality, 'time_samples', 1) > 1:
+        owner = virtual
+    graph = getattr(owner, 'effect_graph', None)
+    report = graph.style_render_report() if graph is not None else {}
+    if report:
+        report['sampling'] = {
+            'owner': 'temporal_virtual' if owner is not compositor else 'compositor',
+            'sample_fps': getattr(getattr(owner, 'project', None), 'fps', None),
+            'encoded_fps': getattr(getattr(compositor, 'project', None), 'fps', None),
+            'complete_shutter_bounds': False,
+        }
+    return report

@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.12 — 1 November 2026
-**Status:** Active implementation. M6.3 merged; M6.4 CPU overlays/blending implemented in v26. Full native/CI acceptance and GPU-native styles remain separately gated.
+**Version:** 1.13 — 1 November 2026
+**Status:** Active implementation. M6.4 merged; v27 implements M6.5 style controls, capability/bounds reports and acceptance coverage. Native/full CI and GPU-native styles remain separately gated.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -456,3 +456,24 @@ See [M6.4 specification](effect-graph-m6-4-overlays-and-blending.md) and
 `examples/effect-graph-m6-4-overlays.json`. The next planned M6.5 work consolidates
 style-control/capability and bounds reporting with cross-renderer acceptance;
 it must not treat these CPU kernels as GPU-resident implementations.
+
+
+### M6.5 — consolidated style discovery, bounds and acceptance (v27)
+
+- [x] Fourteen style families plus texture-pattern input-arity capabilities; no fake GPU claims.
+- [x] Detached descriptors with configured/factory defaults, applicability, units, stable addresses,
+  joint stop constraints and topology-safe choices, including chain preprocessing.
+- [x] Per-node conservative support, actual post-opacity alpha and explicit clipping candidates.
+- [x] Transactional sample reports through the existing compositor graph handoff; a public accessor
+  labels the last temporal subframe without claiming shutter-wide bounds.
+- [x] Extended numeric style ranges mapped through the existing native driver, with ordinary ranges unchanged.
+- [x] Focused pixel/metadata regression, reproducible report exporter and real-package acceptance cases.
+- [x] Correct v26 overlay test sample phases while retaining actual native motion and image assertions.
+- [ ] Run new native acceptance, Ruff and complete CPU/font/FFmpeg CI on the merged increment.
+- [ ] Rigged-mesh/shutter-union coverage, GPU-native styles and high-resolution hardware measurements.
+
+See [effect-graph-m6-5-style-contract.md](effect-graph-m6-5-style-contract.md).
+The static capability catalogue and sample reports do not create new effects or
+change the canvas. The underlying raster primitives and source clocks are unchanged.
+M6 is not release-accepted solely on the isolated snapshot tests. Next: M7 spatial
+and procedural effects, reusing M4 spectral primitives rather than duplicating them.
