@@ -421,19 +421,17 @@ class EffectGraph:
                                           'edge_expand': 0, 'edge_feather': 0, 'edge_decontaminate': 0,
                                           'edge_radius': 3}.get(property_name, 0))
 
-    def render(self, sources: dict[str, Image.Image], *, parameter_values=None,
-               gpu_backend=None, gpu_strict=False, context=None, style_report=None) -> Image.Image:
-        """Render with optional resolved per-frame controls keyed by (node_id, property).
+    def backend_plan(self, source_surfaces, **kwargs):
+        """Allocation-free, sample-specific backend/resource preflight (M8.1).
 
-        Values are already evaluated by the host modulation engine. Never mutate
-        the validated graph or its configuration during frame evaluation.
+        No context is created and no render is performed. Supply native-resolved
+        parameter_values/context to inspect the same controls used by render().
         """
-        if style_report is not None:
-            if not isinstance(style_report, dict):
-                raise ValueError('style_report must be a dictionary')
-            # Clear stale caller diagnostics before validating this evaluation.
-            style_report.clear()
-        style_rows = {} if style_report is not None else None
+        from .effect_graph_backend_contract import plan_effect_graph
+        return plan_effect_graph(self, source_surfaces, **kwargs)
+
+    def _resolved_configs(self, parameter_values=None, context=None):
+        """One shared resolver for rendering and preflight; authored data stays immutable."""
         parameter_values = parameter_values or {}
         if not isinstance(parameter_values, Mapping):
             raise ValueError('parameter_values must be a mapping')
@@ -564,6 +562,22 @@ class EffectGraph:
             if self.nodes[key].kind == 'layer_style':
                 validate_style(config)
                 validate_style_inputs(config, len(self.nodes[key].inputs))
+        return configs
+
+    def render(self, sources: dict[str, Image.Image], *, parameter_values=None,
+               gpu_backend=None, gpu_strict=False, context=None, style_report=None) -> Image.Image:
+        """Render with optional resolved per-frame controls keyed by (node_id, property).
+
+        Values are already evaluated by the host modulation engine. Never mutate
+        the validated graph or its configuration during frame evaluation.
+        """
+        if style_report is not None:
+            if not isinstance(style_report, dict):
+                raise ValueError('style_report must be a dictionary')
+            # Clear stale caller diagnostics before validating this evaluation.
+            style_report.clear()
+        style_rows = {} if style_report is not None else None
+        configs = self._resolved_configs(parameter_values, context)
         results = {}
         if gpu_backend is not None:
             # Last completed evaluation only; no feedback into deterministic effects.

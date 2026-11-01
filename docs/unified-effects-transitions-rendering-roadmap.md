@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.16 — 1 November 2026
-**Status:** M7.4 merged. v30 implements M7.5 CPU procedural textures, mattes and vector fields. Native/full CI acceptance and GPU-native execution remain separate gates.
+**Version:** 1.17 — 1 November 2026
+**Status:** M7.5 merged. v31 implements M8.1 backend/surface/resource contracts and allocation-free preflight. GPU-resident execution, new kernels and full native/CI acceptance remain separately gated.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -537,3 +537,20 @@ curl-derived maps are not fluid simulation. No audio analysis, hidden clock,
 shader execution or scene-linear/HDR pipeline is introduced. M7 is not declared
 release-accepted from isolated tests. Next: M8.1 backend capability and surface
 contracts, followed by GPU graph execution and bounded resource reuse.
+
+
+### M8.1 — backend, surface and resource contracts (v31)
+
+- [x] Discover built-in Pillow/NumPy/ModernGL roles without importing ModernGL or opening a context.
+- [x] Distinguish installed packages, attached/closed devices and unperformed shader qualification.
+- [x] Describe the current host straight-RGBA8 ABI and R8 alpha lineage; reject unsupported formats.
+- [x] Resolve controls with the same implementation as rendering, then plan actual backend choices.
+- [x] Expose fallback causes, transfer payloads, fork lifetimes and shared alpha ownership.
+- [x] Correct combined morphology/blur GPU texture accounting in the actual wrapper.
+- [x] Add opt-in logical-payload budgets, report CLI and wrapper-allocation regression tests.
+- [ ] Run the added real Project/Compositor/native cases, full CPU/font/FFmpeg suite, Ruff and exact-head CI.
+- [ ] GPU-resident formats/transport, new kernels, texture pooling and hardware performance (M8.2–M8.5).
+
+Details: [effect-graph-m8-1-backend-contracts.md](effect-graph-m8-1-backend-contracts.md).
+The planner reports existing host operations under legacy GPU mode honestly; it
+is not a new executor, a whole-process memory bound or proof of shader parity.

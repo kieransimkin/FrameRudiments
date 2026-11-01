@@ -1,0 +1,14 @@
+{
+  "width": 1920,
+  "height": 1080,
+  "effect_graph": {
+    "nodes": [
+      {"id": "frame", "type": "source"},
+      {"id": "mask", "type": "procedural_field", "inputs": ["frame"], "field_type": "fbm", "field_output": "alpha", "field_scale": [96, 96], "field_seed": 7},
+      {"id": "cut", "type": "matte", "inputs": ["frame", "mask"], "expand": 2, "feather": 3},
+      {"id": "glow", "type": "layer_style", "inputs": ["cut"], "style_type": "outer_glow", "style_color": "#00baff", "style_blur": 6, "style_output": "effect"},
+      {"id": "out", "type": "composite", "inputs": ["glow", "cut"]}
+    ],
+    "output": "out"
+  }
+}

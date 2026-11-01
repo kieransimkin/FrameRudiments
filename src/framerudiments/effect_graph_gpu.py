@@ -15,12 +15,11 @@ from dataclasses import dataclass
 import math
 from PIL import Image, ImageColor
 
-# The CPU renderer allows much larger radii, but the fragment implementation
-# intentionally caps work per pixel. No silent clipping of user controls.
-MAX_GPU_MORPH_RADIUS = 16
-MAX_GPU_GAUSSIAN_RADIUS = 12
-MAX_GPU_KEY_COLOURS = 8
-MAX_GPU_INPUT_MATTES = 8
+from .effect_graph_backend_contract import (
+    MAX_GPU_MORPH_RADIUS, MAX_GPU_GAUSSIAN_RADIUS,
+    MAX_GPU_KEY_COLOURS as MAX_GPU_KEY_COLOURS,
+    MAX_GPU_INPUT_MATTES as MAX_GPU_INPUT_MATTES, gpu_requirements,
+)
 
 
 class GPUUnsupported(ValueError):
@@ -246,6 +245,8 @@ class GLMatteBackend:
     the context lifetime. `close` owns the context only if it created it.
     """
     def __init__(self, ctx=None, *, backend=None, max_working_set_bytes=768 * 1024**2):
+        if type(max_working_set_bytes) is not int or max_working_set_bytes <= 0:
+            raise ValueError('GPU working-set budget must be a positive integer')
         try:
             import moderngl
         except ImportError as exc:
@@ -255,6 +256,8 @@ class GLMatteBackend:
         self.ctx = ctx or self._make_context(moderngl, backend)
         self.max_working_set_bytes = max_working_set_bytes
         if self.ctx.version_code < 330:
+            if self._owns_context:
+                self.ctx.release()
             raise RuntimeError('GPU matte/keying requires OpenGL 3.3 or later')
         self._programs = {}
         self._vaos = {}
@@ -280,6 +283,12 @@ class GLMatteBackend:
                 raise RuntimeError(f'No standalone OpenGL 3.3 context (platform: {first}; EGL: {second})') from second
 
     def _check_budget(self, size, texture_count):
+        if getattr(self, 'closed', False):
+            raise GPUUnsupported('GPU backend is closed')
+        if (not isinstance(size, (list, tuple)) or len(size) != 2
+                or any(type(v) is not int or v < 1 for v in size)
+                or type(texture_count) is not int or texture_count < 1):
+            raise ValueError('GPU size and texture count must be positive integers')
         if size[0] > self.ctx.info.get('GL_MAX_TEXTURE_SIZE', 16384) or size[1] > self.ctx.info.get('GL_MAX_TEXTURE_SIZE', 16384):
             raise GPUUnsupported('Input dimensions exceed GPU texture limit')
         estimate = size[0] * size[1] * 4 * texture_count
@@ -346,16 +355,11 @@ class GLMatteBackend:
 
     @staticmethod
     def _require_supported(config, kind):
-        if kind == 'matte':
-            morph, blur = config.get('expand', 0), config.get('feather', 0)
-        elif kind == 'chroma_key':
-            morph, blur = config.get('edge_expand', 0), config.get('edge_feather', 0)
-            if config.get('edge_decontaminate', 0):
-                raise GPUUnsupported('GPU edge decontamination is not implemented; use CPU or auto backend')
-        else:
+        if kind not in {'matte', 'chroma_key'}:
             raise ValueError('invalid GPU node kind')
-        if abs(morph) > MAX_GPU_MORPH_RADIUS or blur > MAX_GPU_GAUSSIAN_RADIUS:
-            raise GPUUnsupported('GPU radius limit exceeded; use CPU or auto backend')
+        requirement = gpu_requirements(kind, config, 2 if kind == 'matte' else 1)
+        if not requirement.supported:
+            raise GPUUnsupported(f'GPU {requirement.reason}; use CPU or auto backend')
 
     def apply_matte(self, images, config, *, original_alpha=None):
         from .effect_graph_mattes import validate_matte
@@ -364,7 +368,8 @@ class GLMatteBackend:
         size = images[0].size
         if any(im.size != size for im in images):
             raise ValueError('GPU matte inputs need equal size')
-        self._check_budget(size, len(images) + 5 + int(original_alpha is not None))
+        requirement = gpu_requirements('matte', config, len(images), original_alpha=original_alpha is not None)
+        self._check_budget(size, requirement.texture_count)
         allocations = []
         try:
             fg = self._input(images[0])
@@ -409,7 +414,8 @@ class GLMatteBackend:
         validate_key(config)
         self._require_supported(config, 'chroma_key')
         size = image.size
-        self._check_budget(size, 6 + int(original_alpha is not None))
+        requirement = gpu_requirements('chroma_key', config, 1, original_alpha=original_alpha is not None)
+        self._check_budget(size, requirement.texture_count)
         keys = config.get('key_colors') or [config.get('key_color','#00ff00')]
         if 'key_colors' in config and 'key_color' in config:
             keys = [config['key_color'], *config['key_colors']]

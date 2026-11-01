@@ -20,19 +20,36 @@ def validate_graph_sources(graph, available_elements):
         raise ValueError(f"Unknown effect graph source: {', '.join(sorted(unknown))}")
 
 
-def create_gpu_backend(mode='cpu'):
-    """Explicit opt-in. `auto` uses CPU when no GL context is available."""
+def create_gpu_backend(mode='cpu', *, report=None):
+    """Explicit opt-in, with optional retained context/fallback diagnostics.
+
+    Existing callers need not pass a report. Discovery itself never calls this
+    factory; only callers explicitly asking to open a GPU backend do so.
+    """
+    if report is not None:
+        if not isinstance(report, dict):
+            raise ValueError('GPU initialization report must be a dictionary')
+        report.clear()
     if mode not in {'cpu', 'gpu', 'auto'}:
         raise ValueError('effect_graph_backend must be cpu, gpu or auto')
+    if report is not None:
+        report.update(mode=mode, state='not_attempted', fallback_reason=None)
     if mode == 'cpu':
+        if report is not None:
+            report['state'] = 'cpu_requested'
         return None
     from .effect_graph_gpu import GLMatteBackend
     try:
-        return GLMatteBackend()
-    except (RuntimeError, ImportError):
+        backend = GLMatteBackend()
+    except (RuntimeError, ImportError) as exc:
+        if report is not None:
+            report.update(state='unavailable', fallback_reason=str(exc), error_type=type(exc).__name__)
         if mode == 'gpu':
             raise
         return None
+    if report is not None:
+        report['state'] = 'attached'
+    return backend
 
 
 def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str, Image.Image],
