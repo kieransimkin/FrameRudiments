@@ -13,11 +13,13 @@ dist/
 !docs/media/rangoli.mp4
 !docs/media/natural-materials.mp4
 !docs/media/visualiser-underlay.mp4
+!docs/media/julia-fractal-motion.mp4
 local/
 .tmp/
 .local-app-data/
 .test-localappdata/
 .test-tmp*/
+/test-results.xml
 .release-qa-temp*/
 .release-artifacts-*/
 .release-localappdata*/

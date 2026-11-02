@@ -1,0 +1,64 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {"id": "frame", "type": "source"},
+      {
+        "id": "julia",
+        "type": "procedural_field",
+        "inputs": ["frame"],
+        "field_type": "julia",
+        "field_output": "color",
+        "field_scale": [320, 320],
+        "field_julia_c": [-0.745, 0.113],
+        "field_julia_orbit_radius": 0.16,
+        "field_julia_iterations": 112,
+        "field_julia_escape_radius": 4,
+        "field_gamma": 0.25,
+        "field_palette": [
+          {"id": "void", "position": 0.0, "color": "#05040f"},
+          {"id": "indigo", "position": 0.28, "color": "#312e81"},
+          {"id": "violet", "position": 0.5, "color": "#a855f7"},
+          {"id": "cyan", "position": 0.76, "color": "#22d3ee"},
+          {"id": "white", "position": 1.0, "color": "#fff7ed"}
+        ],
+        "field_color_space": "oklab",
+        "field_interpolation": "smoothstep"
+      }
+    ],
+    "output": "julia"
+  },
+  "effect_graph_controls": [
+    {
+      "id": "constant-orbit",
+      "node": "julia",
+      "property": "field_julia_phase",
+      "motion": {"kind": "named", "pattern": "akwf_round_saw"},
+      "axis": "x",
+      "range": [-1, 1]
+    },
+    {
+      "id": "breathing-zoom",
+      "node": "julia",
+      "property": "field_julia_zoom",
+      "motion": {"kind": "named", "pattern": "lfo_breathe"},
+      "axis": "x",
+      "range": [0.85, 1.35]
+    },
+    {
+      "id": "slow-turn",
+      "node": "julia",
+      "property": "field_julia_rotation",
+      "motion": {"kind": "named", "pattern": "sway"},
+      "axis": "x",
+      "range": [-0.12, 0.12]
+    },
+    {
+      "id": "orbit-breath",
+      "node": "julia",
+      "property": "field_julia_orbit_radius",
+      "motion": {"kind": "named", "pattern": "lfo_breathe"},
+      "axis": "x",
+      "range": [0.08, 0.24]
+    }
+  ]
+}

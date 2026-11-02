@@ -73,6 +73,43 @@ def test_saved_native_frequency_lane_drives_field_without_audio_analysis(project
         comp.close()
 
 
+def test_native_motions_drive_periodic_julia_parameters(project):
+    controls = [
+        dict(node='f', property='field_julia_phase',
+             motion=dict(kind='named', pattern='akwf_round_saw'), axis='x', range=[-1, 1]),
+        dict(node='f', property='field_julia_zoom',
+             motion=dict(kind='named', pattern='lfo_breathe'), axis='x', range=[.85, 1.35]),
+        dict(node='f', property='field_julia_rotation',
+             motion=dict(kind='named', pattern='sway'), axis='x', range=[-.12, .12]),
+        dict(node='f', property='field_julia_orbit_radius',
+             motion=dict(kind='named', pattern='lfo_breathe'), axis='x', range=[.08, .24]),
+    ]
+    config = dict(
+        field_type='julia', field_output='color', field_scale=[52, 52],
+        field_julia_c=[-.745, .113], field_julia_iterations=48,
+        field_palette=[
+            dict(id='void', position=0, color='#05040f'),
+            dict(id='violet', position=.35, color='#6d28d9'),
+            dict(id='cyan', position=.68, color='#22d3ee'),
+            dict(id='white', position=1, color='#fff7ed'),
+        ],
+    )
+    comp = Compositor(configured(project, config, controls))
+    try:
+        frames = (0, 15, 30, 45, 60, 75, 90, 105, 120)
+        values = [comp.effect_graph_controls.values(comp.context(f), comp.effect_graph) for f in frames]
+        for row in values:
+            assert -1 <= row[('f', 'field_julia_phase')] <= 1
+            assert .85 <= row[('f', 'field_julia_zoom')] <= 1.35
+            assert -.12 <= row[('f', 'field_julia_rotation')] <= .12
+            assert .08 <= row[('f', 'field_julia_orbit_radius')] <= .24
+        images = {f: comp.frame(f, apply_quality=False)[0].tobytes() for f in frames}
+        assert len(set(images.values())) >= 6
+        assert comp.frame(30, apply_quality=False)[0].tobytes() == images[30]
+    finally:
+        comp.close()
+
+
 def test_native_palette_and_categorical_controls(project):
     controls = [dict(node='f', property='field_type', motion=dict(kind='named', pattern='circle'),
                      axis='x', choices=['linear', 'noise', 'cellular']),

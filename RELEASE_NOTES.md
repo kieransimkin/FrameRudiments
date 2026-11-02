@@ -1,3 +1,26 @@
+# FrameRudiments 0.4.17
+
+- Add a deterministic Julia-set generator to the shared `procedural_field`
+  effect-graph source, so fractals can feed ordinary visible composition,
+  mattes, transitions, textures and displacement without a private renderer.
+- Support the existing stable multi-stop gradient pipeline with two to sixteen
+  colour stops, selectable interpolation and output modes.
+- Expose the Julia constant, orbit radius, zoom, rotation, iteration count,
+  escape radius and power to native DanceRudiments effect-graph controls.
+  Recorded samples remain in the canonical finite `[-1,1]` range; Julia phase
+  and rotation map that range onto one exact `2*pi` period with joined endpoints.
+- Publish public scalar helpers for normalized turns, Julia constants and
+  deterministic smooth escape fields, plus focused and full-project regressions.
+- Keep CPU release testing aligned with the expanded GPU suite. Real GPU parity,
+  transport, kernels and resident spectral/matte tests continue in the required
+  no-skip EGL workflow instead of being accidentally collected by a CPU-only
+  release build. Windows CI downloads a checksum-pinned immutable FFmpeg build
+  that provides both `ffmpeg` and `ffprobe`, instead of depending on
+  Chocolatey's unavailable community feed or a rolling package resolver.
+- Include an [actual native-motion compositor contact sheet](docs/media/julia-fractal-composite.png)
+  and [silent two-second loop](docs/media/julia-fractal-motion.mp4), with an
+  [accessible description](docs/media/julia-fractal-motion-transcript.md).
+
 # FrameRudiments 0.4.16
 
 - Rename the ambiguous spectral colour-conversion `l` variable to `l_channel`.

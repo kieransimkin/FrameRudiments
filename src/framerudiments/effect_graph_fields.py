@@ -12,6 +12,7 @@ import math
 from PIL import Image
 
 from .effect_graph_spatial import _noise
+from .fractals import julia_escape_field
 from .effect_graph_layer_overlays import (
     DEFAULT_STOPS, _gradient_lut, _gradient_paint, overlay_control_apply,
     overlay_control_base, overlay_parameter_descriptors, stop_control_parts, validate_overlay,
@@ -19,7 +20,7 @@ from .effect_graph_layer_overlays import (
 
 FIELD_TYPES = frozenset({
     'constant', 'linear', 'radial', 'angular', 'stripes', 'rings', 'checker',
-    'noise', 'fbm', 'ridged', 'cellular',
+    'noise', 'fbm', 'ridged', 'cellular', 'julia',
 })
 FIELD_ENUMS = {
     'field_type': FIELD_TYPES,
@@ -42,6 +43,11 @@ FIELD_RANGES = {
     'field_duty': (0, 1), 'field_softness': (0, 1), 'field_jitter': (0, 1),
     'field_contrast': (0, 8), 'field_bias': (-1, 1), 'field_gamma': (.1, 8),
     'field_vector_gain': (0, 64), 'field_derivative_step': (.25, 32),
+    'field_julia_c.x': (-2, 2), 'field_julia_c.y': (-2, 2),
+    'field_julia_orbit_radius': (0, 2), 'field_julia_phase': (-1, 1),
+    'field_julia_zoom': (.05, 32), 'field_julia_rotation': (-1, 1),
+    'field_julia_iterations': (1, 512), 'field_julia_escape_radius': (2, 64),
+    'field_julia_power': (2, 8),
 }
 FIELD_DEFAULTS = {
     'field_type': 'noise', 'field_output': 'grayscale', 'field_alpha_source': 'opaque',
@@ -52,11 +58,15 @@ FIELD_DEFAULTS = {
     'field_contrast': 1, 'field_bias': 0, 'field_gamma': 1, 'field_invert': False,
     'field_vector': 'curl', 'field_vector_gain': 1, 'field_derivative_step': 1,
     'field_color_space': 'srgb', 'field_interpolation': 'linear',
+    'field_julia_c': [-.8, .156], 'field_julia_orbit_radius': 0,
+    'field_julia_phase': 0, 'field_julia_zoom': 1, 'field_julia_rotation': 0,
+    'field_julia_iterations': 96, 'field_julia_escape_radius': 4,
+    'field_julia_power': 2,
 }
 FIELD_FIELDS = frozenset(FIELD_DEFAULTS) | {'field_palette'}
 FIELD_CONTROLS = frozenset(FIELD_ENUMS) | frozenset(FIELD_RANGES)
-_VECTORS = {'field_scale', 'field_center', 'field_offset'}
-_INTEGERS = {'field_seed', 'field_octaves'}
+_VECTORS = {'field_scale', 'field_center', 'field_offset', 'field_julia_c'}
+_INTEGERS = {'field_seed', 'field_octaves', 'field_julia_iterations', 'field_julia_power'}
 _GRAPH_FIELDS = {'id', 'type', 'inputs', 'opacity'}
 MAX_PIXELS = 33_177_600
 MAX_DIMENSION = 16384
@@ -162,6 +172,13 @@ def _active(config):
               'field_contrast', 'field_bias', 'field_gamma', 'field_invert'}
     if kind == 'constant':
         active.add('field_value')
+    elif kind == 'julia':
+        active.update({
+            'field_scale', 'field_center', 'field_offset', 'field_angle',
+            'field_julia_c', 'field_julia_orbit_radius', 'field_julia_phase',
+            'field_julia_zoom', 'field_julia_rotation', 'field_julia_iterations',
+            'field_julia_escape_radius', 'field_julia_power',
+        })
     else:
         active.update({'field_scale', 'field_center', 'field_offset', 'field_phase'})
         # Rotation does not change radial scalar distance.
@@ -201,6 +218,8 @@ def field_parameter_descriptors(config=None, *, input_count=None):
         else:
             unit = ('pixels' if base in {'field_scale', 'field_offset', 'field_derivative_step'} else
                     'degrees' if name == 'field_angle' else
+                    'normalized_turn' if name in {'field_julia_phase', 'field_julia_rotation'} else
+                    'iterations' if name == 'field_julia_iterations' else
                     'field_units' if name == 'field_phase' else
                     'integer' if name in _INTEGERS else 'ratio')
             item.update(type='integer' if name in _INTEGERS else 'number', units=unit,
@@ -225,7 +244,7 @@ def field_parameter_descriptors(config=None, *, input_count=None):
 def field_capabilities(config=None, *, input_count=None):
     config = {} if config is None else config
     validate_field(config, input_count)
-    return {
+    result = {
         'schema': 'framerudiments.procedural-field.v1', 'backend': 'cpu', 'gpu_native': False,
         'input_count': 1, 'reference_rgb_used': False, 'canvas_expansion': False,
         'deterministic': True, 'temporal_history': False, 'alpha_lineage': 'new-generated-surface',
@@ -237,6 +256,15 @@ def field_capabilities(config=None, *, input_count=None):
         'max_tile_pixels': MAX_TILE_PIXELS, 'max_work_units': MAX_WORK_UNITS,
         'controls': field_parameter_descriptors(config, input_count=input_count),
     }
+    if config.get('field_type', 'noise') == 'julia':
+        result['fractal'] = {
+            'family': 'julia', 'escape_time': True,
+            'motion_normalized_range': [-1, 1],
+            'periodic_control_span': 2,
+            'periodic_control_radians': 2 * math.pi,
+            'joined_endpoints': True,
+        }
+    return result
 
 
 def _repeat(value, mode):
@@ -268,6 +296,18 @@ def _scalar(u, v, config):
     seed = config.get('field_seed', 0)
     if kind == 'constant':
         value = np.full_like(u, config.get('field_value', .5))
+    elif kind == 'julia':
+        value = julia_escape_field(
+            u, v,
+            constant=config.get('field_julia_c', [-.8, .156]),
+            orbit_radius=config.get('field_julia_orbit_radius', 0),
+            phase=config.get('field_julia_phase', 0),
+            zoom=config.get('field_julia_zoom', 1),
+            rotation=config.get('field_julia_rotation', 0),
+            iterations=config.get('field_julia_iterations', 96),
+            escape_radius=config.get('field_julia_escape_radius', 4),
+            power=config.get('field_julia_power', 2),
+        )
     elif kind in {'linear', 'radial', 'angular'}:
         coordinate = (u + .5 if kind == 'linear' else np.hypot(u, v) if kind == 'radial'
                       else np.arctan2(v, u) / (2 * math.pi) + .5)
@@ -344,7 +384,8 @@ def _vector(u, v, config):
 def field_work_units(size, config):
     """Conservative weighted scalar samples, not a promised time/RAM estimate."""
     kind = config.get('field_type', 'noise')
-    per_sample = (72 if kind == 'cellular' else
+    per_sample = (config.get('field_julia_iterations', 96) if kind == 'julia' else
+                  72 if kind == 'cellular' else
                   4 * config.get('field_octaves', 3) if kind in {'fbm', 'ridged'} else
                   4 if kind == 'noise' else 1)
     evaluations = 1

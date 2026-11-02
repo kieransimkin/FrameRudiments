@@ -62,6 +62,7 @@ the generated vector map scales its influence through the existing warp engine.
 | `fbm` | Normalised weighted octave sum of value noise. |
 | `ridged` | Normalised weighted sum of `1-abs(noise)` per octave. |
 | `cellular` | Normalised nearest-feature distance in a seeded jittered square lattice. |
+| `julia` | Smooth normalized Julia escape time. The complex constant can orbit its authored centre on a normalized `2*pi` phase. |
 
 Cellular features are restricted to the central half of each cell. The farthest
 point from a feature in its own cell is at most `sqrt(2)*0.75`, less than the
@@ -167,6 +168,14 @@ fields require integers; native continuous overrides round to the nearest intege
 | `field_invert` | false | Boolean category |
 | `field_vector_gain` | 1 | 0..64; 16..32 can be useful for low-frequency derivatives |
 | `field_derivative_step` | 1 | 0.25..32 output pixels |
+| `field_julia_c.x/y` | -0.8,0.156 | Base complex constant, each -2..2 |
+| `field_julia_orbit_radius` | 0 | 0..2 around the base constant |
+| `field_julia_phase` | 0 | Normalized turn -1..1; endpoints are the same `2*pi` phase |
+| `field_julia_zoom` | 1 | 0.05..32; larger values zoom in |
+| `field_julia_rotation` | 0 | Normalized turn -1..1 |
+| `field_julia_iterations` | 96 | Integer 1..512 |
+| `field_julia_escape_radius` | 4 | 2..64 |
+| `field_julia_power` | 2 | Integer 2..8 |
 | `opacity` | 1 | Universal graph output opacity, 0..1 |
 
 Scalar remapping order is contrast about 0.5, bias, clamp to 0..1, gamma exponent,
@@ -186,6 +195,9 @@ Stable addresses include `field_palette.hot.position`,
 updates are collected first, then jointly validated, so a valid simultaneous
 move is not rejected merely because one intermediate update crossed its neighbour.
 No automatic stop sorting changes authored identity.
+
+Julia colour uses this same palette path; there is no fractal-specific colour
+interpolator. See [Julia fractal configuration, native motion and actual output](julia-fractals.md).
 
 Use `EffectGraph.control_descriptors(node_id)` for detached value/default/range,
 units, interpolation and active-setting metadata. Custom stop IDs have no global
