@@ -639,15 +639,39 @@ class EffectGraph:
         # including mattes and colour keys, inherit it through arbitrary forks.
         # A merge/transition starts a new source silhouette at its output.
         original_alphas = {}
+        islands_by_member = {}
+        if (gpu_backend is not None and not gpu_strict and style_report is None
+                and getattr(gpu_backend, 'supports_gpu_islands', False)
+                and callable(getattr(gpu_backend, 'render_resident_graph', None))):
+            from .effect_graph_gpu_islands import plan_islands
+            islands, rejected_islands = plan_islands(self, configs)
+            for island in islands:
+                for member in island.members:
+                    islands_by_member[member] = island
+            if hasattr(gpu_backend, 'last_transport'):
+                gpu_backend.last_transport['gpu_island_rejections'] = rejected_islands
         for key in self.order:
             node = self.nodes[key]
             kind = node.kind
             config = configs.get(key, node.config)
+            island = islands_by_member.get(key)
+            if island is not None and key != island.output:
+                continue
+            if island is not None:
+                from .effect_graph_gpu_islands import execute_island
+                from .effect_graph_gpu import GPUUnsupported
+                try:
+                    result = execute_island(gpu_backend, island, results)
+                except GPUUnsupported:
+                    gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                    return self.render(sources, parameter_values=parameter_values,
+                                       context=context, style_report=style_report)
+                inputs = [results[name] for name in node.inputs if name in results]
             if kind == 'source':
                 if key not in sources or sources[key].mode != 'RGBA':
                     raise ValueError(f'missing RGBA source: {key}')
                 result = sources[key].copy()
-            else:
+            elif island is None:
                 inputs = [results[name] for name in node.inputs]
                 if kind != 'layer_style' and any(im.size != inputs[0].size for im in inputs):
                     raise ValueError('graph input dimensions must match')
@@ -819,7 +843,7 @@ class EffectGraph:
             # of effect kind. This also makes source, matte, transition and
             # composite opacity independently DanceRudiment-addressable.
             opacity = config.get('opacity', 1)
-            if opacity != 1:
+            if island is None and opacity != 1:
                 result = result.copy()
                 result.putalpha(result.getchannel('A').point(lambda a: round(a * opacity)))
             if kind == 'layer_style' and style_rows is not None:
@@ -828,7 +852,9 @@ class EffectGraph:
                     original_alpha=original_alphas[node.inputs[0]], gpu_backend=gpu_backend,
                 )
             results[key] = result
-            if kind == 'raster_effect':
+            if island is not None and island.lineage_source != island.output:
+                original_alphas[key] = original_alphas[island.lineage_source]
+            elif kind == 'raster_effect':
                 original_alphas[key] = raster_alpha
             elif kind == 'spatial_warp':
                 original_alphas[key] = warped_alpha

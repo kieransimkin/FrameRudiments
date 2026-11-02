@@ -1,0 +1,27 @@
+{
+  "renderer": "NVIDIA GeForce RTX 4060 Ti/PCIe/SSE2",
+  "backend": "platform/egl",
+  "transport": {
+    "schema": "framerudiments.surface-transfer-sample.v1",
+    "upload_bytes": 256000,
+    "readback_bytes": 256000,
+    "uploads": 1,
+    "readbacks": 1,
+    "format": "rgba8",
+    "alpha": "straight",
+    "colour_space": "display-referred",
+    "row_order": "top-first",
+    "row_alignment": 1,
+    "gpu_resident_graph": true,
+    "measured_vram": false,
+    "resident_draws": 6,
+    "resident_peak_allocated_surfaces": 5,
+    "resident_peak_live_surfaces": 5,
+    "resident_peak_pool_surfaces": 3,
+    "resident_estimated_texture_bytes": 1280000
+  },
+  "dispatch": {
+    "gpu_nodes": 6,
+    "cpu_fallbacks": 0
+  }
+}

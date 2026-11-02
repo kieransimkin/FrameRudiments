@@ -72,7 +72,7 @@ def test_gpu_supported_radius_bounds(kind, config):
     ('matte', {'feather':12.1}),
     ('chroma_key', {'edge_expand':-17}),
     ('chroma_key', {'edge_feather':13}),
-    ('chroma_key', {'edge_decontaminate':.001}),
+    ('chroma_key', {'edge_decontaminate':.001, 'edge_radius':16}),
 ])
 def test_unsupported_gpu_processing_declared(kind,config):
     with pytest.raises(GPUUnsupported):

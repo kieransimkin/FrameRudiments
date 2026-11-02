@@ -16,7 +16,7 @@ The bounded, optional ModernGL closed-DAG executor now accepts `matte` and `chro
 
 - Matte morphology `|expand| ≤ 16` pixels; chroma `|edge_expand| ≤ 16` pixels.
 - Matte feather and chroma edge feather `≤ 12` pixels. Larger values stay on the established per-node/CPU path; they are never silently truncated.
-- **Chroma edge decontamination (`edge_decontaminate > 0`) is not yet a native GPU operation.** It requires confidence-weighted neighbouring colour reconstruction, distinct from alpha feather/despill; it continues to use the CPU reference in `auto` and raises `GPUUnsupported` in strict GPU mode. This is tracked for M8.8. Calling other edge refinement “decontamination” would be incorrect.
+- **Historical M8.7 limit:** chroma edge decontamination was not a native GPU operation in 0.4.20. FrameRudiments 0.4.21/M8.8 adds the bounded confidence-weighted neighbouring-colour reconstruction described in [the M8.8 contract](effect-graph-m8-8-gpu-islands.md); feather and despill remain distinct operations.
 - There are no new float/HDR device formats, persistent cross-frame pools, arbitrary GPU kernels, CPU/GPU partial-island partitioning or driver-level physical VRAM measurements. Existing limits and explicit diagnostics still apply.
 - Output is display-referred, straight RGBA8. Morphology/feather shaders have documented CPU/Pillow differences; test tolerances are explicit and tighter when no blur is present. Hidden RGB under zero alpha is excluded from visible-pixel comparisons.
 

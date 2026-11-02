@@ -80,7 +80,8 @@ def test_registry_covers_every_registered_kind_and_is_detached():
     assert KNOWN_KINDS == KINDS
     first = backend_registry()
     assert first['backends']['moderngl']['device']['state'] == 'not_attached'
-    assert not first['backends']['moderngl']['gpu_resident_graph']
+    assert first['backends']['moderngl']['gpu_resident_graph']
+    assert first['backends']['moderngl']['mixed_cpu_gpu_islands']
     first['node_kinds'].clear()
     assert backend_registry()['node_kinds']
     json.dumps(backend_registry(), allow_nan=False)
@@ -121,7 +122,8 @@ def test_all_live_gpu_pass_textures_are_counted(kind, n, original, morph, blur):
     ('matte', {'expand': 16.01}, 2, 'radius_limit_exceeded'),
     ('matte', {'feather': 12.01}, 2, 'radius_limit_exceeded'),
     ('chroma_key', {'edge_expand': -17}, 1, 'radius_limit_exceeded'),
-    ('chroma_key', {'edge_decontaminate': .1}, 1, 'edge_decontamination_not_implemented'),
+    ('chroma_key', {'edge_decontaminate': .1, 'edge_radius': 16}, 1,
+     'edge_decontamination_radius_limit_exceeded'),
     ('spatial_warp', {}, 1, 'kernel_not_implemented'),
 ])
 def test_shared_gpu_rejections(kind, cfg, n, reason):

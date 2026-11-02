@@ -1,5 +1,14 @@
 # FrameRudiments
 
+Version 0.4.21 partitions mixed CPU/GPU effect graphs into explicit resident
+islands. Each island uploads its host boundaries once, executes its supported
+nodes without intermediate readbacks, and reports exact payload transfers and
+rejection reasons. Chroma keying also gains a bounded confidence-weighted GPU
+edge-decontamination pass (radius up to 12), distinct from feather and despill.
+See the [M8.8 contract and actual CPU/GPU comparison](docs/effect-graph-m8-8-gpu-islands.md).
+
+![Actual FrameRudiments CPU/GPU decontamination comparison](docs/media/effect-graph-m8-8-decontamination.png)
+
 FrameRudiments now includes a deterministic refractive raindrop field with
 `rings`, `droplets` and `storm` variants. Apply it to any effect-graph layer with
 `spatial_warp` / `raindrop_ripples`, or use the same field in the new `wash`

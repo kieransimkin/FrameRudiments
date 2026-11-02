@@ -241,6 +241,58 @@ void main() {
 }
 """
 
+DECONTAM_PACK = """#version 330
+uniform sampler2D source_tex;
+uniform sampler2D mask_tex;
+out vec4 out_color;
+void main() {
+    ivec2 pos=ivec2(gl_FragCoord.xy);
+    vec4 src=texelFetch(source_tex,pos,0);
+    float keep=texelFetch(mask_tex,pos,0).r;
+    float confidence=src.a*clamp((keep-0.65)/0.35,0.0,1.0);
+    out_color=vec4(src.rgb*confidence,confidence);
+}
+"""
+
+DECONTAM_BLUR = """#version 330
+uniform sampler2D source_tex;
+uniform ivec2 direction;
+uniform float sigma;
+out vec4 out_color;
+void main() {
+    ivec2 pos=ivec2(gl_FragCoord.xy);
+    ivec2 size=textureSize(source_tex,0)-ivec2(1);
+    vec4 weighted=vec4(0.0);
+    float total=0.0;
+    int radius=int(ceil(3.0*sigma));
+    for (int i=-36;i<=36;++i) {
+        if (abs(i)>radius) continue;
+        float w=exp(-float(i*i)/(2.0*sigma*sigma));
+        weighted += texelFetch(source_tex,clamp(pos+direction*i,ivec2(0),size),0)*w;
+        total += w;
+    }
+    out_color=weighted/total;
+}
+"""
+
+DECONTAM_FINAL = """#version 330
+uniform sampler2D keyed_tex;
+uniform sampler2D mask_tex;
+uniform sampler2D blurred_tex;
+uniform float strength;
+out vec4 out_color;
+void main() {
+    ivec2 pos=ivec2(gl_FragCoord.xy);
+    vec4 keyed=texelFetch(keyed_tex,pos,0);
+    float keep=texelFetch(mask_tex,pos,0).r;
+    vec4 blurred=texelFetch(blurred_tex,pos,0);
+    float valid=float(blurred.a>1e-5);
+    vec3 replacement=valid>0.0 ? blurred.rgb/blurred.a : keyed.rgb;
+    float weight=(1.0-keep)*strength*valid;
+    out_color=vec4(mix(keyed.rgb,replacement,weight),keyed.a);
+}
+"""
+
 
 class GLMatteBackend:
     """Reusable per-node ModernGL executor; input and output are Pillow RGBA.
@@ -265,13 +317,14 @@ class GLMatteBackend:
             raise RuntimeError('GPU matte/keying requires OpenGL 3.3 or later')
         self._programs = {}
         self._vaos = {}
-        self.backend = backend or 'platform/egl'
+        self.backend = backend or 'platform/default-or-egl'
         self.capabilities = GPUCapabilities(
             context_version=self.ctx.version_code,
-            backend=str(backend or 'platform/egl'),
+            backend=str(backend or 'platform/default-or-egl'),
             renderer=str(self.ctx.info.get('GL_RENDERER', 'unknown')),
         )
         self.last_dispatch = {'gpu_nodes': 0, 'cpu_fallbacks': 0}
+        self.supports_gpu_islands = True
         self.begin_transfer_sample()
         self.closed = False
 
@@ -488,10 +541,25 @@ class GLMatteBackend:
                                        blur=config.get('edge_feather',0), allocations=allocations)
             shader, _ = self._get_shader('key_final', KEY_FINAL)
             shader['keys'].write(packed)
-            _, fb = self._draw('key_final', KEY_FINAL,
+            keyed, fb = self._draw('key_final', KEY_FINAL,
                                {'source_tex': fg, 'mask_tex': mask, 'original_tex': origin}, size,
                                dict(original_mode=int(config.get('alpha_source','current')=='original'),
                                     despill=config.get('despill',0), nkey=len(colors)), allocations)
+            if config.get('edge_decontaminate', 0):
+                packed_tex, _ = self._draw(
+                    'decontam_pack', DECONTAM_PACK,
+                    {'source_tex': fg, 'mask_tex': mask}, size, {}, allocations)
+                working = packed_tex
+                for direction in ((1, 0), (0, 1)):
+                    working, _ = self._draw(
+                        'decontam_blur', DECONTAM_BLUR,
+                        {'source_tex': working}, size,
+                        {'direction': direction, 'sigma': config.get('edge_radius', 3)},
+                        allocations)
+                _, fb = self._draw(
+                    'decontam_final', DECONTAM_FINAL,
+                    {'keyed_tex': keyed, 'mask_tex': mask, 'blurred_tex': working},
+                    size, {'strength': config['edge_decontaminate']}, allocations)
             return self._readback_rgba(fb, size)
         finally:
             for resource in reversed(allocations):
