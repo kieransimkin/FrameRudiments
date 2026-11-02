@@ -22,7 +22,7 @@ def fixture(size):
     draw = ImageDraw.Draw(image)
     draw.ellipse((size[0] // 6, size[1] // 10, size[0] * 5 // 6,
                   size[1] * 9 // 10), fill=(230, 75, 135, 235),
-                 outline=(60, 205, 55, 255), width=max(2, size[0] // 80))
+                 outline=(60, 205, 55, 255), width=4)
     return {'source': image}
 
 
