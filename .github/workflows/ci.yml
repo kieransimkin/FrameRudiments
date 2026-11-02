@@ -58,15 +58,13 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
-          for ($attempt = 1; -not $ffmpeg -and $attempt -le 3; $attempt++) {
-            choco install ffmpeg -y --no-progress
-            $ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
-            if (-not $ffmpeg -and $attempt -lt 3) { Start-Sleep -Seconds (15 * $attempt) }
+          python -m pip install imageio-ffmpeg==0.7.0
+          $ffmpeg = python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"
+          if (-not (Test-Path -LiteralPath $ffmpeg -PathType Leaf)) {
+            throw "imageio-ffmpeg did not provide an executable: $ffmpeg"
           }
-          if (-not $ffmpeg) { throw 'FFmpeg remains unavailable after three Chocolatey attempts' }
           "FRAMERUDIMENTS_TEST_FONT=C:\Windows\Fonts\arialbd.ttf" >> $env:GITHUB_ENV
-          "FRAMERUDIMENTS_FFMPEG=$($ffmpeg.Source)" >> $env:GITHUB_ENV
+          "FRAMERUDIMENTS_FFMPEG=$ffmpeg" >> $env:GITHUB_ENV
       - run: python -m pip install -e '.[dev]'
       - run: ruff check .
       - name: Verify patch validation workflow contract
