@@ -14,9 +14,9 @@
 - Keep CPU release testing aligned with the expanded GPU suite. Real GPU parity,
   transport, kernels and resident spectral/matte tests continue in the required
   no-skip EGL workflow instead of being accidentally collected by a CPU-only
-  release build. Windows CI uses a commit-pinned setup action and exact FFmpeg
-  release that provide both `ffmpeg` and `ffprobe`, instead of depending on
-  Chocolatey's unavailable community feed.
+  release build. Windows CI downloads a checksum-pinned immutable FFmpeg build
+  that provides both `ffmpeg` and `ffprobe`, instead of depending on
+  Chocolatey's unavailable community feed or a rolling package resolver.
 - Include an [actual native-motion compositor contact sheet](docs/media/julia-fractal-composite.png)
   and [silent two-second loop](docs/media/julia-fractal-motion.mp4), with an
   [accessible description](docs/media/julia-fractal-motion-transcript.md).
