@@ -738,4 +738,3 @@ match; assets are never overwritten. Manual dispatch can resume a registry uploa
 from an existing immutable tag, preserving its exact GitHub bytes. The PyPI job
 uses a separately configured trusted publisher; no API token is stored in this project.
 A GitHub release and a PyPI listing are separately verified outcomes.
-

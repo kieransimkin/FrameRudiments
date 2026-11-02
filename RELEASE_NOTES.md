@@ -369,4 +369,3 @@ See README.md and docs/preset-behaviour.md for setup and evidence limits.
 Optical-flow and semantic hypotheses do not establish flash safety, artistic
 intent or complete coverage of the entire preset catalogue. Native rendering
 continues to depend on the target GPU, driver and upstream engine behaviour.
-

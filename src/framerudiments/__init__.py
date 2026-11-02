@@ -44,4 +44,3 @@ __all__ = [
     "FRACTAL_FAMILIES",
     "normalized_turn_radians",
 ]
-

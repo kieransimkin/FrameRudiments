@@ -679,4 +679,3 @@ class RudimentLayer:
         bounds = transformed_bounds(viewport, self.bounds[0], self.bounds[1])
         image.alpha_composite(viewport, self.bounds[:2])
         return bounds
-
