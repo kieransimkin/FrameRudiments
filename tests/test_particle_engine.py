@@ -62,6 +62,40 @@ def render(layer_, frame):
     return canvas
 
 
+def test_explicit_unit_raster_scale_preserves_existing_pixels(tmp_path):
+    project = FakeProject(tmp_path)
+    ordinary = layer(project, kind="particles")
+    explicit = layer(project, kind="particles", raster_scale=1)
+    assert render(ordinary, 30).tobytes() == render(explicit, 30).tobytes()
+    assert explicit.evidence["raster_scale"] == 1
+
+
+def test_native_4k_raster_scale_preserves_motion_and_expands_sprite_pixels(tmp_path):
+    project = FakeProject(tmp_path)
+    project.width, project.height = 3840, 2160
+    style = dict(rate=30, size=96, speed=0, turbulence=0, gravity=0,
+                 shape="square", softness=0, rotation=0, rotation_randomness=0, stretch=1)
+    small = layer(project, kind="particles", style=style)
+    large = layer(project, kind="particles", style=style, raster_scale=8)
+    a, b = render(small, 0), render(large, 0)
+    ba, bb = a.getchannel("A").getbbox(), b.getchannel("A").getbbox()
+    assert ba and bb
+    assert bb[2]-bb[0] > 1000  # A native tile, not the old 256-pixel cap.
+    assert abs((bb[2]-bb[0])/(ba[2]-ba[0])-8) < .1
+    assert small.frame_report["births"] == large.frame_report["births"]
+    assert small.frame_report["active"] == large.frame_report["active"]
+    for frame in [0, 1, 10]:
+        sa = small._parameters_at(frame)[0]
+        sb = large._parameters_at(frame)[0]
+        assert small._particle(0, 0, None, sa, frame/project.fps) == large._particle(0, 0, None, sb, frame/project.fps)
+
+
+@pytest.mark.parametrize("value", [0, .1, 8.1, float('inf'), float('nan')])
+def test_particle_raster_scale_has_explicit_resource_bounds(tmp_path, value):
+    with pytest.raises(ValueError, match="raster scale"):
+        layer(FakeProject(tmp_path), raster_scale=value)
+
+
 def test_all_emitter_kinds_render_deterministically_and_keep_transparency(tmp_path):
     project = FakeProject(tmp_path)
     for kind in ("particles", "smoke", "sparks", "embers", "confetti", "snow", "rain", "dust", "fireflies"):

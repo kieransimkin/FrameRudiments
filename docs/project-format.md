@@ -1,5 +1,31 @@
 # Project format v1
 
+## Particle raster scaling
+
+Emitter layers accept optional `raster_scale`, a finite number from 0.125 to 8
+(default 1). It scales native raster diameter, stretch height and trail distance
+after the reference particle size is computed. For an approved 480×270 design
+rendered on a native 3840×2160 viewport, set `raster_scale: 8`; retain style sizes,
+cue times, seed, speed, growth and normalized trajectory.
+
+```json
+{"id":"large-native-particles","type":"emitter","kind":"particles",
+ "bounds":[0,0,3840,2160],"raster_scale":8,
+ "style":{"seed":42,"size":24,"speed":0.2,"rate":20}}
+```
+
+Both layer evidence and frame reports retain the scale. Source sprites/masks
+are rasterised at the scaled size, bounded to a 2048-pixel tile. A low-resolution
+viewport or preview video is not enlarged. Positions use the actual viewport,
+preserving native motion precision. Birth times, counts, age, alpha and movement
+remain unchanged. Default or explicit unit scale preserves existing pixels.
+
+![Actual native particle raster comparison](media/particle-raster-scale.png)
+
+*Actual deterministic test particles on a native 3840×2160 canvas, shown at the
+same reduced display size. Synthetic API output, not music or listening evidence.
+Larger raster tiles increase cost; calibrate before a long render.*
+
 The schema identifier is `framerudiments.project.v1`. Unknown fields are errors.
 All file references are `{ "path": "relative-or-absolute", "sha256": "64 hex digits" }`.
 Hash each final input, including the font; a changed file fails preparation and
