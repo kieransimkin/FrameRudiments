@@ -1,7 +1,7 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.21 — 1 November 2026
-**Status:** M8.6 resident spectral parity passed the dedicated real-EGL GPU workflow (91 tests). M8.7 v37 adds resident matte/chroma and inherited original-alpha texture lineage; its full CI and driver parity gates are pending. Mixed CPU/GPU graph partitions remain planned.
+**Version:** 1.22 — 2 November 2026
+**Status:** M8.7 is released in 0.4.20. M8.8 is implemented for 0.4.21: conservative mixed CPU/GPU islands, exact transfer telemetry and bounded confidence-weighted GPU edge decontamination pass local real-driver parity; exact-head Mesa/EGL CI and release publication remain the acceptance gates.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -626,7 +626,7 @@ See [M8.5 resident kernels and profiling](effect-graph-m8-5-resident-kernels-and
 - [x] Native band-ID control resolution, shader uniform packing, failure cleanup, parity/transfer tests and headless EGL benchmarks.
 - [x] Resolve seven Ruff findings and update two stale GPU dispatch/transfer assertions observed on the v35 merged-head CI runs (`41342641164`, `41342641134`).
 - [ ] Confirm full CI including real EGL shaders on the merged v36 commit; collect hardware benchmark evidence.
-- [ ] Next: M8.7 GPU-resident matte/key with inherited original-alpha lineage and bounded mask processing; M8.8 mixed CPU/GPU graph islands and spatial processing.
+- [x] M8.7 GPU-resident matte/key with inherited original-alpha lineage and bounded mask processing (released in 0.4.20).
 
 See [M8.6 spectral residency](effect-graph-m8-6-spectral-residency.md).
 
@@ -638,6 +638,8 @@ See [M8.6 spectral residency](effect-graph-m8-6-spectral-residency.md).
 - [x] Reuse M3.3 GLSL kernels with resident `.a` original-alpha sampling while preserving existing per-node `.r` L-image semantics.
 - [x] Resident graph dry-run budgets, resource cleanup, CPU-only scheduling tests, real-EGL no-skip parity cases and HD/extended benchmarks.
 - [ ] Merge-time full CI plus measured EGL parity and benchmark artifacts on the exact head; cross-vendor hardware acceptance.
-- [ ] M8.8: GPU edge decontamination, mixed CPU/GPU island partitioning, spatial transforms, measured VRAM and intelligent persistent pooling.
+- [x] M8.8 core: mixed CPU/GPU island partitioning, boundary transfer telemetry, conservative lineage/multi-exit rejection and bounded GPU edge decontamination.
+- [ ] M8.9: native GPU spatial-warp kernels, measured physical VRAM where driver APIs permit it, persistent cross-frame pooling and broader cross-vendor profiling.
 
 See [M8.7 matte/chroma residency](effect-graph-m8-7-matte-key-residency.md).
+See [M8.8 mixed GPU islands](effect-graph-m8-8-gpu-islands.md).

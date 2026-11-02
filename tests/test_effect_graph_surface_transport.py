@@ -138,13 +138,14 @@ def test_strict_length_and_contract_validation():
         c.width = 4
 
 
-def test_metadata_does_not_claim_actual_gpu_residency_or_float_shader_support():
+def test_metadata_claims_rgba8_residency_but_not_float_conversion_shaders():
     caps = transport_capabilities()
     assert not caps['gpu_conversion_shaders'] and not caps['gpu_r8_lineage']
     assert caps['device_upload'] == ['rgba8/straight/top-first/tight']
     registry = backend_registry()
     assert registry['surface_transport'] == caps
-    assert not registry['backends']['moderngl']['gpu_resident_graph']
+    assert registry['backends']['moderngl']['gpu_resident_graph']
+    assert registry['backends']['moderngl']['mixed_cpu_gpu_islands']
     json.dumps(registry, allow_nan=False)
 
 

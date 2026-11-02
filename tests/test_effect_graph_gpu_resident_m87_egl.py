@@ -5,11 +5,18 @@ runner installs Mesa/EGL and must exercise actual GLSL rather than mocks.
 """
 import numpy as np
 import pytest
+import sys
 from PIL import Image, ImageDraw
 
 from framerudiments.effect_graph import EffectGraph
 from framerudiments.effect_graph_gpu import GLMatteBackend, GPUUnsupported
 from framerudiments.effect_graph_gpu_resident import resident_plan
+
+
+def _gpu(**kwargs):
+    # Linux CI requires Mesa/EGL. Windows' glcontext wheel exposes the native
+    # standalone backend instead, which still provides a real-driver gate.
+    return GLMatteBackend(backend=None if sys.platform == 'win32' else 'egl', **kwargs)
 
 
 def _sources(count=2):
@@ -67,7 +74,7 @@ def test_resident_matte_two_masks_and_original_alpha(
     graph = _graph(nodes, 'matte')
     before = {key: im.tobytes() for key, im in images.items()}
     reference = graph.render(images)
-    with GLMatteBackend(backend='egl') as gpu:
+    with _gpu() as gpu:
         actual = graph.render(images, gpu_backend=gpu, gpu_strict=True)
         _near(reference, actual, alpha=alpha_limit, rgb=12)
         assert gpu.last_transport['gpu_resident_graph'] is True
@@ -85,7 +92,7 @@ def test_eight_track_masks_share_one_input_upload_each():
                   'inputs': ['a', *(f'm{i}' for i in range(8))],
                   'mask_combine': 'screen', 'matte_channel': 'alpha'})
     graph = _graph(nodes, 'out')
-    with GLMatteBackend(backend='egl') as gpu:
+    with _gpu() as gpu:
         actual = graph.render(images, gpu_backend=gpu, gpu_strict=True)
         _near(graph.render(images), actual, alpha=7, rgb=3)
         assert gpu.last_transport['uploads'] == 9
@@ -114,7 +121,7 @@ def test_resident_chroma_key_refine_and_alpha_lineage(space, refinement, alpha_l
         {'id': 'out', 'type': 'transition', 'inputs': ['key', 'copy'],
          'transition_style': 'dissolve', 'progress': .4},
     ], 'out')
-    with GLMatteBackend(backend='egl') as gpu:
+    with _gpu() as gpu:
         actual = graph.render(images, gpu_backend=gpu, gpu_strict=True)
         _near(graph.render(images), actual, alpha=alpha_limit, rgb=16)
         assert gpu.last_transport['uploads'] == 1
@@ -133,7 +140,7 @@ def test_eight_key_colours_and_native_control_override():
     ], 'key')
     override = {('key', 'tolerance'): .15}
     reference = graph.render(images, parameter_values=override)
-    with GLMatteBackend(backend='egl') as gpu:
+    with _gpu() as gpu:
         actual = graph.render(images, gpu_backend=gpu, gpu_strict=True,
                               parameter_values=override)
         _near(reference, actual, alpha=10, rgb=2)
@@ -142,20 +149,61 @@ def test_eight_key_colours_and_native_control_override():
     assert graph.nodes['key'].config.get('tolerance', .1) == .1
 
 
-def test_unsupported_edge_decontamination_rejects_before_upload():
+def test_bounded_edge_decontamination_has_cpu_gpu_parity():
     graph = _graph([
         {'id': 'a', 'type': 'source'},
         {'id': 'key', 'type': 'chroma_key', 'inputs': ['a'],
-         'edge_decontaminate': .5},
+         'key_color': '#00ff00', 'tolerance': .12, 'softness': .2,
+         'edge_decontaminate': .65, 'edge_radius': 3},
     ], 'key')
     sources = {'a': _sources(1)['a']}
-    with GLMatteBackend(backend='egl') as gpu:
+    with _gpu() as gpu:
+        actual = graph.render(sources, gpu_backend=gpu, gpu_strict=True)
+        _near(graph.render(sources), actual, alpha=10, rgb=22)
+        assert gpu.last_transport['uploads'] == 1
+        assert gpu.last_transport['readbacks'] == 1
+        assert gpu.last_transport['resident_draws'] == 6
+
+
+def test_oversize_edge_decontamination_rejects_before_upload():
+    graph = _graph([
+        {'id': 'a', 'type': 'source'},
+        {'id': 'key', 'type': 'chroma_key', 'inputs': ['a'],
+         'edge_decontaminate': .5, 'edge_radius': 16},
+    ], 'key')
+    sources = {'a': _sources(1)['a']}
+    with _gpu() as gpu:
         with pytest.raises(GPUUnsupported):
             graph.render(sources, gpu_backend=gpu, gpu_strict=True)
         assert gpu.last_transport['uploads'] == 0
         automatic = graph.render(sources, gpu_backend=gpu)
         assert automatic.tobytes() == graph.render(sources).tobytes()
         assert gpu.last_transport['uploads'] == 0
+
+
+def test_mixed_cpu_gpu_graph_executes_two_islands_with_transfer_telemetry():
+    images = {'a': _sources(1)['a']}
+    graph = _graph([
+        {'id': 'a', 'type': 'source'},
+        {'id': 'blur', 'type': 'filter', 'inputs': ['a'], 'filter_radius': 1.1},
+        {'id': 'warp', 'type': 'spatial_warp', 'inputs': ['blur'],
+         'warp_type': 'wave', 'warp_amplitude': [2, 0], 'warp_scale': [23, 23]},
+        {'id': 'key', 'type': 'chroma_key', 'inputs': ['warp'],
+         'key_color': '#00ff00', 'tolerance': .1, 'softness': .2},
+        {'id': 'out', 'type': 'opacity', 'inputs': ['key'], 'opacity': .8},
+    ], 'out')
+    reference = graph.render(images)
+    with _gpu() as gpu:
+        actual = graph.render(images, gpu_backend=gpu)
+        _near(reference, actual, alpha=12, rgb=14)
+        report = gpu.last_transport
+        assert report['gpu_resident_graph'] is False
+        assert report['gpu_island_count'] == 2
+        assert [row['members'] for row in report['gpu_islands']] == [
+            ['blur'], ['key', 'out']]
+        assert report['uploads'] == report['readbacks'] == 2
+        assert report['gpu_island_nodes'] == 3
+        assert gpu.last_dispatch['cpu_fallbacks'] == 1
 
 
 def test_resident_budget_rejected_without_upload():
@@ -166,7 +214,7 @@ def test_resident_budget_rejected_without_upload():
          'feather': 2.5},
     ], 'out')
     images = {'a': _sources(1)['a'], 'mask': _sources(1)['m0']}
-    with GLMatteBackend(backend='egl', max_working_set_bytes=83 * 59 * 4 * 2) as gpu:
+    with _gpu(max_working_set_bytes=83 * 59 * 4 * 2) as gpu:
         with pytest.raises(GPUUnsupported):
             graph.render(images, gpu_backend=gpu, gpu_strict=True)
         assert gpu.last_transport['uploads'] == 0

@@ -65,7 +65,7 @@ def test_key_supported_with_refinement_and_despill(space):
 
 def test_rejected_refinement_does_not_masquerade_as_gpu_residency():
     graphs = [
-        _key_graph(edge_decontaminate=.8),
+        _key_graph(edge_decontaminate=.8, edge_radius=16),
         _key_graph(edge_feather=16),
         _key_graph(edge_expand=20),
         _matte_graph(expand=-20),
@@ -75,6 +75,12 @@ def test_rejected_refinement_does_not_masquerade_as_gpu_residency():
         assert not supported(graph, {})
         with pytest.raises(GPUUnsupported, match='unsupported'):
             resident_plan(graph)
+
+
+def test_bounded_decontamination_adds_four_resident_passes():
+    graph = _key_graph(edge_decontaminate=.8, edge_radius=3)
+    assert supported(graph, {})
+    assert resident_plan(graph)['resident_draws'] == 6
 
 
 class _Texture:

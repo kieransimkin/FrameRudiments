@@ -24,7 +24,7 @@ from .effect_graph_gpu_kernels import (
 from .effect_graph_filter import MAX_FILTER_DIMENSION, MAX_FILTER_PIXELS
 from .effect_graph_backend_contract import gpu_requirements
 from .effect_graph_gpu import (
-    BLUR as MASK_BLUR,
+    BLUR as MASK_BLUR, DECONTAM_BLUR, DECONTAM_FINAL, DECONTAM_PACK,
     KEY_FINAL, KEY_INIT, MASK_INIT, MATTE_FINAL,
     MORPH_HORIZONTAL, MORPH_VERTICAL,
 )
@@ -87,31 +87,34 @@ def _identity(kind, config):
     return False
 
 
-def supported(graph, configs):
-    """Only closed DAGs whose every operation has a resident GLSL equivalent."""
+def node_supported(node, config):
+    """Return whether one resolved node has an exact resident GLSL equivalent."""
     kinds = {'source', 'copy', 'opacity', 'transition', 'composite',
              'chromatic_displacement', 'filter', 'spectral_displacement',
              'matte', 'chroma_key'}
+    if node.kind not in kinds:
+        return False
+    if node.kind == 'transition' and (config.get('transition_style', 'dissolve') not in
+                                      {'dissolve', 'wipe', 'radial'} or len(node.inputs) != 2):
+        return False
+    if node.kind == 'composite' and config.get('mode', 'over') != 'over':
+        return False
+    if node.kind == 'filter' and config.get('filter_type', 'blur') not in {'blur', 'bloom'}:
+        return False
+    if node.kind == 'spectral_displacement':
+        validate_spectral(config)
+    if node.kind in {'matte', 'chroma_key'}:
+        return gpu_requirements(node.kind, config, len(node.inputs)).supported
+    return True
+
+
+def supported(graph, configs):
+    """Only closed DAGs whose every operation has a resident GLSL equivalent."""
     for key in graph.order:
         node = graph.nodes[key]
         cfg = configs.get(key, node.config)
-        if node.kind not in kinds:
+        if not node_supported(node, cfg):
             return False
-        if node.kind == 'transition' and (cfg.get('transition_style', 'dissolve') not in
-                                          {'dissolve', 'wipe', 'radial'} or len(node.inputs) != 2):
-            return False
-        if node.kind == 'composite' and cfg.get('mode', 'over') != 'over':
-            return False
-        if node.kind == 'filter' and cfg.get('filter_type', 'blur') not in {'blur', 'bloom'}:
-            return False
-        if node.kind == 'spectral_displacement':
-            validate_spectral(cfg)
-        if node.kind in {'matte', 'chroma_key'}:
-            # This checks the *resolved* control values and honours M3.3
-            # morphological, blur, key-colour and decontamination limits.
-            # No implicit clamping or alternate shader behaviour.
-            if not gpu_requirements(node.kind, cfg, len(node.inputs)).supported:
-                return False
     return True
 
 
@@ -365,6 +368,26 @@ class _ResidentRun:
             {'original_mode': int(cfg.get('alpha_source', 'current') == 'original'),
              'despill': cfg.get('despill', 0), 'nkey': len(colours)},
             prepare_shader=bind_colours)
+        if cfg.get('edge_decontaminate', 0):
+            packed = self._draw(
+                'm88_decontam_pack', DECONTAM_PACK,
+                {'source_tex': image[0], 'mask_tex': mask[0]}, {})
+            working = packed
+            for direction in ((1, 0), (0, 1)):
+                blurred = self._draw(
+                    'm88_decontam_blur', DECONTAM_BLUR,
+                    {'source_tex': working[0]},
+                    {'direction': direction, 'sigma': cfg.get('edge_radius', 3)})
+                self._recycle(working)
+                working = blurred
+            decontaminated = self._draw(
+                'm88_decontam_final', DECONTAM_FINAL,
+                {'keyed_tex': result[0], 'mask_tex': mask[0],
+                 'blurred_tex': working[0]},
+                {'strength': cfg['edge_decontaminate']})
+            self._recycle(result)
+            self._recycle(working)
+            result = decontaminated
         self._recycle(mask)
         return result
 
@@ -499,7 +522,7 @@ def resident_plan(graph, configs=None):
     return run.stats()
 
 
-def render_resident(backend, graph, sources, configs):
+def render_resident(backend, graph, sources, configs, *, whole_graph=True):
     """Upload each graph source once, render on device, read one RGBA8 output.
 
     Preflight runs before any allocation. Resource ownership is invocation-local,
@@ -531,11 +554,15 @@ def render_resident(backend, graph, sources, configs):
         image = backend._readback_rgba(framebuffer, size)
         report = getattr(backend, 'last_transport', None)
         if report is not None:
-            report.update(plan)
-            report['gpu_resident_graph'] = True
-            report['resident_estimated_texture_bytes'] = (
-                plan['resident_peak_allocated_surfaces'] * size[0] * size[1] * 4)
-        backend.last_dispatch['gpu_nodes'] = plan['resident_draws']
+            if whole_graph:
+                report.update(plan)
+                report['gpu_resident_graph'] = True
+                report['resident_estimated_texture_bytes'] = (
+                    plan['resident_peak_allocated_surfaces'] * size[0] * size[1] * 4)
+        if whole_graph:
+            backend.last_dispatch['gpu_nodes'] = plan['resident_draws']
+        else:
+            backend.last_dispatch['gpu_nodes'] += plan['resident_draws']
         return image
     finally:
         run.close()

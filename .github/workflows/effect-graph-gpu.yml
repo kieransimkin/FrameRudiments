@@ -81,8 +81,8 @@ jobs:
           if len(spectral) < 9:
               raise SystemExit('M8.6 real resident spectral parity, budgets and recovery were not collected')
           matte = [t for t in tests if 'test_effect_graph_gpu_resident_m87_egl' in t.attrib.get('classname', '')]
-          if len(matte) < 12:
-              raise SystemExit('M8.7 real GPU matte/chroma and lineage tests were not collected')
+          if len(matte) < 16:
+              raise SystemExit('M8.7/M8.8 matte, decontamination and mixed-island tests were not collected')
           print(f'{len(tests)} GPU tests, {len(transport)} M8.2 transfers, {len(kernels)} M8.3 kernels; none skipped')
           PYTEST
       - name: Benchmark spectral HD GPU and CPU (end-to-end)
@@ -103,6 +103,9 @@ jobs:
       - name: Benchmark M8.7 resident matte/key with inherited alpha and CPU parity
         run: |
           python integration/benchmark_effect_graph_m8_7_gpu.py --size hd --cpu --repeats 2 --output m87-resident-matte-key-hd.json
+      - name: Benchmark M8.8 mixed islands, decontamination and transfer telemetry
+        run: |
+          python integration/benchmark_effect_graph_m8_8_gpu.py --size hd --backend egl --repeats 2 --output m88-mixed-islands-hd.json
       - name: Optional GPU benchmark 4K and 8K
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.benchmarks }}
         run: |
@@ -125,4 +128,5 @@ jobs:
             m85-resident-gpu-*.json
             m86-resident-spectral-*.json
             m87-resident-matte-key-*.json
+            m88-mixed-islands-*.json
           if-no-files-found: ignore

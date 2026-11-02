@@ -175,12 +175,15 @@ def gpu_requirements(kind, config, input_count, *, original_alpha=True):
         if input_count != 1:
             raise ValueError('chroma key needs one input')
         morph, blur = config.get('edge_expand', 0), config.get('edge_feather', 0)
-        if config.get('edge_decontaminate', 0):
-            return GPURequirements(False, 'edge_decontamination_not_implemented')
+        if (config.get('edge_decontaminate', 0)
+                and config.get('edge_radius', 3) > MAX_GPU_GAUSSIAN_RADIUS):
+            return GPURequirements(False, 'edge_decontamination_radius_limit_exceeded')
     if abs(morph) > MAX_GPU_MORPH_RADIUS or blur > MAX_GPU_GAUSSIAN_RADIUS:
         return GPURequirements(False, 'radius_limit_exceeded')
     uploads = input_count + int(original_alpha)
     passes = 2 + 2 * bool(morph) + 2 * bool(blur)
+    if kind == 'chroma_key' and config.get('edge_decontaminate', 0):
+        passes += 4
     return GPURequirements(True, texture_count=uploads + passes, upload_count=uploads,
                            readback_count=1, draw_passes=passes)
 
@@ -234,11 +237,12 @@ def backend_registry(gpu_backend=None):
         'backends': {
             'pillow': {'role': 'host_surfaces_and_compositing', 'gpu_native': False},
             'numpy': {'role': 'cpu_effect_kernels', 'gpu_native': False},
-            'moderngl': {'role': 'per_node_upload_execute_readback', 'device': device,
-                         'kernel_kinds': sorted(GPU_KINDS), 'gpu_resident_graph': False,
-                         'cross_node_texture_pool': False,
+            'moderngl': {'role': 'resident_graph_islands_and_per_node_bridge', 'device': device,
+                         'kernel_kinds': sorted(GPU_KINDS), 'gpu_resident_graph': True,
+                         'mixed_cpu_gpu_islands': True, 'cross_node_texture_pool': True,
                          'limits': {'morph_radius': MAX_GPU_MORPH_RADIUS,
                                     'gaussian_radius': MAX_GPU_GAUSSIAN_RADIUS,
+                                    'edge_decontamination_radius': MAX_GPU_GAUSSIAN_RADIUS,
                                     'key_colours': MAX_GPU_KEY_COLOURS,
                                     'input_mattes': MAX_GPU_INPUT_MATTES}},
         },
