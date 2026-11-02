@@ -1,30 +1,31 @@
 # FrameRudiments
 
-Version 0.4.17 adds deterministic Julia-set surfaces to the compositing pipeline,
-including multi-point gradients and native DanceRudiments modulation. Julia
-phase and rotation share the recording contract's fixed `[-1,1]` range: the
-range covers one complete `2*pi` turn and joins exactly at both endpoints.
+Version 0.4.18 expands the compositing library to seven deterministic fractal
+families: Julia, Mandelbrot/Multibrot, Tricorn, Burning Ship, Celtic, Buffalo
+and Newton basins. Every family shares the multi-point gradient pipeline and
+native DanceRudiments modulation. Periodic phase and rotation use the recording
+contract's fixed `[-1,1]` range; that range is one complete `2*pi` turn and
+joins exactly at both endpoints.
 Real effect-graph GPU parity remains in the required EGL-qualified workflow;
 CPU/font/FFmpeg matrices and the GPU workflow both reject skipped tests.
 
-## Compositable Julia fractals
+## Compositable fractal library
 
-Version 0.4.17 adds a deterministic Julia-set generator to the
-existing `procedural_field` effect-graph node. It produces a normal RGBA surface
-for visible composition, mattes, transitions, texture inputs and displacement;
-multi-point gradients use the shared stable-stop palette implementation.
-Source-clocked DanceRudiments can modulate the complex-constant orbit, zoom,
-rotation, iteration count, escape radius and power without another clock.
+Select `julia`, `mandelbrot`, `tricorn`, `burning_ship`, `celtic`, `buffalo` or
+`newton` as the existing `procedural_field` node's `field_type`. Each produces a
+normal RGBA surface for visible composition, mattes, transitions, texture inputs
+and displacement. Source-clocked DanceRudiments can modulate the relevant
+centre/orbit, phase, zoom, rotation, iteration and family parameters without a
+second clock. Multi-point gradients use the shared stable-stop palette.
 
-Periodic Julia phase and rotation use the same fixed `[-1,1]` range enforced by
-DanceRudiments recordings: that span is one complete `2*pi` turn and its
-endpoints join exactly. See the [configuration, normalization and actual native-
-motion demonstration](docs/julia-fractals.md).
+See the [family table, configuration, normalization and actual seven-family
+native-motion demonstration](docs/fractal-library.md). The original
+[Julia guide](docs/julia-fractals.md) remains the compatibility reference.
 
-![Actual synthetic Julia compositor frames across one native four-beat cycle](docs/media/julia-fractal-composite.png)
+![Actual FrameRudiments output from all seven fractal families](docs/media/fractal-library.png)
 
-[Play the silent two-second compositor demonstration](docs/media/julia-fractal-motion.mp4)
-with its [accessibility description](docs/media/julia-fractal-motion-transcript.md).
+[Play the silent two-second seven-family compositor demonstration](docs/media/fractal-library-motion.mp4)
+with its [accessibility description](docs/media/fractal-library-motion-transcript.md).
 These are synthetic renderer outputs, not campaign art or artistic approval.
 
 ## A background beneath a transformed visualiser

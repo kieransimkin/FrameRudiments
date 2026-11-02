@@ -1,3 +1,28 @@
+# FrameRudiments 0.4.18
+
+- Expand `procedural_field` from Julia alone to seven deterministic families:
+  Julia, Mandelbrot/Multibrot, Tricorn, Burning Ship, Celtic, Buffalo and
+  Newton basins. All remain ordinary compositable RGBA/matte/vector sources.
+- Add public `escape_time_field()` and `newton_fractal_field()` scalar APIs while
+  preserving `julia_escape_field()` and every 0.4.17 Julia control.
+- Give the new escape-time and Newton parameters native effect-graph descriptors,
+  validation, work budgets and DanceRudiments modulation. Phase and rotation
+  use the canonical finite `[-1,1]` range for one exact `2*pi` period with
+  byte-identical endpoints.
+- Reuse the shared two-to-sixteen-stop palette, colour-space, interpolation,
+  coverage and output pipeline across every family.
+- Move Windows pytest runs to a probed, unique owned Local AppData root and
+  clean each exact run; this avoids stale shared-temp and workspace ACL failure
+  cascades. Local work now runs focused tests, while exact-head GitHub CI owns
+  the complete CPU/platform/GPU matrices.
+- Normalize repository text to LF in Git and explicitly mark media/archive
+  formats binary, preventing Windows CR/LF conversion from invalidating
+  source-byte hashes.
+- Include an [actual seven-family compositor contact sheet](docs/media/fractal-library.png)
+  and [silent two-second native-motion loop](docs/media/fractal-library-motion.mp4),
+  with an [accessible description](docs/media/fractal-library-motion-transcript.md)
+  and retained generation evidence.
+
 # FrameRudiments 0.4.17
 
 - Add a deterministic Julia-set generator to the shared `procedural_field`

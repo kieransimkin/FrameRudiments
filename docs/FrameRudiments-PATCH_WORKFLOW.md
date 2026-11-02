@@ -21,9 +21,11 @@ incorrect `/dev/null` headers for added files, and context/line-ending drift.
 4. **Use a clean disposable worktree for patch validation.** Reapply the
    generated patch to the *exact* baseline and test it; merely parsing a patch
    or passing `git apply --stat` is insufficient.
-5. **Validate quality and behaviour** with `ruff check .`, the full `pytest`
-   suite (including Windows and Linux CI), and relevant integration/gallery
-   tests. A syntax check is not a successful integration test.
+5. **Validate quality and behaviour** locally with `ruff check .`, focused
+   regression/integration/gallery tests, and package smoke checks. Exact-head
+   GitHub CI owns the full Windows/Linux CPU and required GPU matrices. Run a
+   local full suite only for an explicit whole-suite diagnosis. A syntax check
+   is not a successful integration test.
 6. **Keep compatibility:** StemLab produces source-bound pinned analytical data,
    DanceRudiments supplies native movement, and FrameRudiments renders it.
    No duplicated DSP or alternate motion semantics.
@@ -52,7 +54,7 @@ After editing and running targeted tests:
 
 ```powershell
 ruff check .
-python -m pytest -q
+& .\scripts\Invoke-Tests.ps1 tests/test_relevant_feature.py -q
 if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
 git diff --check
 if ($LASTEXITCODE -ne 0) { throw 'Whitespace check failed' }
@@ -90,9 +92,9 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Patch application failed' }
     git diff --check
     if ($LASTEXITCODE -ne 0) { throw 'Whitespace check failed' }
-    # Install development dependencies and run tests for this checkout.
+    # Install development dependencies and run the focused regression set.
     python -m pip install -e '.[dev]'
-    python -m pytest -q
+    & .\scripts\Invoke-Tests.ps1 tests/test_relevant_feature.py -q
     if ($LASTEXITCODE -ne 0) { throw 'Tests failed' }
 }
 finally { Pop-Location }

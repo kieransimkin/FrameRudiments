@@ -9,12 +9,16 @@ Use a feature branch, current README and focused regression tests. Install
 `.[dev]`, set `FRAMERUDIMENTS_TEST_FONT` and `FRAMERUDIMENTS_FFMPEG`, run
 `scripts/Invoke-Tests.ps1` (pass focused paths after the script name),
 `ruff check .`, `python -m build` and `python -m twine check --strict dist/*`.
-CI requires real encode/decode integration; skipped render checks do not prove
-rendering. Submit a PR to https://github.com/kieransimkin/FrameRudiments/pulls.
+Do not run the full suite for ordinary local changes. Exact-head GitHub CI owns
+the full CPU/platform/GPU release matrices; a local full run is reserved for an
+explicit whole-suite diagnosis. CI requires real encode/decode integration;
+skipped render checks do not prove rendering. Submit a PR to
+https://github.com/kieransimkin/FrameRudiments/pulls.
 
-The test wrapper assigns every invocation a unique project-local pytest
-`--basetemp` and removes that exact directory in `finally`, on success or
-failure. Do not invoke pytest with a persistent shared base temp for normal
+On Windows the test wrapper preflights and assigns every invocation a unique
+owned Local AppData pytest `--basetemp`; other platforms use a project-local
+fallback. It removes that exact directory in `finally`, on success or failure.
+Do not invoke pytest with a persistent shared base temp for normal
 development or release validation. Preserve needed failure output in the test
 log or CI artifact rather than retaining generated temp trees.
 

@@ -1,0 +1,65 @@
+{
+  "effect_graph": {
+    "nodes": [
+      {"id": "frame", "type": "source"},
+      {
+        "id": "fractal",
+        "type": "procedural_field",
+        "inputs": ["frame"],
+        "field_type": "burning_ship",
+        "field_output": "color",
+        "field_scale": [320, 320],
+        "field_fractal_center": [-0.05, -0.08],
+        "field_fractal_orbit_radius": 0.12,
+        "field_fractal_iterations": 112,
+        "field_fractal_escape_radius": 4,
+        "field_fractal_power": 2,
+        "field_gamma": 0.28,
+        "field_palette": [
+          {"id": "ink", "position": 0.0, "color": "#030712"},
+          {"id": "violet", "position": 0.28, "color": "#6d28d9"},
+          {"id": "cyan", "position": 0.57, "color": "#06b6d4"},
+          {"id": "amber", "position": 0.81, "color": "#f59e0b"},
+          {"id": "paper", "position": 1.0, "color": "#fff7ed"}
+        ],
+        "field_color_space": "oklab",
+        "field_interpolation": "smoothstep"
+      }
+    ],
+    "output": "fractal"
+  },
+  "effect_graph_controls": [
+    {
+      "id": "parameter-orbit",
+      "node": "fractal",
+      "property": "field_fractal_phase",
+      "motion": {"kind": "named", "pattern": "akwf_round_saw"},
+      "axis": "x",
+      "range": [-1, 1]
+    },
+    {
+      "id": "breathing-zoom",
+      "node": "fractal",
+      "property": "field_fractal_zoom",
+      "motion": {"kind": "named", "pattern": "lfo_breathe"},
+      "axis": "x",
+      "range": [0.8, 1.45]
+    },
+    {
+      "id": "slow-turn",
+      "node": "fractal",
+      "property": "field_fractal_rotation",
+      "motion": {"kind": "named", "pattern": "sway"},
+      "axis": "x",
+      "range": [-0.18, 0.18]
+    },
+    {
+      "id": "orbit-radius",
+      "node": "fractal",
+      "property": "field_fractal_orbit_radius",
+      "motion": {"kind": "named", "pattern": "lfo_breathe"},
+      "axis": "x",
+      "range": [0.04, 0.2]
+    }
+  ]
+}

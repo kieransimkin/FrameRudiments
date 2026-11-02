@@ -1,5 +1,9 @@
 # Julia fractals as compositing sources
 
+> Julia remains backward-compatible in 0.4.18. For the additional Mandelbrot,
+> Tricorn, Burning Ship, Celtic, Buffalo and Newton families, see the
+> [expanded fractal library](fractal-library.md).
+
 `procedural_field` can generate a deterministic Julia escape-time surface inside
 the existing effect graph. The mandatory input supplies canvas dimensions and,
 when requested, alpha coverage; its RGB is not used. The generated RGBA surface

@@ -1,0 +1,75 @@
+{
+  "schema": "framerudiments.fractal-library-demo.v1",
+  "framerudiments": "0.4.18",
+  "families": [
+    "julia",
+    "mandelbrot",
+    "tricorn",
+    "burning_ship",
+    "celtic",
+    "buffalo",
+    "newton"
+  ],
+  "exported_families": [
+    "buffalo",
+    "burning_ship",
+    "celtic",
+    "julia",
+    "mandelbrot",
+    "newton",
+    "tricorn"
+  ],
+  "project_sha256": {
+    "julia": "69ebf62fdc203664eee67624a665593078a224d160271fa663cf424ec83a3748",
+    "mandelbrot": "02df79273625520163d63399f83e854f6f09da1840a68fc61382aaec219402b3",
+    "tricorn": "bbdfd8717d14578896fb8f932210bdb88b17c78c67e0ca8b186bc479160dbafd",
+    "burning_ship": "ce75ab1aea403c55c3b0a58513434fbf29bbfbb7f49abeb0216b845051c84aa0",
+    "celtic": "a9d49f0e9b2e47d58bd9def5eaf6796cca3f83f86d581cde4e714eb2c326c70a",
+    "buffalo": "339f7b32fab2a88de24c3cc83e1f15e2490fae2e984c9040ebf8c3a57eed6752",
+    "newton": "84555e7b7e90f34bbdbd5c6606dd191df042955e715f5bd36aa12b395f7e600f"
+  },
+  "frames": 30,
+  "fps": 15,
+  "duration_seconds": 2,
+  "native_motion_period_beats": 4,
+  "frame_0_equals_frame_30": true,
+  "normalization": {
+    "motion_range": [
+      -1,
+      1
+    ],
+    "period_radians": 6.283185307179586
+  },
+  "still": {
+    "path": "fractal-library.png",
+    "sha256": "4d9290a773c725999d61381e43398de79b15004b371883c307821c0ff98844bd"
+  },
+  "video": {
+    "path": "fractal-library-motion.mp4",
+    "sha256": "41b70d7000ccee3d7bf954ab3bc563757ad6020e5e378e6283a18507d6e614be"
+  },
+  "ffmpeg_command": [
+    "Z:\\My Songs\\Tools\\ffmpeg\\ffmpeg-9.0.1-full_build\\bin\\ffmpeg.exe",
+    "-hide_banner",
+    "-loglevel",
+    "error",
+    "-y",
+    "-framerate",
+    "15",
+    "-i",
+    "Z:\\My Songs\\Repositories\\framerudiments-fractal-library-20261102\\out\\fractal-library-docs-20261102\\frames\\frame-%04d.png",
+    "-c:v",
+    "libx264",
+    "-crf",
+    "18",
+    "-preset",
+    "medium",
+    "-pix_fmt",
+    "yuv420p",
+    "-movflags",
+    "+faststart",
+    "Z:\\My Songs\\Repositories\\framerudiments-fractal-library-20261102\\out\\fractal-library-docs-20261102\\fractal-library-motion.mp4"
+  ],
+  "audio": "none; silent synthetic documentation preview",
+  "review": "actual compositor output; perceptual approval not implied"
+}

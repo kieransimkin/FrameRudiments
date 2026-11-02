@@ -6,8 +6,12 @@ approval. Use released DanceRudiments APIs and saved StemLab outputs; do not
 copy movement definitions or DSP. Keep creative scene decisions in adapters.
 
 Update README and relevant docs with feature changes. Add focused regression
-coverage, run ruff and pytest with FFmpeg/font integration enabled, build wheel
-and sdist, and smoke-test the installed wheel before a release. Keep credentials,
+coverage and run it locally through `scripts/Invoke-Tests.ps1` with the needed
+FFmpeg/font integration. Do not run the full suite routinely: exact-head GitHub
+CI owns the full CPU, platform and required GPU matrices for pull requests and
+releases. Run a local full suite only for an explicitly diagnosed whole-suite or
+environment problem. Run ruff, build wheel and sdist, and smoke-test the installed
+wheel before a release. Keep credentials,
 private media, song text, local paths and campaign evidence out of distributions.
 Respect immutable tags, public deployment gates and explicit name ownership.
 Submit focused improvements to https://github.com/kieransimkin/FrameRudiments/pulls.
@@ -31,8 +35,10 @@ Keep temporary data and caches under the owning project on `Z:`; model weights a
 
 After any unrestricted recovery, verify that the final output is readable and writable from the normal managed environment. If it is not, copy the completed bytes into a pre-created project-local directory that passed the probe, verify hashes, and retain the original failure and recovery evidence. Do not edit global ACLs, switch caches to `C:`, terminate unrelated processes or claim the underlying permission problem is fixed. Repositories that own temporary-directory creation should provide and test a reusable preflight helper rather than relying only on this instruction.
 
-FrameRudiments pytest runs must use `scripts/Invoke-Tests.ps1`. It creates one
-unique project-local `--basetemp` per invocation and removes that exact tree in
+FrameRudiments pytest runs must use `scripts/Invoke-Tests.ps1`. On Windows it
+preflights and creates one unique owned `--basetemp` below Local AppData, avoiding
+stale `%TEMP%` and workspace/sandbox ACL inheritance; elsewhere it uses the
+project-local fallback. It removes that exact tree in
 `finally` immediately after pytest exits, including failures. Keep diagnostic
 text in the console or durable logs; do not retain generated pytest trees as
 evidence. A cleanup failure is a failed workflow and must be reported before a
