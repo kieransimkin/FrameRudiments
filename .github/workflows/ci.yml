@@ -54,17 +54,26 @@ jobs:
           bash scripts/install_ci_render_dependencies.sh
           echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
           echo "FRAMERUDIMENTS_FFMPEG=$(command -v ffmpeg)" >> "$GITHUB_ENV"
+      - name: Install pinned Windows FFmpeg and ffprobe
+        if: runner.os == 'Windows'
+        uses: FedericoCarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # v3.1
+        with:
+          ffmpeg-version: '8.1.1'
+          linking-type: static
       - name: Windows render dependencies
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          python -m pip install imageio-ffmpeg==0.7.0
-          $ffmpeg = python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())"
-          if (-not (Test-Path -LiteralPath $ffmpeg -PathType Leaf)) {
-            throw "imageio-ffmpeg did not provide an executable: $ffmpeg"
+          $ffmpeg = (Get-Command ffmpeg -ErrorAction Stop).Source
+          $ffprobe = (Get-Command ffprobe -ErrorAction Stop).Source
+          foreach ($executable in @($ffmpeg, $ffprobe)) {
+            if (-not (Test-Path -LiteralPath $executable -PathType Leaf)) {
+              throw "FFmpeg setup did not provide an executable: $executable"
+            }
           }
           "FRAMERUDIMENTS_TEST_FONT=C:\Windows\Fonts\arialbd.ttf" >> $env:GITHUB_ENV
           "FRAMERUDIMENTS_FFMPEG=$ffmpeg" >> $env:GITHUB_ENV
+          "FRAMERUDIMENTS_FFPROBE=$ffprobe" >> $env:GITHUB_ENV
       - run: python -m pip install -e '.[dev]'
       - run: ruff check .
       - name: Verify patch validation workflow contract
