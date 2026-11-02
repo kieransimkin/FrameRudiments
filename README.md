@@ -1,5 +1,12 @@
 # FrameRudiments
 
+Emitter layers accept optional `raster_scale` (0.125–8, default 1) for native
+high-resolution particle and sprite pixels. For a design approved at 480×270,
+`raster_scale: 8` on a 3840×2160 viewport retains particle proportions while
+rasterising the actual source sprite at 4K size. Seeded births, native motion,
+cue times and normalized positions remain unchanged; no preview video is scaled.
+See [particle raster scaling](docs/project-format.md#particle-raster-scaling).
+
 Version 0.4.18 expands the compositing library to seven deterministic fractal
 families: Julia, Mandelbrot/Multibrot, Tricorn, Burning Ship, Celtic, Buffalo
 and Newton basins. Every family shares the multi-point gradient pipeline and

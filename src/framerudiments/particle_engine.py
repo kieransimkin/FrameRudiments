@@ -321,6 +321,7 @@ class ParticleEmitter:
                 "particle_atlas",
                 "start_seconds",
                 "end_seconds",
+                "raster_scale",
             },
             "particle emitter layer",
         )
@@ -346,6 +347,7 @@ class ParticleEmitter:
         if any(x != int(x) for x in cfg.get("bounds", [0, 0, project.width, project.height])):
             raise ValueError("Particle bounds must use integer pixels")
         self.size = (self.bounds[2] - self.bounds[0], self.bounds[3] - self.bounds[1])
+        self.raster_scale = number(cfg.get("raster_scale", 1), "particle raster scale", minimum=0.125, maximum=8)
         self.opacity = number(cfg.get("opacity", 1), "particle layer opacity", minimum=0, maximum=1)
         self.start = number(cfg.get("start_seconds", 0), "particle start", minimum=0)
         self.end = number(cfg.get("end_seconds", 24 * 3600), "particle end", minimum=self.start)
@@ -514,6 +516,7 @@ class ParticleEmitter:
             seed=self.base["seed"],
             modulation=self.mods.evidence,
             bounds=self.bounds,
+            raster_scale=self.raster_scale,
             deterministic="counter-seeded frame births; no integrated state",
         )
 
@@ -672,9 +675,11 @@ class ParticleEmitter:
         cy = round(y * (self.size[1] - 1))
         shape = style["shape"]
         softness = round(style["softness"] * 100)
-        diameter = max(3, min(256, size * 2))
+        reference_diameter = max(3, min(256, size * 2))
+        reference_height = max(2, min(256, round(reference_diameter * style["stretch"])))
+        diameter = max(1, round(reference_diameter * self.raster_scale))
         width = diameter
-        height = max(2, min(256, round(diameter * style["stretch"])))
+        height = max(1, round(reference_height * self.raster_scale))
         mask = _shape_mask(shape, diameter, softness)
         if height != diameter:
             mask = mask.resize((width, height), Image.Resampling.LANCZOS)
@@ -704,7 +709,7 @@ class ParticleEmitter:
         additive = style["blend"] == "add"
         if style["trail"]:
             theta = math.radians(style["direction"])
-            distance = style["trail"] * size * 2
+            distance = style["trail"] * size * 2 * self.raster_scale
             # Multiple fading copies extend behind the main motion vector.
             for j in (3, 2, 1):
                 echo = alpha_scaled(tile, (0.25 / j))
@@ -769,6 +774,7 @@ class ParticleEmitter:
             cue_bursts=list(born_here.values()),
             modulations=modulated,
             viewport=list(self.bounds),
+            raster_scale=self.raster_scale,
         )
         bounds = viewport.getchannel("A").getbbox()
         return transformed_bounds(viewport, *self.bounds[:2]) if bounds else None
