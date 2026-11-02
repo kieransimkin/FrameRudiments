@@ -155,3 +155,19 @@ local-peak analysis, dominant-band reporting and deterministic peak holds.
 See [spectrum.md](spectrum.md) for calibration requirements, style controls,
 the real Fourier demo and streamed per-frame effect signals. It rejects generic
 motion or unrecoverable data rather than inventing frequency/RMS meaning.
+
+## Cached renderer provenance
+
+A preconstructed rudiment layer records its renderer source through `Project.ref`.
+This retains the verified SHA-256 and byte count required by work-cache staging,
+including for explicitly registered trusted Python renderers. Before 0.4.19,
+these sources could reach the cache without their byte count and stop a render
+before frame zero. Existing project JSON and renderer registration are unchanged.
+
+![Actual native rudiment output after renderer provenance was staged in the cache](media/cached-rudiment.png)
+
+[Play the silent half-second native-rendered cache smoke test](media/cached-rudiment.mp4).
+The image is a decoded frame from that synthetic demo; the four panels show
+particles, bars, waveform and path. It uses generated test signals, with no
+private recording. The fix changes file metadata handling and leaves drawing
+and audio-analysis semantics intact.

@@ -1,5 +1,11 @@
 # FrameRudiments
 
+Version 0.4.19 fixes cached renders that prepare a rudiment layer before encoding.
+Renderer source provenance now passes through the normal hash-checked file-reference
+API, including its byte count, so built-in and trusted custom views can enter
+work-cache staging. [Details and actual output](docs/rudiment-renderers.md#cached-renderer-provenance).
+
+
 Version 0.4.18 expands the compositing library to seven deterministic fractal
 families: Julia, Mandelbrot/Multibrot, Tricorn, Burning Ship, Celtic, Buffalo
 and Newton basins. Every family shares the multi-point gradient pipeline and
@@ -732,3 +738,4 @@ match; assets are never overwritten. Manual dispatch can resume a registry uploa
 from an existing immutable tag, preserving its exact GitHub bytes. The PyPI job
 uses a separately configured trusted publisher; no API token is stored in this project.
 A GitHub release and a PyPI listing are separately verified outcomes.
+

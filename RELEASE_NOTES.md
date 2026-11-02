@@ -1,3 +1,11 @@
+# FrameRudiments 0.4.19
+
+- Validate built-in and trusted custom rudiment renderer source provenance with
+  `Project.ref`, retaining the byte count needed by work-cache staging.
+- Fix `KeyError: bytes` when a scene prepares a rudiment layer before a cached
+  encode. Preserve hash checks and the existing JSON/plugin contracts.
+- Regression-test actual cache staging for both renderer types; include a
+  [native cached demo frame and silent clip](docs/rudiment-renderers.md#cached-renderer-provenance).
 # FrameRudiments 0.4.18
 
 - Expand `procedural_field` from Julia alone to seven deterministic families:
@@ -361,3 +369,4 @@ See README.md and docs/preset-behaviour.md for setup and evidence limits.
 Optical-flow and semantic hypotheses do not establish flash safety, artistic
 intent or complete coverage of the entire preset catalogue. Native rendering
 continues to depend on the target GPU, driver and upstream engine behaviour.
+
