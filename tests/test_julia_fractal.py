@@ -92,11 +92,16 @@ def test_multi_point_gradient_and_fractal_controls_are_exposed():
     assert descriptors["field_julia_phase"]["range"] == [-1, 1]
     assert descriptors["field_julia_rotation"]["units"] == "normalized_turn"
     capabilities = field_capabilities(config)
-    assert capabilities["fractal"] == {
-        "family": "julia", "escape_time": True,
-        "motion_normalized_range": [-1, 1], "periodic_control_span": 2,
-        "periodic_control_radians": 2 * math.pi, "joined_endpoints": True,
-    }
+    fractal = capabilities["fractal"]
+    assert fractal["family"] == "julia" and fractal["escape_time"]
+    assert fractal["available_families"] == [
+        "buffalo", "burning_ship", "celtic", "julia", "mandelbrot", "newton", "tricorn",
+    ]
+    assert fractal["motion_normalized_range"] == [-1, 1]
+    assert fractal["periodic_control_span"] == 2
+    assert fractal["periodic_control_radians"] == 2 * math.pi
+    assert fractal["joined_endpoints"]
+    assert fractal["periodic_controls"] == ["field_julia_phase", "field_julia_rotation"]
 
 
 @pytest.mark.parametrize("config", [

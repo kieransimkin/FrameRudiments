@@ -12,7 +12,10 @@ import math
 from PIL import Image
 
 from .effect_graph_spatial import _noise
-from .fractals import julia_escape_field
+from .fractals import (
+    ESCAPE_FRACTAL_FAMILIES, FRACTAL_FAMILIES, escape_time_field,
+    julia_escape_field, newton_fractal_field,
+)
 from .effect_graph_layer_overlays import (
     DEFAULT_STOPS, _gradient_lut, _gradient_paint, overlay_control_apply,
     overlay_control_base, overlay_parameter_descriptors, stop_control_parts, validate_overlay,
@@ -20,7 +23,7 @@ from .effect_graph_layer_overlays import (
 
 FIELD_TYPES = frozenset({
     'constant', 'linear', 'radial', 'angular', 'stripes', 'rings', 'checker',
-    'noise', 'fbm', 'ridged', 'cellular', 'julia',
+    'noise', 'fbm', 'ridged', 'cellular', *FRACTAL_FAMILIES,
 })
 FIELD_ENUMS = {
     'field_type': FIELD_TYPES,
@@ -48,6 +51,16 @@ FIELD_RANGES = {
     'field_julia_zoom': (.05, 32), 'field_julia_rotation': (-1, 1),
     'field_julia_iterations': (1, 512), 'field_julia_escape_radius': (2, 64),
     'field_julia_power': (2, 8),
+    'field_fractal_center.x': (-4, 4), 'field_fractal_center.y': (-4, 4),
+    'field_fractal_orbit_radius': (0, 4), 'field_fractal_phase': (-1, 1),
+    'field_fractal_zoom': (.05, 64), 'field_fractal_rotation': (-1, 1),
+    'field_fractal_iterations': (1, 512), 'field_fractal_escape_radius': (2, 64),
+    'field_fractal_power': (2, 8),
+    'field_newton_center.x': (-4, 4), 'field_newton_center.y': (-4, 4),
+    'field_newton_phase': (-1, 1), 'field_newton_zoom': (.05, 64),
+    'field_newton_rotation': (-1, 1), 'field_newton_iterations': (1, 256),
+    'field_newton_degree': (3, 8), 'field_newton_tolerance': (1e-12, .1),
+    'field_newton_relaxation': (.05, 2),
 }
 FIELD_DEFAULTS = {
     'field_type': 'noise', 'field_output': 'grayscale', 'field_alpha_source': 'opaque',
@@ -62,11 +75,26 @@ FIELD_DEFAULTS = {
     'field_julia_phase': 0, 'field_julia_zoom': 1, 'field_julia_rotation': 0,
     'field_julia_iterations': 96, 'field_julia_escape_radius': 4,
     'field_julia_power': 2,
+    'field_fractal_center': [0, 0], 'field_fractal_orbit_radius': 0,
+    'field_fractal_phase': 0, 'field_fractal_zoom': 1,
+    'field_fractal_rotation': 0, 'field_fractal_iterations': 96,
+    'field_fractal_escape_radius': 4, 'field_fractal_power': 2,
+    'field_newton_center': [0, 0], 'field_newton_phase': 0,
+    'field_newton_zoom': 1, 'field_newton_rotation': 0,
+    'field_newton_iterations': 48, 'field_newton_degree': 3,
+    'field_newton_tolerance': 1e-6, 'field_newton_relaxation': 1,
 }
 FIELD_FIELDS = frozenset(FIELD_DEFAULTS) | {'field_palette'}
 FIELD_CONTROLS = frozenset(FIELD_ENUMS) | frozenset(FIELD_RANGES)
-_VECTORS = {'field_scale', 'field_center', 'field_offset', 'field_julia_c'}
-_INTEGERS = {'field_seed', 'field_octaves', 'field_julia_iterations', 'field_julia_power'}
+_VECTORS = {
+    'field_scale', 'field_center', 'field_offset', 'field_julia_c',
+    'field_fractal_center', 'field_newton_center',
+}
+_INTEGERS = {
+    'field_seed', 'field_octaves', 'field_julia_iterations', 'field_julia_power',
+    'field_fractal_iterations', 'field_fractal_power',
+    'field_newton_iterations', 'field_newton_degree',
+}
 _GRAPH_FIELDS = {'id', 'type', 'inputs', 'opacity'}
 MAX_PIXELS = 33_177_600
 MAX_DIMENSION = 16384
@@ -179,6 +207,20 @@ def _active(config):
             'field_julia_zoom', 'field_julia_rotation', 'field_julia_iterations',
             'field_julia_escape_radius', 'field_julia_power',
         })
+    elif kind in ESCAPE_FRACTAL_FAMILIES:
+        active.update({
+            'field_scale', 'field_center', 'field_offset', 'field_angle',
+            'field_fractal_center', 'field_fractal_orbit_radius', 'field_fractal_phase',
+            'field_fractal_zoom', 'field_fractal_rotation', 'field_fractal_iterations',
+            'field_fractal_escape_radius', 'field_fractal_power',
+        })
+    elif kind == 'newton':
+        active.update({
+            'field_scale', 'field_center', 'field_offset', 'field_angle',
+            'field_newton_center', 'field_newton_phase', 'field_newton_zoom',
+            'field_newton_rotation', 'field_newton_iterations', 'field_newton_degree',
+            'field_newton_tolerance', 'field_newton_relaxation',
+        })
     else:
         active.update({'field_scale', 'field_center', 'field_offset', 'field_phase'})
         # Rotation does not change radial scalar distance.
@@ -218,8 +260,15 @@ def field_parameter_descriptors(config=None, *, input_count=None):
         else:
             unit = ('pixels' if base in {'field_scale', 'field_offset', 'field_derivative_step'} else
                     'degrees' if name == 'field_angle' else
-                    'normalized_turn' if name in {'field_julia_phase', 'field_julia_rotation'} else
-                    'iterations' if name == 'field_julia_iterations' else
+                    'normalized_turn' if name in {
+                        'field_julia_phase', 'field_julia_rotation',
+                        'field_fractal_phase', 'field_fractal_rotation',
+                        'field_newton_phase', 'field_newton_rotation',
+                    } else
+                    'iterations' if name in {
+                        'field_julia_iterations', 'field_fractal_iterations',
+                        'field_newton_iterations',
+                    } else
                     'field_units' if name == 'field_phase' else
                     'integer' if name in _INTEGERS else 'ratio')
             item.update(type='integer' if name in _INTEGERS else 'number', units=unit,
@@ -256,13 +305,20 @@ def field_capabilities(config=None, *, input_count=None):
         'max_tile_pixels': MAX_TILE_PIXELS, 'max_work_units': MAX_WORK_UNITS,
         'controls': field_parameter_descriptors(config, input_count=input_count),
     }
-    if config.get('field_type', 'noise') == 'julia':
+    family = config.get('field_type', 'noise')
+    if family in FRACTAL_FAMILIES:
+        prefix = ('field_julia' if family == 'julia' else
+                  'field_newton' if family == 'newton' else 'field_fractal')
         result['fractal'] = {
-            'family': 'julia', 'escape_time': True,
+            'family': family,
+            'available_families': sorted(FRACTAL_FAMILIES),
+            'escape_time': family != 'newton',
+            'newton_basin': family == 'newton',
             'motion_normalized_range': [-1, 1],
             'periodic_control_span': 2,
             'periodic_control_radians': 2 * math.pi,
             'joined_endpoints': True,
+            'periodic_controls': [f'{prefix}_phase', f'{prefix}_rotation'],
         }
     return result
 
@@ -307,6 +363,31 @@ def _scalar(u, v, config):
             iterations=config.get('field_julia_iterations', 96),
             escape_radius=config.get('field_julia_escape_radius', 4),
             power=config.get('field_julia_power', 2),
+        )
+    elif kind in ESCAPE_FRACTAL_FAMILIES:
+        value = escape_time_field(
+            u, v,
+            family=kind,
+            center=config.get('field_fractal_center', [0, 0]),
+            orbit_radius=config.get('field_fractal_orbit_radius', 0),
+            phase=config.get('field_fractal_phase', 0),
+            zoom=config.get('field_fractal_zoom', 1),
+            rotation=config.get('field_fractal_rotation', 0),
+            iterations=config.get('field_fractal_iterations', 96),
+            escape_radius=config.get('field_fractal_escape_radius', 4),
+            power=config.get('field_fractal_power', 2),
+        )
+    elif kind == 'newton':
+        value = newton_fractal_field(
+            u, v,
+            center=config.get('field_newton_center', [0, 0]),
+            phase=config.get('field_newton_phase', 0),
+            zoom=config.get('field_newton_zoom', 1),
+            rotation=config.get('field_newton_rotation', 0),
+            iterations=config.get('field_newton_iterations', 48),
+            degree=config.get('field_newton_degree', 3),
+            tolerance=config.get('field_newton_tolerance', 1e-6),
+            relaxation=config.get('field_newton_relaxation', 1),
         )
     elif kind in {'linear', 'radial', 'angular'}:
         coordinate = (u + .5 if kind == 'linear' else np.hypot(u, v) if kind == 'radial'
@@ -385,6 +466,9 @@ def field_work_units(size, config):
     """Conservative weighted scalar samples, not a promised time/RAM estimate."""
     kind = config.get('field_type', 'noise')
     per_sample = (config.get('field_julia_iterations', 96) if kind == 'julia' else
+                  config.get('field_fractal_iterations', 96)
+                  if kind in ESCAPE_FRACTAL_FAMILIES else
+                  2 * config.get('field_newton_iterations', 48) if kind == 'newton' else
                   72 if kind == 'cellular' else
                   4 * config.get('field_octaves', 3) if kind in {'fbm', 'ridged'} else
                   4 if kind == 'noise' else 1)
