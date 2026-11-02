@@ -14,6 +14,7 @@ dist/
 !docs/media/natural-materials.mp4
 !docs/media/visualiser-underlay.mp4
 !docs/media/julia-fractal-motion.mp4
+!docs/media/raindrop-ripples.mp4
 local/
 .tmp/
 .local-app-data/

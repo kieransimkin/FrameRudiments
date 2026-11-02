@@ -1,3 +1,21 @@
+# FrameRudiments 0.4.20
+
+- Add `raindrop_ripples`, a deterministic refractive spatial warp with three
+  related visual models: travelling rings, bounded droplet lenses and seeded
+  multi-source storm interference.
+- Add the geometric `wash` transition, which reuses the same ripple field to
+  refract both clips around a deterministic advancing reveal boundary while
+  preserving exact start and end frames.
+- Keep every variant random-access and tile-stable so chunk replay, resume and
+  distributed frame evaluation do not require mutable fluid-simulation state.
+- Expose native effect-graph controls for variant, seed, wavelength, radius,
+  phase, amplitude, source count, centre, border handling and mix. Alpha follows
+  the same inverse warp as colour.
+- Include an [actual three-variant contact sheet](docs/media/raindrop-ripples.png)
+  and [silent two-second wash demonstration](docs/media/raindrop-ripples.mp4),
+  with an [accessible description](docs/media/raindrop-ripples-transcript.md)
+  and a reproducible media generator.
+
 # FrameRudiments 0.4.18
 
 - Expand `procedural_field` from Julia alone to seven deterministic families:

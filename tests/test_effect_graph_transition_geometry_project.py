@@ -38,7 +38,7 @@ def configured(project, style, controls=()):
     return Project(data, project.base)
 
 
-@pytest.mark.parametrize('style', ['zoom', 'rotate', 'polar', 'kaleidoscope', 'liquid'])
+@pytest.mark.parametrize('style', ['zoom', 'rotate', 'polar', 'kaleidoscope', 'liquid', 'wash'])
 def test_actual_project_render_random_access_and_original_sources(scene, style):
     compositor = Compositor(configured(scene, style))
     first, _ = compositor.frame(42, apply_quality=False)
