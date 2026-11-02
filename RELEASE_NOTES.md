@@ -14,7 +14,8 @@
 - Keep CPU release testing aligned with the expanded GPU suite. Real GPU parity,
   transport, kernels and resident spectral/matte tests continue in the required
   no-skip EGL workflow instead of being accidentally collected by a CPU-only
-  release build.
+  release build. Windows CI retries transient Chocolatey failures before
+  declaring FFmpeg unavailable.
 - Include an [actual native-motion compositor contact sheet](docs/media/julia-fractal-composite.png)
   and [silent two-second loop](docs/media/julia-fractal-motion.mp4), with an
   [accessible description](docs/media/julia-fractal-motion-transcript.md).

@@ -58,9 +58,15 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          if (-not (Get-Command ffmpeg -ErrorAction SilentlyContinue)) { choco install ffmpeg -y --no-progress }
+          $ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
+          for ($attempt = 1; -not $ffmpeg -and $attempt -le 3; $attempt++) {
+            choco install ffmpeg -y --no-progress
+            $ffmpeg = Get-Command ffmpeg -ErrorAction SilentlyContinue
+            if (-not $ffmpeg -and $attempt -lt 3) { Start-Sleep -Seconds (15 * $attempt) }
+          }
+          if (-not $ffmpeg) { throw 'FFmpeg remains unavailable after three Chocolatey attempts' }
           "FRAMERUDIMENTS_TEST_FONT=C:\Windows\Fonts\arialbd.ttf" >> $env:GITHUB_ENV
-          "FRAMERUDIMENTS_FFMPEG=$((Get-Command ffmpeg).Source)" >> $env:GITHUB_ENV
+          "FRAMERUDIMENTS_FFMPEG=$($ffmpeg.Source)" >> $env:GITHUB_ENV
       - run: python -m pip install -e '.[dev]'
       - run: ruff check .
       - name: Verify patch validation workflow contract
