@@ -1,11 +1,12 @@
 """Offline frame composition on a traceable musical clock."""
 
-__version__ = "0.4.16"
+__version__ = "0.4.17"
 
 from .project import Project
 from .render import render, preflight
 from .natural_materials import NaturalMaterial
 from .fire_renderer import FireRenderer
+from .fractals import julia_escape_field, julia_constant, normalized_turn_radians
 
 from .rudiment_renderers import (
     RendererRegistry,
@@ -27,4 +28,7 @@ __all__ = [
     "default_renderers",
     "NaturalMaterial",
     "FireRenderer",
+    "julia_escape_field",
+    "julia_constant",
+    "normalized_turn_radians",
 ]

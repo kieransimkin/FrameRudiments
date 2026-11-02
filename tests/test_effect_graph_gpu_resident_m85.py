@@ -56,7 +56,8 @@ def test_multipass_filter_and_fanout_bounded_allocation():
 
 def test_unsupported_node_never_impersonates_gpu_execution():
     graph = _graph(_source('a'),
-                   {'id': 'key', 'type': 'chroma_key', 'inputs': ['a']}, output='key')
+                   {'id': 'field', 'type': 'procedural_field', 'inputs': ['a'],
+                    'field_type': 'julia'}, output='field')
     assert not supported(graph, {})
     with pytest.raises(GPUUnsupported):
         resident_plan(graph)
