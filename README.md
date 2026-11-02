@@ -1,5 +1,14 @@
 # FrameRudiments
 
+FrameRudiments now includes a deterministic refractive raindrop field with
+`rings`, `droplets` and `storm` variants. Apply it to any effect-graph layer with
+`spatial_warp` / `raindrop_ripples`, or use the same field in the new `wash`
+transition. Both routes retain random-access rendering, seeded repeatability,
+alpha-safe sampling and exact identity/endpoints. See the [configuration,
+research and actual synthetic demonstration](docs/raindrop-ripples.md).
+
+![Actual FrameRudiments raindrop ripple and wash output](docs/media/raindrop-ripples.png)
+
 Emitter layers accept optional `raster_scale` (0.125–8, default 1) for native
 high-resolution particle and sprite pixels. For a design approved at 480×270,
 `raster_scale: 8` on a 3840×2160 viewport retains particle proportions while

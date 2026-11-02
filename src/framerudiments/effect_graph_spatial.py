@@ -14,15 +14,17 @@ from PIL import Image
 
 from .effect_graph_transition_geometry import _sample, _rotate
 from .effect_graph_layer_overlays import _texture_paint
+from .effect_graph_ripples import RIPPLE_VARIANTS, ripple_vectors
 
 WARP_TYPES = frozenset({'wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope', 'displacement',
-                        'polar_unwrap', 'polar_wrap'})
+                        'polar_unwrap', 'polar_wrap', 'raindrop_ripples'})
 WARP_ENUMS = {
     'warp_type': WARP_TYPES,
     'warp_border': frozenset({'transparent', 'clamp', 'repeat', 'mirror'}),
     'warp_axis': frozenset({'x', 'y', 'xy'}),
     'warp_map_x': frozenset({'r', 'g', 'b', 'a', 'luminance'}),
     'warp_map_y': frozenset({'r', 'g', 'b', 'a', 'luminance'}),
+    'warp_ripple_variant': RIPPLE_VARIANTS,
 }
 WARP_RANGES = {
     'warp_mix': (0, 1),
@@ -41,6 +43,7 @@ WARP_DEFAULTS = {
     'warp_amount': .5, 'warp_phase': 0, 'warp_octaves': 3,
     'warp_seed': 0, 'warp_segments': 6, 'warp_axis': 'x',
     'warp_map_x': 'r', 'warp_map_y': 'g', 'warp_neutral': 128 / 255,
+    'warp_ripple_variant': 'rings',
 }
 WARP_FIELDS = frozenset(WARP_DEFAULTS)
 WARP_CONTROLS = frozenset(WARP_ENUMS) | frozenset(WARP_RANGES)
@@ -124,6 +127,8 @@ def _active(kind):
         'displacement': {'warp_amplitude', 'warp_map_x', 'warp_map_y', 'warp_neutral'},
         'polar_unwrap': {'warp_center', 'warp_radius', 'warp_angle'},
         'polar_wrap': {'warp_center', 'warp_radius', 'warp_angle'},
+        'raindrop_ripples': {'warp_center', 'warp_amplitude', 'warp_scale', 'warp_radius',
+                             'warp_phase', 'warp_seed', 'warp_segments', 'warp_ripple_variant'},
     }
     return common | specific[kind]
 
@@ -229,6 +234,18 @@ def _coordinates(x, y, size, config, field):
             return (value - neutral) / np.where(value >= neutral, 1 - neutral, neutral) * field[..., 3]
 
         return x - ax * signed(config.get('warp_map_x', 'r')), y - ay * signed(config.get('warp_map_y', 'g'))
+    if kind == 'raindrop_ripples':
+        vx, vy = ripple_vectors(
+            x, y, size,
+            variant=config.get('warp_ripple_variant', 'rings'),
+            centre=config.get('warp_center', [.5, .5]),
+            radius=config.get('warp_radius', 128),
+            wavelength=config.get('warp_scale', [64, 64])[0],
+            phase=config.get('warp_phase', 0),
+            count=config.get('warp_segments', 6),
+            seed=config.get('warp_seed', 0),
+        )
+        return x - ax * vx, y - ay * vy
     cx, cy = config.get('warp_center', [.5, .5])
     cx, cy = cx * size[0] - .5, cy * size[1] - .5
     dx, dy = x - cx, y - cy
@@ -292,7 +309,7 @@ def _is_identity(config, map_image):
     kind = config.get('warp_type', 'wave')
     if config.get('warp_mix', 1) == 0:
         return True
-    if kind in {'wave', 'turbulence', 'displacement'} and not any(config.get('warp_amplitude', [16, 16])):
+    if kind in {'wave', 'turbulence', 'displacement', 'raindrop_ripples'} and not any(config.get('warp_amplitude', [16, 16])):
         return True
     if kind == 'swirl' and config.get('warp_angle', 90) == 0:
         return True

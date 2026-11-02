@@ -49,7 +49,7 @@ def run(size, style, repeats):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--size', choices=SIZES, default='small')
-    parser.add_argument('--style', choices=['zoom', 'rotate', 'polar', 'kaleidoscope', 'liquid'],
+    parser.add_argument('--style', choices=['zoom', 'rotate', 'polar', 'kaleidoscope', 'liquid', 'wash'],
                         default='liquid')
     parser.add_argument('--repeats', type=int, default=2)
     parser.add_argument('--allow-8k', action='store_true', help='Explicitly permit a high-memory run')

@@ -10,7 +10,9 @@ import math
 
 from PIL import Image
 
-GEOMETRIC_STYLES = frozenset({'zoom', 'rotate', 'polar', 'kaleidoscope', 'liquid'})
+from .effect_graph_ripples import RIPPLE_VARIANTS, ripple_vectors, wash_coordinate
+
+GEOMETRIC_STYLES = frozenset({'zoom', 'rotate', 'polar', 'kaleidoscope', 'liquid', 'wash'})
 GEOMETRY_DEFAULTS = {
     'strength': 0.75,
     'zoom': 1.0,
@@ -26,6 +28,7 @@ GEOMETRY_RANGES = {
     'rotation': (-720.0, 720.0), 'twist': (-4.0, 4.0),
     'segments': (2, 24), 'frequency': (0.0, 32.0),
     'amplitude': (0.0, 256.0), 'phase': (-8 * math.pi, 8 * math.pi),
+    'wash_seed': (0, 10000),
 }
 TILE_ROWS = 48
 
@@ -40,13 +43,20 @@ def validate_transition_geometry(config):
     """Validate before rendering; geometric-only parameters never leak to other styles."""
     style = config.get('transition_style', 'dissolve')
     params = GEOMETRY_RANGES.keys() & config.keys()
+    if style != 'wash' and ({'wash_variant', 'wash_seed'} & config.keys()):
+        raise ValueError('wash transition parameters require wash style')
     if style not in GEOMETRIC_STYLES:
         if params:
             raise ValueError('geometric transition parameters require geometric style')
         return
+    if style == 'wash':
+        variant = config.get('wash_variant', 'rings')
+        if not isinstance(variant, str) or variant not in RIPPLE_VARIANTS:
+            raise ValueError('invalid wash transition variant')
     for name, (minimum, maximum) in GEOMETRY_RANGES.items():
-        _number(config.get(name, GEOMETRY_DEFAULTS[name]), name, minimum, maximum,
-                integer=name == 'segments')
+        default = 0 if name == 'wash_seed' else GEOMETRY_DEFAULTS[name]
+        _number(config.get(name, default), name, minimum, maximum,
+                integer=name in {'segments', 'wash_seed'})
 
 
 def _sample(source, sx, sy):
@@ -181,7 +191,7 @@ def geometric_transition(from_image: Image.Image, to_image: Image.Image, config:
             sy_a = cy + (dy * (1 - strength * progress) + py * strength * progress)
             sx_b = cx + (dx * (1 - strength * (1 - progress)) + px * strength * (1 - progress))
             sy_b = cy + (dy * (1 - strength * (1 - progress)) + py * strength * (1 - progress))
-        else:  # liquid
+        elif style == 'liquid':
             drift = amplitude * wave
             drift_y = amplitude * 0.35 * np.cos(norm_x * (2 * math.pi * frequency) + phase)
             sx_a, sy_a = x - drift * progress, y - drift_y * progress
@@ -190,6 +200,23 @@ def geometric_transition(from_image: Image.Image, to_image: Image.Image, config:
                 coordinate = norm_y + drift_y / max(height, 1)
             else:
                 coordinate = norm_x + drift / max(width, 1)
+        else:  # wash
+            variant = config.get('wash_variant', 'rings')
+            count_seed = config.get('wash_seed', 0)
+            wavelength = max(2.0, max_radius / max(frequency, .25))
+            vx, vy = ripple_vectors(
+                x, y, (width, height), variant=variant,
+                centre=(centre_x, centre_y), radius=max_radius,
+                wavelength=wavelength, phase=phase + progress * 2 * math.pi,
+                count=count, seed=count_seed,
+            )
+            distortion = amplitude * strength * 4 * progress * (1 - progress)
+            sx_a, sy_a = x - vx * distortion, y - vy * distortion
+            sx_b, sy_b = x + vx * distortion * .6, y + vy * distortion * .6
+            coordinate = wash_coordinate(
+                x, y, (width, height), variant=variant,
+                centre=(centre_x, centre_y), count=count, seed=count_seed,
+            )
         if direction in {'left', 'up'}:
             coordinate = 1 - coordinate
         weight = _weight(coordinate, progress, feather, (height, width))

@@ -49,6 +49,7 @@ from .effect_graph_transition_timing import (
 from .effect_graph_transition_geometry import (
     GEOMETRIC_STYLES, GEOMETRY_DEFAULTS, GEOMETRY_RANGES, validate_transition_geometry,
 )
+from .effect_graph_ripples import RIPPLE_VARIANTS
 from .effect_graph_transition_mattes import MATTE_TRANSITION_CHANNELS, validate_transition_matte
 from .effect_graph_transition_spectral import (
     control_apply as spectral_transition_control_apply,
@@ -87,7 +88,7 @@ CONTROL_TARGETS = {
     'transition': {'progress', 'feather', 'center.x', 'center.y', 'transition_style', 'direction',
                    'threshold', 'mask_gamma', 'matte_channel', 'invert', 'key_color.r',
                    'key_color.g', 'key_color.b', 'key_space', 'tolerance', 'softness',
-                   *GEOMETRY_RANGES},
+                   'wash_variant', *GEOMETRY_RANGES},
 }
 # Every image-processing node has an independent output-opacity control.
 for _targets in CONTROL_TARGETS.values():
@@ -107,13 +108,15 @@ ENUM_CONTROLS = {
     'chroma_key': {'key_space': KEY_SPACES, 'alpha_source': ALPHA_SOURCES},
     'transition': {'transition_style': TRANSITION_STYLES, 'direction': TRANSITION_DIRECTIONS,
                    'matte_channel': MATTE_TRANSITION_CHANNELS, 'invert': frozenset({True, False}),
-                   'key_space': KEY_SPACES, 'alpha_mode': SPECTRAL_ALPHA_MODES},
+                   'key_space': KEY_SPACES, 'alpha_mode': SPECTRAL_ALPHA_MODES,
+                   'wash_variant': RIPPLE_VARIANTS},
     'spectral_displacement': {'spectral_mode': SPECTRAL_MODES, 'alpha_mode': SPECTRAL_ALPHA_MODES},
     'composite': {'mode': COMPOSITE_MODES},
 }
 ENUM_DEFAULTS = {'alpha_source': 'current', 'mask_combine': 'multiply', 'matte_channel': 'alpha', 'invert': False,
                  'key_space': 'rgb', 'transition_style': 'dissolve', 'direction': 'right', 'mode': 'over',
                  'spectral_mode': 'overlay', 'alpha_mode': 'expanded'}
+ENUM_DEFAULTS['wash_variant'] = 'rings'
 
 
 
@@ -143,7 +146,7 @@ class EffectGraph:
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
                                'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma',
-                               'timing', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS, *FIELD_FIELDS, *FILTER_FIELDS}:
+                               'timing', 'wash_variant', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS, *FIELD_FIELDS, *FILTER_FIELDS}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -274,6 +277,9 @@ class EffectGraph:
                 and property_name in GEOMETRY_RANGES
                 and node.config.get('transition_style', 'dissolve') not in GEOMETRIC_STYLES):
             raise ValueError('geometric control target requires geometric transition style')
+        if (node is not None and node.kind == 'transition' and property_name == 'wash_variant'
+                and node.config.get('transition_style') != 'wash'):
+            raise ValueError('wash variant control requires wash transition style')
         if node is None or not isinstance(property_name, str) or (
                 property_name not in CONTROL_TARGETS.get(node.kind, set())
                 and not self._is_extra_key_colour_target(node, property_name)
@@ -341,6 +347,8 @@ class EffectGraph:
             if GEOMETRY_RANGES.keys() & node.config.keys():
                 if any(style not in GEOMETRIC_STYLES for style in choices):
                     raise ValueError('geometric transition settings require geometric style')
+            if 'wash_variant' in node.config and any(style != 'wash' for style in choices):
+                raise ValueError('wash transition settings require wash style')
 
     def control_descriptors(self, node_id):
         """Typed M6/M7 controls for authoring; other node descriptors remain separate."""
@@ -433,7 +441,7 @@ class EffectGraph:
             primary = config.get('key_color', (config.get('key_colors') or ['#00ff00'])[0])
             return ImageColor.getrgb(primary)[{'r': 0, 'g': 1, 'b': 2}[property_name[-1]]]
         if self.nodes[node_id].kind == 'transition' and property_name in GEOMETRY_RANGES:
-            return config.get(property_name, GEOMETRY_DEFAULTS[property_name])
+            return config.get(property_name, 0 if property_name == 'wash_seed' else GEOMETRY_DEFAULTS[property_name])
         return config.get(property_name, {'opacity': 1, 'mix': 1, 'feather': 0, 'tolerance': .1,
                                           'softness': .1, 'despill': 0,
                                           'progress': 0, 'threshold': .5, 'mask_gamma': 1,
@@ -561,7 +569,7 @@ class EffectGraph:
                     rgb[channel] = round(value)
                     config['key_color'] = '#%02x%02x%02x' % tuple(rgb)
             else:
-                config[property_name] = (round(value) if property_name == 'segments'
+                config[property_name] = (round(value) if property_name in {'segments', 'wash_seed'}
                                          and node.kind == 'transition' else value)
         # The host clock drives timing without accumulating mutable state.
         # An explicit native progress binding takes priority over the timer.
@@ -587,6 +595,8 @@ class EffectGraph:
             if self.nodes[key].kind == 'layer_style':
                 validate_style(config)
                 validate_style_inputs(config, len(self.nodes[key].inputs))
+            if self.nodes[key].kind == 'transition':
+                validate_transition_geometry(config)
         return configs
 
     def render(self, sources: dict[str, Image.Image], *, parameter_values=None,
