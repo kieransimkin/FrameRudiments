@@ -567,7 +567,7 @@ class RudimentLayer:
         self._hires_renderers = {}
         self.renderer, identity = registry.create(cfg["renderer"], self._size, self.base_style)
         if "source" in identity:
-            project.inputs.append(identity["source"])
+            project.ref(identity["source"])
         if stem_blend is not None and getattr(self.renderer, "requires_spectrum", False):
             raise ValueError(
                 "stem_blend cannot produce calibrated Fourier bands; use an actual StemLab spectrum source"

@@ -1,3 +1,10 @@
+# FrameRudiments 0.4.22
+
+- Register built-in and trusted custom rudiment renderer source through the
+  standard pinned input contract. Work-cache staging has both the expected
+  checksum and byte count before the first frame.
+- Include both cache regressions and a synthetic screenshot and clip.
+
 # FrameRudiments 0.4.21
 
 - Partition mixed effect DAGs into conservative GPU-resident islands around
