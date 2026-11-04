@@ -1,5 +1,9 @@
 # FrameRudiments
 
+Rudiment renderer source is verified and staged with the other pinned inputs
+when encoding through the work cache. See the
+[renderer guide and synthetic cache demonstration](docs/rudiment-renderers.md#cached-renderer-source).
+
 Version 0.4.21 partitions mixed CPU/GPU effect graphs into explicit resident
 islands. Each island uploads its host boundaries once, executes its supported
 nodes without intermediate readbacks, and reports exact payload transfers and

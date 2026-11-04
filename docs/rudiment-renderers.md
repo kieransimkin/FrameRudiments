@@ -155,3 +155,13 @@ local-peak analysis, dominant-band reporting and deterministic peak holds.
 See [spectrum.md](spectrum.md) for calibration requirements, style controls,
 the real Fourier demo and streamed per-frame effect signals. It rejects generic
 motion or unrecoverable data rather than inventing frequency/RMS meaning.
+
+## Cached renderer source
+
+The work cache records the source hash and byte count for built-in and
+explicitly registered trusted renderers, using the same input validation as
+other project files. Render JSON continues to select a registered name.
+
+![Synthetic cached rudiment render from the original cache regression](media/cached-rudiment.png)
+
+[Play the silent synthetic cached clip](media/cached-rudiment.mp4).

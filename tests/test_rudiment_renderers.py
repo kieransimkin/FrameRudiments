@@ -201,3 +201,34 @@ def test_cli_lists_builtin_renderers(capsys):
     from framerudiments.visualisation_catalogue import ALL_VIEWS
 
     assert set(names[5:]) == {view.name for view in ALL_VIEWS}
+
+
+@pytest.mark.parametrize("renderer", ["bars", "trusted-custom"])
+def test_renderer_provenance_can_be_staged_in_work_cache(project, tmp_path, renderer):
+    from pathlib import Path
+
+    from framerudiments.io import sha256
+    from framerudiments.work_cache import stage_project_inputs
+
+    class TrustedCustom:
+        def __init__(self, size, style):
+            self.size = size
+
+        def render(self, frame):
+            return Image.new("RGBA", self.size)
+
+    registry = default_renderers()
+    registry.register("trusted-custom", TrustedCustom)
+    project.data["layers"] = [
+        dict(id="cached-view", type="rudiment", renderer=renderer,
+             motion=dict(kind="named", pattern="circle"))
+    ]
+    compositor = Compositor(project, renderers=registry)
+    source = compositor.evidence()["rudiment_renderers"]["cached-view"]["renderer"]["source"]
+    cache = tmp_path / "cached-inputs"
+    evidence = stage_project_inputs(project, cache)
+    staged = next(row for row in evidence["entries"] if row["source_path"] == source["path"])
+    assert Path(staged["cached_path"]).parent == cache
+    assert staged["bytes"] == Path(source["path"]).stat().st_size
+    assert sha256(staged["cached_path"]) == source["sha256"]
+    project.verify_inputs()
