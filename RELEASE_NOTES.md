@@ -1,3 +1,8 @@
+# FrameRudiments 0.4.23
+
+- Add per-stage visualiser feedback processing scale with full-resolution hooks,
+  compositing and clean overlays.
+
 # FrameRudiments 0.4.22
 
 - Register built-in and trusted custom rudiment renderer source through the

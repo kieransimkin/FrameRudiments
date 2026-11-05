@@ -105,6 +105,7 @@ def effect_specs(project):
                 "preset_timeline",
                 "mesh_width",
                 "mesh_height",
+                "processing_scale",
                 "output_palette_grade",
                 "composite",
                 "input_effects",
@@ -178,6 +179,9 @@ def effect_specs(project):
                 ),
                 mesh_height=integer(
                     cfg.get("mesh_height", 48), "Butterchurn mesh height", minimum=12, maximum=256
+                ),
+                processing_scale=number(
+                    cfg.get("processing_scale", 1), "processing_scale", minimum=0.125, maximum=1
                 ),
                 output_palette_grade=_palette_grade(
                     cfg.get("output_palette_grade"), "full-frame effect.output_palette_grade"
@@ -465,6 +469,8 @@ class EffectChain:
         context_at=None,
     ):
         self.backends, self.next_frame, self.audio = [], 0, None
+        self.output_size = (project.width, project.height)
+        self.processing_sizes = []
         self.closed = False
         self.specs = specs
         self.routing = routing
@@ -522,8 +528,12 @@ class EffectChain:
         try:
             self.audio = EffectAudio(project, ffmpeg, output)
             for spec in specs:
+                scale = number(
+                    spec.get("processing_scale", 1), "processing_scale", minimum=0.125, maximum=1
+                )
+                size = tuple(min(axis, max(16, round(axis * scale))) for axis in self.output_size)
                 backend_args = [
-                    (project.width, project.height),
+                    size,
                     project.fps,
                     spec["preset"]["path"],
                     spec["input_mix"],
@@ -540,6 +550,7 @@ class EffectChain:
                 )
                 backend = factories[spec["engine"]](*backend_args, **backend_kwargs)
                 self.backends.append(backend)
+                self.processing_sizes.append(size)
         except BaseException:
             self.close()
             raise
@@ -601,13 +612,20 @@ class EffectChain:
                 if self.hooks is not None
                 else stage_base
             )
+            size = self.processing_sizes[index]
+            if stage_input.size != size:
+                stage_input = stage_input.resize(size, Image.Resampling.LANCZOS)
             image = backend.process(stage_input, context, pcm)
-            if image.size != (self.audio.project.width, self.audio.project.height) or image.mode != "RGBA":
-                raise ValueError("Visualiser must return frame-sized RGBA")
+            if image.size != size or image.mode != "RGBA":
+                raise ValueError("Visualiser must return processing-sized RGBA")
+            if image.size != self.output_size:
+                image = image.resize(self.output_size, Image.Resampling.LANCZOS)
             if self.hooks is not None and self.hooks.pipelines[index]["feedback"]:
                 if not hasattr(backend, "set_feedback"):
                     raise ValueError("Visualiser backend does not support feedback-state writeback")
                 feedback = self.hooks.apply(index, "feedback", image.copy(), context)
+                if feedback.size != size:
+                    feedback = feedback.resize(size, Image.Resampling.LANCZOS)
                 backend.set_feedback(feedback)
             image = apply_palette_grade(image, self.specs[index].get("output_palette_grade"))
             if self.hooks is not None:
@@ -666,7 +684,15 @@ class EffectChain:
                 else None
             ),
             preset_switches=self.preset_switches,
-            stages=[dict(spec, runtime=backend.evidence) for spec, backend in zip(self.specs, self.backends)],
+            stages=[
+                dict(
+                    spec,
+                    processing_size=list(size),
+                    output_size=list(self.output_size),
+                    runtime=backend.evidence,
+                )
+                for spec, backend, size in zip(self.specs, self.backends, self.processing_sizes)
+            ],
             limits="GPU/driver and engine noise can vary; not a cross-platform bit-exact contract. Text bounds refer to pre-effect composition.",
         )
 
