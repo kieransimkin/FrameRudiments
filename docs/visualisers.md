@@ -439,3 +439,52 @@ programme/silence controls and released PrismMoves/PixelCue comparisons.
 Generated input illustrations. Per-preset rendered captures and statistical
 reports are retained separately by each experiment; catalogue presence does
 not establish GPU compatibility or public-use rights.
+
+
+## Feedback processing scale
+
+Set `processing_scale` on a Butterchurn or projectM entry in `effects`.
+The default is `1`. Values from `0.125` through `1` scale each processing
+dimension. Dimensions are rounded and clamped to at least 16 pixels when
+the output permits it.
+
+```json
+{"id":"background","engine":"butterchurn","preset":"feedback","processing_scale":0.5}
+```
+
+At 1920×1080 this processes 960×540 pixels. The chain uses RGBA Lanczos
+resampling at the stage boundaries. Input, feedback and output hooks retain
+output-pixel coordinates. Feedback writeback is reduced to the engine's
+processing size. Stage injection, palette grading, matte compositing and
+clean routed overlays operate at output size. Manifests record the two
+dimensions per stage.
+
+Lower scale can change the geometry and detail of the preset. Performance
+depends on the engine, preset, resolution and cost of the host-side resampling.
+Frame cadence, causal audio and sequential replay follow the existing
+contracts.
+
+### Measured 1080p example
+
+Actual projectM 4.2.0-dev on Windows, NVIDIA RTX 4060 Ti, OpenGL 3.3
+(driver 617.42). Three sequential runs per scale, each with 12 warm-up
+frames and 48 measured frames. The timing covers the whole effect chain
+including upload, readback, resampling, compositing and the clean overlay.
+It excludes encoding. The input was a synthetic moving-shape fixture at
+1920 × 1080, using the built-in Feedback preset.
+
+| Scale | Processing size | Median frame | Median run p95 |
+| --- | --- | ---: | ---: |
+| 1 | 1920 × 1080 | 84.6 ms | 131.0 ms |
+| 0.5 | 960 × 540 | 116.4 ms | 154.3 ms |
+| 0.25 | 480 × 270 | 71.9 ms | 93.8 ms |
+
+Quarter scale cut median time by 15% in this run. Half scale took longer.
+The results cover one host, engine and preset. Each run retained the
+1920 × 1080 output and verified an exact overlay pixel on every frame.
+
+![Actual full and quarter resolution projectM frames with the same synthetic input](media/feedback-processing-scale.png)
+
+[Play the silent synthetic comparison](media/feedback-processing-scale.mp4).
+The clip shows the same moving shapes and fixed overlay on both sides. The
+feedback texture changes with processing resolution.

@@ -38,6 +38,10 @@ def project(tmp_path):
         [dict(id="x", engine="projectm", preset=dict(path="external.milk", sha256="0" * 64))],
         [dict(id="x", engine="projectm", mesh_width=128)],
         [dict(id="x", engine="butterchurn", mesh_width=15)],
+        [dict(id="x", engine="projectm", processing_scale=0)],
+        [dict(id="x", engine="projectm", processing_scale=1.1)],
+        [dict(id="x", engine="butterchurn", processing_scale=True)],
+        [dict(id="x", engine="butterchurn", processing_scale=float("nan"))],
         [dict(id="x", engine="butterchurn", output_palette_grade={"stops": ["bad", "#fff"]})],
         [dict(id="x", engine="projectm"), dict(id="x", engine="butterchurn")],
     ],
@@ -296,5 +300,89 @@ def test_projectm_preset_timeline_switches_once_on_first_frame_at_or_after_bound
             chain.process(image, SimpleNamespace(frame=frame, source_seconds=source))
         assert calls == [("julia.milk", 0.2), ("kaleidoscope.milk", 0.3)]
         assert [event["frame"] for event in chain.evidence()["preset_switches"]] == [1, 3]
+    finally:
+        chain.close()
+
+
+
+def test_scaled_feedback_keeps_full_size_hooks_and_clean_overlay(tmp_path, monkeypatch):
+    p = project(tmp_path)
+    size = (p.width, p.height)
+    p.data["effects"] = [
+        dict(id="scaled", engine="butterchurn", processing_scale=0.25),
+        dict(id="full", engine="projectm"),
+    ]
+    calls = []
+
+    class Audio:
+        def __init__(self, project, *args):
+            self.project = project
+            self.evidence = {}
+
+        def at(self, frame):
+            calls.append(("audio", frame))
+            return [0.0, 0.0]
+
+        def close(self):
+            pass
+
+    class Backend:
+        def __init__(self, size, *args):
+            self.size = size
+            self.evidence = {}
+
+        def process(self, image, context, pcm):
+            assert image.size == self.size
+            calls.append(("backend", context.frame, self.size))
+            return Image.new("RGBA", self.size, (20, 60, 100, 255))
+
+        def set_feedback(self, image):
+            assert image.size == self.size
+            calls.append(("feedback", self.size))
+
+        def close(self):
+            pass
+
+    class Hooks:
+        pipelines = [{"feedback": [True]}, {"feedback": []}]
+        feedback_enabled = True
+        evidence = {}
+
+        def begin(self):
+            pass
+
+        def apply(self, index, point, image, context):
+            assert image.size == size
+            return image
+
+    class Routing:
+        evidence = {}
+
+        def route(self, context, layers):
+            source = Image.new("RGBA", size, (0, 0, 0, 255))
+            overlay = Image.new("RGBA", size)
+            overlay.putpixel((91, 127), (255, 240, 210, 255))
+            return source, overlay
+
+    monkeypatch.setattr("framerudiments.visualisers.EffectAudio", Audio)
+    chain = EffectChain(
+        p, effect_specs(p), "fixture", tmp_path,
+        factories={"butterchurn": Backend, "projectm": Backend},
+        routing=Routing(), hooks=Hooks(),
+    )
+    try:
+        frame = SimpleNamespace(frame=0, source_seconds=0, output_seconds=0)
+        image = chain.process(Image.new("RGBA", size), frame, isolated_layers=[])
+        assert image.size == size
+        assert image.getpixel((91, 127)) == (255, 240, 210)
+        assert image.getpixel((90, 127)) == (20, 60, 100)
+        assert calls == [
+            ("audio", 0), ("backend", 0, (40, 60)), ("feedback", (40, 60)),
+            ("backend", 0, size),
+        ]
+        assert chain.evidence()["stages"][0]["processing_size"] == [40, 60]
+        assert chain.evidence()["stages"][0]["output_size"] == list(size)
+        with pytest.raises(ValueError, match="sequential"):
+            chain.process(image, SimpleNamespace(frame=2), isolated_layers=[])
     finally:
         chain.close()

@@ -1,5 +1,9 @@
 # FrameRudiments
 
+Visualiser stages can set `processing_scale` to run Butterchurn or projectM
+feedback on a smaller surface while keeping final composition and clean
+overlays at output resolution. See the [visualiser guide](docs/visualisers.md#feedback-processing-scale).
+
 Rudiment renderer source is verified and staged with the other pinned inputs
 when encoding through the work cache. See the
 [renderer guide and synthetic cache demonstration](docs/rudiment-renderers.md#cached-renderer-source).
