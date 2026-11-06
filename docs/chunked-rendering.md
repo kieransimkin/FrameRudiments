@@ -32,6 +32,41 @@ continuity. Independently encoded H.264 chunks are not promised to be
 byte-identical to one monolithic H.264 encode; decoded seam verification proves
 that assembly did not drop, duplicate or alter the boundary frames.
 
+## Fractional frame periods and assembly timing
+
+Version 0.4.24 fixes a final-assembly failure in which every chunk was valid but
+the combined file failed the exact frame-rate contract. At 60 fps, one frame
+lasts 16,666.666... microseconds. FFmpeg's concat demuxer rescales chunk durations
+through microseconds; repeated boundaries can accumulate a small timestamp
+offset even though no pictures are missing.
+
+The assembly command now rounds packet presentation and decode timestamps
+independently onto the existing project frame grid, and sets each packet's
+duration to one frame. Keeping PTS and DTS separate preserves H.264 B-frame
+ordering. Video remains stream-copied; there is no video re-encode, duplicated
+motion, frame interpolation, audio stretch or relaxed verification tolerance.
+
+The real-FFmpeg regression joins thirteen synthetic eleven-frame H.264 chunks
+at 24, 30 and 60 fps. It verifies every decoded timestamp, the full H.264/AAC
+decode, exact frame count and fast-start layout through the normal verifier,
+then compares every decoded picture with the original chunks. On an affected
+FFmpeg 9.0.1 build, the former command fails the 60-fps frame contract; the
+corrected command passes with identical pictures. Other muxer builds need not
+exhibit the same original rounding failure.
+
+![Measured timestamp error before and after the synthetic 60-fps assembly correction](media/chunk-timestamp-drift.png)
+
+*Actual encoded synthetic fixture measurements, in microseconds. The correction
+changes timing metadata while retaining every decoded picture. A moving preview
+would not usefully show these sub-frame errors; the measured plot and the
+existing chunk architecture diagram provide the relevant visual evidence.*
+
+For a failed older render, preserve its candidate-health record, failure receipt
+and finalized chunks before recovery. A repaired assembly must pass the same
+full checks and decoded seam comparisons before review eligibility is restored.
+An assembly fix does not clear a source-input mismatch or approve creative
+output or publication.
+
 ## Commands
 
 ```powershell

@@ -1,3 +1,13 @@
+# FrameRudiments 0.4.24
+
+- Fix accumulated concat timestamp rounding in stream-copied chunk assemblies.
+  Round PTS and DTS independently to the authored frame grid and retain exact
+  packet duration without re-encoding pictures or stretching audio.
+- Exercise real B-frame H.264/AAC assemblies at 24, 30 and 60 fps, including
+  exact native verification and every decoded picture's identity.
+- Retain the existing fail-closed frame contract, candidate health and review
+  gates. See the measured synthetic timing comparison in the chunk guide.
+
 # FrameRudiments 0.4.23
 
 - Add per-stage visualiser feedback processing scale with full-resolution hooks,

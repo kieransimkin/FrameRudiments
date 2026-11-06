@@ -1,5 +1,10 @@
 # FrameRudiments
 
+Version 0.4.24 keeps stream-copied chunk assemblies on the exact authored frame
+grid, including rates whose frame periods cannot be represented in whole
+microseconds. It preserves independently reordered H.264 PTS/DTS and encoded
+video pixels. See the [timing correction and real encoded regression](docs/chunked-rendering.md#fractional-frame-periods-and-assembly-timing).
+
 Visualiser stages can set `processing_scale` to run Butterchurn or projectM
 feedback on a smaller surface while keeping final composition and clean
 overlays at output resolution. See the [visualiser guide](docs/visualisers.md#feedback-processing-scale).

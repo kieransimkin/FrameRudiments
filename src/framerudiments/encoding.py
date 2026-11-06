@@ -185,8 +185,11 @@ def video_chunk_command(project, output, ffmpeg, *, preset="fast", crf=20):
 
 
 def mux_chunks_command(project, concat_file, output, ffmpeg):
-    """Stream-copy finalized video chunks and mux the canonical audio once."""
+    """Stream-copy finalized video on its frame grid; mux canonical audio once."""
     p = project
+    # Concat rescales chunk durations through microseconds. For rates such as
+    # 60 fps, tiny boundary rounding can otherwise shift the assembled clock.
+    # Snap PTS and DTS separately so reordered H.264 frames keep their ordering.
     return [
         ffmpeg,
         "-n",
@@ -209,6 +212,11 @@ def mux_chunks_command(project, concat_file, output, ffmpeg):
         audio_filters(p),
         "-c:v",
         "copy",
+        "-bsf:v",
+        (
+            f"setts=pts=round(PTS*TB*{p.fps})/(TB*{p.fps}):"
+            f"dts=round(DTS*TB*{p.fps})/(TB*{p.fps}):duration=1/(TB*{p.fps})"
+        ),
         "-c:a",
         "aac",
         "-b:a",
