@@ -136,6 +136,14 @@ PATH --expect-empty` before a new unrelated job and after handoff; a nonempty
 cache without a known live owner is a hold for inspection, not permission to
 delete it.
 
+Newly prepared jobs keep canonical input paths and hashes in `plan.json`,
+including dependencies registered during compositor setup. Staged paths are
+recorded in `input-cache.json`. A retained job can be checked after moving its
+complete cache directory to another cache root while keeping the same final
+output path. Plans from older releases still resume at their original cache
+location. The [synthetic cache regression](../tests/test_work_cache.py)
+checks a relocated cache, an older plan and rejection of a changed asset.
+
 The documentation uses the generated SVG above because chunking and heartbeat
 state are execution/evidence contracts rather than an interactive UI. Synthetic
 tests exercise the timed heartbeat, encode, interrupt, resume, assemble and fully
