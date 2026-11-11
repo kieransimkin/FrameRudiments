@@ -1,5 +1,9 @@
 # FrameRudiments
 
+Version 0.4.25 keeps the prepared render plan tied to canonical input paths
+and checksums when a chunked job uses a work cache. See
+[working-cache placement and resume](docs/chunked-rendering.md#working-cache-placement).
+
 Version 0.4.24 keeps stream-copied chunk assemblies on the exact authored frame
 grid, including rates whose frame periods cannot be represented in whole
 microseconds. It preserves independently reordered H.264 PTS/DTS and encoded

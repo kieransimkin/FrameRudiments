@@ -1,3 +1,11 @@
+# FrameRudiments 0.4.25
+
+- Keep prepared plans tied to canonical input paths and checksums when a
+  chunked render stages its inputs. Include dependencies registered by the
+  compositor in the retained plan.
+- Verify newly prepared plans after cache relocation, preserve same-cache
+  resume for older plans and reject changed inputs.
+
 # FrameRudiments 0.4.24
 
 - Fix accumulated concat timestamp rounding in stream-copied chunk assemblies.

@@ -7,6 +7,7 @@ import hashlib
 import shutil
 import traceback
 import gc
+from copy import deepcopy
 from datetime import datetime, timezone
 from importlib.metadata import version
 
@@ -211,18 +212,24 @@ def _prepare(project, output, ffmpeg, ffprobe, scene, renderers, *, resume=False
     project = Project.load(project) if not isinstance(project, Project) else project
     ffmpeg, ffprobe = encoding.binaries(ffmpeg, ffprobe)
     project.verify_inputs()
-    canonical_plan = project.summary()
+    previous_plan_format = project.summary()
+    # Staging rewrites the live references shared by the project summary.
+    canonical_plan = deepcopy(previous_plan_format)
+    initial_input_count = len(project.inputs)
     cache_evidence = stage_project_inputs(project, input_cache) if input_cache is not None else None
     source_probe = encoding.validate_audio(project, ffprobe)
     # Cached references must be installed before any compositor dependency is
     # opened, otherwise fonts and imagery can still read from final storage.
     compositor = Compositor(project, scene=scene, renderers=renderers)
+    # Include dependencies registered during compositor setup in the plan.
+    canonical_plan["inputs"].extend(deepcopy(project.inputs[initial_input_count:]))
     output = Path(output).resolve()
     if resume:
         if not output.is_dir() or not (output / "plan.json").is_file():
             raise ValueError("Chunked resume needs an existing prepared output directory")
         existing = json.loads((output / "plan.json").read_text(encoding="utf-8"))
-        if existing != canonical_plan:
+        # Older jobs can still resume at their original cache location.
+        if existing != canonical_plan and existing != previous_plan_format:
             raise ValueError("Chunked resume project differs from the prepared plan")
     if not resume:
         output.mkdir(parents=True, exist_ok=False)

@@ -1,5 +1,6 @@
 import json
 import importlib
+from pathlib import Path
 
 import pytest
 
@@ -23,36 +24,52 @@ def test_checksum_pinned_inputs_are_copied_and_live_paths_switch_to_cache(tmp_pa
     project.verify_inputs()
 
 
-def test_prepare_stages_inputs_before_audio_probe_and_compositor(monkeypatch, tmp_path):
+@pytest.mark.parametrize("legacy", [False, True], ids=["moved-cache", "legacy-plan"])
+def test_prepare_stages_inputs_and_keeps_resume_plan_independent_of_cache(monkeypatch, tmp_path, legacy):
     module = importlib.import_module("framerudiments.render")
     events = []
     source = tmp_path / "source.bin"
     source.write_bytes(b"source")
-    project = Project.__new__(Project)
-    project.inputs = [dict(path=str(source), sha256=sha256(source), bytes=source.stat().st_size)]
-    project.canonical_inputs = None
-    project.lyrics = []
-    project.words = []
-    project.width = 16
-    project.height = 16
-    project.fps = 1
-    project.frame_count = 1
+    layer = tmp_path / "layer.bin"
+    layer.write_bytes(b"layer")
+    output = tmp_path / "output"
+    first_cache = tmp_path / "cached-inputs"
+    resume_cache = first_cache if legacy else tmp_path / "moved-cache"
 
-    def verify_inputs():
-        events.append("verify-cached" if project.canonical_inputs is not None else "verify-canonical")
+    def ref(path):
+        return dict(path=str(path), sha256=sha256(path), bytes=path.stat().st_size)
 
-    project.verify_inputs = verify_inputs
-    project.summary = lambda: {"inputs": [dict(item) for item in project.inputs]}
+    def make_project():
+        project = Project.__new__(Project)
+        project.inputs = [ref(source)]
+        project.canonical_inputs = None
+        project.lyrics = []
+        project.words = []
+        project.width = 16
+        project.height = 16
+        project.fps = 1
+        project.frame_count = 1
+
+        def verify_inputs():
+            events.append("verify-cached" if project.canonical_inputs is not None else "verify-canonical")
+
+        project.verify_inputs = verify_inputs
+        project.summary = lambda: {
+            "inputs": project.canonical_inputs or project.inputs,
+            "word_timings": {"file": project.inputs[0]},
+        }
+        return project
 
     class FakeCompositor:
         def __init__(self, prepared, **_kwargs):
             assert prepared.canonical_inputs is not None
-            assert prepared.inputs[0]["path"].startswith(str(tmp_path / "cached-inputs"))
+            assert prepared.inputs[0]["path"] != str(source)
+            prepared.inputs.append(ref(layer))
             events.append("compositor")
 
     def validate_audio(prepared, _ffprobe):
         assert prepared.canonical_inputs is not None
-        assert prepared.inputs[0]["path"].startswith(str(tmp_path / "cached-inputs"))
+        assert prepared.inputs[0]["path"] != str(source)
         events.append("audio-probe")
         return {"streams": []}
 
@@ -61,18 +78,28 @@ def test_prepare_stages_inputs_before_audio_probe_and_compositor(monkeypatch, tm
     monkeypatch.setattr(module, "Compositor", FakeCompositor)
     monkeypatch.setattr(module, "export_subtitles", lambda *_args, **_kwargs: None)
 
-    module._prepare(
-        project,
-        tmp_path / "output",
-        None,
-        None,
-        None,
-        None,
-        input_cache=tmp_path / "cached-inputs",
-    )
-
+    project = make_project()
+    module._prepare(project, output, None, None, None, None, input_cache=first_cache)
     assert events == ["verify-canonical", "verify-cached", "audio-probe", "compositor"]
+    assert Path(project.inputs[0]["path"]).parent == first_cache
 
+    plan_path = output / "plan.json"
+    assert json.loads(plan_path.read_text(encoding="utf-8")) == {
+        "inputs": [ref(source), ref(layer)],
+        "word_timings": {"file": ref(source)},
+    }
+    if legacy:
+        write_json(plan_path, {"inputs": project.inputs, "word_timings": {"file": project.inputs[0]}})
+    resumed, *_ = module._prepare(
+        make_project(), output, None, None, None, None, resume=True, input_cache=resume_cache,
+    )
+    assert Path(resumed.inputs[0]["path"]).parent == resume_cache
+
+    layer.write_bytes(b"changed layer")
+    with pytest.raises(ValueError, match="Chunked resume project differs"):
+        module._prepare(
+            make_project(), output, None, None, None, None, resume=True, input_cache=resume_cache,
+        )
 
 def test_working_cache_reserves_promotes_and_returns_to_empty(tmp_path):
     cache_root = tmp_path / "fast-cache"
