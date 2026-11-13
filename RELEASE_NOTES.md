@@ -1,3 +1,12 @@
+# FrameRudiments 0.4.33
+
+- Add `inspect-isf` for local ISF 2 fragments. It reports ordered typed
+  controls, supported generator/filter/transition declarations and exact
+  source SHA-256, with an optional expected hash.
+- Accept a bounded single-pass metadata subset without shader compilation,
+  texture imports or an OpenGL context. Document the accepted fields, the
+  included tint fixture and the next execution gates.
+
 # FrameRudiments 0.4.32
 
 - Add one portable M8.9 qualification command for renderer identity, CPU/GPU

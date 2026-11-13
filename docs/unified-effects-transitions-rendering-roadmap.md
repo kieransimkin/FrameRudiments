@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.28 — 13 November 2026
+**Version:** 1.29 — 13 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -9,6 +9,7 @@ Version 0.4.28 adds the rings, droplets and storm layer warps on GPU.
 Version 0.4.29 extends the GPU warp ranges and preserves the polar seam on all borders.
 Version 0.4.30 adds bounded reuse of resident targets and optional driver memory snapshots.
 Version 0.4.32 adds a portable renderer qualification run for the remaining hardware checks.
+Version 0.4.33 adds bounded ISF 2 metadata inspection and typed control discovery.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -150,7 +151,8 @@ All external shader/model/media sources must be pinned or versioned, constrained
 - **Exit:** documented baseline and performance deltas without regression or hidden GPU→CPU roundtrips.
 
 ### M9 — External shader adapters
-- **M9.1** ISF metadata parsing, typed parameter discovery and minimum accepted subset.
+- **M9.1** Bounded ISF metadata inspection, typed parameter discovery and a
+  documented single-pass subset in 0.4.33. [ISF metadata guide](isf-metadata.md).
 - **M9.2** GL Transitions two-source/progress adapter, coordinate and time uniform bindings.
 - **M9.3** Controlled multipass execution and explicitly bounded shader resources.
 - **M9.4** Reject untrusted shader includes, unsupported operations and unsafe resource use.

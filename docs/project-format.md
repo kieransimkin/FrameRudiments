@@ -188,6 +188,10 @@ see [full schema and examples](rich-lyric-effects.md).
 
 ## Optional full-frame effects
 
+Use [ISF metadata inspection](isf-metadata.md) to examine a local Interactive
+Shader Format fragment and retain its typed controls and SHA-256. The project
+format currently accepts the built-in effect routes described below.
+
 The top-level `effects` list is additive to v1. See [visualisers.md](visualisers.md)
 for the `id`, `engine`, `preset`, `input_mix`, `seed`, `trusted_preset` and
 stage-level `composite` fields,
