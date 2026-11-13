@@ -1,5 +1,10 @@
 # FrameRudiments
 
+Version 0.4.31 shares the project's GPU effect backend with the compositor
+used for temporal supersampling. Closing the project also releases the
+subframes' render targets. See the
+[GPU resource guide](docs/effect-graph-m8-9-gpu-resources.md#resource-lifetime-and-limits).
+
 Version 0.4.30 reuses GPU render targets across frames within a 64 MiB
 default cap. The [resource benchmark](docs/effect-graph-m8-9-gpu-resources.md)
 compares exact output pixels, allocation counts and optional driver memory

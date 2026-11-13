@@ -38,6 +38,13 @@ the context closes. The `resident_peak_allocated_surfaces` and
 plan, including source textures and targets reused from the pool. Project
 composition evidence includes the latest transport report.
 
+From 0.4.31, temporal supersampling shares the parent compositor's backend
+and target pool. The project closes the shared backend when it finishes.
+For a project with temporal subframes, composition evidence labels
+`sampling.scope` as `last_subframe` and includes the sample and encoded
+frame rates. The counters describe that sample; they are not totals across
+the shutter or the render.
+
 ## Optional driver memory snapshot
 
 Call `gpu.sample_driver_memory()` with the backend's own context current to

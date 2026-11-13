@@ -28,6 +28,9 @@ from .layer_animation import LayerAnimations
 from .layer_displacement import LayerDisplacement
 
 
+_CREATE_EFFECT_GRAPH_BACKEND = object()
+
+
 @dataclass(frozen=True)
 class FrameContext:
     frame: int
@@ -291,7 +294,8 @@ class Sprite:
 
 
 class Compositor:
-    def __init__(self, project, *, scene=None, renderers=None):
+    def __init__(self, project, *, scene=None, renderers=None,
+                 _shared_effect_graph_gpu=_CREATE_EFFECT_GRAPH_BACKEND):
         self.project, self.scene = project, scene
         self.output_quality = project.output_quality
         self.effect_specs = effect_specs(project)
@@ -417,10 +421,14 @@ class Compositor:
         )
         validate_graph_sources(self.effect_graph, targets)
         self.effect_graph_backend_mode = project.data.get("effect_graph_backend", "cpu")
-        self.effect_graph_gpu = (
-            create_gpu_backend(self.effect_graph_backend_mode)
-            if self.effect_graph is not None else None
-        )
+        self._owns_effect_graph_gpu = _shared_effect_graph_gpu is _CREATE_EFFECT_GRAPH_BACKEND
+        if self._owns_effect_graph_gpu:
+            self.effect_graph_gpu = (
+                create_gpu_backend(self.effect_graph_backend_mode)
+                if self.effect_graph is not None else None
+            )
+        else:
+            self.effect_graph_gpu = _shared_effect_graph_gpu
         mask_order = ["background"]
         mask_order.extend(f"layer:{layer.id}" for layer in self.layers)
         self.layer_masks = LayerMasks(project.data.get("layer_masks", {}), mask_order)
@@ -725,8 +733,11 @@ class Compositor:
         return dict(self.post_pipeline.last_report) if self.post_pipeline.enabled else {}
 
     def close(self):
-        if self.effect_graph_gpu is not None:
+        if self._owns_effect_graph_gpu and self.effect_graph_gpu is not None:
             self.effect_graph_gpu.close()
+        virtual = getattr(self, "_temporal_virtual", None)
+        if virtual is not None:
+            virtual.close()
         for layer in self.layers:
             if isinstance(layer, (NaturalMaterialLayer, ParticleEmitter)):
                 layer.close()
@@ -743,6 +754,7 @@ class Compositor:
         gc.collect()
 
     def evidence(self):
+        virtual = getattr(self, "_temporal_virtual", None)
         return dict(
             transformed_alpha_extents=self.extents,
             text_states=self.text_states,
@@ -762,6 +774,11 @@ class Compositor:
                     dict(getattr(self.effect_graph_gpu, "last_transport", {}))
                     if self.effect_graph_gpu is not None else None
                 ),
+                **({"sampling": {
+                    "scope": "last_subframe",
+                    "sample_fps": virtual.project.fps,
+                    "encoded_fps": self.project.fps,
+                }} if virtual is not None else {}),
             }} if self.effect_graph is not None else {}),
             motions={x.id: x.motion.evidence for x in [*self.layers, *self.lyric_art.values()] if x.motion},
             rudiment_renderers={x.id: x.evidence for x in self.layers if isinstance(x, RudimentLayer)},

@@ -1,3 +1,11 @@
+# FrameRudiments 0.4.31
+
+- Use one effect-graph GPU backend for a project and its temporal subframes.
+  Closing the project releases the shared pool. The composition report labels
+  last-subframe dispatch and transfers with both sample and encoded rates.
+- Exercise native supersampling, CPU/GPU parity, seeking, reuse and cleanup
+  in the required Mesa/EGL test suite.
+
 # FrameRudiments 0.4.30
 
 - Reuse resident RGBA8 render targets between evaluations on owned OpenGL

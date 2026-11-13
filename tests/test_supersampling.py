@@ -109,7 +109,7 @@ def test_true_subframes_are_not_repeated_integer_frames(monkeypatch):
     from PIL import ImageDraw
 
     class Fake:
-        def __init__(self, project, scene=None, renderers=None):
+        def __init__(self, project, scene=None, renderers=None, *, _shared_effect_graph_gpu=None):
             self.project = project
             self.frames = []
             self.extents, self.text_states = {}, {}
@@ -145,6 +145,7 @@ def test_true_subframes_are_not_repeated_integer_frames(monkeypatch):
     outer = SimpleNamespace(
         output_quality=OutputQuality({"spatial_scale": 1}),
         project=SimpleNamespace(),
+        effect_graph_gpu=None,
         scene=None,
         renderers=None,
         extents={},
