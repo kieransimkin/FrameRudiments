@@ -1,5 +1,10 @@
 # FrameRudiments
 
+Version 0.4.30 reuses GPU render targets across frames within a 64 MiB
+default cap. The [resource benchmark](docs/effect-graph-m8-9-gpu-resources.md)
+compares exact output pixels, allocation counts and optional driver memory
+readings.
+
 Version 0.4.29 extends GPU spatial warps to extreme wave, turbulence, map
 displacement and radial settings. Polar wrap supports all four borders.
 Drivers with the precision shader extension can also render tight polar wraps

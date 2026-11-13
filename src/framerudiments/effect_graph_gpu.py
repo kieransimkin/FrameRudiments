@@ -1,8 +1,8 @@
 """Optional ModernGL CPU<->GPU bridge for M3.3 matte and colour-key nodes.
 
 The existing graph remains the authority for validation, controls and alpha
-lineage. This backend accelerates *individual* RGBA nodes. It deliberately
-exposes upload/readback costs; GPU-resident DAG execution is a later milestone.
+lineage. The backend executes both individual RGBA nodes and resident DAGs
+and exposes their upload/readback costs.
 
 Only instantiate in a graphics-enabled environment. There is no ModernGL
 import, context creation, or shader compilation on the CPU-only code path.
@@ -18,6 +18,7 @@ from PIL import ImageColor
 from .effect_graph_surface_transport import (
     TransportPayload, bridge_contract, pack_image, unpack_image,
 )
+from .effect_graph_gpu_memory import DriverMemoryProbe
 
 from .effect_graph_backend_contract import (
     MAX_GPU_MORPH_RADIUS, MAX_GPU_GAUSSIAN_RADIUS,
@@ -294,15 +295,30 @@ void main() {
 """
 
 
+DEFAULT_POOLED_TARGET_BYTES = 64 * 1024**2
+MAX_POOLED_TARGETS = 8
+
+
+def _release_target(pair):
+    texture, framebuffer = pair
+    try:
+        framebuffer.release()
+    finally:
+        texture.release()
+
+
 class GLMatteBackend:
     """Reusable per-node ModernGL executor; input and output are Pillow RGBA.
 
-    Resources are released after every call, while programs/VAOs are cached for
-    the context lifetime. `close` owns the context only if it created it.
+    Owned contexts may retain a bounded set of resident render targets between
+    calls. Source uploads and bridge allocations remain invocation-local.
     """
-    def __init__(self, ctx=None, *, backend=None, max_working_set_bytes=768 * 1024**2):
+    def __init__(self, ctx=None, *, backend=None, max_working_set_bytes=768 * 1024**2,
+                 max_pooled_target_bytes=DEFAULT_POOLED_TARGET_BYTES):
         if type(max_working_set_bytes) is not int or max_working_set_bytes <= 0:
             raise ValueError('GPU working-set budget must be a positive integer')
+        if type(max_pooled_target_bytes) is not int or max_pooled_target_bytes < 0:
+            raise ValueError('GPU retained-target budget must be a nonnegative integer')
         try:
             import moderngl
         except ImportError as exc:
@@ -328,8 +344,12 @@ class GLMatteBackend:
         self.supports_gpu_islands = True
         from .effect_graph_spatial import PRECISE_SPATIAL_EXTENSION
         self.supports_precise_spatial_warps = PRECISE_SPATIAL_EXTENSION in self.ctx.extensions
-        self.begin_transfer_sample()
         self.closed = False
+        self.max_pooled_target_bytes = max_pooled_target_bytes
+        self._target_pool = []
+        self._target_pool_size = None
+        self._memory_probe = DriverMemoryProbe(self.ctx.extensions, owned=self._owns_context)
+        self.begin_transfer_sample()
 
     @staticmethod
     def _make_context(moderngl, backend):
@@ -343,7 +363,7 @@ class GLMatteBackend:
             except Exception as second:
                 raise RuntimeError(f'No standalone OpenGL 3.3 context (platform: {first}; EGL: {second})') from second
 
-    def _check_budget(self, size, texture_count):
+    def _check_budget(self, size, texture_count, *, reusable_targets=0):
         if getattr(self, 'closed', False):
             raise GPUUnsupported('GPU backend is closed')
         if (not isinstance(size, (list, tuple)) or len(size) != 2
@@ -352,15 +372,74 @@ class GLMatteBackend:
             raise ValueError('GPU size and texture count must be positive integers')
         if size[0] > self.ctx.info.get('GL_MAX_TEXTURE_SIZE', 16384) or size[1] > self.ctx.info.get('GL_MAX_TEXTURE_SIZE', 16384):
             raise GPUUnsupported('Input dimensions exceed GPU texture limit')
-        estimate = size[0] * size[1] * 4 * texture_count
+        surface_bytes = size[0] * size[1] * 4
+        estimate = surface_bytes * texture_count
         if estimate > self.max_working_set_bytes:
+            if hasattr(self, '_target_pool'):
+                self._trim_target_pool(size, self.max_working_set_bytes)
             raise GPUUnsupported(f'GPU working-set estimate {estimate} exceeds budget {self.max_working_set_bytes}')
+        # Reusable targets already count in the resident plan. Any additional
+        # idle textures have to fit alongside it (or alongside the whole bridge).
+        if hasattr(self, '_target_pool'):
+            headroom = self.max_working_set_bytes - estimate
+            self._trim_target_pool(size, headroom + reusable_targets * surface_bytes)
+
+    def _check_resident_budget(self, size, texture_count, source_count):
+        self._check_budget(size, texture_count, reusable_targets=texture_count - source_count)
+
+    def _pool_capacity(self, size, byte_limit):
+        if not self._owns_context:
+            return 0
+        return min(MAX_POOLED_TARGETS,
+                   min(self.max_pooled_target_bytes, byte_limit) // (size[0] * size[1] * 4))
+
+    def _trim_target_pool(self, size, byte_limit):
+        size = tuple(size)
+        capacity = self._pool_capacity(size, byte_limit) if size == self._target_pool_size else 0
+        while len(self._target_pool) > capacity:
+            _release_target(self._target_pool.pop())
+        self._target_pool_size = size
+        self._report_target_pool()
+
+    def _acquire_resident_target(self, size):
+        if self._target_pool:
+            pair = self._target_pool.pop()
+            self.last_transport['resident_target_reuses'] += 1
+        else:
+            pair = self._target(size)
+            self.last_transport['resident_target_allocations'] += 1
+        self._report_target_pool()
+        return pair
+
+    def _finish_resident_targets(self, size, pairs, *, completed):
+        capacity = self._pool_capacity(size, self.max_working_set_bytes) if completed else 0
+        for pair in pairs:
+            if len(self._target_pool) < capacity:
+                self._target_pool.append(pair)
+            else:
+                _release_target(pair)
+        self._report_target_pool()
+
+    def _report_target_pool(self):
+        count = len(getattr(self, '_target_pool', ()))
+        width, height = getattr(self, '_target_pool_size', None) or (0, 0)
+        self.last_transport['retained_target_count'] = count
+        self.last_transport['retained_target_payload_bytes'] = count * width * height * 4
+
+    def sample_driver_memory(self):
+        """Optional snapshot of driver-wide memory hints; never used for admission."""
+        return self._memory_probe.sample(closed=self.closed)
 
     def _get_shader(self, name, fragment):
         if name not in self._programs:
             program = self.ctx.program(vertex_shader=VERTEX, fragment_shader=fragment)
+            try:
+                vao = self.ctx.vertex_array(program, [])
+            except BaseException:
+                program.release()
+                raise
             self._programs[name] = program
-            self._vaos[name] = self.ctx.vertex_array(program, [])
+            self._vaos[name] = vao
         return self._programs[name], self._vaos[name]
 
     def begin_transfer_sample(self):
@@ -373,7 +452,9 @@ class GLMatteBackend:
             'colour_space': 'display-referred', 'row_order': 'top-first',
             'row_alignment': 1, 'gpu_resident_graph': False,
             'measured_vram': False,
+            'resident_target_allocations': 0, 'resident_target_reuses': 0,
         }
+        self._report_target_pool()
 
     def _record_transfer(self, direction, count):
         report = getattr(self, 'last_transport', None)
@@ -395,9 +476,13 @@ class GLMatteBackend:
         contract = bridge_contract(image.size)
         payload = pack_image(image, contract)
         texture = self.ctx.texture(contract.size, 4, payload.data, alignment=1)
-        texture.filter = (self._moderngl.NEAREST, self._moderngl.NEAREST)
-        texture.repeat_x = False
-        texture.repeat_y = False
+        try:
+            texture.filter = (self._moderngl.NEAREST, self._moderngl.NEAREST)
+            texture.repeat_x = False
+            texture.repeat_y = False
+        except BaseException:
+            texture.release()
+            raise
         self._record_transfer('upload', len(payload.data))
         return texture
 
@@ -410,8 +495,12 @@ class GLMatteBackend:
 
     def _target(self, size):
         texture = self.ctx.texture(size, 4)
-        texture.filter = (self._moderngl.NEAREST, self._moderngl.NEAREST)
-        framebuffer = self.ctx.framebuffer(color_attachments=[texture])
+        try:
+            texture.filter = (self._moderngl.NEAREST, self._moderngl.NEAREST)
+            framebuffer = self.ctx.framebuffer(color_attachments=[texture])
+        except BaseException:
+            texture.release()
+            raise
         return texture, framebuffer
 
     def _draw(self, shader, fragment, sources, size, uniforms, allocations):
@@ -602,6 +691,8 @@ class GLMatteBackend:
     def close(self):
         if self.closed:
             return
+        if self._target_pool_size is not None:
+            self._trim_target_pool(self._target_pool_size, 0)
         for vao in self._vaos.values():
             vao.release()
         for program in self._programs.values():

@@ -758,6 +758,10 @@ class Compositor:
                     self.effect_graph_gpu.last_dispatch
                     if self.effect_graph_gpu is not None else None
                 ),
+                "last_transport": (
+                    dict(getattr(self.effect_graph_gpu, "last_transport", {}))
+                    if self.effect_graph_gpu is not None else None
+                ),
             }} if self.effect_graph is not None else {}),
             motions={x.id: x.motion.evidence for x in [*self.layers, *self.lyric_art.values()] if x.motion},
             rudiment_renderers={x.id: x.evidence for x in self.layers if isinstance(x, RudimentLayer)},

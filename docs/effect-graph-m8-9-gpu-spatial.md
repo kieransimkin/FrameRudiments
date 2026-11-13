@@ -131,8 +131,8 @@ readback of 8,294,400 bytes each. Across three samples, the median was 1.349 s o
 CPU and 0.057 s on GPU, including transfers. The largest alpha and visible
 straight-RGB differences were one 8-bit level each. These timings measure one
 effect graph on that driver. They exclude decoding, the rest of the compositor
-and encoding. Physical VRAM measurement and persistent cross-frame pooling
-remain separate roadmap items.
+and encoding. See the separate [GPU resource benchmark](effect-graph-m8-9-gpu-resources.md)
+for cross-frame target reuse and the scope of available driver memory readings.
 
 On the same RTX 4060 Ti, the nine-source 1920×1080 storm fixture took a median
 of 1.757 s on CPU and 0.032 s on GPU over three renders, including transfers.
