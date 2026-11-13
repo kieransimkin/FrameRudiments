@@ -347,7 +347,10 @@ def temporal_supersample(compositor, frame):
                 return scene_cache[encoded].copy()
         else:
             scene_adapter = None
-        virtual = Compositor(project, scene=scene_adapter, renderers=compositor.renderers)
+        # The outer compositor owns the context and pool. The virtual clock
+        # changes when we sample, but both renderers use the same canvas.
+        virtual = Compositor(project, scene=scene_adapter, renderers=compositor.renderers,
+                             _shared_effect_graph_gpu=compositor.effect_graph_gpu)
         compositor._temporal_virtual = virtual
     images = []
     route_averages = {}

@@ -630,3 +630,54 @@ def test_real_driver_memory_snapshot_and_device_discovery(monkeypatch):
             assert borrowed.last_transport['retained_target_count'] == 0
             assert borrowed.sample_driver_memory()['state'] == 'unavailable'
     assert gpu.sample_driver_memory()['reason'] == 'backend_closed'
+
+
+def test_temporal_project_reuses_its_gpu_and_releases_it_on_parent_close(tmp_path, monkeypatch):
+    from framerudiments import compositor as compositor_module
+
+    opened = []
+
+    def open_gpu(mode):
+        if mode == 'cpu':
+            return None
+        assert mode == 'gpu'
+        gpu = _local_backend()
+        opened.append(gpu)
+        return gpu
+
+    monkeypatch.setattr(compositor_module, 'create_gpu_backend', open_gpu)
+    default_font = ('C:/Windows/Fonts/arialbd.ttf' if sys.platform == 'win32'
+                    else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
+    font = os.environ.get('FRAMERUDIMENTS_TEST_FONT', default_font)
+    project = Project.load(create_demo(tmp_path / 'temporal-gpu', font, width=180, height=320))
+    data = dict(project.data,
+                render_quality={'spatial_scale': 1, 'temporal_samples': 2, 'antialias': 0},
+                effect_graph={'nodes': [{'id': 'frame', 'type': 'source'}, _warp('frame')], 'output': 'warp'},
+                effect_graph_controls=[{'node': 'warp', 'property': 'warp_phase',
+                                        'motion': {'kind': 'named', 'pattern': 'circle'},
+                                        'axis': 'x', 'range': [0, 3]}])
+    cpu = Compositor(Project(data, project.base))
+    device = Compositor(Project({**data, 'effect_graph_backend': 'gpu'}, project.base))
+    gpu = device.effect_graph_gpu
+    try:
+        observations = {}
+        for frame in (0, 8, 17):
+            expected = cpu.frame(frame)[0].convert('RGBA')
+            actual = device.frame(frame)[0].convert('RGBA')
+            _near(expected, actual)
+            observations[frame] = actual.tobytes()
+        assert len(set(observations.values())) == 3
+        assert device.frame(8)[0].convert('RGBA').tobytes() == observations[8]
+        assert opened == [gpu]
+        assert device._temporal_virtual.effect_graph_gpu is gpu
+        report = device.evidence()['effect_graph_backend']
+        assert report['sampling'] == {'scope': 'last_subframe', 'sample_fps': 120, 'encoded_fps': 60}
+        assert report['last_dispatch'] == {'gpu_nodes': 1, 'cpu_fallbacks': 0}
+        assert report['last_transport']['resident_target_reuses'] == 1
+        assert report['last_transport']['uploads'] == report['last_transport']['readbacks'] == 1
+        assert report['last_transport']['retained_target_count'] == 1
+    finally:
+        device.close()
+        cpu.close()
+    assert gpu.closed
+    assert device.evidence()['effect_graph_backend']['last_transport']['retained_target_count'] == 0
