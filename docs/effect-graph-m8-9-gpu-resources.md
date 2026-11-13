@@ -85,3 +85,46 @@ Required CI also runs the HD benchmark and real context tests on Mesa/EGL
 software rendering. Mesa can advertise NVX on llvmpipe, so software rendering
 is identified before any memory query. ATI values use a synthetic query fixture.
 Physical AMD and Intel profiling remains open.
+
+## Qualify another OpenGL renderer
+
+Use a matching source checkout or source archive and the same release with
+its `gpu` extra installed. Run on a machine with the intended graphics
+adapter, with the driver in its normal configuration. Use the exact model
+substring shown by that adapter, as in these examples:
+
+```sh
+python integration/qualify_effect_graph_m8_9.py --size hd --backend auto --expect-vendor amd --expect-renderer "Radeon RX 7600" --output amd-hd.json --image amd-hd.png
+python integration/qualify_effect_graph_m8_9.py --size hd --backend egl --expect-vendor intel --expect-renderer "Arc" --output intel-hd.json
+```
+
+The command checks the active OpenGL strings before rendering and confirms
+they agree across benchmark contexts. It rejects software, translated or
+virtual renderer strings when a hardware vendor is expected. Those strings
+are still driver claims: retain a separate OS adapter inventory for physical
+acceptance. Include the GPU model, PCI vendor/device codes if available and
+driver version. Hardware or host serial numbers are unnecessary.
+
+- Twelve small cases exercise all ten supported warp types, including the
+  three normal raindrop variants, with a CPU reference and required GPU
+  residency. The selected resolution applies to the twelve stress cases and
+  to the resource benchmark. Repeat at `--size 4k` where practical.
+- With [GL_ARB_gpu_shader5](https://registry.khronos.org/OpenGL/extensions/ARB/ARB_gpu_shader5.txt),
+  all stress cases must pass on the GPU. If the extension is missing, tight
+  polar wraps and extreme rain instead verify exact CPU bytes in automatic
+  mode and zero transfers on both the automatic and strict GPU paths. These
+  cases are labelled `cpu_fallback`. A shader failure on an advertised
+  route fails the check. `--expect-precision` pins an expected state when
+  checking a known driver or a deliberate test override.
+- Pooling is compared frame by frame on that same renderer. JSON retains
+  the imported version and script hashes, device identity, extension state,
+  memory scope or unavailability, per-case parity and hashes, and cold and
+  warm resource counts. A mismatched source version stops before opening
+  OpenGL. A failed check produces a partial receipt and a nonzero exit; use
+  a new output path for each run.
+
+The comparison above shows the RTX benchmark pixels. A
+[60 fps recording](https://kieransimkin.co.uk/2026/11/13/framerudiments-reusing-gpu-render-targets/)
+shows its allocation counters as the frames change. CI exercises the command
+on llvmpipe and checks fallback in a second software run with the extension
+hidden. [Mesa's extension override](https://docs.mesa3d.org/envvars.html#envvar-MESA_EXTENSION_OVERRIDE).

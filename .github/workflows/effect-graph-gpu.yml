@@ -20,6 +20,7 @@ on:
       - 'integration/benchmark_effect_graph_m8_9_gpu.py'
       - 'integration/benchmark_effect_graph_m8_9_precision.py'
       - 'integration/benchmark_effect_graph_m8_9_resources.py'
+      - 'integration/qualify_effect_graph_m8_9.py'
       - '.github/workflows/effect-graph-gpu.yml'
   pull_request:
     paths:
@@ -33,6 +34,7 @@ on:
       - 'integration/benchmark_effect_graph_m8_9_gpu.py'
       - 'integration/benchmark_effect_graph_m8_9_precision.py'
       - 'integration/benchmark_effect_graph_m8_9_resources.py'
+      - 'integration/qualify_effect_graph_m8_9.py'
       - '.github/workflows/effect-graph-gpu.yml'
 
 jobs:
@@ -66,7 +68,7 @@ jobs:
         run: >-
           python -m pytest -q
           tests/test_effect_graph_gpu_parity.py tests/test_effect_graph_gpu_dispatch.py
-          tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_spectral.py
+          tests/test_effect_graph_gpu_resources.py tests/test_effect_graph_gpu_qualification.py tests/test_effect_graph_gpu_spectral.py
           tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py
           tests/test_effect_graph_gpu_kernels.py tests/test_effect_graph_gpu_resident_egl.py
           tests/test_effect_graph_gpu_resident_m86_egl.py tests/test_effect_graph_gpu_resident_m87_egl.py
@@ -128,6 +130,14 @@ jobs:
         run: python integration/benchmark_effect_graph_m8_9_precision.py --size hd --backend egl --output m89-spatial-precision-hd.json
       - name: Benchmark M8.9 resident target reuse and driver memory availability
         run: python integration/benchmark_effect_graph_m8_9_resources.py --size hd --backend egl --output m89-resources-hd.json
+      - name: Exercise the M8.9 renderer qualification command
+        run: |
+          python integration/qualify_effect_graph_m8_9.py --size small --backend egl --expect-vendor software --expect-precision available --output m89-qualification-egl.json
+      - name: Qualify M8.9 fallback with the precision extension hidden
+        env:
+          MESA_EXTENSION_OVERRIDE: '-GL_ARB_gpu_shader5'
+        run: |
+          python integration/qualify_effect_graph_m8_9.py --size small --backend egl --expect-vendor software --expect-precision unavailable --output m89-qualification-egl-no-precision.json
       - name: Optional GPU benchmark 4K and 8K
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.benchmarks }}
         run: |
@@ -154,5 +164,6 @@ jobs:
             m88-mixed-islands-*.json
             m89-spatial-*.json
             m89-resources-*.json
+            m89-qualification-*.json
             gpu-transfer-results.xml
           if-no-files-found: ignore
