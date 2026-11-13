@@ -1,12 +1,11 @@
-"""Bounded GPU-resident effect DAG execution (M8.4–M8.7).
+"""Bounded GPU-resident effect DAG execution.
 
 Supported graphs keep shared, immutable RGBA8 source textures on the GPU and
 read back only their final surface. A dry execution uses the *same* lifetime
 scheduler as real rendering, so resource preflight accounts for multi-pass
 filters, composite temporaries and aliasing before uploading any pixels.
 
-This is deliberately an all-or-nothing resident island: unsupported spatial
-or custom nodes retain the established node bridge. Matte/key refinement beyond
+Unsupported operations retain the established node bridge. Matte/key refinement beyond
 the established M3.3 shader radius and edge-decontamination limits stays on CPU.
 The GPU backend owns shaders/context; the scheduler only owns frame resources.
 """
@@ -36,6 +35,8 @@ from .effect_graph_gpu_spectral import (
     SPACE_INDEX as SPECTRAL_SPACE_INDEX,
     _bind_band as bind_spectral_band,
 )
+from .effect_graph_gpu_spatial import SPATIAL_SHADER_NAME, SPATIAL_WARP, spatial_uniforms
+from .effect_graph_spatial import spatial_is_identity, validate_spatial_images
 from .effect_graph_spectral import validate_spectral
 
 # The M3.3 bridge uploads an L original-alpha image as RGBA and reads .r.
@@ -91,7 +92,7 @@ def node_supported(node, config):
     """Return whether one resolved node has an exact resident GLSL equivalent."""
     kinds = {'source', 'copy', 'opacity', 'transition', 'composite',
              'chromatic_displacement', 'filter', 'spectral_displacement',
-             'matte', 'chroma_key'}
+             'matte', 'chroma_key', 'spatial_warp'}
     if node.kind not in kinds:
         return False
     if node.kind == 'transition' and (config.get('transition_style', 'dissolve') not in
@@ -103,7 +104,7 @@ def node_supported(node, config):
         return False
     if node.kind == 'spectral_displacement':
         validate_spectral(config)
-    if node.kind in {'matte', 'chroma_key'}:
+    if node.kind in {'matte', 'chroma_key', 'spatial_warp'}:
         return gpu_requirements(node.kind, config, len(node.inputs)).supported
     return True
 
@@ -137,8 +138,8 @@ class _ResidentRun:
         self.all_resources = []
         self.texture_of = {}
         # A lineage handle aliases the original alpha-bearing RGBA texture.
-        # It is inherited through unary effects, but reset after a source,
-        # transition or composite (including the universal output opacity).
+        # It follows spatial warps, is inherited through other unary effects,
+        # and resets after a source, transition or composite.
         self.alpha_of = {}
         self.inputs_left = Counter(i for key in graph.order for i in graph.nodes[key].inputs)
         self.live = set()
@@ -396,6 +397,7 @@ class _ResidentRun:
         cfg = self.configs.get(key, node.config)
         kind = node.kind
         owned = False
+        warped_alpha = None
         if kind == 'source':
             pair = self._source(self.sources[key])
         elif kind in {'copy', 'opacity'}:
@@ -430,6 +432,19 @@ class _ResidentRun:
             if not _identity(kind, cfg):
                 pair = self._spectral(pair, cfg)
                 owned = True
+        elif kind == 'spatial_warp':
+            pair = self.texture_of[node.inputs[0]]
+            original = self.alpha_of[node.inputs[0]]
+            warped_alpha = original
+            if not spatial_is_identity(cfg):
+                uniforms = spatial_uniforms(cfg)
+                warped = self._draw(SPATIAL_SHADER_NAME, SPATIAL_WARP,
+                                    {'source_tex': pair[0]}, {**uniforms, 'alpha_only': 0})
+                warped_alpha = warped if original is pair else self._draw(
+                    SPATIAL_SHADER_NAME, SPATIAL_WARP, {'source_tex': original[0]},
+                    {**uniforms, 'alpha_only': 1})
+                pair = warped
+                owned = True
         elif kind == 'matte':
             pair = self._matte(
                 [self.texture_of[name] for name in node.inputs], cfg,
@@ -458,7 +473,7 @@ class _ResidentRun:
         if opacity != 1:
             new = self._draw('m85_opacity', OPACITY,
                              {'source_tex': pair[0]}, {'strength': opacity})
-            if owned or kind == 'source':
+            if (owned or kind == 'source') and pair is not warped_alpha:
                 self._recycle(pair)
             pair = new
 
@@ -466,6 +481,8 @@ class _ResidentRun:
         if kind in {'source', 'transition', 'composite'}:
             # CPU graph resets lineage to output alpha after these nodes.
             self.alpha_of[key] = pair
+        elif warped_alpha is not None:
+            self.alpha_of[key] = warped_alpha
         else:
             self.alpha_of[key] = self.alpha_of[node.inputs[0]]
         for name in node.inputs:
@@ -535,12 +552,15 @@ def render_resident(backend, graph, sources, configs, *, whole_graph=True):
     for key in graph.source_ids:
         if key not in sources or sources[key].mode != 'RGBA':
             raise ValueError(f'missing RGBA source: {key}')
-    size = sources[next(iter(graph.source_ids))].size
+    first_source = sources[next(iter(graph.source_ids))]
+    size = first_source.size
     if any(sources[key].size != size for key in graph.source_ids):
         raise ValueError('resident graph requires equal-sized RGBA sources')
     if any(graph.nodes[key].kind == 'filter' for key in graph.order):
         if size[0] * size[1] > MAX_FILTER_PIXELS or max(size) > MAX_FILTER_DIMENSION:
             raise ValueError('GPU filter canvas exceeds pixel budget')
+    if any(graph.nodes[key].kind == 'spatial_warp' for key in graph.order):
+        validate_spatial_images(first_source)
     plan = resident_plan(graph, configs)
     backend._check_budget(size, plan['resident_peak_allocated_surfaces'])
     run = _ResidentRun(backend, graph, configs, size)

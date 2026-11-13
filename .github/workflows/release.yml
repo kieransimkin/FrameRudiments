@@ -60,6 +60,7 @@ jobs:
             --ignore=tests/test_effect_graph_gpu_resident_m86_egl.py \
             --ignore=tests/test_effect_graph_gpu_resident_m87_egl.py \
             --ignore=tests/test_effect_graph_gpu_kernels.py \
+            --ignore=tests/test_effect_graph_gpu_spatial_egl.py \
             --junitxml=test-results.xml
           python -c "import xml.etree.ElementTree as E; r=E.parse('test-results.xml'); assert not r.findall('.//skipped')"
       - run: python -m build && python -m twine check --strict dist/*

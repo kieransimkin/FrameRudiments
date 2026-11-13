@@ -1,7 +1,9 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.22 — 2 November 2026
-**Status:** M8.7 is released in 0.4.20. M8.8 is implemented for 0.4.21: conservative mixed CPU/GPU islands, exact transfer telemetry and bounded confidence-weighted GPU edge decontamination pass local real-driver parity; exact-head Mesa/EGL CI and release publication remain the acceptance gates.
+**Version:** 1.23 — 13 November 2026
+
+M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
+in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -493,7 +495,7 @@ validated native control paths, descriptors and topology-safe category choices.
 - [x] Exact neutral shortcuts, source immutability and deterministic seek tests.
 - [x] Executable example, actual rendered evidence and capability discovery.
 - [ ] Real native Project/Compositor tests, full repository lint/tests and CI.
-- [ ] GPU kernels, cross-vendor parity and hardware performance (M8).
+- [x] Initial GPU kernels and real-driver benchmarks for the M8.9 modes.
 
 Details: [effect-graph-m7-3-spatial-warps.md](effect-graph-m7-3-spatial-warps.md).
 M7.4 glitch/pixel effects and M7.5 procedural control textures remain next; this
@@ -639,7 +641,16 @@ See [M8.6 spectral residency](effect-graph-m8-6-spectral-residency.md).
 - [x] Resident graph dry-run budgets, resource cleanup, CPU-only scheduling tests, real-EGL no-skip parity cases and HD/extended benchmarks.
 - [ ] Merge-time full CI plus measured EGL parity and benchmark artifacts on the exact head; cross-vendor hardware acceptance.
 - [x] M8.8 core: mixed CPU/GPU island partitioning, boundary transfer telemetry, conservative lineage/multi-exit rejection and bounded GPU edge decontamination.
-- [ ] M8.9: native GPU spatial-warp kernels, measured physical VRAM where driver APIs permit it, persistent cross-frame pooling and broader cross-vendor profiling.
 
 See [M8.7 matte/chroma residency](effect-graph-m8-7-matte-key-residency.md).
 See [M8.8 mixed GPU islands](effect-graph-m8-8-gpu-islands.md).
+
+### M8.9 GPU spatial warps and profiling
+
+- [x] Wave, turbulence, swirl, nonnegative radial, mirror, kaleidoscope and polar unwrap.
+- [x] Warped original alpha across resident forks and per-node GPU/CPU boundaries.
+- [x] Focused NVIDIA parity and HD timing, with no-skip Mesa/EGL parity in the release gate.
+- [ ] GPU map displacement, polar wrap, raindrop ripples and the remaining precision-limited settings.
+- [ ] Driver-reported physical VRAM where supported, bounded cross-frame pooling and profiling on further hardware vendors.
+
+See [the M8.9 GPU spatial warp contract and real comparison](effect-graph-m8-9-gpu-spatial.md).
