@@ -18,6 +18,7 @@ on:
       - 'integration/benchmark_effect_graph_m8_6_gpu.py'
       - 'integration/benchmark_effect_graph_m8_7_gpu.py'
       - 'integration/benchmark_effect_graph_m8_9_gpu.py'
+      - 'integration/benchmark_effect_graph_m8_9_precision.py'
       - '.github/workflows/effect-graph-gpu.yml'
   pull_request:
     paths:
@@ -29,6 +30,7 @@ on:
       - 'integration/benchmark_effect_graph_m8_6_gpu.py'
       - 'integration/benchmark_effect_graph_m8_7_gpu.py'
       - 'integration/benchmark_effect_graph_m8_9_gpu.py'
+      - 'integration/benchmark_effect_graph_m8_9_precision.py'
       - '.github/workflows/effect-graph-gpu.yml'
 
 jobs:
@@ -120,6 +122,8 @@ jobs:
           python integration/benchmark_effect_graph_m8_8_gpu.py --size hd --backend egl --repeats 2 --output m88-mixed-islands-hd.json
       - name: Benchmark M8.9 spatial warp HD CPU and GPU
         run: python integration/benchmark_effect_graph_m8_9_gpu.py --size hd --backend egl --output m89-spatial-hd.json
+      - name: Benchmark M8.9 authored warp limits and nonperiodic polar seam
+        run: python integration/benchmark_effect_graph_m8_9_precision.py --size hd --backend egl --output m89-spatial-precision-hd.json
       - name: Optional GPU benchmark 4K and 8K
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.benchmarks }}
         run: |
@@ -144,4 +148,5 @@ jobs:
             m87-resident-matte-key-*.json
             m88-mixed-islands-*.json
             m89-spatial-*.json
+            gpu-transfer-results.xml
           if-no-files-found: ignore

@@ -54,6 +54,8 @@ def main():
     cpu_seconds = perf_counter() - start
     samples = []
     with GLMatteBackend(backend=None if args.backend == 'auto' else args.backend) as gpu:
+        # Retain the two-island fixture on devices which now accelerate short ripple wavelengths.
+        gpu.supports_precise_spatial_warps = False
         for _ in range(args.repeats):
             start = perf_counter()
             output = effect.render(sources, gpu_backend=gpu)
@@ -75,7 +77,7 @@ def main():
             'size': args.size, 'resolution': list(SIZES[args.size]),
             'backend': gpu.capabilities.backend, 'renderer': gpu.capabilities.renderer,
             'vendor': str(gpu.ctx.info.get('GL_VENDOR', 'unknown')),
-            'scope': 'two resident islands separated by one CPU spatial warp',
+            'scope': 'two resident islands with the optional precision shader disabled',
             'cpu_seconds': cpu_seconds, 'median_mixed_seconds': median(s['seconds'] for s in samples),
             'parity': parity, 'frame_sha256': sha256(output.tobytes()).hexdigest(),
             'samples': samples,

@@ -125,10 +125,13 @@ branches. No source code, shader text or texture from those projects is bundled.
 ## Backend, resources and acceptance
 
 Starting with 0.4.28, the layer warp can run on GPU with all three variants and
-all four borders. It supports up to 128 pixels of displacement per axis and up
-to 32 seeded drops. Rings and storm need an X wavelength of at least 16 pixels.
-Droplets use no wavelength. `auto` falls back to the CPU for settings outside
-the GPU limits. See the [CPU and GPU comparison and benchmark](effect-graph-m8-9-gpu-spatial.md#raindrop-ripples).
+all four borders and up to 32 seeded drops. In 0.4.29, a driver with
+`GL_ARB_gpu_shader5` supports up to 4096 pixels of displacement per axis
+and X wavelengths down to one pixel for rings and storm. Other drivers
+support up to 128 pixels of displacement and wavelengths of at least
+16 pixels. Droplets use no wavelength. `auto` falls back to the CPU for
+settings outside the device's range.
+See the [CPU and GPU comparison](effect-graph-m8-9-gpu-spatial.md#raindrop-ripples).
 
 A configured `warp_amplitude: [0,0]` or `warp_mix: 0` is an exact layer
 identity. Refraction transports original-alpha lineage through the same

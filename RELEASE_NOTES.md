@@ -1,3 +1,16 @@
+# FrameRudiments 0.4.29
+
+- Render wave and turbulence down to a one-pixel wavelength and up to 4096
+  pixels of displacement per axis. Map displacement supports the same
+  amplitude range, and radial pinch and bulge use the full `warp_amount` range.
+- Support all four polar-wrap borders and preserve the side of a discontinuous
+  seam. Tight polar wraps and extreme raindrop settings use a precision shader
+  on drivers advertising `GL_ARB_gpu_shader5`. Automatic mode uses the CPU
+  reference for those settings on other drivers.
+- Check the new limits on the resident and per-node routes, with a required
+  Mesa/EGL stress benchmark and a
+  [60 fps CPU/GPU seam comparison](docs/effect-graph-m8-9-gpu-spatial.md#full-range-warps).
+
 # FrameRudiments 0.4.28
 
 - Run the rings, droplets and storm raindrop layer warps on OpenGL 3.3 with

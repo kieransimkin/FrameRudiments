@@ -1,5 +1,11 @@
 # FrameRudiments
 
+Version 0.4.29 extends GPU spatial warps to extreme wave, turbulence, map
+displacement and radial settings. Polar wrap supports all four borders.
+Drivers with the precision shader extension can also render tight polar wraps
+and the full raindrop settings. See the
+[polar seam comparison and supported ranges](docs/effect-graph-m8-9-gpu-spatial.md#full-range-warps).
+
 Version 0.4.28 runs the rings, droplets and storm layer warps on GPU. The
 same seed and frame controls drive both backends. See the
 [60 fps rain comparison and supported settings](docs/effect-graph-m8-9-gpu-spatial.md#raindrop-ripples).

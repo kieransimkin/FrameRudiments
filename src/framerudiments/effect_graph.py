@@ -386,11 +386,14 @@ class EffectGraph:
         return {key: filter_capabilities(self.nodes[key].config)
                 for key in self.order if self.nodes[key].kind == 'filter'}
 
-    def spatial_manifest(self):
+    def spatial_manifest(self, *, gpu_backend=None):
         """Detached capability/control report for reachable spatial-warp nodes."""
         return {
             key: {'inputs': list(self.nodes[key].inputs),
-                  **spatial_capabilities(self.nodes[key].config, input_count=len(self.nodes[key].inputs))}
+                  **spatial_capabilities(
+                      self.nodes[key].config, input_count=len(self.nodes[key].inputs),
+                      precise_gpu=getattr(gpu_backend, 'supports_precise_spatial_warps', False),
+                  )}
             for key in self.order if self.nodes[key].kind == 'spatial_warp'
         }
 
@@ -623,7 +626,7 @@ class EffectGraph:
         if gpu_backend is not None and style_report is None and callable(
                 getattr(gpu_backend, 'render_resident_graph', None)):
             from .effect_graph_gpu_resident import supported
-            if supported(self, configs):
+            if supported(self, configs, precise_gpu=getattr(gpu_backend, 'supports_precise_spatial_warps', False)):
                 from .effect_graph_gpu import GPUUnsupported
                 try:
                     return gpu_backend.render_resident_graph(self, sources, configs)
@@ -644,7 +647,8 @@ class EffectGraph:
                 and getattr(gpu_backend, 'supports_gpu_islands', False)
                 and callable(getattr(gpu_backend, 'render_resident_graph', None))):
             from .effect_graph_gpu_islands import plan_islands
-            islands, rejected_islands = plan_islands(self, configs)
+            islands, rejected_islands = plan_islands(
+                self, configs, precise_gpu=getattr(gpu_backend, 'supports_precise_spatial_warps', False))
             for island in islands:
                 for member in island.members:
                     islands_by_member[member] = island

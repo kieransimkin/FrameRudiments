@@ -212,7 +212,8 @@ def test_cpu_style_receives_gpu_bridge_lineage(gpu):
     assert 'out' in diagnostics['nodes']
 
 
-def test_mixed_island_does_not_substitute_boundary_current_alpha(gpu):
+def test_mixed_island_does_not_substitute_boundary_current_alpha(gpu, monkeypatch):
+    monkeypatch.setattr(gpu, 'supports_precise_spatial_warps', False)
     graph = _graph(
         {'id': 'dim', 'type': 'opacity', 'inputs': ['a'], 'opacity': .58},
         _warp('dim', id='cpu', warp_type='raindrop_ripples', warp_scale=[8, 23]),
@@ -229,32 +230,31 @@ def test_mixed_island_does_not_substitute_boundary_current_alpha(gpu):
                for row in gpu.last_transport['gpu_island_rejections'])
 
 
-@pytest.mark.parametrize('kind,config,reason', [
-    ('polar_wrap', {'warp_border': 'clamp'}, 'polar_wrap_seam_requires_repeat'),
-    ('polar_wrap', {'warp_border': 'transparent'}, 'polar_wrap_seam_requires_repeat'),
-    ('polar_wrap', {'warp_border': 'mirror'}, 'polar_wrap_seam_requires_repeat'),
-])
-def test_unsupported_warps_remain_explicit_fallbacks(gpu, kind, config, reason):
+@pytest.mark.parametrize('border', ['transparent', 'clamp', 'mirror'])
+def test_polar_wrap_nonperiodic_borders_use_basic_shader(gpu, monkeypatch, border):
     source = _source()
+    source.paste((12, 252, 164, 255), (0, 0, 2, source.height))
+    source.paste((251, 34, 12, 180), (source.width - 2, 0, source.width, source.height))
     images = {'a': source}
-    graph = _graph(_warp(warp_type=kind, **config))
-    with pytest.raises(GPUUnsupported, match=reason):
-        graph.render(images, gpu_backend=gpu, gpu_strict=True)
-    assert gpu.last_transport['uploads'] == 0
-    assert graph.render(images, gpu_backend=gpu).tobytes() == graph.render(images).tobytes()
-    assert gpu.last_dispatch == {'gpu_nodes': 0, 'cpu_fallbacks': 1}
+    monkeypatch.setattr(gpu, 'supports_precise_spatial_warps', False)
+    graph = _graph(_warp(warp_type='polar_wrap', warp_border=border, warp_radius=16))
+    for angle in (-720, 0, 89.9999999, 90, 90.0000001, 180, 270, 720):
+        values = {('warp', 'warp_angle'): angle, ('warp', 'warp_center.x'): .5,
+                  ('warp', 'warp_center.y'): .5}
+        reference = graph.render(images, parameter_values=values)
+        actual = graph.render(images, gpu_backend=gpu, gpu_strict=True, parameter_values=values)
+        _near(reference, actual)
+        assert gpu.last_transport['uploads'] == gpu.last_transport['readbacks'] == 1
 
 
 @pytest.mark.parametrize('config', [
-    {'warp_type': 'wave', 'warp_amplitude': [128.01, 0]},
-    {'warp_type': 'turbulence', 'warp_scale': [15.99, 16]},
-    {'warp_type': 'radial', 'warp_amount': -2, 'warp_center': [.50000001, .5], 'warp_radius': 256},
     {'warp_type': 'polar_wrap', 'warp_border': 'repeat', 'warp_radius': 15.99},
     {'warp_type': 'raindrop_ripples', 'warp_ripple_variant': 'rings', 'warp_scale': [15.99, 64]},
     {'warp_type': 'raindrop_ripples', 'warp_ripple_variant': 'storm', 'warp_scale': [15.99, 64]},
     {'warp_type': 'raindrop_ripples', 'warp_ripple_variant': 'droplets', 'warp_amplitude': [128.01, 0]},
 ])
-def test_precision_limit_uses_cpu_without_upload(gpu, config):
+def test_precision_limit_uses_cpu_without_upload(gpu, monkeypatch, config):
+    monkeypatch.setattr(gpu, 'supports_precise_spatial_warps', False)
     graph = _graph(_warp(**config))
     images = {'a': _source()}
     with pytest.raises(GPUUnsupported, match='warp_precision_limit_exceeded'):
@@ -264,11 +264,19 @@ def test_precision_limit_uses_cpu_without_upload(gpu, config):
     assert gpu.last_dispatch == {'gpu_nodes': 0, 'cpu_fallbacks': 1}
 
 
-def test_resolved_precision_limits_are_shared_by_manifest_and_execution(gpu):
-    graph = _graph(_warp(warp_type='radial'))
+def test_resolved_precision_limits_are_shared_by_manifest_and_execution(gpu, monkeypatch):
+    graph = _graph(_warp(warp_type='polar_wrap', warp_border='repeat'))
     source = _source()
-    values = {('warp', 'warp_amount'): -.2}
+    values = {('warp', 'warp_radius'): .5003}
     assert graph.spatial_manifest()['warp']['gpu_native']
+    assert gpu.supports_precise_spatial_warps
+    row = graph.backend_plan({'a': source.size}, mode='gpu', gpu_backend=gpu,
+                             parameter_values=values)['nodes']['warp']
+    assert row['selected_backend'] == 'gpu_bridge'
+    _near(graph.render({'a': source}, parameter_values=values),
+          graph.render({'a': source}, gpu_backend=gpu, gpu_strict=True, parameter_values=values))
+    assert gpu.last_transport['uploads'] == gpu.last_transport['readbacks'] == 1
+    monkeypatch.setattr(gpu, 'supports_precise_spatial_warps', False)
     row = graph.backend_plan({'a': source.size}, mode='auto', gpu_backend=gpu,
                              parameter_values=values)['nodes']['warp']
     assert row['selected_backend'] == 'cpu'
@@ -276,6 +284,60 @@ def test_resolved_precision_limits_are_shared_by_manifest_and_execution(gpu):
     assert graph.render({'a': source}, gpu_backend=gpu, parameter_values=values).tobytes() == (
         graph.render({'a': source}, parameter_values=values).tobytes())
     assert gpu.last_transport['uploads'] == 0
+
+
+def test_precision_shader_compile_failure_falls_back_before_upload(gpu, monkeypatch):
+    graph = _graph(_warp(warp_type='polar_wrap', warp_radius=.5013, warp_border='mirror'))
+    images = {'a': _source()}
+    assert gpu.supports_precise_spatial_warps
+
+    def fail(_name, _fragment):
+        raise gpu._moderngl.Error('synthetic compiler failure')
+
+    monkeypatch.setattr(gpu, '_get_shader', fail)
+    with pytest.raises(GPUUnsupported, match='failed to compile or link'):
+        graph.render(images, gpu_backend=gpu, gpu_strict=True)
+    assert gpu.last_transport['uploads'] == 0
+    assert graph.render(images, gpu_backend=gpu).tobytes() == graph.render(images).tobytes()
+    assert gpu.last_dispatch == {'gpu_nodes': 0, 'cpu_fallbacks': 1}
+    assert gpu.last_transport['uploads'] == 0
+
+
+@pytest.mark.parametrize('kind,settings', [
+    ('wave', {'warp_scale': [1.0000001, 1.017], 'warp_phase': -192.1303}),
+    ('turbulence', {'warp_scale': [1, 1.013], 'warp_phase': -192.1303, 'warp_octaves': 6}),
+    ('radial', {'warp_amount': -2, 'warp_center': [.500000001, .499999998], 'warp_radius': 8192}),
+])
+def test_full_authored_range_on_basic_gpu(gpu, monkeypatch, kind, settings):
+    monkeypatch.setattr(gpu, 'supports_precise_spatial_warps', False)
+    source = _source((5121, 17))
+    graph = _graph(_warp(warp_type=kind, warp_amplitude=[4096, -4096],
+                         warp_border='repeat', warp_mix=1, **settings))
+    actual = graph.render({'a': source}, gpu_backend=gpu, gpu_strict=True)
+    _near(graph.render({'a': source}), actual, alpha=3, rgb=5)
+    assert gpu.last_transport['resident_draws'] == gpu.last_transport['uploads'] == 1
+
+
+@pytest.mark.parametrize('variant', RIPPLE_VARIANT_ORDER)
+def test_precision_ripple_bridge_carries_original_alpha(gpu, variant):
+    assert gpu.supports_precise_spatial_warps
+    source = _source((321, 147))
+    original = source.getchannel('A')
+    source.putalpha(original.point(lambda value: round(value * .6)))
+    config = {'warp_type': 'raindrop_ripples', 'warp_ripple_variant': variant,
+              'warp_scale': [1.04, 1], 'warp_amplitude': [4096, -4096], 'warp_radius': 142,
+              'warp_center': [.5000000001, .5], 'warp_segments': 32, 'warp_seed': 42,
+              'warp_phase': tau - 1e-8, 'warp_border': 'mirror'}
+    reference, expected_alpha = render_spatial_warp_with_alpha(source, config, original_alpha=original)
+    graph = _graph(_warp(**config))
+    assert not graph.spatial_manifest()['warp']['gpu_native']
+    attached = graph.spatial_manifest(gpu_backend=gpu)['warp']
+    assert attached['gpu_native'] and attached['gpu_required_extension'] == 'GL_ARB_gpu_shader5'
+    gpu.begin_transfer_sample()
+    actual, lineage = gpu.spatial_warp([source], config, original_alpha=original)
+    _near(reference, actual, alpha=3, rgb=5)
+    assert np.abs(np.asarray(expected_alpha, dtype=np.int16) - np.asarray(lineage)).max() <= 3
+    assert gpu.last_transport['uploads'] == gpu.last_transport['readbacks'] == 2
 
 
 @pytest.mark.parametrize('angle,centre', [

@@ -326,6 +326,8 @@ class GLMatteBackend:
         self.last_dispatch = {'gpu_nodes': 0, 'cpu_fallbacks': 0}
         self.last_spatial_draws = 0
         self.supports_gpu_islands = True
+        from .effect_graph_spatial import PRECISE_SPATIAL_EXTENSION
+        self.supports_precise_spatial_warps = PRECISE_SPATIAL_EXTENSION in self.ctx.extensions
         self.begin_transfer_sample()
         self.closed = False
 

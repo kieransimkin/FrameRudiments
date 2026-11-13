@@ -72,8 +72,7 @@ def test_real_native_controls_change_frames_and_reproduce_seeks(project, kind, p
         for f in reversed(frames):
             assert comp.frame(f, apply_quality=False)[0].tobytes() == images[f]
         assert data == authored
-        assert comp.effect_graph.spatial_manifest()['warp']['gpu_native'] == (
-            kind in GPU_WARP_TYPES and kind != 'polar_wrap')
+        assert comp.effect_graph.spatial_manifest()['warp']['gpu_native'] == (kind in GPU_WARP_TYPES)
     finally:
         comp.close()
 
