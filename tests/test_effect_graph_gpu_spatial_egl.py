@@ -1,5 +1,6 @@
 """Real-driver parity and lineage for resident and bridged spatial warps."""
 from copy import deepcopy
+import ctypes
 from math import tau
 import os
 from pathlib import Path
@@ -12,9 +13,11 @@ from PIL import Image, ImageDraw
 from framerudiments import Project
 from framerudiments.compositor import Compositor
 from framerudiments.demo import create_demo
+from framerudiments.effect_graph_backend_contract import backend_registry, gpu_requirements
 from framerudiments.effect_graph import EffectGraph
 from framerudiments.effect_graph_gpu import GLMatteBackend, GPUUnsupported
 from framerudiments.effect_graph_gpu_islands import plan_islands
+from framerudiments.effect_graph_gpu_memory import _bind_integer_reader
 from framerudiments.effect_graph_ripples import MAX_RIPPLE_SOURCES, RIPPLE_VARIANT_ORDER
 from framerudiments.effect_graph_spatial import GPU_WARP_TYPES, render_spatial_warp_with_alpha
 
@@ -497,7 +500,133 @@ def test_project_gpu_warp_uses_native_timing_and_reproduces_seeks(tmp_path, kind
             report = device.evidence()['effect_graph_backend']
             assert report['requested'] == 'gpu'
             assert report['last_dispatch'] == {'gpu_nodes': 1, 'cpu_fallbacks': 0}
-            assert device.effect_graph_gpu.last_transport['gpu_resident_graph']
+            assert report['last_transport']['gpu_resident_graph']
+            assert report['last_transport']['resident_target_reuses'] == 1
     finally:
         device.close()
         cpu.close()
+
+
+def _local_backend(**kwargs):
+    return GLMatteBackend(backend=None if sys.platform == 'win32' else 'egl', **kwargs)
+
+
+def test_reused_targets_match_disabled_pool_across_changed_inputs_and_shapes():
+    graph = _graph(_warp())
+    sources = [_source((31, 23)), _source((31, 23)), _source((23, 31)), _source((23, 31))]
+    for i, image in enumerate(sources):
+        ImageDraw.Draw(image).rectangle((2, 3, 15, 12), fill=(61 * i, 191, 13, 240))
+    payload_bytes = 31 * 23 * 4
+    with _local_backend(max_pooled_target_bytes=0) as gpu:
+        expected = [graph.render({'a': image}, gpu_backend=gpu, gpu_strict=True).tobytes() for image in sources]
+        assert gpu.last_transport['resident_target_allocations'] == 1
+        assert gpu.last_transport['retained_target_count'] == 0
+    assert len(set(expected)) == len(sources)
+    with _local_backend(max_working_set_bytes=2 * payload_bytes,
+                        max_pooled_target_bytes=payload_bytes) as gpu:
+        for i, image in enumerate(sources):
+            assert graph.render({'a': image}, gpu_backend=gpu, gpu_strict=True).tobytes() == expected[i]
+            row = gpu.last_transport
+            assert row['resident_target_allocations'] == 1 - (i % 2)
+            assert row['resident_target_reuses'] == i % 2
+            assert row['resident_estimated_texture_bytes'] == 2 * payload_bytes
+            assert row['retained_target_payload_bytes'] == payload_bytes
+            assert row['uploads'] == row['readbacks'] == 1
+            assert not row['measured_vram']
+    assert gpu.last_transport['retained_target_count'] == 0
+
+
+def test_resident_and_bridge_budgets_trim_idle_targets():
+    image = _source((31, 23))
+    one = _graph(_warp())
+    two = _graph(_warp(id='first'), _warp('first'))
+    surface_bytes = image.width * image.height * 4
+    with _local_backend(max_pooled_target_bytes=2 * surface_bytes) as gpu:
+        two.render({'a': image}, gpu_backend=gpu, gpu_strict=True)
+        assert gpu.last_transport['retained_target_count'] == 2
+        gpu.max_working_set_bytes = 2 * surface_bytes
+        one.render({'a': image}, gpu_backend=gpu, gpu_strict=True)
+        assert gpu.last_transport['retained_target_count'] == gpu.last_transport['resident_target_reuses'] == 1
+        with pytest.raises(GPUUnsupported, match='budget'):
+            two.render({'a': image}, gpu_backend=gpu, gpu_strict=True)
+        assert gpu.last_transport['uploads'] == gpu.last_transport['resident_target_reuses'] == 0
+        assert two.render({'a': image}, gpu_backend=gpu).tobytes() == two.render({'a': image}).tobytes()
+        assert gpu.last_transport['uploads'] == gpu.last_transport['readbacks'] == 0
+        config = one.nodes['warp'].config
+        requirement = gpu_requirements('spatial_warp', config, 1)
+        gpu.max_working_set_bytes = requirement.texture_count * surface_bytes
+        gpu.begin_transfer_sample()
+        output, _ = gpu.spatial_warp([image], config)
+        _near(one.render({'a': image}), output)
+        assert gpu.last_transport['retained_target_count'] == gpu.last_transport['resident_target_reuses'] == 0
+
+
+def test_target_pool_caps_object_count_on_small_canvases():
+    nodes = [_warp(id=f'fork{i}', warp_phase=i + 1) for i in range(12)]
+    graph = _graph(*nodes, {'id': 'out', 'type': 'composite', 'inputs': [node['id'] for node in nodes]})
+    sources = {'a': _source((31, 23))}
+    with _local_backend() as gpu:
+        first = graph.render(sources, gpu_backend=gpu, gpu_strict=True).tobytes()
+        allocations = gpu.last_transport['resident_target_allocations']
+        assert allocations > 8
+        assert gpu.last_transport['retained_target_count'] == 8
+        assert graph.render(sources, gpu_backend=gpu, gpu_strict=True).tobytes() == first
+        assert gpu.last_transport['resident_target_reuses'] == 8
+        assert gpu.last_transport['resident_target_allocations'] == allocations - 8
+
+
+@pytest.mark.parametrize('where', ['_get_shader', '_readback_rgba'])
+def test_failed_frame_discards_its_leases(monkeypatch, where):
+    graph = _graph(_warp())
+    images = {'a': _source((31, 23))}
+
+    def failed(*_args):
+        raise RuntimeError('forced frame failure')
+
+    with _local_backend() as gpu:
+        previous = graph.render(images, gpu_backend=gpu, gpu_strict=True).tobytes()
+        with monkeypatch.context() as patch:
+            patch.setattr(gpu, where, failed)
+            with pytest.raises(RuntimeError, match='forced frame failure'):
+                graph.render(images, gpu_backend=gpu, gpu_strict=True)
+        assert gpu.last_transport['resident_target_reuses'] == 1
+        assert gpu.last_transport['readbacks'] == gpu.last_transport['retained_target_count'] == 0
+        assert graph.render(images, gpu_backend=gpu, gpu_strict=True).tobytes() == previous
+        assert gpu.last_transport['resident_target_allocations'] == 1
+        assert gpu.last_transport['resident_target_reuses'] == 0
+
+
+def test_real_driver_memory_snapshot_and_device_discovery(monkeypatch):
+    def fail():
+        pytest.fail('Capability discovery must not sample memory')
+
+    with _local_backend() as gpu:
+        sample = gpu.sample_driver_memory()
+        extensions = gpu.ctx.extensions
+        if 'llvmpipe' in gpu.capabilities.renderer.lower():
+            # Mesa may advertise NVX even on its software driver. Do not
+            # interpret that renderer's host memory as physical video memory.
+            assert sample['reason'] == 'software_renderer', sample
+            current, get = _bind_integer_reader()
+            value = ctypes.c_int()
+            assert current()
+            get(0x0D33, ctypes.byref(value))  # GL_MAX_TEXTURE_SIZE
+            assert value.value == gpu.ctx.info['GL_MAX_TEXTURE_SIZE']
+        elif 'GL_NVX_gpu_memory_info' in extensions:
+            assert sample['state'] == 'available' and sample['scope'] == 'device', sample
+            assert sample['dedicated_bytes'] > 0 and sample['available_bytes'] >= 0
+        elif 'GL_ATI_meminfo' in extensions:
+            assert sample['state'] == 'available' and sample['scope'] == 'texture_pool'
+        else:
+            assert sample['reason'] == 'extension_unavailable'
+        with monkeypatch.context() as patch:
+            patch.setattr(gpu, 'sample_driver_memory', fail)
+            device = backend_registry(gpu)['backends']['moderngl']['device']
+            assert device['driver_memory_extension'] == sample['extension']
+            assert 0 < device['max_retained_target_payload_bytes'] <= gpu.max_working_set_bytes
+        with GLMatteBackend(ctx=gpu.ctx) as borrowed:
+            graph = _graph(_warp())
+            graph.render({'a': _source((31, 23))}, gpu_backend=borrowed, gpu_strict=True)
+            assert borrowed.last_transport['retained_target_count'] == 0
+            assert borrowed.sample_driver_memory()['state'] == 'unavailable'
+    assert gpu.sample_driver_memory()['reason'] == 'backend_closed'

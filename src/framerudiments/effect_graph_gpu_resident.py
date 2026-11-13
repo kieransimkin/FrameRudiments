@@ -7,7 +7,8 @@ filters, composite temporaries and aliasing before uploading any pixels.
 
 Unsupported operations retain the established node bridge. Matte/key refinement beyond
 the established M3.3 shader radius and edge-decontamination limits stays on CPU.
-The GPU backend owns shaders/context; the scheduler only owns frame resources.
+The GPU backend owns shaders, context and idle render targets; the scheduler
+leases targets for each invocation.
 """
 from __future__ import annotations
 
@@ -173,6 +174,7 @@ class _ResidentRun:
         self.dry = dry
         self.pool = []
         self.all_resources = []
+        self.target_pairs = []
         self.texture_of = {}
         # A lineage handle aliases the original alpha-bearing RGBA texture.
         # It follows spatial warps, is inherited through other unary effects,
@@ -216,9 +218,9 @@ class _ResidentRun:
             if self.dry:
                 result = object(), object()
             else:
-                tex, framebuffer = self.backend._target(self.size)
-                self.all_resources.extend((framebuffer, tex))
-                result = tex, framebuffer
+                acquire = getattr(self.backend, '_acquire_resident_target', None) or self.backend._target
+                result = acquire(self.size)
+                self.target_pairs.append(result)
             self.allocated += 1
         texture, framebuffer = result
         self._track(texture)
@@ -558,10 +560,18 @@ class _ResidentRun:
                 'resident_peak_live_surfaces': self.peak_live,
                 'resident_peak_pool_surfaces': self.peak_pool}
 
-    def close(self):
-        for resource in reversed(self.all_resources):
-            resource.release()
-        self.all_resources.clear()
+    def close(self, *, completed):
+        try:
+            for resource in reversed(self.all_resources):
+                resource.release()
+        finally:
+            finish = getattr(self.backend, '_finish_resident_targets', None)
+            if finish is not None:
+                finish(self.size, self.target_pairs, completed=completed)
+            else:
+                for texture, framebuffer in self.target_pairs:
+                    framebuffer.release()
+                    texture.release()
 
 
 def resident_plan(graph, configs=None, *, precise_gpu=False):
@@ -583,8 +593,8 @@ def resident_plan(graph, configs=None, *, precise_gpu=False):
 def render_resident(backend, graph, sources, configs, *, island_stats=None):
     """Upload each graph source once, render on device, read one RGBA8 output.
 
-    Preflight runs before any allocation. Resource ownership is invocation-local,
-    and all textures/framebuffers are released even when a draw or readback fails.
+    Preflight runs before allocation. Source textures and failed target leases
+    are released; completed target leases may return to the backend pool.
     """
     from .effect_graph_gpu import GPUUnsupported
 
@@ -605,7 +615,11 @@ def render_resident(backend, graph, sources, configs, *, island_stats=None):
         validate_spatial_images(first_source)
     configs = _resolve_transparent_maps(graph, sources, configs)
     plan = resident_plan(graph, configs, precise_gpu=precise_gpu)
-    backend._check_budget(size, plan['resident_peak_allocated_surfaces'])
+    check_resident_budget = getattr(backend, '_check_resident_budget', None)
+    if check_resident_budget is None:
+        backend._check_budget(size, plan['resident_peak_allocated_surfaces'])
+    else:
+        check_resident_budget(size, plan['resident_peak_allocated_surfaces'], len(graph.source_ids))
     if precise_gpu and any(
         graph.nodes[key].kind == 'spatial_warp'
         and spatial_requires_precise_gpu(configs.get(key, graph.nodes[key].config))
@@ -613,6 +627,7 @@ def render_resident(backend, graph, sources, configs, *, island_stats=None):
     ):
         require_precise_spatial_shader(backend)
     run = _ResidentRun(backend, graph, configs, size)
+    completed = False
     try:
         texture, framebuffer = run.run(sources)
         if run.stats() != plan:
@@ -634,6 +649,7 @@ def render_resident(backend, graph, sources, configs, *, island_stats=None):
             backend.last_dispatch['gpu_nodes'] = plan['resident_draws']
         else:
             backend.last_dispatch['gpu_nodes'] += plan['resident_draws']
+        completed = True
         return image
     finally:
-        run.close()
+        run.close(completed=completed)

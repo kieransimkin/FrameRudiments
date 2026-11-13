@@ -1,3 +1,15 @@
+# FrameRudiments 0.4.30
+
+- Reuse resident RGBA8 render targets between evaluations on owned OpenGL
+  contexts. Retain at most eight targets of one size and 64 MiB by default;
+  count additional idle targets against the next GPU plan. Set
+  `max_pooled_target_bytes=0` to disable retention.
+- Read optional driver memory hints from supported NVIDIA and ATI OpenGL
+  extensions. The driver readings and the graph's texture payload budget
+  describe different scopes.
+- Compare exact frame bytes and target allocation counts with and without
+  pooling in the [GPU resource benchmark](docs/effect-graph-m8-9-gpu-resources.md).
+
 # FrameRudiments 0.4.29
 
 - Render wave and turbulence down to a one-pixel wavelength and up to 4096

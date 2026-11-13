@@ -218,7 +218,7 @@ def _device(backend):
         return {'state': 'not_attached', 'available': False, 'shader_validation': 'not_performed'}
     # Accept only the executor whose predicates this module describes. A declared
     # foreign plugin must not be silently treated as a tested ModernGL backend.
-    from .effect_graph_gpu import GLMatteBackend
+    from .effect_graph_gpu import GLMatteBackend, MAX_POOLED_TARGETS
     if not isinstance(backend, GLMatteBackend):
         raise ValueError('unsupported GPU backend implementation')
     if getattr(backend, 'closed', False):
@@ -232,12 +232,17 @@ def _device(backend):
     _integer(limit, 'device texture limit')
     _integer(budget, 'device payload budget')
     _integer(version, 'OpenGL version')
+    owned = getattr(backend, '_owns_context', False)
+    retained_budget = min(budget, getattr(backend, 'max_pooled_target_bytes', 0)) if owned else 0
     return {'state': 'attached', 'available': version >= 330,
             'context_version': version, 'renderer': str(info.get('GL_RENDERER', 'unknown')),
             'vendor': str(info.get('GL_VENDOR', 'unknown')),
             'precise_spatial_warps': getattr(backend, 'supports_precise_spatial_warps', False),
             'max_texture_size': limit, 'texture_limit_reported': 'GL_MAX_TEXTURE_SIZE' in info,
             'max_texture_payload_bytes': budget, 'shader_validation': 'not_performed',
+            'max_retained_target_payload_bytes': retained_budget,
+            'max_retained_targets': MAX_POOLED_TARGETS if retained_budget else 0,
+            'driver_memory_extension': getattr(getattr(backend, '_memory_probe', None), 'source', None),
             'context_ownership': 'caller; discovery does not create, close or mutate it'}
 
 
@@ -264,6 +269,7 @@ def backend_registry(gpu_backend=None):
                          'precise_spatial_warp_extension': PRECISE_SPATIAL_EXTENSION,
                          'raindrop_ripple_variants': list(RIPPLE_VARIANT_ORDER),
                          'mixed_cpu_gpu_islands': True, 'cross_node_texture_pool': True,
+                         'cross_frame_target_pool': True,
                          'limits': {'morph_radius': MAX_GPU_MORPH_RADIUS,
                                     'gaussian_radius': MAX_GPU_GAUSSIAN_RADIUS,
                                     'edge_decontamination_radius': MAX_GPU_GAUSSIAN_RADIUS,

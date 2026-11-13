@@ -19,6 +19,7 @@ on:
       - 'integration/benchmark_effect_graph_m8_7_gpu.py'
       - 'integration/benchmark_effect_graph_m8_9_gpu.py'
       - 'integration/benchmark_effect_graph_m8_9_precision.py'
+      - 'integration/benchmark_effect_graph_m8_9_resources.py'
       - '.github/workflows/effect-graph-gpu.yml'
   pull_request:
     paths:
@@ -31,6 +32,7 @@ on:
       - 'integration/benchmark_effect_graph_m8_7_gpu.py'
       - 'integration/benchmark_effect_graph_m8_9_gpu.py'
       - 'integration/benchmark_effect_graph_m8_9_precision.py'
+      - 'integration/benchmark_effect_graph_m8_9_resources.py'
       - '.github/workflows/effect-graph-gpu.yml'
 
 jobs:
@@ -124,6 +126,8 @@ jobs:
         run: python integration/benchmark_effect_graph_m8_9_gpu.py --size hd --backend egl --output m89-spatial-hd.json
       - name: Benchmark M8.9 authored warp limits and nonperiodic polar seam
         run: python integration/benchmark_effect_graph_m8_9_precision.py --size hd --backend egl --output m89-spatial-precision-hd.json
+      - name: Benchmark M8.9 resident target reuse and driver memory availability
+        run: python integration/benchmark_effect_graph_m8_9_resources.py --size hd --backend egl --output m89-resources-hd.json
       - name: Optional GPU benchmark 4K and 8K
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.benchmarks }}
         run: |
@@ -135,6 +139,7 @@ jobs:
           python integration/benchmark_effect_graph_m8_6_gpu.py --size 8k --gpu-budget-mib 1024 --output m86-resident-spectral-8k.json
           python integration/benchmark_effect_graph_m8_7_gpu.py --size 4k --gpu-budget-mib 1024 --output m87-resident-matte-key-4k.json
           python integration/benchmark_effect_graph_m8_7_gpu.py --size 8k --gpu-budget-mib 1024 --output m87-resident-matte-key-8k.json
+          python integration/benchmark_effect_graph_m8_9_resources.py --size 4k --backend egl --output m89-resources-4k.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -148,5 +153,6 @@ jobs:
             m87-resident-matte-key-*.json
             m88-mixed-islands-*.json
             m89-spatial-*.json
+            m89-resources-*.json
             gpu-transfer-results.xml
           if-no-files-found: ignore
