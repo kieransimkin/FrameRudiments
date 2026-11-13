@@ -116,11 +116,17 @@ def resident_rejection(graph, configs):
         cfg = configs.get(key, node.config)
         if not node_supported(node, cfg):
             return 'kernel_not_implemented'
-        if (node.kind == 'spatial_warp' and len(node.inputs) == 2 and not spatial_is_identity(cfg)
-                and graph.nodes[node.inputs[1]].kind != 'source'):
+        if node.kind == 'spatial_warp' and len(node.inputs) == 2 and not spatial_is_identity(cfg):
+            control_map = graph.nodes[node.inputs[1]]
+            map_config = configs.get(control_map.id, control_map.config)
+            if control_map.kind == 'source' and map_config.get('opacity', 1) not in (0, 1):
+                # An alpha quantization tie can produce a full-pixel change in
+                # map offsets. Prepare these source pixels on the host first.
+                return 'displacement_map_source_opacity'
             # The per-node bridge can establish whether a processed map is
             # entirely transparent without guessing from its GPU texture.
-            return 'processed_displacement_map'
+            if control_map.kind != 'source':
+                return 'processed_displacement_map'
     return None
 
 
@@ -143,10 +149,7 @@ def _resolve_transparent_maps(graph, sources, configs):
         if map_node.kind != 'source':
             continue
         opacity = configs.get(map_key, map_node.config).get('opacity', 1)
-        control_map = sources[map_key]
-        invisible = (spatial_map_is_transparent(control_map) if opacity == 1
-                     else round(control_map.getchannel('A').getextrema()[1] * opacity) == 0)
-        if invisible:
+        if opacity == 0 or spatial_map_is_transparent(sources[map_key]):
             effective[key] = {**cfg, 'warp_mix': 0}
     return effective
 

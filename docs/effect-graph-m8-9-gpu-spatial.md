@@ -61,7 +61,9 @@ the middle and the actual GPU output on the right.
 The map's selected R, G, B, A or luminance channels set the signed X and Y
 offsets around `warp_neutral`. Map alpha attenuates both offsets. A closed graph
 with a direct source map uploads each source once and reads back its final
-result once. If another node produces the map, the per-node bridge can
+result once. With fractional source opacity the host applies the existing
+byte rounding before upload, since a one-byte map difference can move a
+sample by a pixel. If another node produces the map, the per-node bridge can
 recognize an entirely transparent map on the host and preserve every source
 byte. Otherwise the bridge uploads the same map for the visible and original
 alpha passes and reads both results back. A source map that is already
@@ -107,6 +109,9 @@ python integration/benchmark_effect_graph_m8_9_gpu.py --backend auto --output m8
   seam interpolate the same source columns. Other border modes use the CPU
   route in `auto`. A split integer/fractional centre also avoids losing the
   direction to the nearest pixel.
+- **Opacity rounding can move a displacement sample by a pixel.** A map
+  produced from a source with fractional opacity is prepared on the host
+  before the warp runs on GPU. Both GPU routes preserve the CPU map bytes.
 - **The Windows glcontext wheel cannot import `egl`.** Run the spatial suite
   through `scripts/Invoke-Tests.ps1`; the fixture selects Windows' native
   standalone OpenGL context. The required Linux GPU job separately exercises

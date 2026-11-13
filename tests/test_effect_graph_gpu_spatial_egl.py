@@ -234,7 +234,21 @@ def test_transparent_direct_map_preserves_all_original_bytes(gpu, alpha, opacity
     actual = graph.render(images, gpu_backend=gpu, gpu_strict=True)
     assert actual.tobytes() == source.tobytes()
     assert actual.tobytes() == graph.render(images).tobytes()
-    assert gpu.last_transport['resident_draws'] == (0 if opacity == 1 else 1)
+    assert gpu.last_dispatch['gpu_nodes'] == (1 if opacity == 0 else 0)
+
+
+@pytest.mark.parametrize('strict', [True, False])
+def test_fractional_map_source_opacity_keeps_exact_byte_before_displacement(gpu, strict):
+    graph = _graph({'id': 'map', 'type': 'source', 'opacity': .5},
+                   _displacement(warp_border='repeat', warp_amplitude=[128, 128], warp_map_x='a'))
+    images = {'a': _source(), 'map': _source()}
+    actual = graph.render(images, gpu_backend=gpu, gpu_strict=strict)
+    _near(graph.render(images), actual)
+    assert gpu.last_dispatch['cpu_fallbacks'] == 0
+    if strict:
+        assert gpu.last_transport['uploads'] == 4 and gpu.last_transport['readbacks'] == 2
+    else:
+        assert gpu.last_transport['uploads'] == 2 and gpu.last_transport['readbacks'] == 1
 
 
 def test_processed_map_is_bridged_and_keeps_transparent_identity(gpu):
