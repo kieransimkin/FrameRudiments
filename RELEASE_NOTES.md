@@ -1,3 +1,15 @@
+# FrameRudiments 0.4.28
+
+- Run the rings, droplets and storm raindrop layer warps on OpenGL 3.3 with
+  transparent, clamp, repeat and mirror sampling. Both backends use the same
+  seeded drop locations and frame timing.
+- Keep original alpha aligned with the warped pixels. A standalone resident
+  ripple graph makes one source upload and one final readback per frame.
+- Use the CPU reference in `auto` for settings outside the GPU precision range.
+  The separate wash-away transition runs on the CPU.
+- Watch the [three variants side by side at 60 fps](docs/effect-graph-m8-9-gpu-spatial.md#raindrop-ripples)
+  and reproduce the HD parity benchmark.
+
 # FrameRudiments 0.4.27
 
 - Run RGBA-map displacement on GPU with all four borders and alpha-weighted

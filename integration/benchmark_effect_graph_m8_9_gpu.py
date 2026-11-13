@@ -15,9 +15,10 @@ from PIL import Image, ImageDraw
 
 from framerudiments.effect_graph import EffectGraph
 from framerudiments.effect_graph_gpu import GLMatteBackend
+from framerudiments.effect_graph_ripples import MAX_RIPPLE_SOURCES, RIPPLE_VARIANT_ORDER
 
 
-SIZES = {'small': (320, 180), 'hd': (1920, 1080)}
+SIZES = {'small': (320, 180), 'hd': (1920, 1080), '4k': (3840, 2160)}
 FPS = 60
 
 
@@ -75,6 +76,19 @@ def polar_graph():
     ], 'output': 'warp'})
 
 
+def raindrop_graph(variant, size, *, boundary=False):
+    return EffectGraph({'nodes': [
+        {'id': 'source', 'type': 'source'},
+        {'id': 'warp', 'type': 'spatial_warp', 'inputs': ['source'], 'warp_type': 'raindrop_ripples',
+         'warp_ripple_variant': variant, 'warp_border': 'repeat',
+         'warp_amplitude': [128, -128] if boundary else [24, 20],
+         'warp_scale': [16.03, 1] if boundary else [22, 1],
+         'warp_radius': min(size) * .43, 'warp_center': [.50000001, .5],
+         'warp_phase': tau - 1e-8 if boundary else .8,
+         'warp_segments': MAX_RIPPLE_SOURCES if boundary else 9, 'warp_seed': 42},
+    ], 'output': 'warp'})
+
+
 def parity(reference, actual):
     a, b = (np.asarray(image, dtype=np.int16) for image in (reference, actual))
     difference = np.abs(a - b)
@@ -113,12 +127,17 @@ def benchmark(gpu, effect, sources, repeats):
             'frame_sha256': sha256(output.tobytes()).hexdigest()}
 
 
-def write_media(gpu, directory, ffmpeg, *, map_and_polar):
+def write_media(gpu, directory, ffmpeg, *, map_and_polar, raindrops=False, frame_count=FPS * 2):
     directory.mkdir(parents=True, exist_ok=True)
     images, effect = fixture(SIZES['small']), graph()
     width, height = images['source'].size
     row_height = height + 28
-    if map_and_polar:
+    if raindrops:
+        rows = [(f'{variant.title()} source', f'CPU {variant}', f'GPU {variant}', images['source'],
+                 raindrop_graph(variant, (width, height)), images, 'warp_phase')
+                for variant in RIPPLE_VARIANT_ORDER]
+        filename = 'effect-graph-m8-9-raindrops'
+    elif map_and_polar:
         mapped_effect, mapped_sources = mapped_fixture((width, height))
         rows = [
             ('Control map', 'CPU map displacement', 'GPU map displacement', mapped_sources['map'],
@@ -156,8 +175,8 @@ def write_media(gpu, directory, ffmpeg, *, map_and_polar):
                '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(directory / f'{filename}.mp4')]
     with subprocess.Popen(command, stdin=subprocess.PIPE) as process:
         try:
-            for frame in range(FPS * 2):
-                process.stdin.write(panel(frame * tau / (FPS * 2)).tobytes())
+            for frame in range(frame_count):
+                process.stdin.write(panel(frame * tau / frame_count).tobytes())
             process.stdin.close()
             if process.wait() != 0:
                 raise RuntimeError('FFmpeg failed to encode the spatial warp demonstration')
@@ -173,8 +192,13 @@ def main():
     parser.add_argument('--repeats', type=int, default=3)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--media', type=Path)
-    parser.add_argument('--map-polar-media', action='store_true',
-                        help='show the displacement map and polar wrap comparison in the optional media')
+    media = parser.add_mutually_exclusive_group()
+    media.add_argument('--map-polar-media', action='store_true',
+                       help='show map displacement and polar wrap in the optional media')
+    media.add_argument('--raindrop-media', action='store_true',
+                       help='show the three raindrop variants in the optional media')
+    parser.add_argument('--raindrops-only', action='store_true',
+                        help='run only the raindrop parity benchmarks')
     parser.add_argument('--ffmpeg', default='ffmpeg')
     args = parser.parse_args()
     if not 1 <= args.repeats <= 10:
@@ -182,20 +206,29 @@ def main():
     with GLMatteBackend(backend=None if args.backend == 'auto' else args.backend) as gpu:
         size = SIZES[args.size]
         sources = fixture(size)
-        mapped_effect, mapped_sources = mapped_fixture(size)
         result = {
             'schema': 'framerudiments.m8-9-spatial-benchmark.v1',
             'resolution': list(size), 'renderer': gpu.capabilities.renderer,
             'vendor': gpu.ctx.info.get('GL_VENDOR', 'unknown'),
             'gl_version': gpu.ctx.info.get('GL_VERSION', 'unknown'),
-            'wave': benchmark(gpu, graph(), sources, args.repeats),
-            'wave_at_precision_boundary': benchmark(gpu, graph(boundary=True), sources, 1),
-            'turbulence_at_precision_boundary': benchmark(gpu, graph('turbulence', boundary=True), sources, 1),
-            'displacement_at_precision_boundary': benchmark(gpu, mapped_effect, mapped_sources, 1),
-            'polar_wrap': benchmark(gpu, polar_graph(), sources, args.repeats),
         }
+        if not args.raindrops_only:
+            mapped_effect, mapped_sources = mapped_fixture(size)
+            result.update(
+                wave=benchmark(gpu, graph(), sources, args.repeats),
+                wave_at_precision_boundary=benchmark(gpu, graph(boundary=True), sources, 1),
+                turbulence_at_precision_boundary=benchmark(gpu, graph('turbulence', boundary=True), sources, 1),
+                displacement_at_precision_boundary=benchmark(gpu, mapped_effect, mapped_sources, 1),
+                polar_wrap=benchmark(gpu, polar_graph(), sources, args.repeats),
+            )
+        result['raindrop_ripples'] = {
+            variant: benchmark(gpu, raindrop_graph(variant, size, boundary=True), sources, 1)
+            for variant in RIPPLE_VARIANT_ORDER
+        }
+        result['raindrop_storm'] = benchmark(gpu, raindrop_graph('storm', size), sources, args.repeats)
         if args.media is not None:
-            write_media(gpu, args.media, args.ffmpeg, map_and_polar=args.map_polar_media)
+            write_media(gpu, args.media, args.ffmpeg, map_and_polar=args.map_polar_media,
+                        raindrops=args.raindrop_media)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf8')
     print(json.dumps(result, indent=2))

@@ -124,12 +124,16 @@ branches. No source code, shader text or texture from those projects is bundled.
 
 ## Backend, resources and acceptance
 
-Both features are CPU effect-graph operations with row-tiled floating work.
-`auto` records a CPU fallback; strict `gpu` rejects them. A configured
-`warp_amplitude: [0,0]` or `warp_mix: 0` is an exact layer identity. Wash
-endpoints are exact source copies. Refraction transports original-alpha lineage
-through the same coordinates, while a transition begins a new lineage under the
-existing merge contract.
+Starting with 0.4.28, the layer warp can run on GPU with all three variants and
+all four borders. It supports up to 128 pixels of displacement per axis and up
+to 32 seeded drops. Rings and storm need an X wavelength of at least 16 pixels.
+Droplets use no wavelength. `auto` falls back to the CPU for settings outside
+the GPU limits. See the [CPU and GPU comparison and benchmark](effect-graph-m8-9-gpu-spatial.md#raindrop-ripples).
+
+A configured `warp_amplitude: [0,0]` or `warp_mix: 0` is an exact layer
+identity. Refraction transports original-alpha lineage through the same
+coordinates. The CPU wash transition keeps exact source copies at its
+endpoints and begins a new lineage under the existing merge contract.
 
 Inspect final encoded text, faces, safe regions and borders. `transparent`
 borders can intentionally remove displaced edge pixels; use `clamp`, `repeat`

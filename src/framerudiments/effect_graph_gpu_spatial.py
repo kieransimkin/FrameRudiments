@@ -7,15 +7,19 @@ from PIL import Image
 
 from .effect_graph_backend_contract import gpu_requirements
 from .effect_graph_gpu_kernels import _execute
+from .effect_graph_ripples import MAX_RIPPLE_SOURCES, RIPPLE_VARIANT_ORDER, prepare_ripple_field
 from .effect_graph_spatial import (
     GPU_WARP_TYPES, WARP_DEFAULTS, spatial_map_is_transparent, validate_spatial_images,
 )
 
 
 SPATIAL_SHADER_NAME = 'm89_spatial_warp'
-_WARP_KIND_CONSTANTS = '\n'.join(f'const int WARP_{name.upper()} = {index};'
-                                 for index, name in enumerate(GPU_WARP_TYPES))
-SPATIAL_WARP = "#version 330\n" + _WARP_KIND_CONSTANTS + """
+_SPATIAL_CONSTANTS = '\n'.join([
+    *(f'const int WARP_{name.upper()} = {index};' for index, name in enumerate(GPU_WARP_TYPES)),
+    *(f'const int RIPPLE_{name.upper()} = {index};' for index, name in enumerate(RIPPLE_VARIANT_ORDER)),
+    f'const int MAX_RIPPLE_SOURCES = {MAX_RIPPLE_SOURCES};',
+])
+SPATIAL_WARP = "#version 330\n" + _SPATIAL_CONSTANTS + """
 uniform sampler2D source_tex;
 uniform sampler2D map_tex;
 uniform ivec2 map_channels;
@@ -37,6 +41,12 @@ uniform int segments;
 uniform ivec2 mirror_axis;
 uniform ivec2 polar_origin_pixel;
 uniform vec2 polar_origin_fraction;
+uniform int ripple_variant;
+uniform int ripple_count;
+uniform vec4 ripple_sources[MAX_RIPPLE_SOURCES];
+uniform vec2 ripple_centre_fractions[MAX_RIPPLE_SOURCES];
+uniform float ripple_sigma;
+uniform float ripple_normalizer;
 out vec4 out_color;
 
 const float PI = 3.141592653589793;
@@ -78,7 +88,37 @@ float polar_angle(vec2 delta) {
     return sign(delta.y) * PI * 0.5;
 }
 
+float ripple_lens(float distance, float radius) {
+    float q = distance / radius;
+    return q < 1.0 ? q * sqrt(max(0.0, 1.0 - q)) : 0.0;
+}
+
+vec2 ripple_offset(vec2 p) {
+    vec2 offset = vec2(0.0);
+    for (int index = 0; index < ripple_count; ++index) {
+        vec4 drop = ripple_sources[index];
+        // Keep directions stable even when a drop falls almost on a pixel.
+        vec2 delta = (p - drop.xy) - ripple_centre_fractions[index];
+        float distance = length(delta);
+        if (distance <= 1e-12) continue;
+        float magnitude;
+        if (ripple_variant == RIPPLE_DROPLETS) {
+            magnitude = ripple_lens(distance, drop.z) * drop.w;
+        } else {
+            float relative = distance - drop.w;
+            float r = relative / ripple_sigma;
+            magnitude = sin(TAU * relative / wavelength.x) * exp(-0.5 * r * r);
+            if (ripple_variant == RIPPLE_STORM) magnitude += 0.35 * ripple_lens(distance, drop.z);
+        }
+        offset += delta / distance * magnitude;
+    }
+    return clamp(offset / ripple_normalizer, -1.0, 1.0);
+}
+
 vec2 inverse_coordinate(vec2 p, vec2 size) {
+    if (kind == WARP_RAINDROP_RIPPLES) {
+        return p - amplitude * ripple_offset(p);
+    }
     if (kind == WARP_DISPLACEMENT) {
         vec4 control = texelFetch(map_tex, ivec2(p), 0);
         vec2 displacement = vec2(map_offset(map_value(control, map_channels.x), control.a),
@@ -205,6 +245,27 @@ def spatial_uniforms(config, size):
         pixels = tuple(round(coordinate) for coordinate in centre)
         uniforms.update(polar_origin_pixel=pixels, polar_origin_fraction=tuple(
             coordinate - pixel for coordinate, pixel in zip(centre, pixels)))
+    if kind == 'raindrop_ripples' and size is not None:
+        variant = value('warp_ripple_variant')
+        field = prepare_ripple_field(
+            size, variant=variant, centre=value('warp_center'), radius=value('warp_radius'),
+            wavelength=value('warp_scale')[0], phase=phase, count=value('warp_segments'),
+            seed=value('warp_seed'),
+        )
+        sources, fractions = [], []
+        for source in field.sources:
+            x, y = round(source.x), round(source.y)
+            sources.append((x, y, source.radius, source.pulse if variant == 'droplets' else source.front))
+            fractions.append((source.x - x, source.y - y))
+        unused = MAX_RIPPLE_SOURCES - len(sources)
+        uniforms.update(
+            ripple_variant=RIPPLE_VARIANT_ORDER.index(variant),
+            ripple_count=len(sources),
+            ripple_sources=tuple(sources) + ((0, 0, 0, 0),) * unused,
+            ripple_centre_fractions=tuple(fractions) + ((0, 0),) * unused,
+            ripple_sigma=field.sigma,
+            ripple_normalizer=field.normalizer if len(sources) > 1 else 1,
+        )
     return uniforms
 
 

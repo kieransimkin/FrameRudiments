@@ -1,5 +1,9 @@
 # FrameRudiments
 
+Version 0.4.28 runs the rings, droplets and storm layer warps on GPU. The
+same seed and frame controls drive both backends. See the
+[60 fps rain comparison and supported settings](docs/effect-graph-m8-9-gpu-spatial.md#raindrop-ripples).
+
 Version 0.4.27 adds native GPU displacement maps and polar wrap with a
 repeat border. See the [map and polar examples and transfer counts](docs/effect-graph-m8-9-gpu-spatial.md#map-displacement-and-polar-wrap).
 

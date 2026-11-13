@@ -31,7 +31,7 @@ def graph():
         {'id': 'source', 'type': 'source'},
         {'id': 'blur', 'type': 'filter', 'inputs': ['source'], 'filter_radius': 1.1},
         {'id': 'warp', 'type': 'spatial_warp', 'inputs': ['blur'],
-         'warp_type': 'raindrop_ripples', 'warp_amplitude': [2, 0], 'warp_scale': [41, 41]},
+         'warp_type': 'raindrop_ripples', 'warp_amplitude': [2, 0], 'warp_scale': [12, 41]},
         {'id': 'key', 'type': 'chroma_key', 'inputs': ['warp'],
          'key_color': '#00eb19', 'tolerance': .11, 'softness': .2,
          'edge_decontaminate': .7, 'edge_radius': 3},

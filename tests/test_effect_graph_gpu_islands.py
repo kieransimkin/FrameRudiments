@@ -14,7 +14,7 @@ def test_cpu_node_partitions_two_explicit_islands():
         {'id': 'a', 'type': 'source'},
         {'id': 'blur', 'type': 'filter', 'inputs': ['a'], 'filter_radius': 1.2},
         {'id': 'warp', 'type': 'spatial_warp', 'inputs': ['blur'],
-         'warp_type': 'raindrop_ripples', 'warp_amplitude': [3, 0]},
+         'warp_type': 'raindrop_ripples', 'warp_amplitude': [3, 0], 'warp_scale': [8, 8]},
         {'id': 'key', 'type': 'chroma_key', 'inputs': ['warp'],
          'key_color': '#00ff00'},
         {'id': 'out', 'type': 'opacity', 'inputs': ['key'], 'opacity': .8},
@@ -48,7 +48,7 @@ def test_multi_exit_region_is_rejected_with_reason():
         {'id': 'left_gpu', 'type': 'filter', 'inputs': ['blur'], 'filter_radius': 1.1},
         {'id': 'right_gpu', 'type': 'opacity', 'inputs': ['blur'], 'opacity': .8},
         {'id': 'left', 'type': 'spatial_warp', 'inputs': ['left_gpu'],
-         'warp_type': 'raindrop_ripples'},
+         'warp_type': 'raindrop_ripples', 'warp_scale': [8, 8]},
         {'id': 'right', 'type': 'raster_effect', 'inputs': ['right_gpu'],
          'raster_type': 'pixel_sort'},
         {'id': 'out', 'type': 'composite', 'inputs': ['left', 'right']},
@@ -66,8 +66,8 @@ def test_auto_render_dispatches_island_then_cpu(monkeypatch):
     graph = _graph([
         {'id': 'a', 'type': 'source'},
         {'id': 'blur', 'type': 'filter', 'inputs': ['a'], 'filter_radius': 1.2},
-        {'id': 'out', 'type': 'spatial_warp', 'inputs': ['blur'],
-         'warp_type': 'raindrop_ripples', 'warp_amplitude': [0, 0]},
+        {'id': 'out', 'type': 'raster_effect', 'inputs': ['blur'],
+         'raster_type': 'pixel_sort', 'raster_mix': 0},
     ], 'out')
     calls = []
 
