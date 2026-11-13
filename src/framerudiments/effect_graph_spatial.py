@@ -18,6 +18,9 @@ from .effect_graph_ripples import RIPPLE_VARIANTS, ripple_vectors
 
 WARP_TYPES = frozenset({'wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope', 'displacement',
                         'polar_unwrap', 'polar_wrap', 'raindrop_ripples'})
+GPU_WARP_TYPES = ('wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope', 'polar_unwrap')
+GPU_WARP_MAX_AMPLITUDE = 128
+GPU_WARP_MIN_WAVELENGTH = 16
 WARP_ENUMS = {
     'warp_type': WARP_TYPES,
     'warp_border': frozenset({'transparent', 'clamp', 'repeat', 'mirror'}),
@@ -163,10 +166,14 @@ def spatial_parameter_descriptors(config=None, *, input_count=None):
 def spatial_capabilities(config=None, *, input_count=None):
     config = {} if config is None else config
     validate_spatial(config, input_count)
+    kind = config.get('warp_type', WARP_DEFAULTS['warp_type'])
+    reason = gpu_spatial_rejection(config)
+    gpu_native = reason is None
     return {
         'schema': 'framerudiments.spatial-warp-capability.v1',
-        'warp_type': config.get('warp_type', 'wave'),
-        'backend': 'cpu', 'gpu_native': False, 'deterministic': True, 'temporal_history': False,
+        'warp_type': kind, 'backend': 'cpu', 'gpu_native': gpu_native,
+        'gpu_bridge': gpu_native, 'gpu_resident_graph': gpu_native, 'gpu_rejection': reason,
+        'deterministic': True, 'temporal_history': False,
         'input_count': 2 if config.get('warp_type') == 'displacement' else 1,
         'sampling': 'bilinear-premultiplied', 'alpha_lineage': 'same-coordinate-warp',
         'colour_space': 'display-referred', 'canvas_expansion': False,
@@ -305,17 +312,46 @@ def _sample_alpha(source, sx, sy, border):
     return out
 
 
-def _is_identity(config, map_image):
+def spatial_is_identity(config):
+    """Detect identities that need no access to the input pixels."""
     kind = config.get('warp_type', 'wave')
     if config.get('warp_mix', 1) == 0:
         return True
-    if kind in {'wave', 'turbulence', 'displacement', 'raindrop_ripples'} and not any(config.get('warp_amplitude', [16, 16])):
+    if (kind in {'wave', 'turbulence', 'displacement', 'raindrop_ripples'}
+            and not any(config.get('warp_amplitude', WARP_DEFAULTS['warp_amplitude']))):
         return True
     if kind == 'swirl' and config.get('warp_angle', 90) == 0:
         return True
     if kind == 'radial' and config.get('warp_amount', .5) == 0:
         return True
-    return kind == 'displacement' and map_image.getchannel('A').getbbox() is None
+    return False
+
+
+def gpu_spatial_rejection(config):
+    """Report GPU support for one validated, resolved set of warp parameters."""
+    kind = config.get('warp_type', WARP_DEFAULTS['warp_type'])
+    if kind not in GPU_WARP_TYPES:
+        return 'warp_type_not_implemented'
+    # Single-precision GLSL cannot preserve the fractional sampling footprint
+    # at the combination of short wavelengths and very large displacement.
+    if kind in {'wave', 'turbulence'} and not spatial_is_identity(config):
+        amplitude = config.get('warp_amplitude', WARP_DEFAULTS['warp_amplitude'])
+        wavelength = config.get('warp_scale', WARP_DEFAULTS['warp_scale'])
+        if max(map(abs, amplitude)) > GPU_WARP_MAX_AMPLITUDE or min(wavelength) < GPU_WARP_MIN_WAVELENGTH:
+            return 'warp_precision_limit_exceeded'
+    return None
+
+
+def validate_spatial_images(image, *, map_image=None, original_alpha=None):
+    if (not isinstance(image, Image.Image) or image.mode != 'RGBA' or min(image.size) < 1
+            or image.width * image.height > MAX_PIXELS or max(image.size) > MAX_DIMENSION):
+        raise ValueError('spatial_warp requires a nonempty RGBA canvas within its pixel budget')
+    if map_image is not None and (not isinstance(map_image, Image.Image)
+                                  or map_image.mode != 'RGBA' or map_image.size != image.size):
+        raise ValueError('displacement map must be same-sized RGBA')
+    if original_alpha is not None and (not isinstance(original_alpha, Image.Image)
+                                      or original_alpha.mode != 'L' or original_alpha.size != image.size):
+        raise ValueError('original alpha must be a same-sized L image')
 
 
 def render_spatial_warp_with_alpha(image, config, *, map_image=None, original_alpha=None, tile_rows=TILE_ROWS):
@@ -328,18 +364,10 @@ def render_spatial_warp_with_alpha(image, config, *, map_image=None, original_al
     import numpy as np
 
     validate_spatial(config, 1 + (map_image is not None))
-    if (not isinstance(image, Image.Image) or image.mode != 'RGBA' or min(image.size) < 1
-            or image.width * image.height > MAX_PIXELS or max(image.size) > MAX_DIMENSION):
-        raise ValueError('spatial_warp requires a nonempty RGBA canvas within its pixel budget')
-    if map_image is not None and (not isinstance(map_image, Image.Image)
-                                  or map_image.mode != 'RGBA' or map_image.size != image.size):
-        raise ValueError('displacement map must be same-sized RGBA')
-    if original_alpha is not None and (not isinstance(original_alpha, Image.Image)
-                                      or original_alpha.mode != 'L' or original_alpha.size != image.size):
-        raise ValueError('original alpha must be a same-sized L image')
+    validate_spatial_images(image, map_image=map_image, original_alpha=original_alpha)
     if type(tile_rows) is not int or not 1 <= tile_rows <= 256:
         raise ValueError('tile_rows must be 1..256')
-    if _is_identity(config, map_image):
+    if spatial_is_identity(config) or map_image is not None and map_image.getchannel('A').getbbox() is None:
         return image.copy(), original_alpha.copy() if original_alpha is not None else None
     source = np.asarray(image, dtype=np.uint8)
     lineage = np.asarray(original_alpha, dtype=np.uint8) if original_alpha is not None else None

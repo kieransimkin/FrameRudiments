@@ -24,7 +24,7 @@ from .effect_graph_raster import (
 from .effect_graph_spatial import (
     WARP_CONTROLS, WARP_ENUMS, WARP_FIELDS, spatial_capabilities,
     spatial_control_apply, spatial_control_base, spatial_parameter_descriptors,
-    render_spatial_warp_with_alpha, validate_spatial,
+    render_spatial_warp_with_alpha, spatial_is_identity, validate_spatial,
 )
 from .effect_graph_blend import COMPOSITE_MODES, composite_blend
 from .effect_graph_style_contract import (
@@ -730,15 +730,29 @@ class EffectGraph:
                     )
                 elif kind == 'spatial_warp':
                     validate_spatial(config, len(inputs))
-                    if gpu_strict:
-                        from .effect_graph_gpu import GPUUnsupported
-                        raise GPUUnsupported('spatial_warp GPU execution is not implemented; use cpu or auto')
-                    if gpu_backend is not None:
-                        gpu_backend.last_dispatch['cpu_fallbacks'] += 1
-                    result, warped_alpha = render_spatial_warp_with_alpha(
-                        inputs[0], config, map_image=inputs[1] if len(inputs) == 2 else None,
-                        original_alpha=original_alphas[node.inputs[0]],
-                    )
+                    from .effect_graph_gpu import GPUUnsupported
+                    original = original_alphas[node.inputs[0]]
+                    warp = getattr(gpu_backend, 'spatial_warp', None)
+                    warped = None
+                    if callable(warp):
+                        try:
+                            warped = warp(inputs, config, original_alpha=original)
+                        except GPUUnsupported:
+                            if gpu_strict:
+                                raise
+                        else:
+                            if not spatial_is_identity(config):
+                                gpu_backend.last_dispatch['gpu_nodes'] += 1
+                    elif gpu_strict:
+                        raise GPUUnsupported('spatial_warp requires a compatible GPU backend')
+                    if warped is None:
+                        if gpu_backend is not None:
+                            gpu_backend.last_dispatch['cpu_fallbacks'] += 1
+                        warped = render_spatial_warp_with_alpha(
+                            inputs[0], config, map_image=inputs[1] if len(inputs) == 2 else None,
+                            original_alpha=original,
+                        )
+                    result, warped_alpha = warped
                 elif kind == 'layer_style':
                     # M6 CPU reference: no claim of GPU-native style execution.
                     if gpu_strict:
@@ -852,8 +866,10 @@ class EffectGraph:
                     original_alpha=original_alphas[node.inputs[0]], gpu_backend=gpu_backend,
                 )
             results[key] = result
-            if island is not None and island.lineage_source != island.output:
-                original_alphas[key] = original_alphas[island.lineage_source]
+            if island is not None:
+                if key != self.output:
+                    owner = island.lineage_source
+                    original_alphas[key] = result.getchannel('A') if owner == key else original_alphas[owner]
             elif kind == 'raster_effect':
                 original_alphas[key] = raster_alpha
             elif kind == 'spatial_warp':

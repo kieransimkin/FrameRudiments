@@ -1,3 +1,14 @@
+# FrameRudiments 0.4.26
+
+- Accelerate wave, turbulence, swirl, radial pinch/bulge, mirror, kaleidoscope
+  and polar unwrap in OpenGL 3.3, including all four spatial border modes.
+- Carry warped original alpha through device-resident forks and into
+  host-side mattes and styles. Report the separate transfers when a mixed graph
+  needs a host copy of the warped silhouette.
+- Keep extreme wave and turbulence parameters on the CPU reference in
+  `auto`, with an explicit precision-limit rejection in strict GPU mode.
+- Include required GPU parity and a [60 fps CPU/GPU comparison](docs/effect-graph-m8-9-gpu-spatial.md).
+
 # FrameRudiments 0.4.25
 
 - Keep prepared plans tied to canonical input paths and checksums when a

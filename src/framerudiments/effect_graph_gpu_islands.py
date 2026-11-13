@@ -10,9 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from .effect_graph_gpu_resident import node_supported, render_resident, resident_plan
+from .effect_graph_spatial import spatial_is_identity
 
 
 RESET_KINDS = frozenset({'source', 'transition', 'composite'})
+HOST_ALPHA_RESETS = RESET_KINDS | {'procedural_field'}
 
 
 @dataclass(frozen=True)
@@ -93,21 +95,38 @@ def plan_islands(graph, configs):
             for upstream in graph.nodes[key].inputs:
                 if upstream not in member_set and upstream not in boundaries:
                     boundaries.append(upstream)
-        # If the output inherits a lineage established inside the island, a
-        # later CPU node would need a second readback. End the island at that
-        # reset instead of silently substituting the output alpha.
-        owner = None
+        # Synthetic boundary sources contain current RGBA. An original-alpha
+        # consumer can use a boundary only when that boundary resets lineage.
+        # An active warp changes lineage coordinates without resetting coverage.
         lineage = {}
-        for key in graph.order:
-            if key not in member_set:
-                continue
+        boundary_alpha = {}
+        unsafe_alpha = set()
+        for key in members:
             node = graph.nodes[key]
             if node.kind in RESET_KINDS:
                 lineage[key] = key
+                boundary_alpha[key] = None
             else:
-                lineage[key] = lineage.get(node.inputs[0], node.inputs[0])
+                cfg = configs.get(key, node.config)
+                primary = node.inputs[0]
+                inherited_boundary = boundary_alpha.get(primary, primary)
+                boundary_alpha[key] = inherited_boundary
+                if node.kind == 'spatial_warp' and not spatial_is_identity(cfg):
+                    lineage[key] = key
+                else:
+                    lineage[key] = lineage.get(primary, primary)
+                if (node.kind in {'matte', 'chroma_key'} and cfg.get('alpha_source') == 'original'
+                        and inherited_boundary is not None
+                        and graph.nodes[inherited_boundary].kind not in HOST_ALPHA_RESETS):
+                    unsafe_alpha.add(inherited_boundary)
+        if unsafe_alpha:
+            rejected.append({'members': members, 'reason': 'external_alpha_lineage',
+                             'boundaries': sorted(unsafe_alpha), 'exit': output})
+            continue
         owner = lineage[output]
-        if owner in member_set and owner != output:
+        if (output != graph.output and owner in member_set
+                and (owner != output or graph.nodes[owner].kind == 'spatial_warp')):
+            # The host bridge can return a separate warped alpha image.
             rejected.append({'members': members, 'reason': 'internal_alpha_lineage_exit',
                              'lineage_owner': owner, 'exit': output})
             continue

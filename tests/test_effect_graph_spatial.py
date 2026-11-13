@@ -214,7 +214,7 @@ def test_graph_controls_forks_and_universal_opacity(surface):
     assert zero.getchannel('A').getbbox() is None
     assert graph.control_descriptors('out')['warp_phase']['active']
     manifest = graph.spatial_manifest()
-    assert manifest['out']['backend'] == 'cpu' and not manifest['out']['gpu_native']
+    assert manifest['out']['backend'] == 'cpu' and manifest['out']['gpu_native']
     manifest['out']['controls'].clear()
     assert graph.spatial_manifest()['out']['controls']
 

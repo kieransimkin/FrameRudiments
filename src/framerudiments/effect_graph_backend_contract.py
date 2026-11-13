@@ -15,8 +15,8 @@ from importlib import metadata, util
 from .effect_graph_surface_transport import bridge_contract, transport_capabilities
 
 GPU_KINDS = frozenset({'matte', 'chroma_key', 'spectral_displacement',
-                       'transition', 'chromatic_displacement', 'filter'})
-CPU_EFFECTS = frozenset({'layer_style', 'spatial_warp', 'raster_effect', 'procedural_field'})
+                       'transition', 'chromatic_displacement', 'filter', 'spatial_warp'})
+CPU_EFFECTS = frozenset({'layer_style', 'raster_effect', 'procedural_field'})
 HOST_KINDS = frozenset({'source', 'copy', 'opacity', 'composite'})
 KNOWN_KINDS = GPU_KINDS | CPU_EFFECTS | HOST_KINDS
 MAX_GPU_MORPH_RADIUS = 16
@@ -128,6 +128,18 @@ def gpu_requirements(kind, config, input_count, *, original_alpha=True):
         raise ValueError('GPU node kind must be a string')
     if kind not in GPU_KINDS:
         return GPURequirements(False, 'kernel_not_implemented')
+    if kind == 'spatial_warp':
+        from .effect_graph_spatial import gpu_spatial_rejection, spatial_is_identity, validate_spatial
+        validate_spatial(dict(config), input_count)
+        reason = gpu_spatial_rejection(config)
+        if reason is not None:
+            return GPURequirements(False, reason)
+        if spatial_is_identity(config):
+            return GPURequirements(True, 'exact_host_identity')
+        # The bridge reuses its two-texture budget in a separate lineage pass.
+        passes = 1 + int(original_alpha)
+        return GPURequirements(True, texture_count=2, upload_count=passes,
+                               readback_count=passes, draw_passes=passes)
     if kind == 'filter':
         from .effect_graph_filter import validate_filter
         validate_filter(dict(config), input_count)
@@ -229,6 +241,8 @@ def _device(backend):
 
 def backend_registry(gpu_backend=None):
     """Detached, JSON-safe discovery. Installed is NOT the same as executable."""
+    from .effect_graph_spatial import GPU_WARP_MAX_AMPLITUDE, GPU_WARP_MIN_WAVELENGTH, GPU_WARP_TYPES
+
     device = _device(gpu_backend)
     return {
         'schema': 'framerudiments.backend-capabilities.v1',
@@ -239,12 +253,15 @@ def backend_registry(gpu_backend=None):
             'numpy': {'role': 'cpu_effect_kernels', 'gpu_native': False},
             'moderngl': {'role': 'resident_graph_islands_and_per_node_bridge', 'device': device,
                          'kernel_kinds': sorted(GPU_KINDS), 'gpu_resident_graph': True,
+                         'spatial_warp_types': sorted(GPU_WARP_TYPES),
                          'mixed_cpu_gpu_islands': True, 'cross_node_texture_pool': True,
                          'limits': {'morph_radius': MAX_GPU_MORPH_RADIUS,
                                     'gaussian_radius': MAX_GPU_GAUSSIAN_RADIUS,
                                     'edge_decontamination_radius': MAX_GPU_GAUSSIAN_RADIUS,
                                     'key_colours': MAX_GPU_KEY_COLOURS,
-                                    'input_mattes': MAX_GPU_INPUT_MATTES}},
+                                    'input_mattes': MAX_GPU_INPUT_MATTES,
+                                    'wave_turbulence_max_amplitude': GPU_WARP_MAX_AMPLITUDE,
+                                    'wave_turbulence_min_wavelength': GPU_WARP_MIN_WAVELENGTH}},
         },
         'surface_transport': transport_capabilities(),
         'node_kinds': sorted(KNOWN_KINDS),

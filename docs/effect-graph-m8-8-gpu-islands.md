@@ -51,8 +51,8 @@ counts. Windows runs the native standalone NVIDIA context; the required Linux
 job runs Mesa/EGL, providing a second vendor/driver implementation before a
 release is accepted.
 
-Native GPU spatial-warp kernels, physical driver VRAM measurement and persistent
-cross-frame pools remain M8.9 work. M8.8 can already place supported islands on
-either side of a CPU spatial warp and reports both boundary transfers. A video
+M8.8 can place supported islands on either side of a CPU spatial warp and
+reports both boundary transfers. See the [M8.9 GPU spatial warp increment](effect-graph-m8-9-gpu-spatial.md)
+for the current GPU modes and remaining profiling work. A video
 would not add useful evidence here: residency and static key-edge reconstruction
 have no independent time-varying visual behaviour.

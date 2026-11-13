@@ -1,5 +1,9 @@
 # FrameRudiments
 
+Version 0.4.26 adds native GPU execution for seven spatial warps. Compatible
+effect graphs keep warped pixels and original-alpha mattes on the device until
+the final output. See the [supported modes, limits and CPU/GPU demonstration](docs/effect-graph-m8-9-gpu-spatial.md).
+
 Version 0.4.25 keeps the prepared render plan tied to canonical input paths
 and checksums when a chunked job uses a work cache. See
 [working-cache placement and resume](docs/chunked-rendering.md#working-cache-placement).

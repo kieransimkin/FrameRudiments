@@ -124,7 +124,7 @@ def test_all_live_gpu_pass_textures_are_counted(kind, n, original, morph, blur):
     ('chroma_key', {'edge_expand': -17}, 1, 'radius_limit_exceeded'),
     ('chroma_key', {'edge_decontaminate': .1, 'edge_radius': 16}, 1,
      'edge_decontamination_radius_limit_exceeded'),
-    ('spatial_warp', {}, 1, 'kernel_not_implemented'),
+    ('spatial_warp', {'warp_type': 'raindrop_ripples'}, 1, 'warp_type_not_implemented'),
 ])
 def test_shared_gpu_rejections(kind, cfg, n, reason):
     req = gpu_requirements(kind, cfg, n)
@@ -181,12 +181,21 @@ def test_each_auto_fallback_and_strict_rejection():
     assert exc.value.report['errors'][0]['node'] == 'out'
 
 
-@pytest.mark.parametrize('kind,params', [('layer_style', {}), ('spatial_warp', {}),
+@pytest.mark.parametrize('kind,params', [('layer_style', {}), ('spatial_warp', {'warp_type': 'polar_wrap'}),
                                       ('raster_effect', {}), ('procedural_field', {})])
 def test_cpu_only_families_report_actual_legacy_policy(kind, params):
     g = unary(kind, **params)
     assert g.backend_plan({'s': (5, 5)}, mode='auto', gpu_backend=device())['eligible']
     assert not g.backend_plan({'s': (5, 5)}, mode='gpu', gpu_backend=device())['eligible']
+
+
+def test_spatial_bridge_plan_accounts_for_original_alpha_transfers():
+    g = unary('spatial_warp', warp_type='wave')
+    plan = g.backend_plan({'s': (5, 7)}, mode='gpu', gpu_backend=device(), require=True)
+    row = plan['nodes']['out']
+    assert row['selected_backend'] == 'gpu_bridge'
+    assert row['gpu_kernel']['draw_passes'] == 2
+    assert row['upload_bytes'] == row['readback_bytes'] == row['gpu_texture_payload_bytes'] == 5 * 7 * 4 * 2
 
 
 @pytest.mark.parametrize('kind', ['copy', 'opacity', 'chromatic_displacement'])

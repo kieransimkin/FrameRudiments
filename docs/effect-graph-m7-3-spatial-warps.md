@@ -123,7 +123,7 @@ edge texels at the reversal. These are sampler border policies, distinct from th
 layer styles. It returns detached configured values and factory defaults, ranges,
 units, active flags, interpolation modes and topology-filtered categorical choices.
 `EffectGraph.spatial_manifest()` describes reachable spatial nodes, including
-expanded transition-chain IDs, with explicit CPU-only capability information.
+expanded transition-chain IDs, including GPU eligibility and rejection reasons.
 Existing M6 style reports retain their original scope and schema.
 
 | Control | Range/default | Units |
@@ -179,10 +179,9 @@ The canvas is never expanded automatically, and content warped beyond a transpar
 border can disappear. General output bounds must be measured from the resulting
 alpha; no un-clipped analytic bound is claimed for polar/noise fields.
 
-The implementation is CPU-only. `auto` increments the existing CPU-fallback count.
-Strict GPU rejects the node even if its configured mix is zero; it never labels CPU
-work as GPU execution. There are no new GPU shaders or GPU performance claims.
-Existing M3/M4 parity workflows are preserved.
+The CPU reference supports the full table above. See the
+[M8.9 GPU guide](effect-graph-m8-9-gpu-spatial.md) for supported modes,
+per-frame precision checks and the measured transfer contract.
 
 ## Tests and acceptance
 
@@ -200,7 +199,7 @@ variation before asserting image variation.
 - [x] Documented schema, capability discovery and executable example.
 - [x] Focused local Pillow/NumPy and reconstructed graph regression coverage.
 - [ ] Full repository, Ruff, real native-project and Windows acceptance.
-- [ ] GPU-native warp kernels and CPU/GPU parity (M8).
+- [x] GPU-native kernels and focused CPU/GPU parity for the seven modes listed in M8.9.
 - [ ] Hardware throughput and cross-platform numerical evidence.
 
 Use `scripts/Invoke-Tests.ps1` for project tests. The supplied v28 installer invokes
