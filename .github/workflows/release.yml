@@ -70,7 +70,11 @@ jobs:
         run: |
           python -m venv /tmp/framerudiments-wheel
           /tmp/framerudiments-wheel/bin/pip install dist/*.whl
+          fixture="$(realpath examples/isf-tint.fs)"
+          digest="$(sha256sum "$fixture" | cut -d ' ' -f 1)"
           cd /tmp
+          /tmp/framerudiments-wheel/bin/python -I -m framerudiments inspect-isf "$fixture" --expect-sha256 "$digest" > /tmp/framerudiments-isf.json
+          /tmp/framerudiments-wheel/bin/python -I -c "import json; r=json.load(open('/tmp/framerudiments-isf.json')); assert r['scope']=='metadata_only' and r['kind']=='filter' and r['inputs'][1]['default']==0.25"
           /tmp/framerudiments-wheel/bin/python -I -m framerudiments demo /tmp/framerudiments-demo --rudiments --font /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
           /tmp/framerudiments-wheel/bin/python -I -m framerudiments render /tmp/framerudiments-demo/project.json --output /tmp/framerudiments-smoke --ffmpeg /usr/bin/ffmpeg --preset veryfast
       - name: Checksums and source identity

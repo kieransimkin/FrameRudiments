@@ -59,6 +59,9 @@ def main(argv=None):
     profiling.add_argument("--max-edge", type=int, default=256)
     commands.add_parser("renderers", help="List available built-in rudiment renderers")
     commands.add_parser("sprites", help="List installed sprite atlases and their checksums")
+    isf = commands.add_parser("inspect-isf", help="Read declared ISF shader inputs without running GLSL")
+    isf.add_argument("shader", help="Local ISF fragment file")
+    isf.add_argument("--expect-sha256", help="Require a matching SHA-256 for the entire file")
     demo = commands.add_parser("demo", help="Create a synthetic audio/image/recording project")
     demo.add_argument("directory")
     demo_views = demo.add_mutually_exclusive_group()
@@ -200,6 +203,11 @@ def main(argv=None):
             from .sprite_renderers import _manifest
 
             print(json.dumps(_manifest()["themes"], sort_keys=True))
+        elif args.command == "inspect-isf":
+            from .isf_metadata import inspect_isf
+
+            print(json.dumps(inspect_isf(args.shader, expected_sha256=args.expect_sha256),
+                             indent=2, allow_nan=False))
         elif args.command == "plan":
             output = __import__("pathlib").Path(args.output)
             if output.exists():

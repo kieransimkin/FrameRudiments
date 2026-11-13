@@ -16,6 +16,7 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_SOURCE = (
     "pyproject.toml", "MANIFEST.in", "analysis-releases.json", "RELEASE_NOTES.md",
+    "examples/isf-tint.fs",
     "scripts/Run-PresetBehaviourAnalysis.ps1", "scripts/Run-FullPresetAnalysis.ps1",
     "scripts/install_analysis_releases.py", "scripts/ensure_projectm_runtime.py",
     "scripts/preset_behaviour_pipeline.py", "scripts/check_release_packages.py",

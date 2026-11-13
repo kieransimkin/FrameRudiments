@@ -1,6 +1,7 @@
 include README.md LICENSE AGENTS.md RELEASE_NOTES.md analysis-releases.json
 recursive-include docs *.md *.png *.svg *.json *.mp4
 recursive-include tests *.py
+include examples/isf-tint.fs
 
 recursive-include integration *.py
 

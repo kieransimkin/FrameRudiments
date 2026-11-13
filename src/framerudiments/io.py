@@ -16,7 +16,7 @@ def sha256(path):
     return h.hexdigest()
 
 
-def read_json(path):
+def parse_json(text):
     def bad(value):
         raise ValueError(f"Non-finite JSON number: {value}")
 
@@ -28,9 +28,11 @@ def read_json(path):
             out[key] = value
         return out
 
-    return json.loads(
-        Path(path).read_text(encoding="utf-8-sig"), parse_constant=bad, object_pairs_hook=unique
-    )
+    return json.loads(text, parse_constant=bad, object_pairs_hook=unique)
+
+
+def read_json(path):
+    return parse_json(Path(path).read_text(encoding="utf-8-sig"))
 
 
 def write_json(path, value):
