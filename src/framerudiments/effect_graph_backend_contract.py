@@ -15,7 +15,7 @@ from importlib import metadata, util
 from .effect_graph_surface_transport import bridge_contract, transport_capabilities
 
 GPU_KINDS = frozenset({'matte', 'chroma_key', 'spectral_displacement',
-                       'transition', 'chromatic_displacement', 'filter', 'spatial_warp'})
+                       'transition', 'gl_transition', 'chromatic_displacement', 'filter', 'spatial_warp'})
 CPU_EFFECTS = frozenset({'layer_style', 'raster_effect', 'procedural_field'})
 HOST_KINDS = frozenset({'source', 'copy', 'opacity', 'composite'})
 KNOWN_KINDS = GPU_KINDS | CPU_EFFECTS | HOST_KINDS
@@ -159,6 +159,11 @@ def gpu_requirements(kind, config, input_count, *, original_alpha=True, precise_
             return GPURequirements(False, 'transition_style_not_implemented')
         if input_count != 2:
             raise ValueError('GPU transition styles require two inputs')
+    if kind == 'gl_transition':
+        from .gl_transitions import validate_gl_transition
+
+        validate_gl_transition(dict(config), input_count)
+    if kind in {'transition', 'gl_transition'}:
         if config.get('progress', 0) in (0, 1):
             return GPURequirements(True, 'exact_host_identity')
         return GPURequirements(True, texture_count=3, upload_count=2,
@@ -383,7 +388,8 @@ def plan_effect_graph(graph, source_surfaces, *, mode='cpu', gpu_backend=None,
             if node.kind != 'layer_style' and any(surfaces[i].size != surface.size for i in node.inputs):
                 raise ValueError(f'{key}: graph input dimensions must match')
         surfaces[key] = surface
-        if node.kind in {'source', 'transition', 'composite', 'procedural_field', 'spatial_warp', 'raster_effect'}:
+        if node.kind in {'source', 'transition', 'gl_transition', 'composite', 'procedural_field',
+                          'spatial_warp', 'raster_effect'}:
             owners[key] = key
             alpha_bytes[key] = surface.width * surface.height
         else:
@@ -393,7 +399,12 @@ def plan_effect_graph(graph, source_surfaces, *, mode='cpu', gpu_backend=None,
                if node.kind in GPU_KINDS else GPURequirements(False, 'kernel_not_implemented'))
         selected, reason = 'cpu', 'cpu_requested'
         texture_bytes = surface.nbytes * req.texture_count
-        if mode != 'cpu':
+        gpu_required = node.kind == 'gl_transition'
+        if gpu_required and (mode == 'cpu' or not device['available']):
+            reason = 'gpu_required'
+            errors.append(_diagnostic(reason, 'gl_transition requires an active OpenGL 3.3+ context', key))
+            selected = 'unavailable'
+        elif mode != 'cpu':
             reason = 'gpu_not_attached'
             if device['available']:
                 reason = req.reason
@@ -408,12 +419,18 @@ def plan_effect_graph(graph, source_surfaces, *, mode='cpu', gpu_backend=None,
                         selected, reason = 'gpu_bridge', None
                 if selected == 'cpu' and reason is None:
                     reason = 'kernel_not_implemented'
-                if mode == 'gpu' and selected == 'cpu' and (
+                if gpu_required and selected == 'cpu' and reason != 'exact_host_identity':
+                    errors.append(_diagnostic(reason, 'gl_transition exceeds the OpenGL bridge limits', key))
+                    selected = 'unavailable'
+                elif mode == 'gpu' and selected == 'cpu' and (
                         _gpu_legacy_rejects(node) or node.kind in GPU_KINDS and not req.reason == 'exact_host_identity'):
                     errors.append(_diagnostic(reason, 'Existing strict GPU executor rejects this node', key))
             if selected == 'cpu' and not any(r['node'] == key for r in errors):
                 warnings.append(_diagnostic(reason, 'Host execution; this is not a GPU-native operation', key))
-        cpu_impl = 'numpy' if _numpy_needed(node) else 'pillow'
+        if gpu_required:
+            cpu_impl = 'pillow' if req.reason == 'exact_host_identity' else None
+        else:
+            cpu_impl = 'numpy' if _numpy_needed(node) else 'pillow'
         if selected == 'cpu' and not registry['packages'][cpu_impl]['module_discoverable']:
             errors.append(_diagnostic('cpu_dependency_missing', f'{cpu_impl} is required by this CPU contract', key))
         if node.kind == 'filter' and surface.width * surface.height > 16_777_216:

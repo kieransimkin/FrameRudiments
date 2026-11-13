@@ -62,6 +62,7 @@ def main(argv=None):
     isf = commands.add_parser("inspect-isf", help="Read declared ISF shader inputs without running GLSL")
     isf.add_argument("shader", help="Local ISF fragment file")
     isf.add_argument("--expect-sha256", help="Require a matching SHA-256 for the entire file")
+    commands.add_parser("gl-transitions", help="List bundled GL Transitions shaders and project pins")
     demo = commands.add_parser("demo", help="Create a synthetic audio/image/recording project")
     demo.add_argument("directory")
     demo_views = demo.add_mutually_exclusive_group()
@@ -208,6 +209,10 @@ def main(argv=None):
 
             print(json.dumps(inspect_isf(args.shader, expected_sha256=args.expect_sha256),
                              indent=2, allow_nan=False))
+        elif args.command == "gl-transitions":
+            from .gl_transitions import shader_catalogue
+
+            print(json.dumps(shader_catalogue(), indent=2))
         elif args.command == "plan":
             output = __import__("pathlib").Path(args.output)
             if output.exists():
@@ -215,7 +220,8 @@ def main(argv=None):
             project = Project.load(args.project)
             from .compositor import Compositor
 
-            Compositor(project)
+            compositor = Compositor(project)
+            compositor.close()
             write_json(output, project.summary())
             print(output)
         else:

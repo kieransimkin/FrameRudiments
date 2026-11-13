@@ -429,6 +429,8 @@ class Compositor:
             )
         else:
             self.effect_graph_gpu = _shared_effect_graph_gpu
+        if self.effect_graph is not None:
+            self.effect_graph.validate_required_backend(self.effect_graph_gpu)
         mask_order = ["background"]
         mask_order.extend(f"layer:{layer.id}" for layer in self.layers)
         self.layer_masks = LayerMasks(project.data.get("layer_masks", {}), mask_order)

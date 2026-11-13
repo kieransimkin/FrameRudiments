@@ -1,5 +1,10 @@
 # FrameRudiments
 
+Version 0.4.34 adds [GL Transitions for offline renders](docs/gl-transitions.md).
+Use `gl-transitions` to list the pins for Circular Reveal and Ripple Wipe.
+Both use two sources and support beat-driven progress. Ripple Wipe also
+uses the output frame clock. [Play the actual 60 fps demo](docs/media/gl-transitions-60fps.mp4).
+
 Version 0.4.33 adds [Interactive Shader Format metadata inspection](docs/isf-metadata.md).
 Use `inspect-isf` to read typed controls, classify the image inputs and
 record the source SHA-256 before choosing a shader. Inspection runs on the
