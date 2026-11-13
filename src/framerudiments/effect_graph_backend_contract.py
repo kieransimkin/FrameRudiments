@@ -113,7 +113,7 @@ class GPURequirements:
     draw_passes: int = 0
 
 
-def gpu_requirements(kind, config, input_count, *, original_alpha=True):
+def gpu_requirements(kind, config, input_count, *, original_alpha=True, precise_gpu=False):
     """Shared GL bridge predicate and exact live texture-payload accounting.
 
     The matte/key bridge retains every pass target until finally. A morphology
@@ -131,7 +131,7 @@ def gpu_requirements(kind, config, input_count, *, original_alpha=True):
     if kind == 'spatial_warp':
         from .effect_graph_spatial import gpu_spatial_rejection, spatial_is_identity, validate_spatial
         validate_spatial(dict(config), input_count)
-        reason = gpu_spatial_rejection(config)
+        reason = gpu_spatial_rejection(config, precise_gpu=precise_gpu)
         if reason is not None:
             return GPURequirements(False, reason)
         if spatial_is_identity(config):
@@ -235,6 +235,7 @@ def _device(backend):
     return {'state': 'attached', 'available': version >= 330,
             'context_version': version, 'renderer': str(info.get('GL_RENDERER', 'unknown')),
             'vendor': str(info.get('GL_VENDOR', 'unknown')),
+            'precise_spatial_warps': getattr(backend, 'supports_precise_spatial_warps', False),
             'max_texture_size': limit, 'texture_limit_reported': 'GL_MAX_TEXTURE_SIZE' in info,
             'max_texture_payload_bytes': budget, 'shader_validation': 'not_performed',
             'context_ownership': 'caller; discovery does not create, close or mutate it'}
@@ -244,11 +245,12 @@ def backend_registry(gpu_backend=None):
     """Detached, JSON-safe discovery. Installed is NOT the same as executable."""
     from .effect_graph_ripples import MAX_RIPPLE_SOURCES, RIPPLE_VARIANT_ORDER
     from .effect_graph_spatial import (
-        GPU_POLAR_WRAP_MIN_RADIUS, GPU_WARP_MAX_AMPLITUDE, GPU_WARP_MIN_RADIAL_AMOUNT,
-        GPU_WARP_MIN_WAVELENGTH, GPU_WARP_TYPES,
+        GPU_POLAR_WRAP_MIN_RADIUS, GPU_RIPPLE_MAX_AMPLITUDE, GPU_RIPPLE_MIN_WAVELENGTH,
+        GPU_WARP_TYPES, PRECISE_SPATIAL_EXTENSION, WARP_RANGES,
     )
 
     device = _device(gpu_backend)
+    precise_gpu = device.get('precise_spatial_warps', False)
     return {
         'schema': 'framerudiments.backend-capabilities.v1',
         'packages': {'pillow': _package('Pillow', 'PIL'), 'numpy': _package('numpy', 'numpy'),
@@ -259,6 +261,7 @@ def backend_registry(gpu_backend=None):
             'moderngl': {'role': 'resident_graph_islands_and_per_node_bridge', 'device': device,
                          'kernel_kinds': sorted(GPU_KINDS), 'gpu_resident_graph': True,
                          'spatial_warp_types': sorted(GPU_WARP_TYPES),
+                         'precise_spatial_warp_extension': PRECISE_SPATIAL_EXTENSION,
                          'raindrop_ripple_variants': list(RIPPLE_VARIANT_ORDER),
                          'mixed_cpu_gpu_islands': True, 'cross_node_texture_pool': True,
                          'limits': {'morph_radius': MAX_GPU_MORPH_RADIUS,
@@ -266,14 +269,17 @@ def backend_registry(gpu_backend=None):
                                     'edge_decontamination_radius': MAX_GPU_GAUSSIAN_RADIUS,
                                     'key_colours': MAX_GPU_KEY_COLOURS,
                                     'input_mattes': MAX_GPU_INPUT_MATTES,
-                                    'wave_turbulence_max_amplitude': GPU_WARP_MAX_AMPLITUDE,
-                                    'wave_turbulence_min_wavelength': GPU_WARP_MIN_WAVELENGTH,
-                                    'radial_min_amount': GPU_WARP_MIN_RADIAL_AMOUNT,
-                                    'displacement_max_amplitude': GPU_WARP_MAX_AMPLITUDE,
-                                    'raindrop_max_amplitude': GPU_WARP_MAX_AMPLITUDE,
-                                    'raindrop_ring_min_wavelength': GPU_WARP_MIN_WAVELENGTH,
+                                    'wave_turbulence_max_amplitude': WARP_RANGES['warp_amplitude.x'][1],
+                                    'wave_turbulence_min_wavelength': WARP_RANGES['warp_scale.x'][0],
+                                    'radial_min_amount': WARP_RANGES['warp_amount'][0],
+                                    'displacement_max_amplitude': WARP_RANGES['warp_amplitude.x'][1],
+                                    'raindrop_max_amplitude': (WARP_RANGES['warp_amplitude.x'][1] if precise_gpu
+                                                               else GPU_RIPPLE_MAX_AMPLITUDE),
+                                    'raindrop_ring_min_wavelength': (WARP_RANGES['warp_scale.x'][0] if precise_gpu
+                                                                     else GPU_RIPPLE_MIN_WAVELENGTH),
                                     'raindrop_max_sources': MAX_RIPPLE_SOURCES,
-                                    'polar_wrap_min_radius': GPU_POLAR_WRAP_MIN_RADIUS}},
+                                    'polar_wrap_min_radius': (WARP_RANGES['warp_radius'][0] if precise_gpu
+                                                              else GPU_POLAR_WRAP_MIN_RADIUS)}},
         },
         'surface_transport': transport_capabilities(),
         'node_kinds': sorted(KNOWN_KINDS),
@@ -376,7 +382,8 @@ def plan_effect_graph(graph, source_surfaces, *, mode='cpu', gpu_backend=None,
             alpha_bytes[key] = surface.width * surface.height
         else:
             owners[key] = owners[node.inputs[0]]
-        req = (gpu_requirements(node.kind, node.config, len(node.inputs))
+        req = (gpu_requirements(node.kind, node.config, len(node.inputs),
+                                precise_gpu=device.get('precise_spatial_warps', False))
                if node.kind in GPU_KINDS else GPURequirements(False, 'kernel_not_implemented'))
         selected, reason = 'cpu', 'cpu_requested'
         texture_bytes = surface.nbytes * req.texture_count

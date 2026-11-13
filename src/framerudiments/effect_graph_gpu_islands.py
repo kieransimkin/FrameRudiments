@@ -39,7 +39,7 @@ def _entry(node, config, inputs):
     return row
 
 
-def plan_islands(graph, configs):
+def plan_islands(graph, configs, *, precise_gpu=False):
     """Return executable islands plus detached rejection telemetry."""
     from .effect_graph import EffectGraph
 
@@ -51,7 +51,7 @@ def plan_islands(graph, configs):
     eligible = {
         key for key in graph.order
         if graph.nodes[key].kind != 'source'
-        and node_supported(graph.nodes[key], configs.get(key, graph.nodes[key].config))
+        and node_supported(graph.nodes[key], configs.get(key, graph.nodes[key].config), precise_gpu=precise_gpu)
     }
     # Union resident neighbours, except across a node that establishes a new
     # alpha lineage. That node is the previous island's host-visible exit.
@@ -144,11 +144,11 @@ def plan_islands(graph, configs):
             rows.append(_entry(node, cfg, inputs))
             subconfigs[key] = cfg
         island_graph = EffectGraph({'nodes': rows, 'output': output})
-        reason = resident_rejection(island_graph, subconfigs)
+        reason = resident_rejection(island_graph, subconfigs, precise_gpu=precise_gpu)
         if reason is not None:
             rejected.append({'members': members, 'reason': reason, 'exit': output})
             continue
-        if resident_plan(island_graph, subconfigs)['resident_draws'] == 0:
+        if resident_plan(island_graph, subconfigs, precise_gpu=precise_gpu)['resident_draws'] == 0:
             rejected.append({'members': members, 'reason': 'no_resident_draws',
                              'exit': output})
             continue

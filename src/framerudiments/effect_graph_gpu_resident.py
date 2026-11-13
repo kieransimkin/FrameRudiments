@@ -35,8 +35,10 @@ from .effect_graph_gpu_spectral import (
     SPACE_INDEX as SPECTRAL_SPACE_INDEX,
     _bind_band as bind_spectral_band,
 )
-from .effect_graph_gpu_spatial import SPATIAL_SHADER_NAME, SPATIAL_WARP, spatial_draw_inputs, spatial_uniforms
-from .effect_graph_spatial import spatial_is_identity, spatial_map_is_transparent, validate_spatial_images
+from .effect_graph_gpu_spatial import require_precise_spatial_shader, spatial_draw_inputs, spatial_shader, spatial_uniforms
+from .effect_graph_spatial import (
+    spatial_is_identity, spatial_map_is_transparent, spatial_requires_precise_gpu, validate_spatial_images,
+)
 from .effect_graph_spectral import validate_spectral
 
 # The M3.3 bridge uploads an L original-alpha image as RGBA and reads .r.
@@ -88,7 +90,7 @@ def _identity(kind, config):
     return False
 
 
-def node_supported(node, config):
+def node_supported(node, config, *, precise_gpu=False):
     """Return whether one resolved node has an exact resident GLSL equivalent."""
     kinds = {'source', 'copy', 'opacity', 'transition', 'composite',
              'chromatic_displacement', 'filter', 'spectral_displacement',
@@ -105,16 +107,16 @@ def node_supported(node, config):
     if node.kind == 'spectral_displacement':
         validate_spectral(config)
     if node.kind in {'matte', 'chroma_key', 'spatial_warp'}:
-        return gpu_requirements(node.kind, config, len(node.inputs)).supported
+        return gpu_requirements(node.kind, config, len(node.inputs), precise_gpu=precise_gpu).supported
     return True
 
 
-def resident_rejection(graph, configs):
+def resident_rejection(graph, configs, *, precise_gpu=False):
     """Return the first resolved operation that prevents closed residency."""
     for key in graph.order:
         node = graph.nodes[key]
         cfg = configs.get(key, node.config)
-        if not node_supported(node, cfg):
+        if not node_supported(node, cfg, precise_gpu=precise_gpu):
             return 'kernel_not_implemented'
         if node.kind == 'spatial_warp' and len(node.inputs) == 2 and not spatial_is_identity(cfg):
             control_map = graph.nodes[node.inputs[1]]
@@ -130,8 +132,8 @@ def resident_rejection(graph, configs):
     return None
 
 
-def supported(graph, configs):
-    return resident_rejection(graph, configs) is None
+def supported(graph, configs, *, precise_gpu=False):
+    return resident_rejection(graph, configs, precise_gpu=precise_gpu) is None
 
 
 def _resolve_transparent_maps(graph, sources, configs):
@@ -472,13 +474,14 @@ class _ResidentRun:
             original = self.alpha_of[node.inputs[0]]
             warped_alpha = original
             if not spatial_is_identity(cfg):
-                uniforms = spatial_uniforms(cfg, self.size)
+                uniforms = {} if self.dry else spatial_uniforms(cfg, self.size)
+                shader = spatial_shader(cfg)
                 control_map = self.texture_of[node.inputs[1]][0] if len(node.inputs) == 2 else None
-                warped = self._draw(SPATIAL_SHADER_NAME, SPATIAL_WARP, *spatial_draw_inputs(
+                warped = self._draw(*shader, *spatial_draw_inputs(
                     pair[0], control_map, uniforms, alpha_only=False,
                 ))
                 warped_alpha = warped if original is pair else self._draw(
-                    SPATIAL_SHADER_NAME, SPATIAL_WARP, *spatial_draw_inputs(
+                    *shader, *spatial_draw_inputs(
                         original[0], control_map, uniforms, alpha_only=True,
                     ))
                 pair = warped
@@ -561,7 +564,7 @@ class _ResidentRun:
         self.all_resources.clear()
 
 
-def resident_plan(graph, configs=None):
+def resident_plan(graph, configs=None, *, precise_gpu=False):
     """Device-free exact RGBA8 *allocated texture count* for a supported graph.
 
     No source images, GPU context or third-party numerical packages are needed.
@@ -570,7 +573,7 @@ def resident_plan(graph, configs=None):
     from .effect_graph_gpu import GPUUnsupported
 
     configs = {} if configs is None else configs
-    if not supported(graph, configs):
+    if not supported(graph, configs, precise_gpu=precise_gpu):
         raise GPUUnsupported('graph contains nodes unsupported by resident execution')
     run = _ResidentRun(None, graph, configs, None, dry=True)
     run.run({key: None for key in graph.source_ids})
@@ -585,7 +588,8 @@ def render_resident(backend, graph, sources, configs, *, island_stats=None):
     """
     from .effect_graph_gpu import GPUUnsupported
 
-    if not supported(graph, configs):
+    precise_gpu = getattr(backend, 'supports_precise_spatial_warps', False)
+    if not supported(graph, configs, precise_gpu=precise_gpu):
         raise GPUUnsupported('graph contains nodes unsupported by resident execution')
     for key in graph.source_ids:
         if key not in sources or sources[key].mode != 'RGBA':
@@ -600,8 +604,14 @@ def render_resident(backend, graph, sources, configs, *, island_stats=None):
     if any(graph.nodes[key].kind == 'spatial_warp' for key in graph.order):
         validate_spatial_images(first_source)
     configs = _resolve_transparent_maps(graph, sources, configs)
-    plan = resident_plan(graph, configs)
+    plan = resident_plan(graph, configs, precise_gpu=precise_gpu)
     backend._check_budget(size, plan['resident_peak_allocated_surfaces'])
+    if precise_gpu and any(
+        graph.nodes[key].kind == 'spatial_warp'
+        and spatial_requires_precise_gpu(configs.get(key, graph.nodes[key].config))
+        for key in graph.order
+    ):
+        require_precise_spatial_shader(backend)
     run = _ResidentRun(backend, graph, configs, size)
     try:
         texture, framebuffer = run.run(sources)

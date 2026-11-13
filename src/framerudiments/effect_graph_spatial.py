@@ -20,10 +20,10 @@ WARP_TYPES = frozenset({'wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kale
                         'polar_unwrap', 'polar_wrap', 'raindrop_ripples'})
 GPU_WARP_TYPES = ('wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope',
                   'polar_unwrap', 'polar_wrap', 'displacement', 'raindrop_ripples')
-GPU_WARP_MAX_AMPLITUDE = 128
-GPU_WARP_MIN_WAVELENGTH = 16
-GPU_WARP_MIN_RADIAL_AMOUNT = 0
+GPU_RIPPLE_MAX_AMPLITUDE = 128
+GPU_RIPPLE_MIN_WAVELENGTH = 16
 GPU_POLAR_WRAP_MIN_RADIUS = 16
+PRECISE_SPATIAL_EXTENSION = 'GL_ARB_gpu_shader5'
 WARP_ENUMS = {
     'warp_type': WARP_TYPES,
     'warp_border': frozenset({'transparent', 'clamp', 'repeat', 'mirror'}),
@@ -166,16 +166,17 @@ def spatial_parameter_descriptors(config=None, *, input_count=None):
     return deepcopy(descriptors)
 
 
-def spatial_capabilities(config=None, *, input_count=None):
+def spatial_capabilities(config=None, *, input_count=None, precise_gpu=False):
     config = {} if config is None else config
     validate_spatial(config, input_count)
     kind = config.get('warp_type', WARP_DEFAULTS['warp_type'])
-    reason = gpu_spatial_rejection(config)
+    reason = gpu_spatial_rejection(config, precise_gpu=precise_gpu)
     gpu_native = reason is None
     return {
         'schema': 'framerudiments.spatial-warp-capability.v1',
         'warp_type': kind, 'backend': 'cpu', 'gpu_native': gpu_native,
         'gpu_bridge': gpu_native, 'gpu_resident_graph': gpu_native, 'gpu_rejection': reason,
+        'gpu_required_extension': PRECISE_SPATIAL_EXTENSION if spatial_requires_precise_gpu(config) else None,
         'deterministic': True, 'temporal_history': False,
         'input_count': 2 if config.get('warp_type') == 'displacement' else 1,
         'sampling': 'bilinear-premultiplied', 'alpha_lineage': 'same-coordinate-warp',
@@ -335,36 +336,29 @@ def spatial_map_is_transparent(map_image):
     return map_image is not None and map_image.getchannel('A').getbbox() is None
 
 
-def gpu_spatial_rejection(config):
+def spatial_requires_precise_gpu(config):
+    """Select the shader that preserves the residual of a large coordinate."""
+    if spatial_is_identity(config):
+        return False
+    kind = config.get('warp_type', WARP_DEFAULTS['warp_type'])
+    if kind == 'polar_wrap':
+        return config.get('warp_radius', WARP_DEFAULTS['warp_radius']) < GPU_POLAR_WRAP_MIN_RADIUS
+    if kind == 'raindrop_ripples':
+        amplitude = config.get('warp_amplitude', WARP_DEFAULTS['warp_amplitude'])
+        wavelength = config.get('warp_scale', WARP_DEFAULTS['warp_scale'])[0]
+        variant = config.get('warp_ripple_variant', WARP_DEFAULTS['warp_ripple_variant'])
+        return (max(map(abs, amplitude)) > GPU_RIPPLE_MAX_AMPLITUDE
+                or variant != 'droplets' and wavelength < GPU_RIPPLE_MIN_WAVELENGTH)
+    return False
+
+
+def gpu_spatial_rejection(config, *, precise_gpu=False):
     """Report GPU support for one validated, resolved set of warp parameters."""
     kind = config.get('warp_type', WARP_DEFAULTS['warp_type'])
     if kind not in GPU_WARP_TYPES:
         return 'warp_type_not_implemented'
-    if (kind == 'radial'
-            and config.get('warp_amount', WARP_DEFAULTS['warp_amount']) < GPU_WARP_MIN_RADIAL_AMOUNT):
-        # A negative amount gives the inverse map a steep derivative near the
-        # centre; rounding that centre to a pixel can change its sampled colour.
+    if not precise_gpu and spatial_requires_precise_gpu(config):
         return 'warp_precision_limit_exceeded'
-    if kind == 'polar_wrap' and not spatial_is_identity(config):
-        if config.get('warp_border', WARP_DEFAULTS['warp_border']) != 'repeat':
-            return 'polar_wrap_seam_requires_repeat'
-        if config.get('warp_radius', WARP_DEFAULTS['warp_radius']) < GPU_POLAR_WRAP_MIN_RADIUS:
-            return 'warp_precision_limit_exceeded'
-    if kind == 'raindrop_ripples' and not spatial_is_identity(config):
-        amplitude = config.get('warp_amplitude', WARP_DEFAULTS['warp_amplitude'])
-        wavelength = config.get('warp_scale', WARP_DEFAULTS['warp_scale'])[0]
-        variant = config.get('warp_ripple_variant', WARP_DEFAULTS['warp_ripple_variant'])
-        if (max(map(abs, amplitude)) > GPU_WARP_MAX_AMPLITUDE
-                or variant != 'droplets' and wavelength < GPU_WARP_MIN_WAVELENGTH):
-            return 'warp_precision_limit_exceeded'
-    # Single-precision GLSL cannot preserve the fractional sampling footprint
-    # at the combination of short wavelengths and very large displacement.
-    if kind in {'wave', 'turbulence', 'displacement'} and not spatial_is_identity(config):
-        amplitude = config.get('warp_amplitude', WARP_DEFAULTS['warp_amplitude'])
-        wavelength = config.get('warp_scale', WARP_DEFAULTS['warp_scale'])
-        if (max(map(abs, amplitude)) > GPU_WARP_MAX_AMPLITUDE
-                or kind != 'displacement' and min(wavelength) < GPU_WARP_MIN_WAVELENGTH):
-            return 'warp_precision_limit_exceeded'
     return None
 
 

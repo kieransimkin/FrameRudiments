@@ -17,18 +17,20 @@ with both panels composited onto the same dark background.
 
 | GPU warp | Controls and limits |
 | --- | --- |
-| Wave and turbulence | Up to 128 pixels of amplitude per axis and wavelengths of at least 16 pixels. Turbulence supports the authored seed and up to six octaves. |
-| Radial | Nonnegative `warp_amount`. Negative amounts retain the CPU inverse mapping. |
+| Wave and turbulence | Up to 4096 pixels of amplitude per axis and wavelengths of at least one pixel. Turbulence supports the authored seed and up to six octaves. |
+| Radial | The full `warp_amount` range from −2 to 2. |
 | Swirl, mirror, kaleidoscope and polar unwrap | Existing controls and canvas limits. |
+| Map displacement | Two same-size RGBA inputs, all four borders and up to 4096 pixels of displacement per axis. |
+| Polar wrap | All four borders. Radii under 16 pixels require the precision shader extension. |
+| Raindrop ripples | All three variants and four borders. Amplitude above 128 pixels or an X wavelength below 16 pixels for rings and storm requires the precision shader extension. |
 
-These seven modes support transparent, clamp, repeat and mirror borders. They
+These modes support transparent, clamp, repeat and mirror borders. They
 sample at pixel centres, interpolate premultiplied colour, and apply warp mix
 before quantizing alpha to RGBA8. Zero mix and neutral transforms preserve
-the original pixels exactly. Wave and turbulence settings beyond the GPU
-precision limits retain their full CPU ranges. Strict GPU mode reports the
-reason for rejecting unsupported configurations. `spatial_manifest()` reports
-support and the reason for the configured values. Backend preflight resolves
-per-frame control overrides before making the same decision.
+the original pixels exactly. Strict GPU mode reports the reason for rejecting
+unsupported configurations. `spatial_manifest(gpu_backend=backend)` reports
+support for the configured values on the attached backend. Backend preflight
+resolves per-frame control overrides before making the same decision.
 
 ## Original alpha and transfers
 
@@ -42,12 +44,8 @@ and reports both transfers.
 
 ## Map displacement and polar wrap
 
-FrameRudiments 0.4.27 adds the following GPU configurations.
-
-| Warp | GPU configuration | CPU fallback in `auto` |
-| --- | --- | --- |
-| `displacement` | Two same-size RGBA inputs, all four borders, up to 128 pixels of displacement on each axis. | Amplitude above 128 pixels. |
-| `polar_wrap` | Repeat border and a radius of at least 16 pixels. | Transparent, clamp or mirror border, or a radius below 16 pixels. |
+FrameRudiments 0.4.27 introduced these GPU modes. The comparison below shows
+RGBA map displacement and repeat-border polar wrap from that release.
 
 ![Actual CPU and GPU comparisons for RGBA map displacement and polar wrap](media/effect-graph-m8-9-map-polar.png)
 
@@ -70,8 +68,8 @@ transparent can alias the original pixels without a warp draw.
 
 Polar wrap keeps the fractional part of its origin separate so a centre
 close to a pixel still points in the correct direction. Repeat sampling
-joins the left and right source columns even when a coordinate rounds across
-the seam. Other borders keep their existing CPU seam behaviour.
+joins the left and right source columns at the seam. In 0.4.29, transparent,
+clamp and mirror sampling preserve their corresponding CPU seam on GPU.
 
 ## Raindrop ripples
 
@@ -84,11 +82,11 @@ refraction at each pixel using those uniforms, with no displacement texture.
 With one source and an output that stays resident, each frame transfers the
 source to the device once and reads the final image back once.
 
-GPU amplitude is limited to 128 pixels in magnitude per axis. Rings and storm
-require an X wavelength of at least 16 pixels. Droplets use lens geometry
-without a wavelength. `auto` routes out-of-range settings to the CPU. Strict
-GPU mode reports `warp_precision_limit_exceeded`. A zero-amplitude or
-zero-mix ripple returns the exact source pixels. The
+The base shader accepts 128 pixels of amplitude per axis and an X wavelength
+of at least 16 pixels for rings and storm. Droplets use lens geometry without
+a wavelength. The 0.4.29 precision shader extends amplitude to 4096 pixels
+and wavelength down to one pixel. A zero-amplitude or zero-mix ripple returns
+the exact source pixels. The
 [wash-away transition](raindrop-ripples.md#wash-away-transition) uses the CPU.
 
 ![The same grid in three rows, showing the original, CPU and GPU output for rings, droplets and storm](media/effect-graph-m8-9-raindrops.png)
@@ -98,6 +96,33 @@ Read the rows from top to bottom. A ring travels outward in the first row.
 Several lens-like distortions pulse in the second row. The last row combines
 overlapping rings and lenses. The left column shows the static source, with
 the CPU output in the middle and the GPU output on the right.
+
+## Full-range warps
+
+FrameRudiments 0.4.29 computes wave and turbulence coordinates from a
+48-bit fixed-point step. The GPU keeps the integer noise cell and its
+fraction separate, so short wavelengths retain their subpixel placement
+across the canvas and across all six turbulence octaves. Negative radial
+warps subtract a split origin before mapping the distance. Map displacement
+calculates the offset from exact RGBA bytes, including near-white neutral
+thresholds.
+
+The CPU supplies one bit per scanline for the polar seam on transparent,
+clamp and mirror borders. The bit identifies the source edge when an angle
+rounds onto the cut. The GPU computes the remaining sampling coordinates.
+There is no extra image upload or readback.
+
+Radii below 16 pixels and extreme ripples use compensated distance arithmetic.
+That shader uses `precise` to retain the order of the rounding corrections
+and requires [`GL_ARB_gpu_shader5`](https://registry.khronos.org/OpenGL/extensions/ARB/ARB_gpu_shader5.txt).
+On drivers without it, `auto` uses the CPU for those samples and strict mode
+reports `warp_precision_limit_exceeded`.
+
+![CPU and GPU renders of the same transparent polar wrap. A green and red strip meet along a diagonal through each circle.](media/effect-graph-m8-9-polar-seam.png)
+
+[Play the two-second 60 fps polar seam comparison](media/effect-graph-m8-9-polar-seam.mp4).
+A cut rotates through each circle. The green and red bands come from opposite
+edges of the source. The CPU sample is on the left and GPU on the right.
 
 ## Benchmark
 
@@ -116,6 +141,13 @@ visible RGB and composited differences were each one 8-bit level. The
 precision-boundary fixtures also exercise all three variants at 128 pixels
 of displacement per axis. Droplets and storm use 32 sources there.
 
+The 0.4.29 stress benchmark uses 12 fixtures, including 4096-pixel amplitude,
+a fractional one-pixel wavelength, a radius close to half a pixel, and
+a cut through strongly contrasting source edges. The RTX 4060 Ti passed
+the 1080p and 4K comparisons with a maximum difference of one 8-bit level
+in alpha and visible RGB. The largest difference after compositing over
+black or white was below two levels. Mesa/EGL runs the same 1080p benchmark.
+
 Reproduce the benchmark and optional comparison media from the source checkout.
 
 ```sh
@@ -124,25 +156,19 @@ python integration/benchmark_effect_graph_m8_9_gpu.py --backend auto --output m8
 python integration/benchmark_effect_graph_m8_9_gpu.py --backend auto --output m89-map.json --media docs/media --map-polar-media
 python integration/benchmark_effect_graph_m8_9_gpu.py --size hd --backend auto --raindrops-only --output m89-rain-hd.json
 python integration/benchmark_effect_graph_m8_9_gpu.py --backend auto --raindrops-only --output m89-rain-demo.json --media docs/media --raindrop-media
+python integration/benchmark_effect_graph_m8_9_precision.py --size hd --backend auto --output m89-precision-hd.json
+python integration/benchmark_effect_graph_m8_9_precision.py --size small --case polar_wrap_oblique --backend auto --output m89-seam.json --media docs/media
 ```
 
 ## Potential problems
 
-- **A short wavelength combined with a large amplitude changes edge pixels
-  on GPU.** At 1080p, a deliberately extreme wave and turbulence fixture exposed
-  large differences between the GLSL and CPU sampling coordinates. Keep the CPU
-  range intact and use the shared GPU precision check before upload. The HD
-  benchmark tests the admitted boundary and compares alpha plus the result
-  composited over both black and white.
-- **A radial warp with a negative amount and an almost pixel-centred origin
-  can shift the centre pixel.** The CPU and GLSL may round the origin
-  differently. The same precision check routes negative radial amounts to
-  the CPU, including values reached by a live control.
-- **Polar wrap can jump to the opposite source edge at a discontinuous
-  angular seam.** GPU wrap requires repeat sampling so both sides of the
-  seam interpolate the same source columns. Other border modes use the CPU
-  route in `auto`. A split integer/fractional centre also avoids losing the
-  direction to the nearest pixel.
+- **Large coordinates can round away a fraction that determines the sample.**
+  The stress benchmark checks the authored wave, turbulence, radial and
+  displacement ranges. It also exercises short-radius polar wrap and
+  high-amplitude rain, including the precision shader.
+- **A nonperiodic polar cut can switch to the opposite source edge.** Check an
+  oblique seam and both sides of a cardinal angle with different pixels on
+  each source edge. Repeat sampling has the same footprint on either side.
 - **Opacity rounding can move a displacement sample by a pixel.** A map
   produced from a source with fractional opacity is prepared on the host
   before the warp runs on GPU. Both GPU routes preserve the CPU map bytes.

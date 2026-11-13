@@ -181,7 +181,7 @@ def test_oversize_edge_decontamination_rejects_before_upload():
         assert gpu.last_transport['uploads'] == 0
 
 
-def test_mixed_cpu_gpu_graph_executes_two_islands_with_transfer_telemetry():
+def test_mixed_cpu_gpu_graph_executes_two_islands_with_transfer_telemetry(monkeypatch):
     images = {'a': _sources(1)['a']}
     graph = _graph([
         {'id': 'a', 'type': 'source'},
@@ -194,6 +194,7 @@ def test_mixed_cpu_gpu_graph_executes_two_islands_with_transfer_telemetry():
     ], 'out')
     reference = graph.render(images)
     with _gpu() as gpu:
+        monkeypatch.setattr(gpu, 'supports_precise_spatial_warps', False)
         actual = graph.render(images, gpu_backend=gpu)
         _near(reference, actual, alpha=12, rgb=14)
         report = gpu.last_transport
