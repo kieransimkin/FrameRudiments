@@ -250,14 +250,27 @@ def test_processed_map_is_bridged_and_keeps_transparent_identity(gpu):
 
 
 def test_processed_map_bridge_preserves_original_alpha_and_counts_transfers(gpu):
-    graph = _graph({'id': 'map', 'type': 'source'},
-                   {'id': 'dim', 'type': 'opacity', 'inputs': ['map'], 'opacity': .7},
-                   _displacement('dim', opacity=.3),
+    nodes = (
+        {'id': 'map', 'type': 'source'},
+        {'id': 'dim', 'type': 'opacity', 'inputs': ['map'], 'opacity': .7},
+        _displacement('dim', opacity=.3),
+    )
+    graph = _graph(*nodes,
                    {'id': 'out', 'type': 'layer_style', 'inputs': ['warp'],
                     'style_type': 'outline', 'style_width': 2, 'alpha_source': 'original'})
     images = {'a': _source(), 'map': _source()}
+    warp = _graph(*nodes)
+    _near(warp.render(images), warp.render(images, gpu_backend=gpu, gpu_strict=True))
     actual = graph.render(images, gpu_backend=gpu, style_report={})
-    _near(graph.render(images), actual, alpha=3, rgb=5)
+    expected = graph.render(images)
+    # The outline composites straight RGB against low-alpha edges. Test its
+    # actual visible contribution separately from the raw warp's RGB parity.
+    a, b = (np.asarray(im, dtype=np.float32) for im in (expected, actual))
+    assert np.abs(a[..., 3] - b[..., 3]).max() <= 3
+    for background in (0, 255):
+        a_rgb, b_rgb = (im[..., :3] * (im[..., 3:4] / 255)
+                        + background * (1 - im[..., 3:4] / 255) for im in (a, b))
+        assert np.abs(a_rgb - b_rgb).max() <= 3
     report = gpu.last_transport
     assert report['uploads'] == 4 and report['readbacks'] == 2
     assert gpu.last_dispatch == {'gpu_nodes': 1, 'cpu_fallbacks': 1}
