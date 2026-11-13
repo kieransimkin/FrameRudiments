@@ -16,7 +16,10 @@ import zipfile
 ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_SOURCE = (
     "pyproject.toml", "MANIFEST.in", "analysis-releases.json", "RELEASE_NOTES.md",
-    "examples/isf-tint.fs",
+    "examples/isf-tint.fs", "examples/gl_transitions_demo.py", "docs/gl-transitions.md",
+    "docs/media/gl-transitions-midpoint.png", "docs/media/gl-transitions-60fps.mp4",
+    "src/framerudiments/gl_transition_shaders/circular-reveal.glsl",
+    "src/framerudiments/gl_transition_shaders/ripple-wipe.glsl",
     "scripts/Run-PresetBehaviourAnalysis.ps1", "scripts/Run-FullPresetAnalysis.ps1",
     "scripts/install_analysis_releases.py", "scripts/ensure_projectm_runtime.py",
     "scripts/preset_behaviour_pipeline.py", "scripts/check_release_packages.py",

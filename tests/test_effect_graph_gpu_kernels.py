@@ -1,4 +1,7 @@
-"""Required M8.3 GPU parity; CI must execute with a working ModernGL/EGL context."""
+"""Required shader parity; CI must execute with a working ModernGL/EGL context."""
+import sys
+from types import SimpleNamespace
+
 import numpy as np
 import pytest
 from PIL import Image
@@ -10,11 +13,18 @@ from framerudiments.effect_graph_filter import render_filter  # noqa: E402
 from framerudiments.effect_graph_gpu import GLMatteBackend, GPUUnsupported  # noqa: E402
 from framerudiments.effect_graph_transitions import render_transition  # noqa: E402
 from framerudiments.effect_graph import _chromatic_displacement  # noqa: E402
+from framerudiments.gl_transitions import shader_catalogue  # noqa: E402
 
 
 @pytest.fixture(scope='module')
 def backend():
     with GLMatteBackend(backend='egl') as gpu:
+        yield gpu
+
+
+@pytest.fixture(scope='module')
+def transition_backend():
+    with GLMatteBackend(backend=None if sys.platform == 'win32' else 'egl') as gpu:
         yield gpu
 
 
@@ -64,6 +74,82 @@ def test_gpu_transition_endpoint_exact_no_transfer(backend,p):
     assert backend.render_transition(a,b,{'progress':p}).tobytes()==(a if p==0 else b).tobytes()
     assert backend.last_transport['uploads']==0
     assert backend.last_transport['readbacks']==0
+
+
+def gl_graph(shader_id, **config):
+    shader = next(row for row in shader_catalogue() if row['id'] == shader_id)
+    return EffectGraph({'nodes': [
+        {'id': 'a', 'type': 'source'}, {'id': 'b', 'type': 'source'},
+        {'id': 'out', 'type': 'gl_transition', 'inputs': ['a', 'b'], 'shader': shader, **config},
+    ], 'output': 'out'})
+
+
+@pytest.mark.parametrize('progress', [0, 1])
+def test_gl_transition_endpoint_bytes_and_zero_transfers(transition_backend, progress):
+    backend = transition_backend
+    a, b = images()
+    graph = gl_graph('ripple-wipe', progress=progress)
+    result = graph.render({'a': a, 'b': b}, gpu_backend=backend)
+    assert result.tobytes() == (a if progress == 0 else b).tobytes()
+    assert backend.last_dispatch == {'gpu_nodes': 0, 'cpu_fallbacks': 0}
+    assert backend.last_transport['uploads'] == backend.last_transport['readbacks'] == 0
+
+
+def test_gl_transition_binds_uv_clock_and_project_timing(transition_backend):
+    backend = transition_backend
+    a, b = images((81, 41))
+    sources = {'a': a, 'b': b}
+    graph = gl_graph('ripple-wipe', timing={'clock': 'source', 'duration_beats': 4})
+    t0 = SimpleNamespace(output_seconds=0, source_seconds=50, beat=5, source_beat=2)
+    t1 = SimpleNamespace(output_seconds=2 / 3, source_seconds=50, beat=5, source_beat=2)
+    first = graph.render(sources, gpu_backend=backend, context=t0)
+    second = graph.render(sources, gpu_backend=backend, context=t1)
+    assert graph.render(sources, gpu_backend=backend, context=t0).tobytes() == first.tobytes()
+    for y, from_image, to_image in [(10, a, b), (30, b, a)]:
+        assert first.getpixel((40, y)) == from_image.getpixel((40, y))
+        assert second.getpixel((40, y)) == to_image.getpixel((40, y))
+    assert first.getpixel((0, 10)) == b.getpixel((0, 10))
+    assert first.getpixel((80, 10)) == a.getpixel((80, 10))
+    assert backend.last_dispatch == {'gpu_nodes': 1, 'cpu_fallbacks': 0}
+    assert backend.last_transport['uploads'] == 2
+    assert backend.last_transport['readbacks'] == 1
+    p = graph.backend_plan({key: im.size for key, im in sources.items()},
+                           mode='auto', gpu_backend=backend, context=t0)
+    assert p['eligible'] and p['nodes']['out']['selected_backend'] == 'gpu_bridge'
+    assert p['nodes']['out']['alpha_owner'] == 'out'
+    assert p['resources']['upload_bytes'] == a.width * a.height * 8
+    assert graph.render(sources, gpu_backend=backend, context=t0,
+                        parameter_values={('out', 'progress'): 1}).tobytes() == b.tobytes()
+
+
+def test_gl_transition_ratio_and_alpha_association(transition_backend):
+    size = (160, 80)
+    a = Image.new('RGBA', size, (255, 0, 0, 0))
+    b = Image.new('RGBA', size, (0, 255, 0, 200))
+    result = gl_graph('circular-reveal', progress=.31, opacity=.5).render(
+        {'a': a, 'b': b}, gpu_backend=transition_backend, gpu_strict=True,
+    )
+    assert result.getpixel((80, 40)) == (0, 255, 0, 100)
+    assert result.getpixel((80 + 28, 40))[3] == result.getpixel((80, 40 + 28))[3] == 0
+    assert result.getpixel((80 + 20, 40))[3] == result.getpixel((80, 40 + 20))[3] == 100
+    pixels = np.asarray(result)
+    feather = pixels[(0 < pixels[..., 3]) & (pixels[..., 3] < 100)]
+    assert len(feather) and np.all(feather[:, :3] == (0, 255, 0))
+
+
+def test_gl_transition_budget_rejection_has_no_transfers_or_cpu_substitute(transition_backend, monkeypatch):
+    backend = transition_backend
+    a, b = images()
+    sources = {'a': a, 'b': b}
+    graph = gl_graph('circular-reveal', progress=.4)
+    monkeypatch.setattr(backend, 'max_working_set_bytes', 12 * a.width * a.height - 1)
+    plan = graph.backend_plan({key: im.size for key, im in sources.items()}, mode='auto', gpu_backend=backend)
+    assert not plan['eligible']
+    assert plan['nodes']['out']['decision_reason'] == 'texture_payload_budget'
+    with pytest.raises(GPUUnsupported, match='exceeds budget'):
+        graph.render(sources, gpu_backend=backend)
+    assert backend.last_dispatch == {'gpu_nodes': 0, 'cpu_fallbacks': 0}
+    assert backend.last_transport['uploads'] == backend.last_transport['readbacks'] == 0
 
 
 @pytest.mark.parametrize('offsets',[{'red_offset':[1.25,-1.5]},

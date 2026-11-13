@@ -8,6 +8,7 @@
 *.wav binary
 *.mp4 binary
 *.wasm binary
+*.glsl text eol=lf
 *.zip binary
 *.whl binary
 # Historical patch artifacts may contain significant leading '+' and trailing spaces.

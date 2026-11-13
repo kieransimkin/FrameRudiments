@@ -89,6 +89,9 @@ jobs:
           kernels = [t for t in tests if 'test_effect_graph_gpu_kernels' in t.attrib.get('classname', '')]
           if len(kernels) < 15:
               raise SystemExit('M8.3 shader parity cases were not collected')
+          transitions = [t for t in kernels if t.attrib.get('name', '').startswith('test_gl_transition_')]
+          if len(transitions) != 5:
+              raise SystemExit('M9.2 GL Transitions tests were not collected')
           resident = [t for t in tests if 'test_effect_graph_gpu_resident_egl' in t.attrib.get('classname','')]
           if len(resident) < 4:
               raise SystemExit('M8.5 resident shader parity/budget checks were not collected')
@@ -101,7 +104,7 @@ jobs:
           spatial = [t for t in tests if 'test_effect_graph_gpu_spatial_egl' in t.attrib.get('classname', '')]
           if len(spatial) < 40:
               raise SystemExit('M8.9 spatial warp shader parity and lineage cases were not collected')
-          print(f'{len(tests)} GPU tests, {len(transport)} M8.2 transfers, {len(kernels)} M8.3 kernels; none skipped')
+          print(f'{len(tests)} GPU tests including {len(transitions)} GL Transitions cases; none skipped')
           PYTEST
       - name: Benchmark spectral HD GPU and CPU (end-to-end)
         run: |

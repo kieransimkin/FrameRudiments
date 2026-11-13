@@ -671,6 +671,12 @@ class GLMatteBackend:
         from .effect_graph_gpu_kernels import render_transition
         return render_transition(self, outgoing, incoming, config)
 
+    def render_gl_transition(self, outgoing, incoming, config, *, output_seconds):
+        """Run one pinned GL Transitions shader on the two input surfaces."""
+        from .gl_transitions import render_gl_transition
+
+        return render_gl_transition(self, outgoing, incoming, config, output_seconds=output_seconds)
+
     def chromatic_displacement(self, image, config):
         """M8.3 RGB channel offsets with the historical CPU pixel semantics."""
         from .effect_graph_gpu_kernels import render_chromatic

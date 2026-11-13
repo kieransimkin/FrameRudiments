@@ -1,7 +1,7 @@
-"""Deterministic CPU effect DAG with alpha-correct two-input transitions.
+"""Deterministic effect DAG with CPU and OpenGL execution.
 
 Compositor integration supplies source RGBA images and per-frame DanceRudiment
-controls. Temporal feedback and GPU graph execution remain later milestones.
+controls.
 """
 from __future__ import annotations
 
@@ -41,6 +41,7 @@ from .effect_graph_filter import (
     render_filter, validate_filter,
 )
 from .effect_graph_transitions import render_transition
+from .gl_transitions import validate_gl_transition
 from .effect_graph_transition_chains import expand_transition_chains
 from .effect_graph_transition_timing import (
     TIMING_DEFAULTS, TIMING_ENUMS, TIMING_RANGES,
@@ -68,8 +69,10 @@ from .effect_graph_spectral import (
 
 MAX_NODES = 256
 MAX_INPUTS = 32
+TRANSITION_KINDS = {'transition', 'gl_transition'}
 KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement',
-         'spectral_displacement', 'composite', 'transition', 'layer_style', 'spatial_warp', 'raster_effect', 'procedural_field', 'filter'}
+         'spectral_displacement', 'composite', 'layer_style', 'spatial_warp',
+         'raster_effect', 'procedural_field', 'filter', *TRANSITION_KINDS}
 TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte', 'spectral', *GEOMETRIC_STYLES}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
@@ -85,6 +88,7 @@ CONTROL_TARGETS = {
                    'key_space', 'alpha_source'},
     'chromatic_displacement': {f'{c}_offset.{axis}' for c in ('red', 'green', 'blue') for axis in ('x', 'y')},
     'spectral_displacement': {'mix', 'spectral_mode', 'alpha_mode'},
+    'gl_transition': {'progress'},
     'transition': {'progress', 'feather', 'center.x', 'center.y', 'transition_style', 'direction',
                    'threshold', 'mask_gamma', 'matte_channel', 'invert', 'key_color.r',
                    'key_color.g', 'key_color.b', 'key_space', 'tolerance', 'softness',
@@ -146,7 +150,7 @@ class EffectGraph:
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
                                'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma',
-                               'timing', 'wash_variant', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS, *FIELD_FIELDS, *FILTER_FIELDS}:
+                               'shader', 'timing', 'wash_variant', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS, *FIELD_FIELDS, *FILTER_FIELDS}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
@@ -167,8 +171,10 @@ class EffectGraph:
                 raise ValueError('raster properties require a raster_effect node')
             if kind != 'filter' and FILTER_FIELDS & entry.keys():
                 raise ValueError('filter properties require a filter node')
-            if 'timing' in entry and kind != 'transition':
+            if 'timing' in entry and kind not in TRANSITION_KINDS:
                 raise ValueError('timing is only supported on transition nodes')
+            if 'shader' in entry and kind != 'gl_transition':
+                raise ValueError('shader is only supported on gl_transition nodes')
             inputs = entry.get('inputs', [])
             if not isinstance(inputs, list) or len(inputs) > MAX_INPUTS or not all(isinstance(i, str) for i in inputs):
                 raise ValueError('invalid inputs')
@@ -176,6 +182,8 @@ class EffectGraph:
                 raise ValueError(f'wrong input count for {kind}')
             if kind == 'layer_style':
                 validate_style_inputs(entry, len(inputs))
+            if kind == 'gl_transition':
+                validate_gl_transition(entry, len(inputs))
             if kind == 'filter':
                 validate_filter(entry, len(inputs))
             if kind == 'procedural_field':
@@ -252,6 +260,9 @@ class EffectGraph:
         self.layer_style_ids = frozenset(
             key for key in self.order if self.nodes[key].kind == 'layer_style'
         )
+        self.gl_transition_ids = frozenset(
+            key for key in self.order if self.nodes[key].kind == 'gl_transition'
+        )
         # Diagnostics only: never read by rendering or native motion evaluation.
         self._style_render_report = {}
 
@@ -266,7 +277,7 @@ class EffectGraph:
             if property_name == 'opacity' or style_control_valid(node.config, property_name):
                 return
             raise ValueError('unknown or inapplicable layer_style control target')
-        if (node is not None and node.kind == 'transition'
+        if (node is not None and node.kind in TRANSITION_KINDS
                 and isinstance(property_name, str) and property_name.startswith('timing.')
                 and isinstance(node.config.get('timing'), dict)
                 and property_name.removeprefix('timing.') in (TIMING_ENUMS.keys() | TIMING_RANGES.keys())):
@@ -302,7 +313,7 @@ class EffectGraph:
     def is_categorical_control(self, node_id, property_name):
         self.validate_control_target(node_id, property_name)
         node = self.nodes[node_id]
-        return (node.kind == 'transition' and property_name.startswith('timing.')
+        return (node.kind in TRANSITION_KINDS and property_name.startswith('timing.')
                 and property_name.removeprefix('timing.') in TIMING_ENUMS
                 or property_name in ENUM_CONTROLS.get(node.kind, {})
                 or (node.kind == 'spectral_displacement'
@@ -315,7 +326,7 @@ class EffectGraph:
         self.validate_control_target(node_id, property_name)
         node = self.nodes[node_id]
         accepted = ENUM_CONTROLS.get(node.kind, {}).get(property_name)
-        if node.kind == 'transition' and property_name.startswith('timing.'):
+        if node.kind in TRANSITION_KINDS and property_name.startswith('timing.'):
             accepted = TIMING_ENUMS.get(property_name.removeprefix('timing.'))
         if (accepted is None and node.kind == 'spectral_displacement'
                 and spectral_control_parts(node.config, property_name) is not None
@@ -425,7 +436,7 @@ class EffectGraph:
             return filter_control_base(config, property_name)
         if self.nodes[node_id].kind == 'layer_style' and property_name != 'opacity':
             return style_control_base(config, property_name)
-        if self.nodes[node_id].kind == 'transition' and property_name.startswith('timing.'):
+        if self.nodes[node_id].kind in TRANSITION_KINDS and property_name.startswith('timing.'):
             name = property_name.removeprefix('timing.')
             return config['timing'].get(name, TIMING_DEFAULTS.get(name, config['timing'].get('duration_beats', 4)))
         if self.nodes[node_id].kind == 'spectral_displacement' and property_name.startswith('bands.'):
@@ -490,7 +501,7 @@ class EffectGraph:
                     configs.get(node_id, node.config), property_name, value
                 )
                 continue
-            if node.kind == 'transition' and property_name.startswith('timing.'):
+            if node.kind in TRANSITION_KINDS and property_name.startswith('timing.'):
                 part = property_name.removeprefix('timing.')
                 if part in TIMING_ENUMS:
                     if (type(value) is not bool and not isinstance(value, str)) or value not in TIMING_ENUMS[part]:
@@ -578,7 +589,7 @@ class EffectGraph:
         # An explicit native progress binding takes priority over the timer.
         for key in self.order:
             node = self.nodes[key]
-            if node.kind != 'transition' or 'timing' not in node.config:
+            if node.kind not in TRANSITION_KINDS or 'timing' not in node.config:
                 continue
             effective = configs.get(key, node.config)
             validate_transition_timing(effective['timing'])
@@ -602,6 +613,14 @@ class EffectGraph:
                 validate_transition_geometry(config)
         return configs
 
+    def validate_required_backend(self, gpu_backend):
+        if self.gl_transition_ids and (
+                not callable(getattr(gpu_backend, 'render_gl_transition', None))
+                or getattr(gpu_backend, 'closed', False)):
+            from .effect_graph_gpu import GPUUnsupported
+
+            raise GPUUnsupported('gl_transition requires an active OpenGL 3.3+ effect graph backend')
+
     def render(self, sources: dict[str, Image.Image], *, parameter_values=None,
                gpu_backend=None, gpu_strict=False, context=None, style_report=None) -> Image.Image:
         """Render with optional resolved per-frame controls keyed by (node_id, property).
@@ -609,6 +628,7 @@ class EffectGraph:
         Values are already evaluated by the host modulation engine. Never mutate
         the validated graph or its configuration during frame evaluation.
         """
+        self.validate_required_backend(gpu_backend)
         if style_report is not None:
             if not isinstance(style_report, dict):
                 raise ValueError('style_report must be a dictionary')
@@ -622,8 +642,10 @@ class EffectGraph:
             gpu_backend.last_dispatch = {'gpu_nodes': 0, 'cpu_fallbacks': 0}
             if callable(getattr(gpu_backend, 'begin_transfer_sample', None)):
                 gpu_backend.begin_transfer_sample()
-        # M8.5 GPU-resident closed island. Unsupported graphs keep node dispatch.
-        if gpu_backend is not None and style_report is None and callable(
+        # The pinned shader adapter uses the bridge and needs an active GPU.
+        # Resident graphs and islands can retry the entire graph on the CPU.
+        allow_resident = not self.gl_transition_ids
+        if allow_resident and gpu_backend is not None and style_report is None and callable(
                 getattr(gpu_backend, 'render_resident_graph', None)):
             from .effect_graph_gpu_resident import supported
             if supported(self, configs, precise_gpu=getattr(gpu_backend, 'supports_precise_spatial_warps', False)):
@@ -643,7 +665,7 @@ class EffectGraph:
         # A merge/transition starts a new source silhouette at its output.
         original_alphas = {}
         islands_by_member = {}
-        if (gpu_backend is not None and not gpu_strict and style_report is None
+        if (allow_resident and gpu_backend is not None and not gpu_strict and style_report is None
                 and getattr(gpu_backend, 'supports_gpu_islands', False)
                 and callable(getattr(gpu_backend, 'render_resident_graph', None))):
             from .effect_graph_gpu_islands import plan_islands
@@ -813,6 +835,12 @@ class EffectGraph:
                                 raise
                             gpu_backend.last_dispatch['cpu_fallbacks'] += 1
                             result = spectral_displacement(inputs[0], config)
+                elif kind == 'gl_transition':
+                    result = gpu_backend.render_gl_transition(
+                        *inputs, config, output_seconds=context.output_seconds if context is not None else 0,
+                    )
+                    if 0 < config.get('progress', 0) < 1:
+                        gpu_backend.last_dispatch['gpu_nodes'] += 1
                 elif kind == 'transition':
                     # Revalidate after resolving DanceRudiment overrides.
                     validate_transition_matte(config)
@@ -879,7 +907,7 @@ class EffectGraph:
                 original_alphas[key] = raster_alpha
             elif kind == 'spatial_warp':
                 original_alphas[key] = warped_alpha
-            elif kind == 'source' or kind in {'transition', 'composite', 'procedural_field'}:
+            elif kind in {'source', 'composite', 'procedural_field', *TRANSITION_KINDS}:
                 original_alphas[key] = result.getchannel('A')
             else:
                 original_alphas[key] = original_alphas[node.inputs[0]]

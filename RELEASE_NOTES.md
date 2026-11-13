@@ -1,3 +1,13 @@
+# FrameRudiments 0.4.34
+
+- Add the two-source `gl_transition` graph node and `gl-transitions`
+  catalogue. Pin Circular Reveal or Ripple Wipe by shader ID and SHA-256.
+- Bind beat- or DanceRudiment-driven progress, bottom-left UVs, canvas
+  aspect ratio and deterministic output time. Exact endpoints require
+  zero texture transfers.
+- Verify real OpenGL rendering, alpha, time replay and texture budgets.
+  [See the actual 60 fps comparison](docs/gl-transitions.md).
+
 # FrameRudiments 0.4.33
 
 - Add `inspect-isf` for local ISF 2 fragments. It reports ordered typed

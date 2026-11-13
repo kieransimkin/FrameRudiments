@@ -153,7 +153,8 @@ All external shader/model/media sources must be pinned or versioned, constrained
 ### M9 — External shader adapters
 - **M9.1** Bounded ISF metadata inspection, typed parameter discovery and a
   documented single-pass subset in 0.4.33. [ISF metadata guide](isf-metadata.md).
-- **M9.2** GL Transitions two-source/progress adapter, coordinate and time uniform bindings.
+- **M9.2** GL Transitions two-source/progress adapter, coordinate and time
+  uniform bindings in 0.4.34. [Pinned shaders and rendered demo](gl-transitions.md).
 - **M9.3** Controlled multipass execution and explicitly bounded shader resources.
 - **M9.4** Reject untrusted shader includes, unsupported operations and unsafe resource use.
 - **M9.5** Golden images + provenance for pinned shader fixtures.
