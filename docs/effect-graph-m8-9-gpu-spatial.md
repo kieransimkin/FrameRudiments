@@ -25,9 +25,8 @@ These seven modes support transparent, clamp, repeat and mirror borders. They
 sample at pixel centres, interpolate premultiplied colour, and apply warp mix
 before quantizing alpha to RGBA8. Zero mix and neutral transforms preserve
 the original pixels exactly. Wave and turbulence settings beyond the GPU
-precision limits retain their full CPU ranges. The CPU also handles raindrop
-ripples. Strict GPU mode reports the reason for rejecting unsupported
-configurations. `spatial_manifest()` reports
+precision limits retain their full CPU ranges. Strict GPU mode reports the
+reason for rejecting unsupported configurations. `spatial_manifest()` reports
 support and the reason for the configured values. Backend preflight resolves
 per-frame control overrides before making the same decision.
 
@@ -74,6 +73,32 @@ close to a pixel still points in the correct direction. Repeat sampling
 joins the left and right source columns even when a coordinate rounds across
 the seam. Other borders keep their existing CPU seam behaviour.
 
+## Raindrop ripples
+
+FrameRudiments 0.4.28 adds GPU execution for `spatial_warp` nodes with
+`warp_type: "raindrop_ripples"`. Rings, droplets and storm support transparent,
+clamp, repeat and mirror borders. Rings use the authored centre. Droplets and
+storm support up to 32 seeded sources. The CPU prepares the same small set of
+drop locations and timing parameters for either backend. The GPU evaluates
+refraction at each pixel using those uniforms, with no displacement texture.
+With one source and an output that stays resident, each frame transfers the
+source to the device once and reads the final image back once.
+
+GPU amplitude is limited to 128 pixels in magnitude per axis. Rings and storm
+require an X wavelength of at least 16 pixels. Droplets use lens geometry
+without a wavelength. `auto` routes out-of-range settings to the CPU. Strict
+GPU mode reports `warp_precision_limit_exceeded`. A zero-amplitude or
+zero-mix ripple returns the exact source pixels. The
+[wash-away transition](raindrop-ripples.md#wash-away-transition) uses the CPU.
+
+![The same grid in three rows, showing the original, CPU and GPU output for rings, droplets and storm](media/effect-graph-m8-9-raindrops.png)
+
+[Play the two-second 60 fps raindrop comparison](media/effect-graph-m8-9-raindrops.mp4).
+Read the rows from top to bottom. A ring travels outward in the first row.
+Several lens-like distortions pulse in the second row. The last row combines
+overlapping rings and lenses. The left column shows the static source, with
+the CPU output in the middle and the GPU output on the right.
+
 ## Benchmark
 
 The 1920×1080 wave fixture on an NVIDIA RTX 4060 Ti made one upload and one
@@ -84,12 +109,21 @@ effect graph on that driver. They exclude decoding, the rest of the compositor
 and encoding. Physical VRAM measurement and persistent cross-frame pooling
 remain separate roadmap items.
 
+On the same RTX 4060 Ti, the nine-source 1920×1080 storm fixture took a median
+of 1.757 s on CPU and 0.032 s on GPU over three renders, including transfers.
+One upload and one readback each carried 8,294,400 bytes. The largest alpha,
+visible RGB and composited differences were each one 8-bit level. The
+precision-boundary fixtures also exercise all three variants at 128 pixels
+of displacement per axis. Droplets and storm use 32 sources there.
+
 Reproduce the benchmark and optional comparison media from the source checkout.
 
 ```sh
 python integration/benchmark_effect_graph_m8_9_gpu.py --size hd --backend auto --output m89.json
 python integration/benchmark_effect_graph_m8_9_gpu.py --backend auto --output m89-demo.json --media docs/media
 python integration/benchmark_effect_graph_m8_9_gpu.py --backend auto --output m89-map.json --media docs/media --map-polar-media
+python integration/benchmark_effect_graph_m8_9_gpu.py --size hd --backend auto --raindrops-only --output m89-rain-hd.json
+python integration/benchmark_effect_graph_m8_9_gpu.py --backend auto --raindrops-only --output m89-rain-demo.json --media docs/media --raindrop-media
 ```
 
 ## Potential problems

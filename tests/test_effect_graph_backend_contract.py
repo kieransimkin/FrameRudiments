@@ -124,7 +124,8 @@ def test_all_live_gpu_pass_textures_are_counted(kind, n, original, morph, blur):
     ('chroma_key', {'edge_expand': -17}, 1, 'radius_limit_exceeded'),
     ('chroma_key', {'edge_decontaminate': .1, 'edge_radius': 16}, 1,
      'edge_decontamination_radius_limit_exceeded'),
-    ('spatial_warp', {'warp_type': 'raindrop_ripples'}, 1, 'warp_type_not_implemented'),
+    ('spatial_warp', {'warp_type': 'raindrop_ripples', 'warp_scale': [8, 64]}, 1,
+     'warp_precision_limit_exceeded'),
 ])
 def test_shared_gpu_rejections(kind, cfg, n, reason):
     req = gpu_requirements(kind, cfg, n)
@@ -181,7 +182,7 @@ def test_each_auto_fallback_and_strict_rejection():
     assert exc.value.report['errors'][0]['node'] == 'out'
 
 
-@pytest.mark.parametrize('kind,params', [('layer_style', {}), ('spatial_warp', {'warp_type': 'raindrop_ripples'}),
+@pytest.mark.parametrize('kind,params', [('layer_style', {}), ('spatial_warp', {'warp_type': 'polar_wrap'}),
                                       ('raster_effect', {}), ('procedural_field', {})])
 def test_cpu_only_families_report_actual_legacy_policy(kind, params):
     g = unary(kind, **params)

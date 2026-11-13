@@ -187,7 +187,7 @@ def test_mixed_cpu_gpu_graph_executes_two_islands_with_transfer_telemetry():
         {'id': 'a', 'type': 'source'},
         {'id': 'blur', 'type': 'filter', 'inputs': ['a'], 'filter_radius': 1.1},
         {'id': 'warp', 'type': 'spatial_warp', 'inputs': ['blur'],
-         'warp_type': 'raindrop_ripples', 'warp_amplitude': [2, 0], 'warp_scale': [23, 23]},
+         'warp_type': 'raindrop_ripples', 'warp_amplitude': [2, 0], 'warp_scale': [12, 23]},
         {'id': 'key', 'type': 'chroma_key', 'inputs': ['warp'],
          'key_color': '#00ff00', 'tolerance': .1, 'softness': .2},
         {'id': 'out', 'type': 'opacity', 'inputs': ['key'], 'opacity': .8},

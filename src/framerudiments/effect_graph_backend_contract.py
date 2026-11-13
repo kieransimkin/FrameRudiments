@@ -242,6 +242,7 @@ def _device(backend):
 
 def backend_registry(gpu_backend=None):
     """Detached, JSON-safe discovery. Installed is NOT the same as executable."""
+    from .effect_graph_ripples import MAX_RIPPLE_SOURCES, RIPPLE_VARIANT_ORDER
     from .effect_graph_spatial import (
         GPU_POLAR_WRAP_MIN_RADIUS, GPU_WARP_MAX_AMPLITUDE, GPU_WARP_MIN_RADIAL_AMOUNT,
         GPU_WARP_MIN_WAVELENGTH, GPU_WARP_TYPES,
@@ -258,6 +259,7 @@ def backend_registry(gpu_backend=None):
             'moderngl': {'role': 'resident_graph_islands_and_per_node_bridge', 'device': device,
                          'kernel_kinds': sorted(GPU_KINDS), 'gpu_resident_graph': True,
                          'spatial_warp_types': sorted(GPU_WARP_TYPES),
+                         'raindrop_ripple_variants': list(RIPPLE_VARIANT_ORDER),
                          'mixed_cpu_gpu_islands': True, 'cross_node_texture_pool': True,
                          'limits': {'morph_radius': MAX_GPU_MORPH_RADIUS,
                                     'gaussian_radius': MAX_GPU_GAUSSIAN_RADIUS,
@@ -268,6 +270,9 @@ def backend_registry(gpu_backend=None):
                                     'wave_turbulence_min_wavelength': GPU_WARP_MIN_WAVELENGTH,
                                     'radial_min_amount': GPU_WARP_MIN_RADIAL_AMOUNT,
                                     'displacement_max_amplitude': GPU_WARP_MAX_AMPLITUDE,
+                                    'raindrop_max_amplitude': GPU_WARP_MAX_AMPLITUDE,
+                                    'raindrop_ring_min_wavelength': GPU_WARP_MIN_WAVELENGTH,
+                                    'raindrop_max_sources': MAX_RIPPLE_SOURCES,
                                     'polar_wrap_min_radius': GPU_POLAR_WRAP_MIN_RADIUS}},
         },
         'surface_transport': transport_capabilities(),

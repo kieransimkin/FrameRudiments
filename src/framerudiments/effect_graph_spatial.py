@@ -14,12 +14,12 @@ from PIL import Image
 
 from .effect_graph_transition_geometry import _sample, _rotate
 from .effect_graph_layer_overlays import _texture_paint
-from .effect_graph_ripples import RIPPLE_VARIANTS, ripple_vectors
+from .effect_graph_ripples import MAX_RIPPLE_SOURCES, RIPPLE_VARIANTS, ripple_vectors
 
 WARP_TYPES = frozenset({'wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope', 'displacement',
                         'polar_unwrap', 'polar_wrap', 'raindrop_ripples'})
 GPU_WARP_TYPES = ('wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope',
-                  'polar_unwrap', 'polar_wrap', 'displacement')
+                  'polar_unwrap', 'polar_wrap', 'displacement', 'raindrop_ripples')
 GPU_WARP_MAX_AMPLITUDE = 128
 GPU_WARP_MIN_WAVELENGTH = 16
 GPU_WARP_MIN_RADIAL_AMOUNT = 0
@@ -39,7 +39,7 @@ WARP_RANGES = {
     'warp_center.x': (0, 1), 'warp_center.y': (0, 1),
     'warp_angle': (-720, 720), 'warp_radius': (.5, 8192),
     'warp_amount': (-2, 2), 'warp_phase': (-64 * math.pi, 64 * math.pi),
-    'warp_octaves': (1, 6), 'warp_seed': (0, 10000), 'warp_segments': (2, 32),
+    'warp_octaves': (1, 6), 'warp_seed': (0, 10000), 'warp_segments': (2, MAX_RIPPLE_SOURCES),
     'warp_neutral': (1 / 255, 254 / 255),
 }
 WARP_DEFAULTS = {
@@ -349,6 +349,13 @@ def gpu_spatial_rejection(config):
         if config.get('warp_border', WARP_DEFAULTS['warp_border']) != 'repeat':
             return 'polar_wrap_seam_requires_repeat'
         if config.get('warp_radius', WARP_DEFAULTS['warp_radius']) < GPU_POLAR_WRAP_MIN_RADIUS:
+            return 'warp_precision_limit_exceeded'
+    if kind == 'raindrop_ripples' and not spatial_is_identity(config):
+        amplitude = config.get('warp_amplitude', WARP_DEFAULTS['warp_amplitude'])
+        wavelength = config.get('warp_scale', WARP_DEFAULTS['warp_scale'])[0]
+        variant = config.get('warp_ripple_variant', WARP_DEFAULTS['warp_ripple_variant'])
+        if (max(map(abs, amplitude)) > GPU_WARP_MAX_AMPLITUDE
+                or variant != 'droplets' and wavelength < GPU_WARP_MIN_WAVELENGTH):
             return 'warp_precision_limit_exceeded'
     # Single-precision GLSL cannot preserve the fractional sampling footprint
     # at the combination of short wavelengths and very large displacement.

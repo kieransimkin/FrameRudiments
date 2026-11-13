@@ -1,5 +1,6 @@
 """Real-driver parity and lineage for resident and bridged spatial warps."""
 from copy import deepcopy
+from math import tau
 import os
 from pathlib import Path
 import sys
@@ -14,7 +15,8 @@ from framerudiments.demo import create_demo
 from framerudiments.effect_graph import EffectGraph
 from framerudiments.effect_graph_gpu import GLMatteBackend, GPUUnsupported
 from framerudiments.effect_graph_gpu_islands import plan_islands
-from framerudiments.effect_graph_spatial import GPU_WARP_TYPES
+from framerudiments.effect_graph_ripples import MAX_RIPPLE_SOURCES, RIPPLE_VARIANT_ORDER
+from framerudiments.effect_graph_spatial import GPU_WARP_TYPES, render_spatial_warp_with_alpha
 
 
 @pytest.fixture(scope='module')
@@ -49,7 +51,8 @@ def _near(reference, actual, *, alpha=2, rgb=3):
     assert delta[..., :3][visible].max(initial=0) <= rgb
 
 
-@pytest.mark.parametrize('kind', [kind for kind in GPU_WARP_TYPES if kind not in {'polar_wrap', 'displacement'}])
+@pytest.mark.parametrize('kind', [kind for kind in GPU_WARP_TYPES
+                                  if kind not in {'polar_wrap', 'displacement', 'raindrop_ripples'}])
 @pytest.mark.parametrize('border', ['transparent', 'clamp', 'repeat', 'mirror'])
 def test_warp_residency_matches_cpu(gpu, kind, border):
     source = _source()
@@ -67,6 +70,89 @@ def test_warp_residency_matches_cpu(gpu, kind, border):
     assert report['upload_bytes'] == report['readback_bytes'] == source.width * source.height * 4
     assert gpu.last_dispatch['cpu_fallbacks'] == 0
     assert source.tobytes() == before
+
+
+@pytest.mark.parametrize('variant', RIPPLE_VARIANT_ORDER)
+@pytest.mark.parametrize('border', ['transparent', 'clamp', 'repeat', 'mirror'])
+def test_raindrop_variants_match_cpu_on_all_borders(gpu, variant, border):
+    graph = _graph(_warp(warp_type='raindrop_ripples', warp_ripple_variant=variant,
+                         warp_border=border, warp_segments=MAX_RIPPLE_SOURCES,
+                         warp_seed=209, warp_radius=43.7, warp_center=[.50000001, .5],
+                         warp_scale=[1 if variant == 'droplets' else 16, 1]))
+    source = _source()
+    images = {'a': source}
+    before = source.tobytes()
+    reference = graph.render(images)
+    actual = graph.render(images, gpu_backend=gpu, gpu_strict=True)
+    _near(reference, actual)
+    assert reference.tobytes() != before == source.tobytes()
+    pixels = np.asarray(actual)
+    assert not np.any(pixels[pixels[..., 3] == 0, :3])
+    report = gpu.last_transport
+    assert report['gpu_resident_graph']
+    assert report['resident_draws'] == report['uploads'] == report['readbacks'] == 1
+    assert report['upload_bytes'] == report['readback_bytes'] == source.width * source.height * 4
+
+
+def test_raindrop_phase_seed_and_variant_resolve_each_sample(gpu):
+    graph = _graph(_warp(warp_type='raindrop_ripples', warp_radius=45,
+                         warp_center=[.50000001, .5], warp_scale=[16, 1]))
+    original = deepcopy(graph.nodes['warp'].config)
+    images = {'a': _source()}
+    draws = []
+    for variant, phase, seed in [
+            ('rings', tau - 1e-8, 9), ('rings', tau + 1e-8, 9),
+            ('storm', -tau - 1e-8, 41), ('storm', -tau - 1e-8, 42), ('droplets', .2, 41)]:
+        values = {('warp', 'warp_ripple_variant'): variant, ('warp', 'warp_phase'): phase,
+                  ('warp', 'warp_seed'): seed}
+        actual = graph.render(images, gpu_backend=gpu, gpu_strict=True, parameter_values=values)
+        _near(graph.render(images, parameter_values=values), actual)
+        draws.append((values, actual.tobytes()))
+    assert len({pixels for _, pixels in draws}) == len(draws)
+    for values, pixels in reversed(draws):
+        assert graph.render(images, gpu_backend=gpu, gpu_strict=True,
+                            parameter_values=values).tobytes() == pixels
+    assert graph.nodes['warp'].config == original
+
+
+def test_raindrop_gpu_bridge_returns_independent_original_alpha(gpu):
+    source = _source()
+    original = source.getchannel('A')
+    source.putalpha(original.point(lambda value: round(value * .6)))
+    config = {'warp_type': 'raindrop_ripples', 'warp_ripple_variant': 'storm',
+              'warp_scale': [16, 1], 'warp_amplitude': [27, -15], 'warp_radius': 49,
+              'warp_phase': .7, 'warp_seed': 42, 'warp_segments': 17, 'warp_mix': .76}
+    reference, expected_alpha = render_spatial_warp_with_alpha(source, config, original_alpha=original)
+    gpu.begin_transfer_sample()
+    actual, lineage = gpu.spatial_warp([source], config, original_alpha=original)
+    _near(reference, actual)
+    assert np.abs(np.asarray(expected_alpha, dtype=np.int16) - np.asarray(lineage)).max() <= 2
+    assert lineage.tobytes() != actual.getchannel('A').tobytes()
+    assert gpu.last_transport['uploads'] == gpu.last_transport['readbacks'] == 2
+
+
+def test_raindrop_gpu_resident_original_alpha_follows_warp(gpu):
+    graph = _graph(
+        {'id': 'dim', 'type': 'opacity', 'inputs': ['a'], 'opacity': .64},
+        _warp('dim', warp_type='raindrop_ripples', warp_ripple_variant='storm'),
+        {'id': 'mask', 'type': 'source'},
+        {'id': 'out', 'type': 'matte', 'inputs': ['warp', 'mask'], 'alpha_source': 'original'},
+    )
+    source = _source()
+    images = {'a': source, 'mask': Image.new('RGBA', source.size, 'white')}
+    actual = graph.render(images, gpu_backend=gpu, gpu_strict=True)
+    _near(graph.render(images), actual, alpha=2, rgb=5)
+    assert actual.getchannel('A').tobytes() != source.getchannel('A').tobytes()
+    assert gpu.last_transport['resident_draws'] == 5
+    assert gpu.last_transport['uploads'] == 2 and gpu.last_transport['readbacks'] == 1
+
+
+@pytest.mark.parametrize('identity', [{'warp_mix': 0}, {'warp_amplitude': [0, 0]}])
+def test_raindrop_identity_needs_no_shader_draw(gpu, identity):
+    source = _source()
+    graph = _graph(_warp(warp_type='raindrop_ripples', warp_scale=[1, 1], **identity))
+    assert graph.render({'a': source}, gpu_backend=gpu, gpu_strict=True).tobytes() == source.tobytes()
+    assert gpu.last_transport['resident_draws'] == 0
 
 
 @pytest.mark.parametrize('border', ['transparent', 'clamp', 'repeat', 'mirror'])
@@ -129,7 +215,7 @@ def test_cpu_style_receives_gpu_bridge_lineage(gpu):
 def test_mixed_island_does_not_substitute_boundary_current_alpha(gpu):
     graph = _graph(
         {'id': 'dim', 'type': 'opacity', 'inputs': ['a'], 'opacity': .58},
-        {'id': 'cpu', 'type': 'spatial_warp', 'inputs': ['dim'], 'warp_type': 'raindrop_ripples'},
+        _warp('dim', id='cpu', warp_type='raindrop_ripples', warp_scale=[8, 23]),
         _warp('cpu'),
         {'id': 'mask', 'type': 'source'},
         {'id': 'out', 'type': 'matte', 'inputs': ['warp', 'mask'], 'alpha_source': 'original'},
@@ -144,7 +230,6 @@ def test_mixed_island_does_not_substitute_boundary_current_alpha(gpu):
 
 
 @pytest.mark.parametrize('kind,config,reason', [
-    ('raindrop_ripples', {}, 'warp_type_not_implemented'),
     ('polar_wrap', {'warp_border': 'clamp'}, 'polar_wrap_seam_requires_repeat'),
     ('polar_wrap', {'warp_border': 'transparent'}, 'polar_wrap_seam_requires_repeat'),
     ('polar_wrap', {'warp_border': 'mirror'}, 'polar_wrap_seam_requires_repeat'),
@@ -165,6 +250,9 @@ def test_unsupported_warps_remain_explicit_fallbacks(gpu, kind, config, reason):
     {'warp_type': 'turbulence', 'warp_scale': [15.99, 16]},
     {'warp_type': 'radial', 'warp_amount': -2, 'warp_center': [.50000001, .5], 'warp_radius': 256},
     {'warp_type': 'polar_wrap', 'warp_border': 'repeat', 'warp_radius': 15.99},
+    {'warp_type': 'raindrop_ripples', 'warp_ripple_variant': 'rings', 'warp_scale': [15.99, 64]},
+    {'warp_type': 'raindrop_ripples', 'warp_ripple_variant': 'storm', 'warp_scale': [15.99, 64]},
+    {'warp_type': 'raindrop_ripples', 'warp_ripple_variant': 'droplets', 'warp_amplitude': [128.01, 0]},
 ])
 def test_precision_limit_uses_cpu_without_upload(gpu, config):
     graph = _graph(_warp(**config))
@@ -303,7 +391,8 @@ def test_warp_resident_budget_fails_before_first_upload():
         assert gpu.last_dispatch == {'gpu_nodes': 0, 'cpu_fallbacks': 1}
 
 
-def test_project_gpu_warp_uses_native_timing_and_reproduces_seeks(tmp_path):
+@pytest.mark.parametrize('kind', ['wave', 'raindrop_ripples'])
+def test_project_gpu_warp_uses_native_timing_and_reproduces_seeks(tmp_path, kind):
     default_font = ('C:/Windows/Fonts/arialbd.ttf' if sys.platform == 'win32'
                     else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf')
     font = Path(os.environ.get('FRAMERUDIMENTS_TEST_FONT', default_font))
@@ -313,7 +402,8 @@ def test_project_gpu_warp_uses_native_timing_and_reproduces_seeks(tmp_path):
         render_quality={'enabled': False},
         effect_graph={'nodes': [
             {'id': 'scene', 'type': 'source'},
-            _warp('scene', warp_amplitude=[9, 7], warp_border='repeat'),
+            _warp('scene', warp_type=kind, warp_amplitude=[9, 7], warp_border='repeat',
+                  warp_ripple_variant='storm'),
         ], 'output': 'warp'},
         effect_graph_controls=[{'node': 'warp', 'property': 'warp_phase',
                                 'motion': {'kind': 'named', 'pattern': 'circle'},
