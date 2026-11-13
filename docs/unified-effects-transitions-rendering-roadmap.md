@@ -647,10 +647,10 @@ See [M8.8 mixed GPU islands](effect-graph-m8-8-gpu-islands.md).
 
 ### M8.9 GPU spatial warps and profiling
 
-- [x] Wave, turbulence, swirl, radial pinch/bulge, mirror, kaleidoscope and polar unwrap.
+- [x] Wave, turbulence, swirl, nonnegative radial, mirror, kaleidoscope and polar unwrap.
 - [x] Warped original alpha across resident forks and per-node GPU/CPU boundaries.
 - [x] Focused NVIDIA parity and HD timing, with no-skip Mesa/EGL parity in the release gate.
-- [ ] GPU map displacement, polar wrap and raindrop ripples.
+- [ ] GPU map displacement, polar wrap, raindrop ripples and the remaining precision-limited settings.
 - [ ] Driver-reported physical VRAM where supported, bounded cross-frame pooling and profiling on further hardware vendors.
 
 See [the M8.9 GPU spatial warp contract and real comparison](effect-graph-m8-9-gpu-spatial.md).

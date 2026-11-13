@@ -1,6 +1,6 @@
 # FrameRudiments
 
-Version 0.4.26 adds native GPU execution for seven spatial warps. Compatible
+Version 0.4.26 adds native GPU execution for seven spatial warp modes. Compatible
 effect graphs keep warped pixels and original-alpha mattes on the device until
 the final output. See the [supported modes, limits and CPU/GPU demonstration](docs/effect-graph-m8-9-gpu-spatial.md).
 

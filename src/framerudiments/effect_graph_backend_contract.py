@@ -241,7 +241,9 @@ def _device(backend):
 
 def backend_registry(gpu_backend=None):
     """Detached, JSON-safe discovery. Installed is NOT the same as executable."""
-    from .effect_graph_spatial import GPU_WARP_MAX_AMPLITUDE, GPU_WARP_MIN_WAVELENGTH, GPU_WARP_TYPES
+    from .effect_graph_spatial import (
+        GPU_WARP_MAX_AMPLITUDE, GPU_WARP_MIN_RADIAL_AMOUNT, GPU_WARP_MIN_WAVELENGTH, GPU_WARP_TYPES,
+    )
 
     device = _device(gpu_backend)
     return {
@@ -261,7 +263,8 @@ def backend_registry(gpu_backend=None):
                                     'key_colours': MAX_GPU_KEY_COLOURS,
                                     'input_mattes': MAX_GPU_INPUT_MATTES,
                                     'wave_turbulence_max_amplitude': GPU_WARP_MAX_AMPLITUDE,
-                                    'wave_turbulence_min_wavelength': GPU_WARP_MIN_WAVELENGTH}},
+                                    'wave_turbulence_min_wavelength': GPU_WARP_MIN_WAVELENGTH,
+                                    'radial_min_amount': GPU_WARP_MIN_RADIAL_AMOUNT}},
         },
         'surface_transport': transport_capabilities(),
         'node_kinds': sorted(KNOWN_KINDS),

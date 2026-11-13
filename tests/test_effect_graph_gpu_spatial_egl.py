@@ -163,6 +163,7 @@ def test_unsupported_warps_remain_explicit_fallbacks(gpu, kind):
 @pytest.mark.parametrize('config', [
     {'warp_type': 'wave', 'warp_amplitude': [128.01, 0]},
     {'warp_type': 'turbulence', 'warp_scale': [15.99, 16]},
+    {'warp_type': 'radial', 'warp_amount': -2, 'warp_center': [.50000001, .5], 'warp_radius': 256},
 ])
 def test_precision_limit_uses_cpu_without_upload(gpu, config):
     graph = _graph(_warp(**config))
@@ -172,6 +173,20 @@ def test_precision_limit_uses_cpu_without_upload(gpu, config):
     assert gpu.last_transport['uploads'] == 0
     assert graph.render(images, gpu_backend=gpu).tobytes() == graph.render(images).tobytes()
     assert gpu.last_dispatch == {'gpu_nodes': 0, 'cpu_fallbacks': 1}
+
+
+def test_resolved_precision_limits_are_shared_by_manifest_and_execution(gpu):
+    graph = _graph(_warp(warp_type='radial'))
+    source = _source()
+    values = {('warp', 'warp_amount'): -.2}
+    assert graph.spatial_manifest()['warp']['gpu_native']
+    row = graph.backend_plan({'a': source.size}, mode='auto', gpu_backend=gpu,
+                             parameter_values=values)['nodes']['warp']
+    assert row['selected_backend'] == 'cpu'
+    assert row['decision_reason'] == 'warp_precision_limit_exceeded'
+    assert graph.render({'a': source}, gpu_backend=gpu, parameter_values=values).tobytes() == (
+        graph.render({'a': source}, parameter_values=values).tobytes())
+    assert gpu.last_transport['uploads'] == 0
 
 
 def test_warp_resident_budget_fails_before_first_upload():

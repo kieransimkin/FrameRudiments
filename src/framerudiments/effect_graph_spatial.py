@@ -21,6 +21,7 @@ WARP_TYPES = frozenset({'wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kale
 GPU_WARP_TYPES = ('wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope', 'polar_unwrap')
 GPU_WARP_MAX_AMPLITUDE = 128
 GPU_WARP_MIN_WAVELENGTH = 16
+GPU_WARP_MIN_RADIAL_AMOUNT = 0
 WARP_ENUMS = {
     'warp_type': WARP_TYPES,
     'warp_border': frozenset({'transparent', 'clamp', 'repeat', 'mirror'}),
@@ -332,6 +333,11 @@ def gpu_spatial_rejection(config):
     kind = config.get('warp_type', WARP_DEFAULTS['warp_type'])
     if kind not in GPU_WARP_TYPES:
         return 'warp_type_not_implemented'
+    if (kind == 'radial'
+            and config.get('warp_amount', WARP_DEFAULTS['warp_amount']) < GPU_WARP_MIN_RADIAL_AMOUNT):
+        # A negative amount gives the inverse map a steep derivative near the
+        # centre; rounding that centre to a pixel can change its sampled colour.
+        return 'warp_precision_limit_exceeded'
     # Single-precision GLSL cannot preserve the fractional sampling footprint
     # at the combination of short wavelengths and very large displacement.
     if kind in {'wave', 'turbulence'} and not spatial_is_identity(config):

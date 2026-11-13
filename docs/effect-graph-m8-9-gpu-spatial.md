@@ -18,7 +18,8 @@ with both panels composited onto the same dark background.
 | GPU warp | Controls and limits |
 | --- | --- |
 | Wave and turbulence | Up to 128 pixels of amplitude per axis and wavelengths of at least 16 pixels. Turbulence supports the authored seed and up to six octaves. |
-| Swirl, radial pinch/bulge, mirror, kaleidoscope and polar unwrap | Existing controls and canvas limits. |
+| Radial | Nonnegative `warp_amount`. Negative amounts retain the CPU inverse mapping. |
+| Swirl, mirror, kaleidoscope and polar unwrap | Existing controls and canvas limits. |
 
 All seven shaders support transparent, clamp, repeat and mirror borders. They
 sample at pixel centres, interpolate premultiplied colour, and apply warp mix
@@ -63,6 +64,10 @@ python integration/benchmark_effect_graph_m8_9_gpu.py --backend auto --output m8
   range intact and use the shared GPU precision check before upload. The HD
   benchmark tests the admitted boundary and compares alpha plus the result
   composited over both black and white.
+- **A radial warp with a negative amount and an almost pixel-centred origin
+  can shift the centre pixel.** The CPU and GLSL may round the origin
+  differently. The same precision check routes negative radial amounts to
+  the CPU, including values reached by a live control.
 - **The Windows glcontext wheel cannot import `egl`.** Run the spatial suite
   through `scripts/Invoke-Tests.ps1`; the fixture selects Windows' native
   standalone OpenGL context. The required Linux GPU job separately exercises
