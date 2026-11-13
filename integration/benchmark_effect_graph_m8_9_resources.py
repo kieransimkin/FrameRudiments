@@ -26,12 +26,25 @@ def effect_graph():
     ], 'output': 'swirl'})
 
 
-def measure(graph, sources, repeats, backend, pooled_bytes):
+def device_info(gpu):
+    return {
+        'renderer': gpu.capabilities.renderer,
+        'vendor': gpu.ctx.info.get('GL_VENDOR', 'unknown'),
+        'gl_version': gpu.ctx.info.get('GL_VERSION', 'unknown'),
+        'context_version': gpu.capabilities.context_version,
+        'precise_spatial_warps': gpu.supports_precise_spatial_warps,
+    }
+
+
+def measure(graph, sources, repeats, backend, pooled_bytes, *, check_device=None):
     size = sources['source'].size
     surface_bytes = size[0] * size[1] * 4
     retained = min(2, pooled_bytes // surface_bytes)
     frames = []
     with GLMatteBackend(backend=backend, max_pooled_target_bytes=pooled_bytes) as gpu:
+        device = device_info(gpu)
+        if check_device is not None:
+            check_device(device)
         # Compile the shaders and exercise upload/readback once before timing.
         # The smaller warmup canvas cannot populate a timed-size cache.
         graph.render(fixture((160, 90)), gpu_backend=gpu, gpu_strict=True)
@@ -54,15 +67,28 @@ def measure(graph, sources, repeats, backend, pooled_bytes):
             frames.append({'seconds': elapsed, 'sha256_rgba': sha256(output.tobytes()).hexdigest(),
                            'transport': transport})
         return {
-            'renderer': gpu.capabilities.renderer, 'vendor': gpu.ctx.info.get('GL_VENDOR', 'unknown'),
-            'gl_version': gpu.ctx.info.get('GL_VERSION', 'unknown'),
+            **device,
             'driver_memory_before': memory_before, 'driver_memory_after': gpu.sample_driver_memory(),
             'max_pooled_target_bytes': pooled_bytes, 'frames': frames,
             'median_steady_seconds': median(frame['seconds'] for frame in frames[1:]),
         }, output
 
 
-def save_comparison(report, disabled_image, bounded_image, path):
+def compare_resources(size, repeats, backend, *, check_device=None):
+    graph, sources = effect_graph(), fixture(size)
+    disabled, disabled_image = measure(graph, sources, repeats, backend, 0, check_device=check_device)
+    bounded, bounded_image = measure(graph, sources, repeats, backend, DEFAULT_POOLED_TARGET_BYTES,
+                                    check_device=check_device)
+    hashes = [frame['sha256_rgba'] for frame in disabled['frames']]
+    if len(set(hashes)) != repeats or hashes != [frame['sha256_rgba'] for frame in bounded['frames']]:
+        raise RuntimeError('Changing frames must be distinct and identical between pooling modes')
+    report = {'schema': 'framerudiments.m8-9-resources-benchmark.v1', 'version': __version__,
+              'resolution': size, 'pixel_parity': 'all RGBA bytes identical per frame',
+              'disabled': disabled, 'bounded': bounded}
+    return report, disabled_image, bounded_image
+
+
+def comparison_image(report, disabled_image, bounded_image):
     width, height = report['resolution']
     sheet = Image.new('RGBA', (1000, 420), (18, 25, 40, 255))
     draw = ImageDraw.Draw(sheet)
@@ -82,8 +108,7 @@ def save_comparison(report, disabled_image, bounded_image, path):
         draw.text((left, 78), label, font=body, fill='#eef1f8')
         draw.text((left, 365), f'Final frame: {new} new targets, {reused} reused', font=body, fill='#86efd5')
         draw.text((left, 392), '1 source upload and 1 readback', font=small, fill='#c0cadb')
-    path.parent.mkdir(parents=True, exist_ok=True)
-    sheet.convert('RGB').save(path, optimize=True)
+    return sheet.convert('RGB')
 
 
 def main():
@@ -98,19 +123,12 @@ def main():
         parser.error('repeats must be 2..20')
     size = SIZES[args.size]
     backend = None if args.backend == 'auto' else args.backend
-    graph, sources = effect_graph(), fixture(size)
-    disabled, disabled_image = measure(graph, sources, args.repeats, backend, 0)
-    bounded, bounded_image = measure(graph, sources, args.repeats, backend, DEFAULT_POOLED_TARGET_BYTES)
-    hashes = [frame['sha256_rgba'] for frame in disabled['frames']]
-    if len(set(hashes)) != args.repeats or hashes != [frame['sha256_rgba'] for frame in bounded['frames']]:
-        raise RuntimeError('Changing frames must be distinct and identical between pooling modes')
-    report = {'schema': 'framerudiments.m8-9-resources-benchmark.v1', 'version': __version__,
-              'resolution': size, 'pixel_parity': 'all RGBA bytes identical per frame',
-              'disabled': disabled, 'bounded': bounded}
+    report, disabled_image, bounded_image = compare_resources(size, args.repeats, backend)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     if args.image:
-        save_comparison(report, disabled_image, bounded_image, args.image)
+        args.image.parent.mkdir(parents=True, exist_ok=True)
+        comparison_image(report, disabled_image, bounded_image).save(args.image, optimize=True)
 
 
 if __name__ == '__main__':

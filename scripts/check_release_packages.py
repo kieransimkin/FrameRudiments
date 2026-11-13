@@ -19,6 +19,8 @@ REQUIRED_SOURCE = (
     "scripts/Run-PresetBehaviourAnalysis.ps1", "scripts/Run-FullPresetAnalysis.ps1",
     "scripts/install_analysis_releases.py", "scripts/ensure_projectm_runtime.py",
     "scripts/preset_behaviour_pipeline.py", "scripts/check_release_packages.py",
+    "integration/qualify_effect_graph_m8_9.py", "integration/benchmark_effect_graph_m8_9_gpu.py",
+    "integration/benchmark_effect_graph_m8_9_precision.py", "integration/benchmark_effect_graph_m8_9_resources.py",
 )
 
 

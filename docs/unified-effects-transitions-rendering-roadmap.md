@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.27 — 13 November 2026
+**Version:** 1.28 — 13 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -8,6 +8,7 @@ The 0.4.27 increment adds native map displacement and repeat-border polar wrap.
 Version 0.4.28 adds the rings, droplets and storm layer warps on GPU.
 Version 0.4.29 extends the GPU warp ranges and preserves the polar seam on all borders.
 Version 0.4.30 adds bounded reuse of resident targets and optional driver memory snapshots.
+Version 0.4.32 adds a portable renderer qualification run for the remaining hardware checks.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -664,6 +665,8 @@ See [M8.8 mixed GPU islands](effect-graph-m8-8-gpu-islands.md).
   pooled and unpooled output at HD and 4K on NVIDIA and required HD Mesa/EGL CI.
 - [x] Optional device-level VRAM hints where supported and separate texture-pool
   hints for drivers advertising ATI_meminfo.
+- [x] Portable renderer qualification with driver identity, per-case pixel
+  and resource checks, and separate GPU and CPU fallback results.
 - [ ] Profile on further physical GPU vendors. Mesa/EGL software rendering
   and a simulated ATI query do not qualify as physical AMD or Intel tests.
 

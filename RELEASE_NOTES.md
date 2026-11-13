@@ -1,3 +1,12 @@
+# FrameRudiments 0.4.32
+
+- Add one portable M8.9 qualification command for renderer identity, CPU/GPU
+  spatial warp parity, driver memory scope and bit-identical target reuse.
+- On drivers without the optional precision shader extension, verify that
+  strict GPU rejects the affected settings before upload and that automatic
+  mode produces the CPU reference bytes. Required Mesa/EGL CI covers both
+  extension states. Physical AMD and Intel results remain separate.
+
 # FrameRudiments 0.4.31
 
 - Use one effect-graph GPU backend for a project and its temporal subframes.

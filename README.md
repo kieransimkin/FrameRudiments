@@ -1,5 +1,9 @@
 # FrameRudiments
 
+Version 0.4.32 adds a [portable GPU qualification command](docs/effect-graph-m8-9-gpu-resources.md#qualify-another-opengl-renderer).
+It checks the active OpenGL renderer before rendering, compares CPU and
+GPU pixels, and records exact pooling parity and any verified CPU fallback.
+
 Version 0.4.31 shares the project's GPU effect backend with the compositor
 used for temporal supersampling. Closing the project also releases the
 subframes' render targets. See the
