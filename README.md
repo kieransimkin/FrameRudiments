@@ -1,5 +1,8 @@
 # FrameRudiments
 
+Version 0.4.27 adds native GPU displacement maps and polar wrap with a
+repeat border. See the [map and polar examples and transfer counts](docs/effect-graph-m8-9-gpu-spatial.md#map-displacement-and-polar-wrap).
+
 Version 0.4.26 adds native GPU execution for seven spatial warp modes. Compatible
 effect graphs keep warped pixels and original-alpha mattes on the device until
 the final output. See the [supported modes, limits and CPU/GPU demonstration](docs/effect-graph-m8-9-gpu-spatial.md).

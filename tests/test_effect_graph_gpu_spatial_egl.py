@@ -49,7 +49,7 @@ def _near(reference, actual, *, alpha=2, rgb=3):
     assert delta[..., :3][visible].max(initial=0) <= rgb
 
 
-@pytest.mark.parametrize('kind', GPU_WARP_TYPES)
+@pytest.mark.parametrize('kind', [kind for kind in GPU_WARP_TYPES if kind not in {'polar_wrap', 'displacement'}])
 @pytest.mark.parametrize('border', ['transparent', 'clamp', 'repeat', 'mirror'])
 def test_warp_residency_matches_cpu(gpu, kind, border):
     source = _source()
@@ -143,17 +143,17 @@ def test_mixed_island_does_not_substitute_boundary_current_alpha(gpu):
                for row in gpu.last_transport['gpu_island_rejections'])
 
 
-@pytest.mark.parametrize('kind', ['polar_wrap', 'raindrop_ripples', 'displacement'])
-def test_unsupported_warps_remain_explicit_fallbacks(gpu, kind):
+@pytest.mark.parametrize('kind,config,reason', [
+    ('raindrop_ripples', {}, 'warp_type_not_implemented'),
+    ('polar_wrap', {'warp_border': 'clamp'}, 'polar_wrap_seam_requires_repeat'),
+    ('polar_wrap', {'warp_border': 'transparent'}, 'polar_wrap_seam_requires_repeat'),
+    ('polar_wrap', {'warp_border': 'mirror'}, 'polar_wrap_seam_requires_repeat'),
+])
+def test_unsupported_warps_remain_explicit_fallbacks(gpu, kind, config, reason):
     source = _source()
-    nodes = [_warp(warp_type=kind)]
     images = {'a': source}
-    if kind == 'displacement':
-        nodes.insert(0, {'id': 'map', 'type': 'source'})
-        nodes[-1]['inputs'].append('map')
-        images['map'] = _source()
-    graph = _graph(*nodes)
-    with pytest.raises(GPUUnsupported, match='warp_type_not_implemented'):
+    graph = _graph(_warp(warp_type=kind, **config))
+    with pytest.raises(GPUUnsupported, match=reason):
         graph.render(images, gpu_backend=gpu, gpu_strict=True)
     assert gpu.last_transport['uploads'] == 0
     assert graph.render(images, gpu_backend=gpu).tobytes() == graph.render(images).tobytes()
@@ -164,6 +164,7 @@ def test_unsupported_warps_remain_explicit_fallbacks(gpu, kind):
     {'warp_type': 'wave', 'warp_amplitude': [128.01, 0]},
     {'warp_type': 'turbulence', 'warp_scale': [15.99, 16]},
     {'warp_type': 'radial', 'warp_amount': -2, 'warp_center': [.50000001, .5], 'warp_radius': 256},
+    {'warp_type': 'polar_wrap', 'warp_border': 'repeat', 'warp_radius': 15.99},
 ])
 def test_precision_limit_uses_cpu_without_upload(gpu, config):
     graph = _graph(_warp(**config))
@@ -187,6 +188,79 @@ def test_resolved_precision_limits_are_shared_by_manifest_and_execution(gpu):
     assert graph.render({'a': source}, gpu_backend=gpu, parameter_values=values).tobytes() == (
         graph.render({'a': source}, parameter_values=values).tobytes())
     assert gpu.last_transport['uploads'] == 0
+
+
+@pytest.mark.parametrize('angle,centre', [
+    (0, [.5, .5]), (90.000001, [.50000001, .5]), (180.000001, [.49999999, .5]),
+    (225, [.50000001, .5]), (-360, [.41, .58]),
+])
+def test_polar_wrap_repeat_seam_and_near_pixel_origin(gpu, angle, centre):
+    source = _source()
+    source.paste((255, 255, 255, 255), (0, 0, 2, source.height))
+    source.paste((255, 0, 0, 90), (source.width - 2, 0, source.width, source.height))
+    graph = _graph(_warp(warp_type='polar_wrap', warp_border='repeat', warp_radius=35,
+                         warp_mix=1, warp_angle=angle, warp_center=centre))
+    actual = graph.render({'a': source}, gpu_backend=gpu, gpu_strict=True)
+    _near(graph.render({'a': source}), actual)
+    assert gpu.last_transport['uploads'] == gpu.last_transport['readbacks'] == 1
+
+
+def _displacement(map_id='map', **config):
+    return {**_warp(warp_type='displacement', **config), 'inputs': ['a', map_id]}
+
+
+@pytest.mark.parametrize('border', ['transparent', 'clamp', 'repeat', 'mirror'])
+@pytest.mark.parametrize('channels', [('r', 'g'), ('b', 'a'), ('luminance', 'r')])
+def test_resident_map_warp_matches_cpu(gpu, border, channels):
+    graph = _graph({'id': 'map', 'type': 'source'},
+                   _displacement(warp_border=border, warp_map_x=channels[0], warp_map_y=channels[1],
+                                 warp_neutral=.37, warp_amplitude=[-25, 16]))
+    source = _source()
+    control = _source()
+    images = {'a': source, 'map': control}
+    actual = graph.render(images, gpu_backend=gpu, gpu_strict=True)
+    _near(graph.render(images), actual)
+    report = gpu.last_transport
+    assert report['resident_draws'] == 1 and report['uploads'] == 2 and report['readbacks'] == 1
+    assert report['upload_bytes'] == 2 * report['readback_bytes'] == 2 * source.width * source.height * 4
+    assert gpu.last_dispatch['cpu_fallbacks'] == 0
+
+
+@pytest.mark.parametrize('alpha,opacity', [(0, 1), (255, 0), (1, .49), (1, .5)])
+def test_transparent_direct_map_preserves_all_original_bytes(gpu, alpha, opacity):
+    source = _source()
+    graph = _graph({'id': 'map', 'type': 'source', 'opacity': opacity}, _displacement())
+    images = {'a': source, 'map': Image.new('RGBA', source.size, (255, 20, 145, alpha))}
+    actual = graph.render(images, gpu_backend=gpu, gpu_strict=True)
+    assert actual.tobytes() == source.tobytes()
+    assert actual.tobytes() == graph.render(images).tobytes()
+    assert gpu.last_transport['resident_draws'] == (0 if opacity == 1 else 1)
+
+
+def test_processed_map_is_bridged_and_keeps_transparent_identity(gpu):
+    graph = _graph({'id': 'map', 'type': 'source'},
+                   {'id': 'dim', 'type': 'opacity', 'inputs': ['map'], 'opacity': 0},
+                   _displacement('dim'))
+    images = {'a': _source(), 'map': _source()}
+    for strict in (True, False):
+        result = graph.render(images, gpu_backend=gpu, gpu_strict=strict)
+        assert result.tobytes() == images['a'].tobytes()
+        assert gpu.last_transport['uploads'] == gpu.last_transport['readbacks'] == 0
+        assert gpu.last_dispatch == {'gpu_nodes': 0, 'cpu_fallbacks': 0}
+
+
+def test_processed_map_bridge_preserves_original_alpha_and_counts_transfers(gpu):
+    graph = _graph({'id': 'map', 'type': 'source'},
+                   {'id': 'dim', 'type': 'opacity', 'inputs': ['map'], 'opacity': .7},
+                   _displacement('dim', opacity=.3),
+                   {'id': 'out', 'type': 'layer_style', 'inputs': ['warp'],
+                    'style_type': 'outline', 'style_width': 2, 'alpha_source': 'original'})
+    images = {'a': _source(), 'map': _source()}
+    actual = graph.render(images, gpu_backend=gpu, style_report={})
+    _near(graph.render(images), actual, alpha=3, rgb=5)
+    report = gpu.last_transport
+    assert report['uploads'] == 4 and report['readbacks'] == 2
+    assert gpu.last_dispatch == {'gpu_nodes': 1, 'cpu_fallbacks': 1}
 
 
 def test_warp_resident_budget_fails_before_first_upload():

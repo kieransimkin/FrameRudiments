@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .effect_graph_gpu_resident import node_supported, render_resident, resident_plan
+from .effect_graph_gpu_resident import node_supported, render_resident, resident_plan, resident_rejection
 from .effect_graph_spatial import spatial_is_identity
 
 
@@ -144,6 +144,10 @@ def plan_islands(graph, configs):
             rows.append(_entry(node, cfg, inputs))
             subconfigs[key] = cfg
         island_graph = EffectGraph({'nodes': rows, 'output': output})
+        reason = resident_rejection(island_graph, subconfigs)
+        if reason is not None:
+            rejected.append({'members': members, 'reason': reason, 'exit': output})
+            continue
         if resident_plan(island_graph, subconfigs)['resident_draws'] == 0:
             rejected.append({'members': members, 'reason': 'no_resident_draws',
                              'exit': output})
@@ -157,11 +161,10 @@ def execute_island(backend, island, results):
     sources = {synthetic: results[original]
                for synthetic, original in island.source_map}
     before = dict(getattr(backend, 'last_transport', {}))
-    image = render_resident(backend, island.graph, sources, island.configs,
-                            whole_graph=False)
+    plan = {}
+    image = render_resident(backend, island.graph, sources, island.configs, island_stats=plan)
     report = getattr(backend, 'last_transport', None)
     if report is not None:
-        plan = resident_plan(island.graph, island.configs)
         row = {
             'members': list(island.members), 'output': island.output,
             'boundaries': list(island.boundaries), **plan,

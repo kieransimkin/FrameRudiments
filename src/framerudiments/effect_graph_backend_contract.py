@@ -136,9 +136,10 @@ def gpu_requirements(kind, config, input_count, *, original_alpha=True):
             return GPURequirements(False, reason)
         if spatial_is_identity(config):
             return GPURequirements(True, 'exact_host_identity')
-        # The bridge reuses its two-texture budget in a separate lineage pass.
+        # Each bridge pass includes the source (or its lineage), optional map
+        # and output target. The lineage pass uploads the same map again.
         passes = 1 + int(original_alpha)
-        return GPURequirements(True, texture_count=2, upload_count=passes,
+        return GPURequirements(True, texture_count=input_count + 1, upload_count=input_count * passes,
                                readback_count=passes, draw_passes=passes)
     if kind == 'filter':
         from .effect_graph_filter import validate_filter
@@ -242,7 +243,8 @@ def _device(backend):
 def backend_registry(gpu_backend=None):
     """Detached, JSON-safe discovery. Installed is NOT the same as executable."""
     from .effect_graph_spatial import (
-        GPU_WARP_MAX_AMPLITUDE, GPU_WARP_MIN_RADIAL_AMOUNT, GPU_WARP_MIN_WAVELENGTH, GPU_WARP_TYPES,
+        GPU_POLAR_WRAP_MIN_RADIUS, GPU_WARP_MAX_AMPLITUDE, GPU_WARP_MIN_RADIAL_AMOUNT,
+        GPU_WARP_MIN_WAVELENGTH, GPU_WARP_TYPES,
     )
 
     device = _device(gpu_backend)
@@ -264,7 +266,9 @@ def backend_registry(gpu_backend=None):
                                     'input_mattes': MAX_GPU_INPUT_MATTES,
                                     'wave_turbulence_max_amplitude': GPU_WARP_MAX_AMPLITUDE,
                                     'wave_turbulence_min_wavelength': GPU_WARP_MIN_WAVELENGTH,
-                                    'radial_min_amount': GPU_WARP_MIN_RADIAL_AMOUNT}},
+                                    'radial_min_amount': GPU_WARP_MIN_RADIAL_AMOUNT,
+                                    'displacement_max_amplitude': GPU_WARP_MAX_AMPLITUDE,
+                                    'polar_wrap_min_radius': GPU_POLAR_WRAP_MIN_RADIUS}},
         },
         'surface_transport': transport_capabilities(),
         'node_kinds': sorted(KNOWN_KINDS),

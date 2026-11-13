@@ -7,7 +7,9 @@ from PIL import Image
 
 from .effect_graph_backend_contract import gpu_requirements
 from .effect_graph_gpu_kernels import _execute
-from .effect_graph_spatial import GPU_WARP_TYPES, WARP_DEFAULTS, validate_spatial_images
+from .effect_graph_spatial import (
+    GPU_WARP_TYPES, WARP_DEFAULTS, spatial_map_is_transparent, validate_spatial_images,
+)
 
 
 SPATIAL_SHADER_NAME = 'm89_spatial_warp'
@@ -15,6 +17,9 @@ _WARP_KIND_CONSTANTS = '\n'.join(f'const int WARP_{name.upper()} = {index};'
                                  for index, name in enumerate(GPU_WARP_TYPES))
 SPATIAL_WARP = "#version 330\n" + _WARP_KIND_CONSTANTS + """
 uniform sampler2D source_tex;
+uniform sampler2D map_tex;
+uniform ivec2 map_channels;
+uniform float map_neutral;
 uniform int kind;
 uniform int border;
 uniform int alpha_only;
@@ -30,6 +35,8 @@ uniform int octaves;
 uniform int seed;
 uniform int segments;
 uniform ivec2 mirror_axis;
+uniform ivec2 polar_origin_pixel;
+uniform vec2 polar_origin_fraction;
 out vec4 out_color;
 
 const float PI = 3.141592653589793;
@@ -56,7 +63,28 @@ float noise_at(vec2 p, int noise_seed) {
     return mix(low, high, f.y);
 }
 
+float map_value(vec4 control, int channel) {
+    if (channel == 4) return dot(control.rgb, vec3(0.2126, 0.7152, 0.0722));
+    return control[channel];
+}
+
+float map_offset(float value, float alpha) {
+    float delta = value - map_neutral;
+    return alpha * delta / (delta >= 0.0 ? 1.0 - map_neutral : map_neutral);
+}
+
+float polar_angle(vec2 delta) {
+    if (delta.x != 0.0) return atan(delta.y, delta.x);
+    return sign(delta.y) * PI * 0.5;
+}
+
 vec2 inverse_coordinate(vec2 p, vec2 size) {
+    if (kind == WARP_DISPLACEMENT) {
+        vec4 control = texelFetch(map_tex, ivec2(p), 0);
+        vec2 displacement = vec2(map_offset(map_value(control, map_channels.x), control.a),
+                                 map_offset(map_value(control, map_channels.y), control.a));
+        return p - amplitude * displacement;
+    }
     if (kind == WARP_WAVE) {
         // Reduce the periodic argument before multiplying by TAU at large pixel indices.
         return p - amplitude * sin(TAU * mod(p.yx, wavelength.yx) / wavelength.yx + phase);
@@ -74,6 +102,13 @@ vec2 inverse_coordinate(vec2 p, vec2 size) {
             total += weight;
         }
         return p - amplitude * offset / total;
+    }
+    if (kind == WARP_POLAR_WRAP) {
+        // Subtract the integer origin before its fractional part, preserving
+        // the direction at a pixel arbitrarily close to the polar centre.
+        vec2 delta = vec2(ivec2(p) - polar_origin_pixel) - polar_origin_fraction;
+        float wrapped = mod(polar_angle(delta) - angle, TAU);
+        return vec2(wrapped / TAU * size.x, length(delta) / radius_limit * size.y) - 0.5;
     }
     vec2 origin = centre * size - 0.5;
     vec2 delta = p - origin;
@@ -96,7 +131,7 @@ vec2 inverse_coordinate(vec2 p, vec2 size) {
     if (kind == WARP_KALEIDOSCOPE) {
         if (radius == 0.0) return p;
         float sector = TAU / float(segments);
-        float theta = delta.x == 0.0 ? sign(delta.y) * PI * 0.5 : atan(delta.y, delta.x);
+        float theta = polar_angle(delta);
         float folded = abs(mod(theta - angle + sector * 0.5, sector) - sector * 0.5) + angle;
         return origin + radius * vec2(cos(folded), sin(folded));
     }
@@ -139,14 +174,15 @@ void main() {
 """
 
 
-def spatial_uniforms(config):
+def spatial_uniforms(config, size):
     def value(name):
         return config.get(name, WARP_DEFAULTS[name])
 
     kind = value('warp_type')
     phase = value('warp_phase')
     axis = value('warp_axis')
-    return {
+    channels = ('r', 'g', 'b', 'a', 'luminance')
+    uniforms = {
         'kind': GPU_WARP_TYPES.index(kind),
         'border': ('transparent', 'clamp', 'repeat', 'mirror').index(value('warp_border')),
         'amount': value('warp_mix'),
@@ -161,7 +197,23 @@ def spatial_uniforms(config):
         'seed': value('warp_seed'),
         'segments': value('warp_segments'),
         'mirror_axis': (int('x' in axis), int('y' in axis)),
+        'map_channels': (channels.index(value('warp_map_x')), channels.index(value('warp_map_y'))),
+        'map_neutral': value('warp_neutral'),
     }
+    if kind == 'polar_wrap' and size is not None:
+        centre = tuple(value * extent - .5 for value, extent in zip(value('warp_center'), size))
+        pixels = tuple(round(coordinate) for coordinate in centre)
+        uniforms.update(polar_origin_pixel=pixels, polar_origin_fraction=tuple(
+            coordinate - pixel for coordinate, pixel in zip(centre, pixels)))
+    return uniforms
+
+
+def spatial_draw_inputs(source, control_map, uniforms, *, alpha_only):
+    """Bind the optional control map identically in the bridge and resident passes."""
+    bindings = {'source_tex': source}
+    if control_map is not None:
+        bindings['map_tex'] = control_map
+    return bindings, {**uniforms, 'alpha_only': int(alpha_only)}
 
 
 def render_spatial_warp(backend, images, config, *, original_alpha=None):
@@ -172,17 +224,23 @@ def render_spatial_warp(backend, images, config, *, original_alpha=None):
     if not req.supported:
         raise GPUUnsupported(f"spatial_warp {config.get('warp_type', 'wave')}: {req.reason}")
     image = images[0]
-    validate_spatial_images(image, original_alpha=original_alpha)
-    if req.reason == 'exact_host_identity':
+    control_map = images[1] if len(images) == 2 else None
+    validate_spatial_images(image, map_image=control_map, original_alpha=original_alpha)
+    if req.reason == 'exact_host_identity' or spatial_map_is_transparent(control_map):
         return image.copy(), original_alpha.copy() if original_alpha is not None else None
 
-    uniforms = spatial_uniforms(config)
+    uniforms = spatial_uniforms(config, image.size)
 
     def warp(source, *, alpha_only):
         def steps(_textures):
-            yield SPATIAL_SHADER_NAME, SPATIAL_WARP, {'source_tex': 0}, {**uniforms, 'alpha_only': alpha_only}
+            yield SPATIAL_SHADER_NAME, SPATIAL_WARP, *spatial_draw_inputs(
+                0, 1 if control_map is not None else None, uniforms, alpha_only=alpha_only,
+            )
 
-        return _execute(backend, [source], steps, image.size, budget=req.texture_count)
+        inputs = [source] if control_map is None else [source, control_map]
+        result = _execute(backend, inputs, steps, image.size, budget=req.texture_count)
+        backend.last_spatial_draws += 1
+        return result
 
     result = warp(image, alpha_only=0)
     lineage = None
