@@ -25,15 +25,16 @@ def test_gpu_device_max_texture_size_limit():
         backend._check_budget((9000,4000),2)
 
 
-@pytest.mark.parametrize('extension,owned,reason', [
-    (None, True, 'extension_unavailable'),
-    ('GL_NVX_gpu_memory_info', False, 'context_borrowed'),
+@pytest.mark.parametrize('extension,owned,software,reason', [
+    (None, True, False, 'extension_unavailable'),
+    ('GL_NVX_gpu_memory_info', False, False, 'context_borrowed'),
+    ('GL_NVX_gpu_memory_info', True, True, 'software_renderer'),
 ])
-def test_unavailable_memory_query_does_not_touch_native_gl(extension, owned, reason):
+def test_unavailable_memory_query_does_not_touch_native_gl(extension, owned, software, reason):
     def bind():
         pytest.fail('No native binding should be attempted')
 
-    probe = DriverMemoryProbe({extension} if extension else (), owned=owned, bind=bind)
+    probe = DriverMemoryProbe({extension} if extension else (), owned=owned, software=software, bind=bind)
     assert probe.sample()['reason'] == reason
     assert probe.sample(closed=True)['reason'] == 'backend_closed'
 

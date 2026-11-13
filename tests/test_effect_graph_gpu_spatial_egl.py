@@ -1,5 +1,6 @@
 """Real-driver parity and lineage for resident and bridged spatial warps."""
 from copy import deepcopy
+import ctypes
 from math import tau
 import os
 from pathlib import Path
@@ -16,6 +17,7 @@ from framerudiments.effect_graph_backend_contract import backend_registry, gpu_r
 from framerudiments.effect_graph import EffectGraph
 from framerudiments.effect_graph_gpu import GLMatteBackend, GPUUnsupported
 from framerudiments.effect_graph_gpu_islands import plan_islands
+from framerudiments.effect_graph_gpu_memory import _bind_integer_reader
 from framerudiments.effect_graph_ripples import MAX_RIPPLE_SOURCES, RIPPLE_VARIANT_ORDER
 from framerudiments.effect_graph_spatial import GPU_WARP_TYPES, render_spatial_warp_with_alpha
 
@@ -601,8 +603,17 @@ def test_real_driver_memory_snapshot_and_device_discovery(monkeypatch):
     with _local_backend() as gpu:
         sample = gpu.sample_driver_memory()
         extensions = gpu.ctx.extensions
-        if 'GL_NVX_gpu_memory_info' in extensions:
-            assert sample['state'] == 'available' and sample['scope'] == 'device'
+        if 'llvmpipe' in gpu.capabilities.renderer.lower():
+            # Mesa may advertise NVX even on its software driver. Do not
+            # interpret that renderer's host memory as physical video memory.
+            assert sample['reason'] == 'software_renderer', sample
+            current, get = _bind_integer_reader()
+            value = ctypes.c_int()
+            assert current()
+            get(0x0D33, ctypes.byref(value))  # GL_MAX_TEXTURE_SIZE
+            assert value.value == gpu.ctx.info['GL_MAX_TEXTURE_SIZE']
+        elif 'GL_NVX_gpu_memory_info' in extensions:
+            assert sample['state'] == 'available' and sample['scope'] == 'device', sample
             assert sample['dedicated_bytes'] > 0 and sample['available_bytes'] >= 0
         elif 'GL_ATI_meminfo' in extensions:
             assert sample['state'] == 'available' and sample['scope'] == 'texture_pool'

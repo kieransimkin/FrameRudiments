@@ -48,7 +48,7 @@ snapshot automatically.
 | --- | --- |
 | [GL_NVX_gpu_memory_info](https://registry.khronos.org/OpenGL/extensions/NVX/NVX_gpu_memory_info.txt) | Device hints: dedicated capacity, total available to the driver, current available dedicated memory, and eviction counters when valid. |
 | [GL_ATI_meminfo](https://registry.khronos.org/OpenGL/extensions/ATI/ATI_meminfo.txt) | Free space and largest free blocks for the texture and auxiliary pools. These figures describe pools and may overlap. |
-| No applicable query | `state: unavailable` and a reason. A missing reading does not indicate zero VRAM. |
+| Software renderer or no applicable query | `state: unavailable` and a reason. A missing reading does not indicate zero VRAM. |
 
 Sizes are converted from KiB to bytes. These are driver hints shared with
 other activity on the system. The report does not derive process usage from
@@ -75,5 +75,6 @@ composition and encoding are outside this measurement.
 
 The NVIDIA OpenGL probe returned 8,585,740,288 bytes of dedicated capacity.
 Required CI also runs the HD benchmark and real context tests on Mesa/EGL
-software rendering. ATI values are covered with a synthetic query fixture.
+software rendering. Mesa can advertise NVX on llvmpipe, so software rendering
+is identified before any memory query. ATI values use a synthetic query fixture.
 Physical AMD and Intel profiling remains open.

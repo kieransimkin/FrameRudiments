@@ -18,7 +18,7 @@ from PIL import ImageColor
 from .effect_graph_surface_transport import (
     TransportPayload, bridge_contract, pack_image, unpack_image,
 )
-from .effect_graph_gpu_memory import DriverMemoryProbe
+from .effect_graph_gpu_memory import DriverMemoryProbe, is_software_renderer
 
 from .effect_graph_backend_contract import (
     MAX_GPU_MORPH_RADIUS, MAX_GPU_GAUSSIAN_RADIUS,
@@ -348,7 +348,10 @@ class GLMatteBackend:
         self.max_pooled_target_bytes = max_pooled_target_bytes
         self._target_pool = []
         self._target_pool_size = None
-        self._memory_probe = DriverMemoryProbe(self.ctx.extensions, owned=self._owns_context)
+        self._memory_probe = DriverMemoryProbe(
+            self.ctx.extensions, owned=self._owns_context,
+            software=is_software_renderer(self.capabilities.renderer),
+        )
         self.begin_transfer_sample()
 
     @staticmethod

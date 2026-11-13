@@ -8,6 +8,12 @@ _NVX = 'GL_NVX_gpu_memory_info'
 _ATI = 'GL_ATI_meminfo'
 
 
+def is_software_renderer(renderer):
+    return any(name in renderer.lower() for name in (
+        'llvmpipe', 'softpipe', 'swiftshader', 'gdi generic', 'microsoft basic render driver',
+    ))
+
+
 def _current_context(library, name):
     current = getattr(library, name)
     current.argtypes = ()
@@ -49,11 +55,13 @@ def _bind_integer_reader():
 class DriverMemoryProbe:
     """Read only advertised queries and only with the original context current."""
 
-    def __init__(self, extensions, *, owned, bind=_bind_integer_reader):
+    def __init__(self, extensions, *, owned, software=False, bind=_bind_integer_reader):
         self.source = next((name for name in (_NVX, _ATI) if name in extensions), None)
         self._binding = None
         self._context = None
-        if not self.source:
+        if software:
+            self._reason = 'software_renderer'
+        elif not self.source:
             self._reason = 'extension_unavailable'
         elif not owned:
             self._reason = 'context_borrowed'
