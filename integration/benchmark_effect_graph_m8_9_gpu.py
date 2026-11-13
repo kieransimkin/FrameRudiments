@@ -47,6 +47,34 @@ def graph(kind='wave', *, boundary=False):
     ], 'output': 'warp'})
 
 
+def mapped_fixture(size):
+    sources = fixture(size)
+    width, height = size
+    y, x = np.ogrid[:height, :width]
+    rgba = np.empty((height, width, 4), dtype=np.uint8)
+    rgba[..., 0] = (x * 3 + y) % 256
+    rgba[..., 1] = (y * 5 - x) % 256
+    rgba[..., 2] = (x + y) % 256
+    rgba[..., 3] = (x + y * 7) % 256
+    sources['map'] = Image.fromarray(rgba)
+    effect = EffectGraph({'nodes': [
+        {'id': 'source', 'type': 'source'}, {'id': 'map', 'type': 'source'},
+        {'id': 'warp', 'type': 'spatial_warp', 'inputs': ['source', 'map'], 'warp_type': 'displacement',
+         'warp_amplitude': [128, -128], 'warp_map_x': 'luminance', 'warp_map_y': 'a',
+         'warp_neutral': .37, 'warp_border': 'repeat'},
+    ], 'output': 'warp'})
+    return effect, sources
+
+
+def polar_graph():
+    return EffectGraph({'nodes': [
+        {'id': 'source', 'type': 'source'},
+        {'id': 'warp', 'type': 'spatial_warp', 'inputs': ['source'], 'warp_type': 'polar_wrap',
+         'warp_border': 'repeat', 'warp_radius': 230, 'warp_center': [.50000001, .5],
+         'warp_angle': 90.000001},
+    ], 'output': 'warp'})
+
+
 def parity(reference, actual):
     a, b = (np.asarray(image, dtype=np.int16) for image in (reference, actual))
     difference = np.abs(a - b)
@@ -74,8 +102,9 @@ def benchmark(gpu, effect, sources, repeats):
         output = effect.render(sources, gpu_backend=gpu, gpu_strict=True)
         device.append(perf_counter() - start)
     transport = dict(gpu.last_transport)
-    if not transport['gpu_resident_graph'] or transport['uploads'] != 1 or transport['readbacks'] != 1:
-        raise RuntimeError(f'Expected a single resident upload and readback: {transport}')
+    if (not transport['gpu_resident_graph'] or transport['uploads'] != len(effect.source_ids)
+            or transport['readbacks'] != 1):
+        raise RuntimeError(f'Expected one upload per resident source and one readback: {transport}')
     difference = parity(reference, output)
     if difference['max_alpha_difference'] > 5 or difference['max_composited_difference'] > 5:
         raise RuntimeError(f'CPU/GPU spatial warp parity exceeded the tolerance: {difference}')
@@ -84,31 +113,47 @@ def benchmark(gpu, effect, sources, repeats):
             'frame_sha256': sha256(output.tobytes()).hexdigest()}
 
 
-def write_media(gpu, directory, ffmpeg):
+def write_media(gpu, directory, ffmpeg, *, map_and_polar):
     directory.mkdir(parents=True, exist_ok=True)
     images, effect = fixture(SIZES['small']), graph()
     width, height = images['source'].size
-    sheet_size = (width * 3, height + 28)
+    row_height = height + 28
+    if map_and_polar:
+        mapped_effect, mapped_sources = mapped_fixture((width, height))
+        rows = [
+            ('Control map', 'CPU map displacement', 'GPU map displacement', mapped_sources['map'],
+             mapped_effect, mapped_sources, 'warp_amplitude.x'),
+            ('Polar source', 'CPU polar wrap', 'GPU polar wrap', images['source'],
+             polar_graph(), images, 'warp_angle'),
+        ]
+        filename = 'effect-graph-m8-9-map-polar'
+    else:
+        rows = [('Source', 'CPU reference', 'GPU result', images['source'], effect, images, 'warp_phase')]
+        filename = 'effect-graph-m8-9-spatial'
+    sheet_size = (width * 3, row_height * len(rows))
     background = (17, 24, 39, 255)
 
     def panel(phase):
-        controls = {('warp', 'warp_phase'): phase}
-        cpu = effect.render(images, parameter_values=controls)
-        device = effect.render(images, parameter_values=controls, gpu_backend=gpu, gpu_strict=True)
         sheet = Image.new('RGBA', sheet_size, background)
         labels = ImageDraw.Draw(sheet)
-        for index, (label, image) in enumerate(zip(('Source', 'CPU reference', 'GPU result'),
-                                                  (images['source'], cpu, device))):
-            x = index * width
-            labels.text((x + 12, 8), label, fill='white')
-            sheet.alpha_composite(image, (x, 28))
+        control_values = {'warp_phase': phase, 'warp_amplitude.x': 32 + 8 * phase,
+                          'warp_angle': phase / tau * 360}
+        for row, (label_source, label_cpu, label_gpu, source, graph_, sources, control) in enumerate(rows):
+            controls = {('warp', control): control_values[control]}
+            cpu = graph_.render(sources, parameter_values=controls)
+            device = graph_.render(sources, parameter_values=controls, gpu_backend=gpu, gpu_strict=True)
+            for index, (label, image) in enumerate(zip((label_source, label_cpu, label_gpu),
+                                                      (source, cpu, device))):
+                x, y = index * width, row * row_height
+                labels.text((x + 12, y + 8), label, fill='white')
+                sheet.alpha_composite(image, (x, y + 28))
         return sheet
 
-    panel(tau / 4).save(directory / 'effect-graph-m8-9-spatial.png')
+    panel(tau / 4).save(directory / f'{filename}.png')
     command = [ffmpeg, '-hide_banner', '-loglevel', 'error', '-y', '-f', 'rawvideo',
                '-pixel_format', 'rgba', '-video_size', f'{sheet_size[0]}x{sheet_size[1]}',
                '-framerate', str(FPS), '-i', '-', '-an', '-c:v', 'libx264', '-crf', '18',
-               '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(directory / 'effect-graph-m8-9-spatial.mp4')]
+               '-pix_fmt', 'yuv420p', '-movflags', '+faststart', str(directory / f'{filename}.mp4')]
     with subprocess.Popen(command, stdin=subprocess.PIPE) as process:
         try:
             for frame in range(FPS * 2):
@@ -128,23 +173,29 @@ def main():
     parser.add_argument('--repeats', type=int, default=3)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--media', type=Path)
+    parser.add_argument('--map-polar-media', action='store_true',
+                        help='show the displacement map and polar wrap comparison in the optional media')
     parser.add_argument('--ffmpeg', default='ffmpeg')
     args = parser.parse_args()
     if not 1 <= args.repeats <= 10:
         parser.error('repeats must be 1..10')
     with GLMatteBackend(backend=None if args.backend == 'auto' else args.backend) as gpu:
-        sources = fixture(SIZES[args.size])
+        size = SIZES[args.size]
+        sources = fixture(size)
+        mapped_effect, mapped_sources = mapped_fixture(size)
         result = {
             'schema': 'framerudiments.m8-9-spatial-benchmark.v1',
-            'resolution': list(SIZES[args.size]), 'renderer': gpu.capabilities.renderer,
+            'resolution': list(size), 'renderer': gpu.capabilities.renderer,
             'vendor': gpu.ctx.info.get('GL_VENDOR', 'unknown'),
             'gl_version': gpu.ctx.info.get('GL_VERSION', 'unknown'),
             'wave': benchmark(gpu, graph(), sources, args.repeats),
             'wave_at_precision_boundary': benchmark(gpu, graph(boundary=True), sources, 1),
             'turbulence_at_precision_boundary': benchmark(gpu, graph('turbulence', boundary=True), sources, 1),
+            'displacement_at_precision_boundary': benchmark(gpu, mapped_effect, mapped_sources, 1),
+            'polar_wrap': benchmark(gpu, polar_graph(), sources, args.repeats),
         }
         if args.media is not None:
-            write_media(gpu, args.media, args.ffmpeg)
+            write_media(gpu, args.media, args.ffmpeg, map_and_polar=args.map_polar_media)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2) + '\n', encoding='utf8')
     print(json.dumps(result, indent=2))

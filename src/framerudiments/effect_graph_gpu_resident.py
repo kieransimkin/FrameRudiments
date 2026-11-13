@@ -35,8 +35,8 @@ from .effect_graph_gpu_spectral import (
     SPACE_INDEX as SPECTRAL_SPACE_INDEX,
     _bind_band as bind_spectral_band,
 )
-from .effect_graph_gpu_spatial import SPATIAL_SHADER_NAME, SPATIAL_WARP, spatial_uniforms
-from .effect_graph_spatial import spatial_is_identity, validate_spatial_images
+from .effect_graph_gpu_spatial import SPATIAL_SHADER_NAME, SPATIAL_WARP, spatial_draw_inputs, spatial_uniforms
+from .effect_graph_spatial import spatial_is_identity, spatial_map_is_transparent, validate_spatial_images
 from .effect_graph_spectral import validate_spectral
 
 # The M3.3 bridge uploads an L original-alpha image as RGBA and reads .r.
@@ -109,14 +109,49 @@ def node_supported(node, config):
     return True
 
 
-def supported(graph, configs):
-    """Only closed DAGs whose every operation has a resident GLSL equivalent."""
+def resident_rejection(graph, configs):
+    """Return the first resolved operation that prevents closed residency."""
     for key in graph.order:
         node = graph.nodes[key]
         cfg = configs.get(key, node.config)
         if not node_supported(node, cfg):
-            return False
-    return True
+            return 'kernel_not_implemented'
+        if node.kind == 'spatial_warp' and len(node.inputs) == 2 and not spatial_is_identity(cfg):
+            control_map = graph.nodes[node.inputs[1]]
+            map_config = configs.get(control_map.id, control_map.config)
+            if control_map.kind == 'source' and map_config.get('opacity', 1) not in (0, 1):
+                # An alpha quantization tie can produce a full-pixel change in
+                # map offsets. Prepare these source pixels on the host first.
+                return 'displacement_map_source_opacity'
+            # The per-node bridge can establish whether a processed map is
+            # entirely transparent without guessing from its GPU texture.
+            if control_map.kind != 'source':
+                return 'processed_displacement_map'
+    return None
+
+
+def supported(graph, configs):
+    return resident_rejection(graph, configs) is None
+
+
+def _resolve_transparent_maps(graph, sources, configs):
+    """Resolve source-dependent identities before scheduling or allocating textures."""
+    effective = dict(configs)
+    for key in graph.order:
+        node = graph.nodes[key]
+        if node.kind != 'spatial_warp' or len(node.inputs) != 2:
+            continue
+        cfg = configs.get(key, node.config)
+        if spatial_is_identity(cfg):
+            continue
+        map_key = node.inputs[1]
+        map_node = graph.nodes[map_key]
+        if map_node.kind != 'source':
+            continue
+        opacity = configs.get(map_key, map_node.config).get('opacity', 1)
+        if opacity == 0 or spatial_map_is_transparent(sources[map_key]):
+            effective[key] = {**cfg, 'warp_mix': 0}
+    return effective
 
 
 class _ResidentRun:
@@ -437,12 +472,15 @@ class _ResidentRun:
             original = self.alpha_of[node.inputs[0]]
             warped_alpha = original
             if not spatial_is_identity(cfg):
-                uniforms = spatial_uniforms(cfg)
-                warped = self._draw(SPATIAL_SHADER_NAME, SPATIAL_WARP,
-                                    {'source_tex': pair[0]}, {**uniforms, 'alpha_only': 0})
+                uniforms = spatial_uniforms(cfg, self.size)
+                control_map = self.texture_of[node.inputs[1]][0] if len(node.inputs) == 2 else None
+                warped = self._draw(SPATIAL_SHADER_NAME, SPATIAL_WARP, *spatial_draw_inputs(
+                    pair[0], control_map, uniforms, alpha_only=False,
+                ))
                 warped_alpha = warped if original is pair else self._draw(
-                    SPATIAL_SHADER_NAME, SPATIAL_WARP, {'source_tex': original[0]},
-                    {**uniforms, 'alpha_only': 1})
+                    SPATIAL_SHADER_NAME, SPATIAL_WARP, *spatial_draw_inputs(
+                        original[0], control_map, uniforms, alpha_only=True,
+                    ))
                 pair = warped
                 owned = True
         elif kind == 'matte':
@@ -539,7 +577,7 @@ def resident_plan(graph, configs=None):
     return run.stats()
 
 
-def render_resident(backend, graph, sources, configs, *, whole_graph=True):
+def render_resident(backend, graph, sources, configs, *, island_stats=None):
     """Upload each graph source once, render on device, read one RGBA8 output.
 
     Preflight runs before any allocation. Resource ownership is invocation-local,
@@ -561,6 +599,7 @@ def render_resident(backend, graph, sources, configs, *, whole_graph=True):
             raise ValueError('GPU filter canvas exceeds pixel budget')
     if any(graph.nodes[key].kind == 'spatial_warp' for key in graph.order):
         validate_spatial_images(first_source)
+    configs = _resolve_transparent_maps(graph, sources, configs)
     plan = resident_plan(graph, configs)
     backend._check_budget(size, plan['resident_peak_allocated_surfaces'])
     run = _ResidentRun(backend, graph, configs, size)
@@ -572,14 +611,16 @@ def render_resident(backend, graph, sources, configs, *, whole_graph=True):
             framebuffer = backend.ctx.framebuffer(color_attachments=[texture])
             run.all_resources.append(framebuffer)
         image = backend._readback_rgba(framebuffer, size)
+        if island_stats is not None:
+            island_stats.update(plan)
         report = getattr(backend, 'last_transport', None)
         if report is not None:
-            if whole_graph:
+            if island_stats is None:
                 report.update(plan)
                 report['gpu_resident_graph'] = True
                 report['resident_estimated_texture_bytes'] = (
                     plan['resident_peak_allocated_surfaces'] * size[0] * size[1] * 4)
-        if whole_graph:
+        if island_stats is None:
             backend.last_dispatch['gpu_nodes'] = plan['resident_draws']
         else:
             backend.last_dispatch['gpu_nodes'] += plan['resident_draws']

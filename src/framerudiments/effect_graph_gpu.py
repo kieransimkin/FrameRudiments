@@ -324,6 +324,7 @@ class GLMatteBackend:
             renderer=str(self.ctx.info.get('GL_RENDERER', 'unknown')),
         )
         self.last_dispatch = {'gpu_nodes': 0, 'cpu_fallbacks': 0}
+        self.last_spatial_draws = 0
         self.supports_gpu_islands = True
         self.begin_transfer_sample()
         self.closed = False
@@ -589,6 +590,7 @@ class GLMatteBackend:
     def spatial_warp(self, images, config, *, original_alpha=None):
         """Warp current pixels and optional original-alpha metadata."""
         from .effect_graph_gpu_spatial import render_spatial_warp
+        self.last_spatial_draws = 0
         return render_spatial_warp(self, images, config, original_alpha=original_alpha)
 
     def render_resident_graph(self, graph, sources, configs):

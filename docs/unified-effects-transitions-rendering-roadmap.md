@@ -1,9 +1,10 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.23 — 13 November 2026
+**Version:** 1.24 — 13 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
+The 0.4.27 increment adds native map displacement and repeat-border polar wrap.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -650,7 +651,8 @@ See [M8.8 mixed GPU islands](effect-graph-m8-8-gpu-islands.md).
 - [x] Wave, turbulence, swirl, nonnegative radial, mirror, kaleidoscope and polar unwrap.
 - [x] Warped original alpha across resident forks and per-node GPU/CPU boundaries.
 - [x] Focused NVIDIA parity and HD timing, with no-skip Mesa/EGL parity in the release gate.
-- [ ] GPU map displacement, polar wrap, raindrop ripples and the remaining precision-limited settings.
+- [x] GPU RGBA map displacement and repeat-border polar wrap, with CPU parity and reported fallback limits.
+- [ ] GPU raindrop ripples and the remaining precision-limited warp settings.
 - [ ] Driver-reported physical VRAM where supported, bounded cross-frame pooling and profiling on further hardware vendors.
 
 See [the M8.9 GPU spatial warp contract and real comparison](effect-graph-m8-9-gpu-spatial.md).

@@ -18,10 +18,12 @@ from .effect_graph_ripples import RIPPLE_VARIANTS, ripple_vectors
 
 WARP_TYPES = frozenset({'wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope', 'displacement',
                         'polar_unwrap', 'polar_wrap', 'raindrop_ripples'})
-GPU_WARP_TYPES = ('wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope', 'polar_unwrap')
+GPU_WARP_TYPES = ('wave', 'turbulence', 'swirl', 'radial', 'mirror', 'kaleidoscope',
+                  'polar_unwrap', 'polar_wrap', 'displacement')
 GPU_WARP_MAX_AMPLITUDE = 128
 GPU_WARP_MIN_WAVELENGTH = 16
 GPU_WARP_MIN_RADIAL_AMOUNT = 0
+GPU_POLAR_WRAP_MIN_RADIUS = 16
 WARP_ENUMS = {
     'warp_type': WARP_TYPES,
     'warp_border': frozenset({'transparent', 'clamp', 'repeat', 'mirror'}),
@@ -328,6 +330,11 @@ def spatial_is_identity(config):
     return False
 
 
+def spatial_map_is_transparent(map_image):
+    """An entirely invisible control map is an exact identity."""
+    return map_image is not None and map_image.getchannel('A').getbbox() is None
+
+
 def gpu_spatial_rejection(config):
     """Report GPU support for one validated, resolved set of warp parameters."""
     kind = config.get('warp_type', WARP_DEFAULTS['warp_type'])
@@ -338,12 +345,18 @@ def gpu_spatial_rejection(config):
         # A negative amount gives the inverse map a steep derivative near the
         # centre; rounding that centre to a pixel can change its sampled colour.
         return 'warp_precision_limit_exceeded'
+    if kind == 'polar_wrap' and not spatial_is_identity(config):
+        if config.get('warp_border', WARP_DEFAULTS['warp_border']) != 'repeat':
+            return 'polar_wrap_seam_requires_repeat'
+        if config.get('warp_radius', WARP_DEFAULTS['warp_radius']) < GPU_POLAR_WRAP_MIN_RADIUS:
+            return 'warp_precision_limit_exceeded'
     # Single-precision GLSL cannot preserve the fractional sampling footprint
     # at the combination of short wavelengths and very large displacement.
-    if kind in {'wave', 'turbulence'} and not spatial_is_identity(config):
+    if kind in {'wave', 'turbulence', 'displacement'} and not spatial_is_identity(config):
         amplitude = config.get('warp_amplitude', WARP_DEFAULTS['warp_amplitude'])
         wavelength = config.get('warp_scale', WARP_DEFAULTS['warp_scale'])
-        if max(map(abs, amplitude)) > GPU_WARP_MAX_AMPLITUDE or min(wavelength) < GPU_WARP_MIN_WAVELENGTH:
+        if (max(map(abs, amplitude)) > GPU_WARP_MAX_AMPLITUDE
+                or kind != 'displacement' and min(wavelength) < GPU_WARP_MIN_WAVELENGTH):
             return 'warp_precision_limit_exceeded'
     return None
 
@@ -373,7 +386,7 @@ def render_spatial_warp_with_alpha(image, config, *, map_image=None, original_al
     validate_spatial_images(image, map_image=map_image, original_alpha=original_alpha)
     if type(tile_rows) is not int or not 1 <= tile_rows <= 256:
         raise ValueError('tile_rows must be 1..256')
-    if spatial_is_identity(config) or map_image is not None and map_image.getchannel('A').getbbox() is None:
+    if spatial_is_identity(config) or spatial_map_is_transparent(map_image):
         return image.copy(), original_alpha.copy() if original_alpha is not None else None
     source = np.asarray(image, dtype=np.uint8)
     lineage = np.asarray(original_alpha, dtype=np.uint8) if original_alpha is not None else None

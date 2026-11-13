@@ -732,6 +732,7 @@ class EffectGraph:
                     validate_spatial(config, len(inputs))
                     from .effect_graph_gpu import GPUUnsupported
                     original = original_alphas[node.inputs[0]]
+                    control_map = inputs[1] if len(inputs) == 2 else None
                     warp = getattr(gpu_backend, 'spatial_warp', None)
                     warped = None
                     if callable(warp):
@@ -741,7 +742,7 @@ class EffectGraph:
                             if gpu_strict:
                                 raise
                         else:
-                            if not spatial_is_identity(config):
+                            if getattr(gpu_backend, 'last_spatial_draws', not spatial_is_identity(config)):
                                 gpu_backend.last_dispatch['gpu_nodes'] += 1
                     elif gpu_strict:
                         raise GPUUnsupported('spatial_warp requires a compatible GPU backend')
@@ -749,7 +750,7 @@ class EffectGraph:
                         if gpu_backend is not None:
                             gpu_backend.last_dispatch['cpu_fallbacks'] += 1
                         warped = render_spatial_warp_with_alpha(
-                            inputs[0], config, map_image=inputs[1] if len(inputs) == 2 else None,
+                            inputs[0], config, map_image=control_map,
                             original_alpha=original,
                         )
                     result, warped_alpha = warped

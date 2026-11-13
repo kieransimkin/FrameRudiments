@@ -1,3 +1,14 @@
+# FrameRudiments 0.4.27
+
+- Run RGBA-map displacement on GPU with all four borders and alpha-weighted
+  channel selection, including luminance. A direct source map stays resident.
+  A map computed by another node can use the GPU bridge, including an exact
+  identity when the map is entirely transparent.
+- Run polar wrap on GPU for repeat-border projects, with fractional centres
+  and consistent sampling through the angular seam.
+- Verify both modes on NVIDIA and through the required Mesa/EGL HD benchmark.
+  See the [60 fps map and polar comparison](docs/effect-graph-m8-9-gpu-spatial.md#map-displacement-and-polar-wrap).
+
 # FrameRudiments 0.4.26
 
 - Accelerate wave, turbulence, swirl, radial, mirror, kaleidoscope

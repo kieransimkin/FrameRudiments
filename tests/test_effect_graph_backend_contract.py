@@ -181,7 +181,7 @@ def test_each_auto_fallback_and_strict_rejection():
     assert exc.value.report['errors'][0]['node'] == 'out'
 
 
-@pytest.mark.parametrize('kind,params', [('layer_style', {}), ('spatial_warp', {'warp_type': 'polar_wrap'}),
+@pytest.mark.parametrize('kind,params', [('layer_style', {}), ('spatial_warp', {'warp_type': 'raindrop_ripples'}),
                                       ('raster_effect', {}), ('procedural_field', {})])
 def test_cpu_only_families_report_actual_legacy_policy(kind, params):
     g = unary(kind, **params)
