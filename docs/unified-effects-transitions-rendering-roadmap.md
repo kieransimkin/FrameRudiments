@@ -182,6 +182,13 @@ All external shader/model/media sources must be pinned or versioned, constrained
 - **M10.3** Automatically generated parameter and DanceNotion control editors.
 - **M10.4** Transition previews and scrub-safe frame evaluation with quality/performance switch.
 - **M10.5** Round-trip JSON fixture and undo/redo tests.
+- **M10.S — seekable adaptive real-time streaming preview (planned, opt-in).**
+  [Dedicated S0–S7 implementation plan](seekable-adaptive-streaming-plan.md):
+  target-FPS hysteresis and fidelity ladder; latest-cursor-priority seeking;
+  isolated full-quality refinement from the most recent stopped frame;
+  monotonic per-frame cache; whole-segment effect/pipeline invalidation and
+  transitive temporal dependencies. Stateless paths may ship first; M11.1–M11.2
+  checkpoint/replay is required for correct seeking with stateful feedback.
 - **Exit:** editor exports a valid project that matches CLI-rendered output.
 
 ### M11 — Temporal engine, media and CI showcases

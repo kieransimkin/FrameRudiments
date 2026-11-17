@@ -1,5 +1,10 @@
 # FrameRudiments
 
+**Planned (not implemented):** [seekable, cache-backed adaptive streaming preview](docs/seekable-adaptive-streaming-plan.md),
+with stepped quality to a target FPS, a separate production-quality refinement
+worker starting at the latest stopped playhead, and whole-segment cache
+invalidation when effects or render dependencies change.
+
 M10.1 adds a [visual executable effect-graph node/port editor](docs/authoring-workspace.md)
 to the existing React timeline workspace. The editor preserves native timing,
 source pins, explicit graph opt-in, and the exporter’s project schema. M10.2

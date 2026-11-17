@@ -72,6 +72,15 @@ editable timing contracts in `docs/timing-editing.md` of its upstream project.
   effects are not replayed in this interactive preview.** Use a real preflight
   and encoded render to approve those stages.
 
+**Proposed streaming preview (not yet implemented):** the
+[seekable adaptive streaming and monotonic frame cache plan](seekable-adaptive-streaming-plan.md)
+adds a user-set target FPS with stepped detail/effects/resolution, a dedicated
+full-fidelity worker anchored at the last stopped playback cursor, cache
+upgrades that never downgrade a retained frame, and **whole-section**
+invalidation after a segment's effects or rendering pipeline changes.
+Stateful feedback seeking requires M11 checkpoint/replay support; the current
+`/api/preview` behaviour remains unchanged.
+
 Source lyric/cue timestamps are converted to/from the output excerpt's display
 ruler without modifying the approved source audio clock. Repeat cycles share
 one authoritative source-timed sidecar edit; the editor does not materialise
