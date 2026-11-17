@@ -161,6 +161,11 @@ def gpu_requirements(kind, config, input_count, *, original_alpha=True, precise_
             raise ValueError('GPU transition styles require two inputs')
         if config.get('progress', 0) in (0, 1):
             return GPURequirements(True, 'exact_host_identity')
+        if config.get('transition_style') == 'gl_transition':
+            from .gl_transitions import _shader_chain
+            count = len(_shader_chain(config))
+            return GPURequirements(True, texture_count=count + 2, upload_count=2,
+                                   readback_count=1, draw_passes=count)
         return GPURequirements(True, texture_count=3, upload_count=2,
                                readback_count=1, draw_passes=1)
     if kind == 'chromatic_displacement':
@@ -405,6 +410,10 @@ def plan_effect_graph(graph, source_surfaces, *, mode='cpu', gpu_backend=None,
                         selected, reason = 'cpu', 'exact_host_identity'
                     elif max(surface.size) > device['max_texture_size']:
                         reason = 'texture_dimension_limit'
+                    elif (node.kind == 'transition'
+                          and node.config.get('transition_style') == 'gl_transition'
+                          and texture_bytes > node.config.get('max_pass_bytes', 128 * 1024**2)):
+                        reason = 'shader_pass_payload_budget'
                     elif texture_bytes > device['max_texture_payload_bytes']:
                         reason = 'texture_payload_budget'
                     else:

@@ -77,6 +77,7 @@ jobs:
           tests/test_effect_graph_gpu_kernels.py tests/test_effect_graph_gpu_resident_egl.py
           tests/test_effect_graph_gpu_resident_m86_egl.py tests/test_effect_graph_gpu_resident_m87_egl.py
           tests/test_effect_graph_gpu_spatial_egl.py tests/test_gl_transitions_egl.py
+          tests/test_gl_multipass_egl.py
           --junitxml=gpu-transfer-results.xml
       - name: Require real GPU transport and parity tests with no skips
         run: |

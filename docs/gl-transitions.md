@@ -57,3 +57,57 @@ pwsh -File scripts/Invoke-Tests.ps1 tests/test_gl_transitions.py -q
 The CPU test module covers source and pin validation, exact endpoints, native override forwarding and host uniform packets. The separate `tests/test_gl_transitions_egl.py` is exercised in the required EGL GPU workflow, with no skip-only pass; no CPU fallback masquerades as shader execution. Required exact-head CI must confirm a real EGL context and existing project regressions before calling M9.2 shipped. The final M9 family acceptance requires cross-vendor checks, pinned goldens, provenance reports and M9.3/M9.4 follow-ups.
 
 Project usage: set `effect_graph_backend` to `"gpu"` (strict) and refer to the shader file by a path relative to the project JSON. `Project` records the full-file pin, and the compositor passes the resolved path to `EffectGraph` without modifying the original project JSON. A two-input GL stage in `transition_chain` is supported using the same pinning rule.
+
+## M9.3 — Controlled multiple GL passes (implementation candidate)
+
+A `gl_transition` may now add `shader_passes`, an ordered array of **zero to
+three additional** `{ "shader_path": ..., "shader_sha256": ... }` records.
+The main `shader_path` remains pass 1; all passes are individually pinned and
+validated before any execution, including at exact progress endpoints. The
+single outer `trusted_shader: true` opt-in covers every reviewed shader; an
+additional pass cannot request its own arbitrary uniforms, input textures,
+imports or time source. Individual shader files remain limited to 64 KiB.
+
+```json
+{
+  "transition_style": "gl_transition",
+  "shader_path": "first.glsl",
+  "shader_sha256": "<sha256 of first.glsl>",
+  "shader_passes": [
+    {"shader_path": "second.glsl", "shader_sha256": "<sha256 of second.glsl>"}
+  ],
+  "trusted_shader": true,
+  "progress": 0.5,
+  "max_pass_bytes": 134217728
+}
+```
+
+Each pass receives the **prior pass output** as `getFromColor(uv)` and the
+**original incoming image B** as `getToColor(uv)`. The first pass uses original
+A and B. Progress and explicit host time/coordinate uniforms are unchanged
+between passes. Each intermediate is materialized as RGBA8 on the device; its
+straight-alpha and display-referred semantics are unchanged. No history or
+implicit feedback is created. Progress endpoints still copy A or B exactly.
+
+**Resource contract:** 1–4 passes, 2 input texture uploads, 1 output readback,
+`N` intermediate RGBA8 output textures, and at most `N + 2` simultaneously live
+RGBA8 texture payloads. Before texture allocation, the bridge checks
+`width * height * 4 * (N + 2)` against both its existing per-backend GPU budget
+and `max_pass_bytes` (default 128 MiB, maximum 256 MiB). The graph backend
+planner reports the same payload size, transfer count and draw-pass count.
+Program objects from external shaders are retained in a **16-entry LRU** on
+each GPU backend and released when evicted. The budget measures texture
+payloads, not CPU images, driver shader compilation memory, VRAM fragmentation,
+execution time or the safety of arbitrary GLSL. M9.4 remains the separate
+untrusted-shader security milestone; do **not** run unreviewed shader sources.
+
+Project-relative paths for every additional pass are resolved and registered
+via `Project.ref` alongside the first shader for input provenance. Authored
+JSON is unchanged. The transport sample records `external_shader_passes` and
+`external_shader_peak_payload_bytes` after successful execution. Existing
+single-pass projects without `shader_passes` retain the one-pass path.
+
+Targeted CPU acceptance is in `tests/test_gl_multipass.py`; required real EGL
+parity, transfer, budget and shader-program-cache tests are in
+`tests/test_gl_multipass_egl.py`. Full exact-head CI and independent hardware
+vendor performance measurements remain pending.

@@ -1,4 +1,4 @@
-"""M9.2: explicitly trusted, pinned GL Transitions on the existing RGBA8 bridge.
+"""M9.2/M9.3: pinned GL Transitions and resource-bounded multipass execution.
 
 This accepts the GL Transitions `vec4 transition(vec2 uv)` convention, not ISF.
 It is not a sandbox for untrusted GLSL; M9.4 will add a shader safety gate.
@@ -13,9 +13,12 @@ import re
 from PIL import Image
 
 MAX_SHADER_BYTES = 64 * 1024
+MAX_SHADER_PASSES = 4
+MAX_SHADER_WORKING_BYTES = 256 * 1024 * 1024
+DEFAULT_SHADER_WORKING_BYTES = 128 * 1024 * 1024
 GL_TRANSITION_FIELDS = frozenset({
     "shader_path", "shader_sha256", "trusted_shader", "time_seconds",
-    "time_delta_seconds", "frame_index",
+    "time_delta_seconds", "frame_index", "shader_passes", "max_pass_bytes",
 })
 _HOST_UNIFORMS = {
     "progress": "float", "ratio": "float", "resolution": "vec2", "RENDERSIZE": "vec2",
@@ -104,6 +107,43 @@ def _local_fragment(config):
     return actual, _FRAGMENT_HEADER + source + _FRAGMENT_FOOTER
 
 
+def _shader_chain(config):
+    """Immutable, ordered full-file pin descriptors (first shader plus 0..3 more)."""
+    additional = config.get("shader_passes", [])
+    if not isinstance(additional, list) or len(additional) > MAX_SHADER_PASSES - 1:
+        raise ValueError(f"GL transition shader_passes must have at most {MAX_SHADER_PASSES - 1} entries")
+    for index, pass_spec in enumerate(additional):
+        if (not isinstance(pass_spec, dict)
+                or set(pass_spec) != {"shader_path", "shader_sha256"}):
+            raise ValueError(f"GL transition shader_passes[{index}] requires only shader_path and shader_sha256")
+    return [{"shader_path": config.get("shader_path"),
+             "shader_sha256": config.get("shader_sha256"),
+             "trusted_shader": config.get("trusted_shader")},
+            *[{**entry, "trusted_shader": config.get("trusted_shader")} for entry in additional]]
+
+
+def shader_pass_plan(config, size):
+    """Pure, allocation-free RGBA8 payload estimate for the existing GPU bridge.
+
+    This counts two immutable input textures and one intermediate per pass.
+    It intentionally excludes GL program/driver allocations and CPU buffers.
+    """
+    shaders = _shader_chain(config)
+    limit = config.get("max_pass_bytes", DEFAULT_SHADER_WORKING_BYTES)
+    if (type(limit) is not int or not 1 <= limit <= MAX_SHADER_WORKING_BYTES):
+        raise ValueError(f"GL transition max_pass_bytes must be 1..{MAX_SHADER_WORKING_BYTES}")
+    if (not isinstance(size, (tuple, list)) or len(size) != 2
+            or any(type(v) is not int or v < 1 or v > 16384 for v in size)):
+        raise ValueError("GL transition surface dimensions must be positive and at most 16384")
+    if size[0] * size[1] > 67_108_864:
+        raise ValueError("GL transition surface exceeds the pixel contract")
+    texture_count = len(shaders) + 2
+    required = size[0] * size[1] * 4 * texture_count
+    return {"passes": len(shaders), "textures": texture_count,
+            "working_rgba8_bytes": required, "max_pass_bytes": limit,
+            "eligible": required <= limit}
+
+
 def validate_gl_transition(config):
     """Validate a graph transition without constructing a device context."""
     style = config.get("transition_style", "dissolve")
@@ -120,7 +160,11 @@ def validate_gl_transition(config):
     index = config.get("frame_index", 0)
     if type(index) is not int or not 0 <= index <= 2**31 - 1:
         raise ValueError("GL transition frame_index must be an integer from 0 to 2^31-1")
-    _local_fragment(config)
+    # Source pins for every declared pass must be checked at graph validation,
+    # not only when the shader is eventually selected for rendering.
+    for entry in _shader_chain(config):
+        _local_fragment(entry)
+    shader_pass_plan(config, (1, 1))
 
 
 def render_gl_transition(backend, outgoing: Image.Image, incoming: Image.Image, config):
@@ -146,7 +190,15 @@ def render_gl_transition(backend, outgoing: Image.Image, incoming: Image.Image, 
     from .effect_graph_gpu_kernels import _execute
     if not isinstance(backend, GLMatteBackend):
         raise ValueError("GL transition requires the FrameRudiments GLMatteBackend")
-    digest, fragment = _local_fragment(config)
+    # Preflight the *entire* chain before uploading either source or compiling.
+    plan = shader_pass_plan(config, outgoing.size)
+    if not plan["eligible"]:
+        from .effect_graph_gpu import GPUUnsupported
+        raise GPUUnsupported(
+            f"GL transition requires {plan['working_rgba8_bytes']} RGBA8 bytes, "
+            f"above max_pass_bytes={plan['max_pass_bytes']}"
+        )
+    fragments = [_local_fragment(entry) for entry in _shader_chain(config)]
     width, height = outgoing.size
     uniforms = {
         "progress": progress, "ratio": width / height,
@@ -156,12 +208,22 @@ def render_gl_transition(backend, outgoing: Image.Image, incoming: Image.Image, 
         "TIMEDELTA": float(config.get("time_delta_seconds", 0)),
         "FRAMEINDEX": int(config.get("frame_index", 0)),
     }
-    return _execute(
-        backend, [outgoing, incoming],
-        lambda _: [(f"m92_gl_transition_{digest}", fragment,
-                    {"from_tex": 0, "to_tex": 1}, uniforms)],
-        outgoing.size, budget=3,
-    )
+    def passes(_):
+        # Each pass reads the previous output as 'from' and the unchanged B
+        # source as 'to'. All work stays in device RGBA8 until final readback.
+        # _execute appends each pass result after inputs 0 and 1.
+        return [(f"m92_gl_transition_{digest}", fragment,
+                 {"from_tex": index + 1 if index else 0, "to_tex": 1}, uniforms)
+                for index, (digest, fragment) in enumerate(fragments)]
+
+    result = _execute(backend, [outgoing, incoming], passes, outgoing.size,
+                      budget=plan["textures"])
+    report = getattr(backend, "last_transport", None)
+    if isinstance(report, dict):
+        report["external_shader_passes"] = report.get("external_shader_passes", 0) + plan["passes"]
+        report["external_shader_peak_payload_bytes"] = max(
+            report.get("external_shader_peak_payload_bytes", 0), plan["working_rgba8_bytes"])
+    return result
 
 
 def prepare_project_gl_transitions(project):
@@ -193,7 +255,12 @@ def prepare_project_gl_transitions(project):
             target = prepared["nodes"][index]
             if stage_index is not None:
                 target = target["stages"][stage_index]
+            _shader_chain(target)  # Validate additional pass shape before resolving paths.
             pinned = project.ref({"path": target["shader_path"], "sha256": target["shader_sha256"]})
             target["shader_path"] = pinned["path"]
+            for pass_spec in target.get("shader_passes", []):
+                pinned = project.ref({"path": pass_spec["shader_path"],
+                                      "sha256": pass_spec["shader_sha256"]})
+                pass_spec["shader_path"] = pinned["path"]
             validate_gl_transition(target)
     return prepared if prepared is not None else spec

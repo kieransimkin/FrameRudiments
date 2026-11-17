@@ -434,6 +434,12 @@ class GLMatteBackend:
         return self._memory_probe.sample(closed=self.closed)
 
     def _get_shader(self, name, fragment):
+        external = name.startswith('m92_gl_transition_')
+        if external and name in self._programs:
+            # Dict insertion order is the per-device LRU. Internal kernels stay
+            # in their own cache segment and are never evicted by user shaders.
+            self._programs[name] = self._programs.pop(name)
+            self._vaos[name] = self._vaos.pop(name)
         if name not in self._programs:
             program = self.ctx.program(vertex_shader=VERTEX, fragment_shader=fragment)
             try:
@@ -441,8 +447,22 @@ class GLMatteBackend:
             except BaseException:
                 program.release()
                 raise
-            self._programs[name] = program
-            self._vaos[name] = vao
+            try:
+                if external:
+                    external_keys = [key for key in self._programs
+                                     if key.startswith('m92_gl_transition_')]
+                    if len(external_keys) >= 16:
+                        stale = external_keys[0]
+                        stale_vao = self._vaos.pop(stale)
+                        stale_program = self._programs.pop(stale)
+                        stale_vao.release()
+                        stale_program.release()
+                self._programs[name] = program
+                self._vaos[name] = vao
+            except BaseException:
+                vao.release()
+                program.release()
+                raise
         return self._programs[name], self._vaos[name]
 
     def begin_transfer_sample(self):

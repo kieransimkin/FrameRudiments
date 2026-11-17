@@ -1,3 +1,15 @@
+# FrameRudiments M9.3 development candidate (unreleased)
+
+- Add explicitly bounded 1–4-pass GL Transitions chains. All shaders require
+  verified local SHA-256 pins and share the native progress/time uniforms.
+- Two input uploads and one final readback regardless of pass count. Preflight
+  pixel payload bytes and the GPU budget before texture allocation.
+- Include pass counts in backend planning and transport receipts, register every
+  pass source in the project input ledger and bound cached external programs.
+- Add focused CPU and real-EGL tests; acceptance requires exact-head CI.
+- Repair Windows CI FFmpeg fetch by pinning an existing 8.1 release asset
+  and the published SHA-256 digest from its GitHub release metadata.
+
 # Unreleased — M9.2 candidate (not a published release)
 
 - Add a SHA-256-pinned, trusted-only GL Transitions graph style,

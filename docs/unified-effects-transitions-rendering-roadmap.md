@@ -159,6 +159,7 @@ All external shader/model/media sources must be pinned or versioned, constrained
   Implementation candidate: [GL Transitions M9.2](gl-transitions.md);
   accept only after exact-head CI and physical-device verification.
 - **M9.3** Controlled multipass execution and explicitly bounded shader resources.
+  Implementation candidate: [M9.3 controlled GL multipass](gl-transitions.md#m93--controlled-multiple-gl-passes-implementation-candidate); exact-head CI pending.
 - **M9.4** Reject untrusted shader includes, unsupported operations and unsafe resource use.
 - **M9.5** Golden images + provenance for pinned shader fixtures.
 - **Exit:** supported imported shaders render reproducibly with mapped DanceRudiment controls.
