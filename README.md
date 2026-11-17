@@ -1,5 +1,11 @@
 # FrameRudiments
 
+**Streaming S0+S1 implementation candidates:** [frame/quality/telemetry contracts](docs/preview-stream-s0-contract.md)
+and a [persistent, monotonic preview-frame cache](docs/preview-frame-cache-s1.md)
+are available. SQLite-backed Q0–Q5 frame admissions are atomic, generation-fenced,
+quota-bounded and never downgrade a retained frame. The existing one-shot renderer
+is unchanged; streaming, adaptive quality and background workers are **not active**.
+
 **Planned (not implemented):** [seekable, cache-backed adaptive streaming preview](docs/seekable-adaptive-streaming-plan.md),
 with stepped quality to a target FPS, a separate production-quality refinement
 worker starting at the latest stopped playhead, and whole-segment cache

@@ -1,6 +1,7 @@
 # Seekable adaptive streaming preview and monotonic frame cache — implementation plan
 
-**Status:** proposed, not implemented. **Owner:** FrameRudiments authoring/runtime.
+**Status:** S0 and S1 implementation candidates; S2–S7 not implemented.
+**Owner:** FrameRudiments authoring/runtime.
 **Roadmap track:** M10.S (seekable, cached, quality-adaptive preview), alongside M10.2–M10.5;
 M11.1–M11.2 are prerequisites for *stateful* feedback seeking.
 **Baseline:** [`authoring/src/App.tsx`](../authoring/src/App.tsx),
@@ -325,6 +326,25 @@ under edits. S6 may land later with M11. S7 can incrementally land alongside
 S2–S6; shipping opt-in stream playback with stateless sources is allowed only
 when unsupported stateful modes are explicitly marked or refused.
 
+### S0 implementation candidate — contracts and measurements
+
+The first increment adds pure runtime identity and quality contracts, and
+content-free timing instrumentation on the legacy preview endpoint. See
+[S0 contract, API and regression tests](preview-stream-s0-contract.md).
+No streaming jobs, per-frame disk cache, background worker, quality degradation,
+or stateful seek are active. Every S0 segment conservatively depends on the
+full project and renderer ABI until S5 provides proven narrower dependencies.
+
+### S1 implementation candidate — persistent monotonic frame cache
+
+The S1 increment adds an independent SQLite-indexed, content-addressed RGBA8
+preview cache, quality-rank compare-and-swap, generation fencing, recoverable
+atomic writes, RAM LRU and bounded disk quotas. Refer to the
+[S1 storage contract, API and regression tests](preview-frame-cache-s1.md).
+S0's fingerprints still conservatively bind **every** section to the whole
+project. Do not claim isolated section invalidation before S5. No streaming
+controller, quality-specific renderer or background worker has been enabled.
+
 ## Test and performance matrix
 
 - Pure unit tests: quality-rank ordering/CAS, generation races, edit fingerprint
@@ -355,9 +375,11 @@ when unsupported stateful modes are explicitly marked or refused.
 
 ## Non-goals and release safety
 
-This plan does **not** implement streaming, background rendering, cache writes,
-stateful seek, automatic file publishing or network streaming. It does not
-replace the final FFmpeg render or `WorkingCache` promotion pipeline and does
+S0/S1 implement metadata and a standalone preview-frame cache, but do **not**
+enable streaming playback, background refinement, adaptive rendering, stateful
+seeking, automatic publishing or network streaming. S1 can store synthetic or
+verified caller-provided pixels; it cannot render frames itself. This feature
+does not replace the final FFmpeg render or `WorkingCache` promotion pipeline and does
 not make GPU/GL code safe to execute without prior trust and process isolation.
 No new hard dependencies or services should load for projects that do not opt
 into streaming. Production-quality frames require the complete effective

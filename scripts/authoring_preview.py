@@ -18,11 +18,15 @@ import re
 import wave
 from tempfile import TemporaryDirectory
 from threading import BoundedSemaphore
+from time import perf_counter_ns
 from urllib.parse import urlsplit, unquote
+
+from framerudiments.preview_stream_contract import PreviewTelemetry
 
 
 MAX_BODY = 2 * 1024 * 1024
 PREVIEW_SLOTS = BoundedSemaphore(2)
+PREVIEW_TELEMETRY = PreviewTelemetry()
 ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / "authoring" / "dist"
 
@@ -212,6 +216,10 @@ class AuthoringHandler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         target = urlsplit(self.path).path
+        if target == "/api/preview-telemetry":
+            if self.headers.get("Origin") and not self._origin_ok():
+                return self._json(403, {"error":"Same-origin local metrics only"})
+            return self._json(200, PREVIEW_TELEMETRY.snapshot())
         if target == "/api/project":
             data = {k: v for k, v in self.session_data.items() if k != "audioPath"}
             return self._json(200, data)
@@ -274,14 +282,18 @@ class AuthoringHandler(BaseHTTPRequestHandler):
             if not isinstance(body, dict) or set(body) - {"project", "frame", "quality", "sidecars"}:
                 raise ValueError("Unexpected preview payload")
             if not PREVIEW_SLOTS.acquire(blocking=False):
+                PREVIEW_TELEMETRY.record_rejection()
                 return self._json(429, {"error":"Preview busy; retry after completion"})
             try:
+                started_ns = perf_counter_ns()
                 image = render_preview(self.project_file, body.get("project"), body.get("frame"),
                                        quality=body.get("quality", "fast"), sidecars=body.get("sidecars"))
+                PREVIEW_TELEMETRY.record_render(render_ms=(perf_counter_ns() - started_ns) / 1e6)
             finally:
                 PREVIEW_SLOTS.release()
             self._send(200, image, "image/png")
         except (ValueError, KeyError, TypeError, OSError, RuntimeError) as exc:
+            PREVIEW_TELEMETRY.record_rejection(failure=True)
             self._json(400, {"error": str(exc)})
 
 
