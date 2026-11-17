@@ -22,6 +22,7 @@ from time import perf_counter_ns
 from urllib.parse import urlsplit, unquote
 
 from framerudiments.preview_stream_contract import PreviewTelemetry
+from framerudiments.preview_stream_s2 import PreviewStreamAPI, get_route, post_route
 
 
 MAX_BODY = 2 * 1024 * 1024
@@ -215,6 +216,8 @@ class AuthoringHandler(BaseHTTPRequestHandler):
         return origin in allowed
 
     def do_GET(self):
+        if get_route(self):
+            return
         target = urlsplit(self.path).path
         if target == "/api/preview-telemetry":
             if self.headers.get("Origin") and not self._origin_ok():
@@ -270,6 +273,8 @@ class AuthoringHandler(BaseHTTPRequestHandler):
         self._send(200, data, mimetypes.guess_type(target_file.name)[0] or "application/octet-stream")
 
     def do_POST(self):
+        if post_route(self):
+            return
         if urlsplit(self.path).path != "/api/preview":
             return self._json(404, {"error":"Unknown endpoint"})
         if not self._origin_ok():
@@ -320,12 +325,14 @@ def main(argv=None):
     Handler.session_data = data
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
     server.allowed_dev_origins = frozenset(origins)
+    server.stream_api = PreviewStreamAPI(project_file, check_draft, render_preview, telemetry=PREVIEW_TELEMETRY)
     print(f"FrameRudiments authoring preview at http://127.0.0.1:{args.port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
         pass
     finally:
+        server.stream_api.shutdown()
         server.server_close()
     return 0
 

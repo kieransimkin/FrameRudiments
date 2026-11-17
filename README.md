@@ -4,7 +4,9 @@
 and a [persistent, monotonic preview-frame cache](docs/preview-frame-cache-s1.md)
 are available. SQLite-backed Q0–Q5 frame admissions are atomic, generation-fenced,
 quota-bounded and never downgrade a retained frame. The existing one-shot renderer
-is unchanged; streaming, adaptive quality and background workers are **not active**.
+is unchanged. **S2 adds opt-in [cached, seekable Q0 preview](docs/preview-stream-s2.md)**
+with latest-intent coalescing and SSE delivery; adaptive quality and background
+refinement remain future milestones.
 
 **Planned (not implemented):** [seekable, cache-backed adaptive streaming preview](docs/seekable-adaptive-streaming-plan.md),
 with stepped quality to a target FPS, a separate production-quality refinement

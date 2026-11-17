@@ -342,8 +342,17 @@ preview cache, quality-rank compare-and-swap, generation fencing, recoverable
 atomic writes, RAM LRU and bounded disk quotas. Refer to the
 [S1 storage contract, API and regression tests](preview-frame-cache-s1.md).
 S0's fingerprints still conservatively bind **every** section to the whole
-project. Do not claim isolated section invalidation before S5. No streaming
-controller, quality-specific renderer or background worker has been enabled.
+project. Do not claim isolated section invalidation before S5.
+
+### S2 implementation candidate — seekable cache transport
+
+An explicit authoring checkbox enables one Q0 stream session per local server,
+backed by one foreground render thread and a latest-only pending queue. The
+[S2 transport reference](preview-stream-s2.md) documents same-origin commands,
+3-second SSE reconnects, content-pin image URLs and stale-cursor rejection.
+Legacy `/api/preview` remains unchanged. Q0 is a downsample of existing fast
+preview, not yet an adaptive low-cost renderer. S3 will add measured quality
+control; S4 will add independent Q5 refinement.
 
 ## Test and performance matrix
 

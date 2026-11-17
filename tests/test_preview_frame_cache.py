@@ -151,7 +151,8 @@ def test_oversized_frame_or_too_small_disk_quota_rejected_without_eviction(tmp_p
     assert store.publish(ticket, png(), settings_sha256=SETTINGS) == 'quota_rejected'
     assert store.get(0) is None
     with pytest.raises(ValueError, match='exact RGBA8'):
-        buf=BytesIO(); Image.new('RGB', (4,4), 'red').save(buf, format='PNG')
+        buf=BytesIO()
+        Image.new('RGB', (4,4), 'red').save(buf, format='PNG')
         store.publish(ticket, buf.getvalue(), settings_sha256=SETTINGS)
     with pytest.raises(ValueError, match='PNG'):
         store.publish(ticket, b'bad', settings_sha256=SETTINGS)
@@ -176,7 +177,8 @@ def test_many_threaded_out_of_order_instances_and_reopen(tmp_path):
 
 
 def test_root_rejects_symlinks_and_foreign_manifest(tmp_path):
-    outside = tmp_path/'outside'; outside.mkdir()
+    outside = tmp_path/'outside'
+    outside.mkdir()
     link = tmp_path/'link'
     try:
         link.symlink_to(outside, target_is_directory=True)

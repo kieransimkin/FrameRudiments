@@ -5,6 +5,8 @@ import {type Document, type Sidecars, type TimedItem, type TimingKind, CUE_TYPES
   stylePreset, withKeyframe, withLayerRoute, withPreset, withStageInjection, graphPreset, withGraphPreset} from './model.ts';
 import {sha256, zipEntries} from './archive.ts';
 import {EffectGraphEditor} from './EffectGraphEditor.tsx';
+import {StreamPreview} from './StreamPreview.tsx';
+import './stream-preview.css';
 import {withInitialEffectGraph, withEffectNode, withEffectOpacity, withEffectBlurRadius,
   withEffectProgress, withEffectOutput, withoutTerminalEffectNode} from './graphEditor.ts';
 
@@ -58,6 +60,7 @@ export function App() {
  const [audioUrl,setAudioUrl]=useState('');
  const [preview,setPreview]=useState('');
  const [quality,setQuality]=useState<'fast'|'full'>('fast');
+ const [streaming,setStreaming]=useState(false);
  const [graphView,setGraphView]=useState(false);
  const [previewError,setPreviewError]=useState('');
  const [cueType,setCueType]=useState('SECTION');
@@ -68,11 +71,16 @@ export function App() {
  const timeRef=useRef(0);
  const [previewAt,setPreviewAt]=useState(0);
  useEffect(()=>{timeRef.current=time;},[time]);
- useEffect(()=>{const task=window.setInterval(()=>setPreviewAt(timeRef.current),230);
-   return ()=>window.clearInterval(task);},[]);
+ useEffect(()=>{const task=window.setInterval(()=>setPreviewAt(timeRef.current),streaming?33:230);
+   return ()=>window.clearInterval(task);},[streaming]);
  const current=history?.current;
  const project=current?.project;
  const duration=project?projectTiming(project).duration:0;
+ const streamSidecars=useMemo<Record<string,TimedItem[]>>(()=>{
+   const rows:Record<string,TimedItem[]>={};
+   for(const key of ['lines','words','cues'] as const)if(current?.dirty[key])rows[key]=current.sidecars[key];
+   return rows;
+ },[current]);
 
  useEffect(()=>{
    let alive=true;
@@ -156,7 +164,7 @@ export function App() {
  },[project,current,keys,session,duration,selectedTiming]);
 
  useEffect(()=>{
-   if(!project||!current)return;
+   if(streaming||!project||!current)return;
    const index=++requestCount.current;
    const controller=new AbortController();
    const job=setTimeout(()=>{
@@ -170,7 +178,7 @@ export function App() {
        .catch(e=>{if(e.name!=='AbortError'&&index===requestCount.current)setPreviewError(message(e));});
    },30);
    return ()=>{clearTimeout(job);controller.abort();};
- },[project,current,previewAt,quality,duration]);
+ },[project,current,previewAt,quality,duration,streaming]);
  useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
 
  const changeKey=()=>{
@@ -254,9 +262,12 @@ export function App() {
       onProgress={(id,value)=>commit(s=>({...s,project:withEffectProgress(s.project,id,value)}))}
       onOutput={id=>commit(s=>({...s,project:withEffectOutput(s.project,id)}))}
       onRemove={id=>commit(s=>({...s,project:withoutTerminalEffectNode(s.project,id)}))}/></div>:
-     <div className="fr-preview"><div className="fr-canvas">{preview?<img src={preview} alt="FrameRudiments composited draft frame"/>:<span>Preparing preview…</span>}</div>
-      {previewError&&<p className="fr-alert">{previewError}</p>}</div>}
-    <div className="fr-transport-extra"><label>Exact excerpt audio <input type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg"
+     <div className="fr-preview">{streaming
+       ?<StreamPreview project={project} sidecars={streamSidecars} time={previewAt} fps={project.fps||60} duration={duration}/>
+       :<><div className="fr-canvas">{preview?<img src={preview} alt="FrameRudiments composited draft frame"/>:<span>Preparing preview…</span>}</div>
+         {previewError&&<p className="fr-alert">{previewError}</p>}</>}</div>}
+    <div className="fr-transport-extra"><label><input type="checkbox" checked={streaming} onChange={e=>setStreaming(e.target.checked)}/> Seekable cache preview (Q0)</label>
+      <label>Exact excerpt audio <input type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg"
       onChange={e=>setLocalAudio(e.target.files?.[0]??null)}/></label>
       {!session?.audioAvailable&&<span>Choose a rendered excerpt for sample-aligned playback.</span>}
       {session?.notes?.map((note,i)=><span key={i}>{note}</span>)}</div>

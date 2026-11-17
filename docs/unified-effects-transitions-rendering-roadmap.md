@@ -182,12 +182,13 @@ All external shader/model/media sources must be pinned or versioned, constrained
 - **M10.3** Automatically generated parameter and DanceNotion control editors.
 - **M10.4** Transition previews and scrub-safe frame evaluation with quality/performance switch.
 - **M10.5** Round-trip JSON fixture and undo/redo tests.
-- **M10.S — seekable adaptive real-time streaming preview (S0/S1 candidates, S2–S7 planned).**
+- **M10.S — seekable adaptive real-time streaming preview (S0–S2 candidates, S3–S7 planned).**
   [Dedicated S0–S7 implementation plan](seekable-adaptive-streaming-plan.md):
   [S0 clock/quality/telemetry contracts](preview-stream-s0-contract.md) and
   [S1 persistent monotonic frame storage](preview-frame-cache-s1.md) define
   authoritative timing, cache identities, generation-fenced quality upgrades,
-  quotas and recovery. Storage remains inactive until S2 adds streaming.
+  quotas and recovery. [S2 seek transport](preview-stream-s2.md) now serves
+  opt-in Q0 frames from a coalesced queue over loopback SSE.
   Future stages cover target-FPS hysteresis and fidelity ladders, latest-cursor
   seeking, and full-quality refinement from the most recently stopped frame;
   isolated full-quality refinement from the most recent stopped frame;

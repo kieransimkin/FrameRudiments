@@ -84,9 +84,11 @@ Stateful feedback seeking requires M11 checkpoint/replay support; the current
 **S0/S1 candidates:** [Section/quality/clock contracts](preview-stream-s0-contract.md)
 and the [monotonic persistent frame cache](preview-frame-cache-s1.md) are defined.
 The local server reports content-free latency via `GET /api/preview-telemetry`.
-S1's frame cache is a standalone, opt-in storage library and is not yet wired
-into playback. No streaming transport, adaptive quality adjustment or background
-refinement has been enabled.
+S2 now wires the cache into opt-in seekable authoring previews through a
+[same-origin SSE transport](preview-stream-s2.md); legacy one-shot preview is
+unchanged. Only Q0 cached, downsampled frames are supported at this stage.
+Adaptive quality adjustment (S3), background Q5 refinement (S4), and fine-grained
+segment invalidation (S5) remain planned.
 
 Source lyric/cue timestamps are converted to/from the output excerpt's display
 ruler without modifying the approved source audio clock. Repeat cycles share
