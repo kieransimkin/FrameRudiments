@@ -53,7 +53,7 @@ class SeekStream:
     """Latest-intent queue with optional adaptive native rendering (S3)."""
 
     def __init__(self, cache, renderer, frame_count, target_fps=30, telemetry=None,
-                 *, capabilities=None, verifier=None, clock=monotonic):
+                 *, capabilities=None, verifier=None, clock=monotonic, refinement_factory=None):
         _integer(frame_count, 'frame_count', 1, 10_000_000)
         _integer(target_fps, 'target_fps', 15, 120)
         self.cache, self.renderer = cache, renderer
@@ -76,6 +76,15 @@ class SeekStream:
         self.last_presented_frame = None
         self.request_at = self.clock()
         self.event_slots = BoundedSemaphore(2)
+        self.foreground_active = False
+        self.foreground_release_pending = False
+        self.foreground_cleanup_error = None
+        self.refinement = None
+        if refinement_factory is not None:
+            if self.controller is None or not capabilities[5]['supported']:
+                raise ValueError('Refinement requires an eligible adaptive Q5 renderer')
+            from .preview_refinement import RefinementSupervisor
+            self.refinement = RefinementSupervisor(self, refinement_factory, cache.segment_snapshot())
         self.worker = Thread(target=self._worker, name='framerudiments-preview-foreground', daemon=True)
         self.worker.start()
 
@@ -85,13 +94,14 @@ class SeekStream:
                                 cursor_seq=self.cursor_seq, **properties))
         self.condition.notify_all()
 
-    def _frame_data(self, item, *, hit):
+    def _frame_data(self, item, *, hit, origin='foreground'):
         params = urlencode(dict(session=self.token, frame=item.frame,
                                 generation=item.generation, sha256=item.image_sha256))
         return dict(frame=item.frame, generation=item.generation,
                     profile_id=item.profile_id, quality_rank=item.quality_rank,
                     width=item.width, height=item.height, cache_hit=hit,
-                    production_equivalent=False, image_sha256=item.image_sha256,
+                    production_equivalent=False, image_sha256=item.image_sha256, origin=origin,
+                    refinement=self.refinement.snapshot() if self.refinement else None,
                     adaptive=self.controller.snapshot() if self.controller else None,
                     request_age_ms=max(0, (self.clock()-self.request_at)*1000),
                     url='/api/stream/frame?' + params)
@@ -103,7 +113,22 @@ class SeekStream:
                     profile=self.controller.profile_id if self.controller else 'Q0',
                     adaptive_fps=self.controller is not None, production_equivalent=False,
                     adaptive=self.controller.snapshot() if self.controller else None,
-                    capabilities=self.capabilities)
+                    capabilities=self.capabilities,
+                    refinement=self.refinement.snapshot() if self.refinement else dict(enabled=False))
+
+    def _settings(self, ticket):
+        """Identical settings identity for foreground and background Q5 CAS."""
+        settings = {'renderer_abi': ADAPTIVE_ABI if self.controller else RENDERER_ABI,
+                    'pipeline': ticket.pipeline_fingerprint, 'profile': ticket.profile_id}
+        if self.controller:
+            settings['settings'] = self.capabilities[ticket.quality_rank]['settings_sha256']
+        return canonical_digest(settings)
+
+    @property
+    def retired(self):
+        return (not self.worker.is_alive() and self.foreground_cleanup_error is None
+                and (self.refinement is None or
+                (not self.refinement.thread.is_alive() and self.refinement.quiescent)))
 
     def _verify_inputs(self):
         if self.verifier:
@@ -145,12 +170,18 @@ class SeekStream:
             if self.controller and (name in ('seek', 'play', 'pause', 'stop') or target_fps is not None):
                 self.controller.reset(name, target_fps=target_fps)
             self.pending = None
+            if self.refinement:
+                if name in ('pause', 'stop'):
+                    self.foreground_release_pending = True
+                    self.refinement.stop_at(self.frame)
+                elif name in ('seek', 'play', 'advance'):
+                    self.refinement.suspend()
             self._event('cursor', frame=self.frame, playing=self.playing)
             cached = self.cache.get(self.frame)
             if cached is not None:
                 if self.controller:
                     self.controller.hit()
-                self._event('frame-ready', **self._frame_data(cached, hit=True))
+                self._event('frame-ready', **self._frame_data(cached, hit=True, origin='cache'))
                 if self.telemetry:
                     self.telemetry.record_hit()
             # A stopped-frame upgrade is foreground work, not the S4 worker.
@@ -189,7 +220,10 @@ class SeekStream:
             self.acks.append(identity)
             repeated = frame == self.last_presented_frame
             self.last_presented_frame = frame
-            if self.controller:
+            refined = any(e['type'] == 'frame-ready' and e['cursor_seq'] == sequence
+                          and e.get('image_sha256') == digest and e.get('origin') == 'refinement'
+                          for e in self.events)
+            if self.controller and not refined:
                 self.controller.acknowledge(max(0, (self.clock()-self.request_at)*1000), repeated=repeated)
             if self.telemetry:
                 self.telemetry.record_presentation(repeated=repeated)
@@ -213,6 +247,8 @@ class SeekStream:
             self.closed = True
             self.pending = None
             self.condition.notify_all()
+        if self.refinement:
+            self.refinement.thread.join(timeout=2)
         self.worker.join(timeout=0.1)
 
     def _worker(self):
@@ -223,15 +259,59 @@ class SeekStream:
             if callable(close):
                 close()  # Release contexts on their creating thread.
 
+    def _release_foreground(self):
+        """Called only by the foreground owner, including a cached pause."""
+        release = getattr(self.renderer, 'release_compositor', None)
+        try:
+            if callable(release):
+                release()
+        except Exception as exc:
+            with self.condition:
+                self.foreground_cleanup_error = type(exc).__name__
+                self._event('render-error', frame=self.frame, error_type='ForegroundCleanupError')
+        finally:
+            with self.condition:
+                self.foreground_release_pending = False
+                self.condition.notify_all()
+
     def _run(self):
         while True:
             with self.condition:
-                self.condition.wait_for(lambda: self.closed or self.pending is not None)
+                self.condition.wait_for(lambda: self.closed or self.pending is not None
+                                        or self.foreground_release_pending)
                 if self.closed:
                     return
+                release_only = self.pending is None
+                if release_only:
+                    self.foreground_active = True
+            if release_only:
+                self._release_foreground()
+                with self.condition:
+                    self.foreground_active = False
+                    self.condition.notify_all()
+                continue
+            with self.condition:
+                # Coalesce again after releasing the lock; a newer command may
+                # have replaced or cancelled the request before native work.
+                if self.pending is None:
+                    continue
                 frame, sequence, queued, epoch = self.pending
                 profile_id = self.controller.profile_id if self.controller else 'Q0'
                 self.pending = None
+                self.foreground_active = True
+                self.condition.notify_all()
+                self.condition.wait_for(lambda: self.closed or self.refinement is None
+                                        or self.refinement.quiescent
+                                        or self.refinement.state == 'cleanup_failed')
+                if self.foreground_cleanup_error or (self.refinement and self.refinement.state == 'cleanup_failed'):
+                    self.foreground_active = False
+                    self._event('render-error', frame=frame, error_type='RefinementCleanupError')
+                    self.condition.notify_all()
+                    continue
+                if self.closed:
+                    self.foreground_active = False
+                    self.condition.notify_all()
+                    return
             started = self.clock()
             try:
                 ticket = self.cache.ticket(frame, profile_id)
@@ -244,11 +324,7 @@ class SeekStream:
                     if self.closed or self.cursor_seq != sequence or self.frame != frame:
                         continue
                     self._verify_inputs()
-                    settings = {'renderer_abi': ADAPTIVE_ABI if self.controller else RENDERER_ABI,
-                                'pipeline': ticket.pipeline_fingerprint, 'profile': profile_id}
-                    if self.controller:
-                        settings['settings'] = self.capabilities[ticket.quality_rank]['settings_sha256']
-                    outcome = self.cache.publish(ticket, image, settings_sha256=canonical_digest(settings))
+                    outcome = self.cache.publish(ticket, image, settings_sha256=self._settings(ticket))
                     duration_ms, queue_ms = max(0, (self.clock()-started)*1000), max(0, (started-queued)*1000)
                     if outcome in ('stale', 'quota_rejected'):
                         self._event('overload', frame=frame, reason=outcome)
@@ -278,25 +354,36 @@ class SeekStream:
                             self._event('render-error', frame=frame, error_type=type(exc).__name__)
                         if self.telemetry:
                             self.telemetry.record_rejection(failure=True)
+            finally:
+                try:
+                    with self.condition:
+                        release = self.refinement is not None and not self.playing
+                    if release:
+                        self._release_foreground()
+                finally:
+                    with self.condition:
+                        self.foreground_active = False
+                        self.condition.notify_all()
 
 
 class PreviewStreamAPI:
     """One active revision, bound to the preview server's validated project."""
 
     def __init__(self, project_file, validate_draft, render_one, *, telemetry=None,
-                 cache_root=None, project_loader=None, adaptive_renderer_factory=None):
+                 cache_root=None, project_loader=None, adaptive_renderer_factory=None, refinement_factory=None):
         self.path = Path(project_file).resolve()
         self.validate = validate_draft
         self.render = render_one
         self.telemetry = telemetry
         self.loader = project_loader
         self.adaptive_renderer_factory = adaptive_renderer_factory
+        self.refinement_factory = refinement_factory
         self.root = Path(cache_root) if cache_root else (Path.home()/'.cache'/'framerudiments'/'stream-s2')
         self.lock = RLock()
         self.active = None
 
     def open(self, body):
-        if not isinstance(body, dict) or set(body)-{'project','sidecars','frame','target_fps','adaptive'}:
+        if not isinstance(body, dict) or set(body)-{'project','sidecars','frame','target_fps','adaptive','refine'}:
             raise ValueError('invalid stream start')
         if self.loader:
             original = self.loader(self.path)
@@ -316,6 +403,9 @@ class PreviewStreamAPI:
         adaptive = body.get('adaptive', False)  # Preserve the API of existing S2 clients.
         if type(adaptive) is not bool:
             raise ValueError('adaptive must be boolean')
+        refine = body.get('refine', False)
+        if type(refine) is not bool or (refine and not adaptive):
+            raise ValueError('refine must be boolean and requires adaptive mode')
         candidate = copy(original)
         candidate.data = deepcopy(draft)
         if adaptive and draft.get('render_quality') != original.data.get('render_quality'):
@@ -341,15 +431,24 @@ class PreviewStreamAPI:
         with self.lock:
             if self.active:
                 self.active.close()
-                if self.active.worker.is_alive():
+                if not self.active.retired:
                     raise RuntimeError('Previous render is retiring; retry stream start')
             if adaptive:
                 from .preview_native_renderer import NativePreviewRenderer
                 factory = self.adaptive_renderer_factory or NativePreviewRenderer
                 renderer = factory(self.path, draft, sidecars, validate_draft=self.validate,
                                    temp_parent=cache.root/'sessions', verifier=guard)
+            refinement_factory = None
+            if refine:
+                from .preview_refinement_process import RefinementSpec, SpawnQ5Renderer
+                spec = RefinementSpec.from_snapshot(self.path, original.data, draft, sidecars,
+                                                    cache.root/'sessions')
+                factory = self.refinement_factory or SpawnQ5Renderer
+                def refinement_factory():
+                    return factory(spec)
             stream = SeekStream(cache, renderer, original.frame_count, target_fps=max(15,target),
-                                telemetry=self.telemetry, capabilities=capabilities, verifier=guard)
+                                telemetry=self.telemetry, capabilities=capabilities, verifier=guard,
+                                refinement_factory=refinement_factory)
             self.active = stream
             try:
                 return stream.command('seek', sequence=0, frame=frame)

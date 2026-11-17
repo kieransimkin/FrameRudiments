@@ -138,6 +138,19 @@ class NativePreviewRenderer:
         image.save(buffer, format='PNG', compress_level=1)
         return buffer.getvalue()
 
+    def release_compositor(self):
+        """S4 yield native resources on the foreground's own thread while paused.
+
+        Keep the immutable project/sidecars; a later foreground call rebuilds its
+        quality view and records setup time separately from the render service.
+        """
+        self._thread()
+        try:
+            if self.compositor is not None:
+                self.compositor.close()
+        finally:
+            self.compositor = self.profile = None
+
     def close(self):
         self._thread()
         if self.closed:

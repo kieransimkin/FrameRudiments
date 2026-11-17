@@ -289,6 +289,19 @@ class PreviewFrameCache:
     def _segment_row(self, db, ticket):
         return db.execute('SELECT * FROM segments WHERE id=?', (ticket.segment_id,)).fetchone()
 
+    def segment_snapshot(self):
+        """Detached, current section descriptors for a bounded refinement traversal."""
+        with self._guard, closing(self._connect()) as db:
+            db.execute('BEGIN')
+            try:
+                if not self._validate_identity(db):
+                    raise CacheIdentityError('cache revision was changed by another owner')
+                rows = db.execute('SELECT * FROM segments ORDER BY first_frame').fetchall()
+                return tuple(Segment(row['id'], row['first_frame'], row['end_frame'],
+                                     self.project_hash, row['generation']) for row in rows)
+            finally:
+                db.execute('ROLLBACK')
+
     def ticket(self, frame, profile_id):
         """Capture generation so an old render cannot commit after invalidation."""
         if not isinstance(profile_id, str) or profile_id not in {p.id for p in self.profiles}:

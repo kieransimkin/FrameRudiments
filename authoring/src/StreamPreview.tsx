@@ -1,13 +1,16 @@
 /** Opt-in S3 adaptive image stream. Never advances or time-stretches audio. */
 import {useEffect,useRef,useState} from 'react';
 import {PresentationFence,previewFrame,validFrameUrl} from './streamAdaptive.ts';
+import {StoppedCursor,observeTimelinePlayback} from './streamRefinement.ts';
 
 type Props={project:Record<string,any>;sidecars:Record<string,unknown[]>;
   time:number;fps:number;duration:number};
 type Metrics={profile:string;quality_floor:string;fresh_fps:number|null;
   acknowledged_fps:number|null;render_ms_p95:number|null;target_unattainable:boolean};
+type Refinement={enabled:boolean;state:string;anchor_frame:number|null;frame:number|null;
+  completed:number;skipped:number;epoch:number;error_type?:string|null};
 type FrameEvent={cursor_seq:number;frame:number;url?:string;profile_id?:string;
-  image_sha256:string;cache_hit?:boolean;adaptive?:Metrics;type:string};
+  image_sha256:string;cache_hit?:boolean;adaptive?:Metrics;origin?:string;refinement?:Refinement;type:string};
 async function post(path:string,data:Record<string,unknown>,signal?:AbortSignal) {
   const result=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(data),signal,credentials:'same-origin'});
@@ -23,6 +26,11 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
   const [tier,setTier]=useState('');
   const [metrics,setMetrics]=useState<Metrics|null>(null);
   const [displayed,setDisplayed]=useState<number|null>(null);
+  const [refine,setRefine]=useState(true);
+  const [refinement,setRefinement]=useState<Refinement|null>(null);
+  const playing=useRef(false);
+  useEffect(()=>observeTimelinePlayback(document.querySelector('.fr-timeline'),
+    active=>{playing.current=active;}),[]);
   const targetRef=useRef(target);targetRef.current=target;
   const timeRef=useRef(time);timeRef.current=time;
   const request=useRef<((frame:number,command?:string)=>void)|null>(null);
@@ -30,9 +38,10 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
     let disposed=false,events:EventSource|null=null,token='',busy=true;
     let fence=new PresentationFence(previewFrame(timeRef.current,fps,duration));
     let desired=fence.frame,lastObserved=desired,nextSendAt=0,decodeId=0;
+    let stopped=new StoppedCursor(desired,performance.now());
     let fetching:AbortController|null=null,pictureUrl='',retryTimer:number|undefined;
     let restarting=false;
-    setPicture('');setDisplayed(null);setMetrics(null);setTier('');
+    setPicture('');setDisplayed(null);setMetrics(null);setTier('');setRefinement(null);
     setStatus('Connecting adaptive stream…');
     const send=(frame:number,command='advance')=>{
       if(!token||disposed)return;
@@ -70,7 +79,8 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
         }
         const old=pictureUrl;pictureUrl=url;setPicture(url);setDisplayed(row.frame);
         if(old)URL.revokeObjectURL(old);
-        setTier(`${row.profile_id} · ${row.cache_hit?'cache hit':'fresh render'}`);
+        setTier(`${row.profile_id} · ${row.origin==='refinement'?'background refinement':row.cache_hit?'cache hit':'fresh render'}`);
+        if(row.refinement)setRefinement(row.refinement);
         setMetrics(row.adaptive??null);
         setStatus(row.adaptive?.target_unattainable?'At quality floor: target cannot be sustained':'Adaptive preview');
         requestAnimationFrame(()=>{
@@ -91,13 +101,22 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
       try{
         const initial=previewFrame(timeRef.current,fps,duration);
         const reply=await post('/api/stream/start',{project,sidecars,frame:initial,
-          target_fps:targetRef.current,adaptive:true});
+          target_fps:targetRef.current,adaptive:true,refine});
         if(disposed){void post('/api/stream/close',{session:reply.session}).catch(()=>{});return;}
         token=reply.session;fence=new PresentationFence(initial);
+        stopped=new StoppedCursor(initial,performance.now());
+        setRefinement(reply.refinement??null);
         desired=lastObserved=previewFrame(timeRef.current,fps,duration);
         events=new EventSource('/api/stream/events?session='+encodeURIComponent(token)+'&after=0&continuous=1');
         events.addEventListener('frame-ready',receive);
-        events.addEventListener('resync',()=>{busy=false;send(desired,'seek');});
+        events.addEventListener('refinement-progress',event=>{
+          if(disposed||!(event instanceof MessageEvent))return;
+          try{const row=JSON.parse(event.data);if(row.refinement)setRefinement(row.refinement);}
+          catch{setStatus('Invalid refinement event');}
+        });
+        events.addEventListener('resync',()=>{
+          stopped=new StoppedCursor(desired,performance.now());busy=false;send(desired,'seek');
+        });
         for(const kind of ['render-error','overload'])events.addEventListener(kind,(event)=>{
           if(!(event instanceof MessageEvent))return;
           try{const row=JSON.parse(event.data);
@@ -116,13 +135,16 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
     };
     void connect();
     const timer=window.setInterval(()=>{
+      if(!token)return;
       desired=previewFrame(timeRef.current,fps,duration);
+      const intent=stopped.observe(desired,playing.current,performance.now());
+      if(intent){lastObserved=desired;send(desired,intent);return;}
       if(desired!==lastObserved){
         const jump=desired<lastObserved||Math.abs(desired-lastObserved)>Math.max(2,Math.ceil(fps/4));
         lastObserved=desired;
         if(jump){send(desired,'seek');return;}
       }
-      if(performance.now()>=nextSendAt)send(desired);
+      if(playing.current&&performance.now()>=nextSendAt)send(desired);
     },8);
     return ()=>{
       disposed=true;events?.close();fetching?.abort();decodeId++;
@@ -130,7 +152,7 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
       if(pictureUrl)URL.revokeObjectURL(pictureUrl);
       if(token)void post('/api/stream/close',{session:token}).catch(()=>{});
     };
-  },[project,sidecars,fps,duration]);
+  },[project,sidecars,fps,duration,refine]);
   const changeFPS=(n:number)=>{
     targetRef.current=n;setTarget(n);
     request.current?.(previewFrame(timeRef.current,fps,duration),'target_fps');
@@ -141,6 +163,11 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
     <small role="status">{status} · {tier} · {displayed!==null&&displayed!==desiredFrame?'late frame':'current request'} · preview only</small>
     <small>Fresh render FPS {rate(metrics?.fresh_fps)} · acknowledged FPS {rate(metrics?.acknowledged_fps)} ·
       p95 {rate(metrics?.render_ms_p95)} ms · floor {metrics?.quality_floor??'checking'}</small>
+    <label><input type="checkbox" checked={refine} onChange={event=>setRefine(event.target.checked)}/>
+      Refine paused frames at authored Q5</label>
+    {refine&&<small role="status">Q5 refinement: {refinement?.state??'waiting'} ·
+      anchor {refinement?.anchor_frame??'not stopped'} · {refinement?.completed??0} completed ·
+      {refinement?.skipped??0} already cached{refinement?.error_type?` · ${refinement.error_type}`:''}</small>}
     <label>Target FPS<select value={target} onChange={event=>changeFPS(Number(event.target.value))}>
       {[15,24,30,60,120].map(n=><option key={n} value={n}>{n}</option>)}
     </select></label>

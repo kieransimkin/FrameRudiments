@@ -98,8 +98,12 @@ def test_real_source_clock_sidecar_is_temporary_and_detects_changes(tmp_path):
         validate_draft=lambda a,b: None, temp_parent=tmp_path/'cache')
     try:
         renderer(31, 'Q0')
-        assert renderer.project.cues[0]['frame'] == 30
-        assert renderer.project.cues[1]['frame'] == 90
+        # Native ledgers insert an empty clear at the start of each repeat.
+        # Check the edited source event, not an index occupied by that clear.
+        assert [(row['frame'], row['text'], row['cycle']) for row in renderer.project.cues] == [
+            (0, '', 0), (30, '[SECTION: EDITED]', 0),
+            (60, '', 1), (90, '[SECTION: EDITED]', 1),
+        ]
         modified = Path(renderer.project.data['cues']['path'])
         assert modified.is_relative_to(tmp_path/'cache')
         modified.write_text('[00:00.000][SECTION: ALTERED]\n', encoding='utf-8')

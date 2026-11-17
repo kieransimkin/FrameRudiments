@@ -151,3 +151,40 @@ def test_native_rgb_final_frame_gets_lossless_transport_alpha(native_doubles, mo
             assert image.getpixel((0, 0)) == (4, 2, 3, 255)
     finally:
         fixture.renderer.close()
+
+
+def test_paused_release_closes_context_on_owner_and_can_rebuild(native_doubles):
+    renderer = native_doubles.renderer
+    renderer(3, 'Q5')
+    project, temporary = renderer.project, renderer.temporary.name
+    previous = native_doubles.instances[-1]
+    renderer.release_compositor()
+    assert previous.closed
+    assert renderer.compositor is None and renderer.profile is None
+    assert renderer.project is project and renderer.temporary.name == temporary
+    assert Path(temporary).is_dir()
+    try:
+        renderer(6, 'Q0')
+        assert renderer.project is project
+        assert native_doubles.instances[-1] is not previous
+        assert native_doubles.samples[-1][:3] == (6, 16, 12)
+    finally:
+        renderer.close()
+    assert not list(renderer.temp_parent.iterdir())
+
+
+def test_foreign_thread_cannot_release_foreground_context(native_doubles):
+    renderer = native_doubles.renderer
+    renderer(0, 'Q5')
+    errors = []
+    def release():
+        try:
+            renderer.release_compositor()
+        except RuntimeError as exc:
+            errors.append(str(exc))
+    worker = Thread(target=release)
+    worker.start()
+    worker.join(2)
+    assert errors and 'owning thread' in errors[0]
+    assert not native_doubles.instances[-1].closed
+    renderer.close()

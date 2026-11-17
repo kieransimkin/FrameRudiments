@@ -1,6 +1,6 @@
 # Seekable adaptive streaming preview and monotonic frame cache — implementation plan
 
-**Status:** S0–S3 implementation candidates; S4–S7 remain planned.
+**Status:** S0–S4 implementation candidates; S5–S7 remain planned.
 S3 native integration and exact-head CI qualification remain open; see
 [adaptive rendering and its supported subset](preview-stream-s3.md).
 **Owner:** FrameRudiments authoring/runtime.
@@ -352,9 +352,8 @@ An explicit authoring checkbox enables one Q0 stream session per local server,
 backed by one foreground render thread and a latest-only pending queue. The
 [S2 transport reference](preview-stream-s2.md) documents same-origin commands,
 3-second SSE reconnects, content-pin image URLs and stale-cursor rejection.
-Legacy `/api/preview` remains unchanged. Q0 is a downsample of existing fast
-preview, not yet an adaptive low-cost renderer. S3 will add measured quality
-control; S4 will add independent Q5 refinement.
+Legacy `/api/preview` remains unchanged. Legacy Q0 is a downsample of existing fast
+preview. S3 adds the adaptive native renderer; S4 below adds isolated Q5 refinement.
 
 ### S3 implementation candidate — native adaptive rendering
 
@@ -365,9 +364,19 @@ continuous SSE and independently counted fresh-render/decode rates. Unsupported
 lower-resolution semantics impose an explicit quality floor; required graph
 nodes are not removed. Cache hits and stale completions never train the controller.
 Native setup time remains reported separately from steady-state render service.
-S4 background Q5 refinement, S5 precise segment invalidation and S6 stateful
-checkpoint seeking are not part of this increment. Exact-head CI must run the
+The S4 extension below builds on these foreground contracts. S5 precise segment
+invalidation and S6 stateful checkpoint seeking remain separate increments. Exact-head CI must run the
 new unmocked native Project/Compositor regressions before acceptance.
+
+### S4 implementation candidate — isolated stopped-cursor Q5 refinement
+
+The [S4 worker and acceptance contract](preview-stream-s4.md) adds a dedicated
+supervisor thread and spawned native Q5 child, latest-stop epoch priority,
+paused-only foreground resource yielding, generation-fenced cache upgrades,
+owned temporary-file cleanup and current-frame-only upgrade presentation.
+The parent exclusively owns cache admission; background timings never train
+the adaptive controller. UI opt-in preserves the existing timeline/audio clock.
+S5 precise segment invalidation and S6 state reconstruction remain outstanding.
 
 ## Test and performance matrix
 
