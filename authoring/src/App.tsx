@@ -71,7 +71,8 @@ export function App() {
  const timeRef=useRef(0);
  const [previewAt,setPreviewAt]=useState(0);
  useEffect(()=>{timeRef.current=time;},[time]);
- useEffect(()=>{const task=window.setInterval(()=>setPreviewAt(timeRef.current),streaming?33:230);
+ useEffect(()=>{if(streaming)return;
+   const task=window.setInterval(()=>setPreviewAt(timeRef.current),230);
    return ()=>window.clearInterval(task);},[streaming]);
  const current=history?.current;
  const project=current?.project;
@@ -263,10 +264,10 @@ export function App() {
       onOutput={id=>commit(s=>({...s,project:withEffectOutput(s.project,id)}))}
       onRemove={id=>commit(s=>({...s,project:withoutTerminalEffectNode(s.project,id)}))}/></div>:
      <div className="fr-preview">{streaming
-       ?<StreamPreview project={project} sidecars={streamSidecars} time={previewAt} fps={project.fps||60} duration={duration}/>
+       ?<StreamPreview project={project} sidecars={streamSidecars} time={time} fps={project.fps||60} duration={duration}/>
        :<><div className="fr-canvas">{preview?<img src={preview} alt="FrameRudiments composited draft frame"/>:<span>Preparing preview…</span>}</div>
          {previewError&&<p className="fr-alert">{previewError}</p>}</>}</div>}
-    <div className="fr-transport-extra"><label><input type="checkbox" checked={streaming} onChange={e=>setStreaming(e.target.checked)}/> Seekable cache preview (Q0)</label>
+    <div className="fr-transport-extra"><label><input type="checkbox" checked={streaming} onChange={e=>setStreaming(e.target.checked)}/> Adaptive cache preview (Q0–Q5)</label>
       <label>Exact excerpt audio <input type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg"
       onChange={e=>setLocalAudio(e.target.files?.[0]??null)}/></label>
       {!session?.audioAvailable&&<span>Choose a rendered excerpt for sample-aligned playback.</span>}

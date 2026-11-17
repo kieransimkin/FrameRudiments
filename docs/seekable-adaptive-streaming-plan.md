@@ -1,6 +1,8 @@
 # Seekable adaptive streaming preview and monotonic frame cache — implementation plan
 
-**Status:** S0 and S1 implementation candidates; S2–S7 not implemented.
+**Status:** S0–S3 implementation candidates; S4–S7 remain planned.
+S3 native integration and exact-head CI qualification remain open; see
+[adaptive rendering and its supported subset](preview-stream-s3.md).
 **Owner:** FrameRudiments authoring/runtime.
 **Roadmap track:** M10.S (seekable, cached, quality-adaptive preview), alongside M10.2–M10.5;
 M11.1–M11.2 are prerequisites for *stateful* feedback seeking.
@@ -331,8 +333,8 @@ when unsupported stateful modes are explicitly marked or refused.
 The first increment adds pure runtime identity and quality contracts, and
 content-free timing instrumentation on the legacy preview endpoint. See
 [S0 contract, API and regression tests](preview-stream-s0-contract.md).
-No streaming jobs, per-frame disk cache, background worker, quality degradation,
-or stateful seek are active. Every S0 segment conservatively depends on the
+S0 alone introduces no streaming jobs, per-frame disk cache, background worker,
+quality degradation or stateful seek; later increments below build on it. Every S0 segment conservatively depends on the
 full project and renderer ABI until S5 provides proven narrower dependencies.
 
 ### S1 implementation candidate — persistent monotonic frame cache
@@ -353,6 +355,19 @@ backed by one foreground render thread and a latest-only pending queue. The
 Legacy `/api/preview` remains unchanged. Q0 is a downsample of existing fast
 preview, not yet an adaptive low-cost renderer. S3 will add measured quality
 control; S4 will add independent Q5 refinement.
+
+### S3 implementation candidate — native adaptive rendering
+
+[S3 executable profiles, controller, delivery and regression contract](preview-stream-s3.md)
+connects a measured Q0–Q5 foreground controller to real smaller-canvas native
+rendering, capped spatial/temporal samples, a thread-owned reusable compositor,
+continuous SSE and independently counted fresh-render/decode rates. Unsupported
+lower-resolution semantics impose an explicit quality floor; required graph
+nodes are not removed. Cache hits and stale completions never train the controller.
+Native setup time remains reported separately from steady-state render service.
+S4 background Q5 refinement, S5 precise segment invalidation and S6 stateful
+checkpoint seeking are not part of this increment. Exact-head CI must run the
+new unmocked native Project/Compositor regressions before acceptance.
 
 ## Test and performance matrix
 

@@ -1,5 +1,8 @@
 # S2 — Seekable cache-backed preview transport
 
+**S3 update:** The authoring UI now requests [adaptive native rendering](preview-stream-s3.md).
+The legacy S2 Q0 protocol remains available when `adaptive` is omitted or false.
+
 **Status:** implementation candidate; full exact-head CI pending. This stage
 builds on [S0 clock/quality contracts](preview-stream-s0-contract.md) and the
 [S1 monotonic SQLite/PNG cache](preview-frame-cache-s1.md).

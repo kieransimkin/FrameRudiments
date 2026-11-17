@@ -1,25 +1,27 @@
 """S2: local, opt-in, cache-backed seekable preview transport.
 
-One foreground render thread, one replaceable pending job. Q0 is a truthful
-quarter-size downsample of the existing fast preview, NOT an adaptive or
-production-equivalent render. The existing audio clock remains authoritative.
+One foreground render thread, one replaceable pending job. Legacy Q0 remains a downsample.
+Explicit adaptive sessions use native-size S3 plans and a measured controller.
+Neither mode claims production approval. The existing audio clock remains authoritative.
 """
 from __future__ import annotations
 
 from collections import deque
-from copy import deepcopy
+from copy import copy, deepcopy
 from io import BytesIO
 from pathlib import Path
 from secrets import token_urlsafe
-from threading import Condition, RLock, Thread
-from time import monotonic, perf_counter
+from threading import BoundedSemaphore, Condition, RLock, Thread
+from time import monotonic
 from urllib.parse import parse_qs, urlencode, urlsplit
 import json
 import re
 
 from PIL import Image, UnidentifiedImageError
 
-from .preview_frame_cache import PreviewFrameCache
+from .preview_frame_cache import PreviewFrameCache, _verified_png
+from .preview_adaptive import AdaptiveController
+from .preview_quality import RENDERER_ABI as ADAPTIVE_ABI, PinnedInputGuard, profile_capabilities
 from .preview_stream_contract import (
     _integer, canonical_digest, project_fingerprint, quality_profiles,
     requested_target_fps, section_segments,
@@ -48,25 +50,33 @@ def q0_png(png, size):
 
 
 class SeekStream:
-    """Fenced cursor intents, cached readback and bounded SSE event history."""
+    """Latest-intent queue with optional adaptive native rendering (S3)."""
 
-    def __init__(self, cache, renderer, frame_count, target_fps=30, telemetry=None):
+    def __init__(self, cache, renderer, frame_count, target_fps=30, telemetry=None,
+                 *, capabilities=None, verifier=None, clock=monotonic):
         _integer(frame_count, 'frame_count', 1, 10_000_000)
         _integer(target_fps, 'target_fps', 15, 120)
         self.cache, self.renderer = cache, renderer
         self.frame_count, self.target_fps = frame_count, target_fps
-        self.telemetry = telemetry
+        self.telemetry, self.verifier, self.clock = telemetry, verifier, clock
+        self.capabilities = capabilities
+        self.controller = (AdaptiveController(target_fps, clock=clock, supported_ranks=[
+            row['quality_rank'] for row in capabilities if row['supported']])
+            if capabilities is not None else None)
         self.token = token_urlsafe(32)
         self.condition = Condition()
         self.events = deque(maxlen=128)
         self.event_seq = 0
         self.cursor_seq = -1
-        self.frame = 0
-        self.last_stop = 0
+        self.frame = self.last_stop = 0
         self.playing = False
         self.pending = None
         self.closed = False
-        self.worker = Thread(target=self._run, name='framerudiments-preview-s2', daemon=True)
+        self.acks = deque(maxlen=128)
+        self.last_presented_frame = None
+        self.request_at = self.clock()
+        self.event_slots = BoundedSemaphore(2)
+        self.worker = Thread(target=self._worker, name='framerudiments-preview-foreground', daemon=True)
         self.worker.start()
 
     def _event(self, kind, **properties):
@@ -82,23 +92,35 @@ class SeekStream:
                     profile_id=item.profile_id, quality_rank=item.quality_rank,
                     width=item.width, height=item.height, cache_hit=hit,
                     production_equivalent=False, image_sha256=item.image_sha256,
+                    adaptive=self.controller.snapshot() if self.controller else None,
+                    request_age_ms=max(0, (self.clock()-self.request_at)*1000),
                     url='/api/stream/frame?' + params)
 
     def status(self, state='active'):
         return dict(schema=SCHEMA, session=self.token, state=state,
                     cursor_seq=self.cursor_seq, frame=self.frame,
-                    target_fps=self.target_fps, playing=self.playing,
-                    stopped_frame=self.last_stop, profile='Q0',
-                    adaptive_fps=False, production_equivalent=False)
+                    target_fps=self.target_fps, playing=self.playing, stopped_frame=self.last_stop,
+                    profile=self.controller.profile_id if self.controller else 'Q0',
+                    adaptive_fps=self.controller is not None, production_equivalent=False,
+                    adaptive=self.controller.snapshot() if self.controller else None,
+                    capabilities=self.capabilities)
+
+    def _verify_inputs(self):
+        if self.verifier:
+            try:
+                self.verifier()
+            except (ValueError, OSError):
+                self.cache.invalidate_all()
+                raise ValueError('Pinned source changed; reopen a verified project') from None
 
     def command(self, name, *, sequence, frame=None, target_fps=None):
-        if name not in ('seek', 'play', 'pause', 'stop', 'target_fps'):
+        if name not in ('seek', 'advance', 'play', 'pause', 'stop', 'target_fps'):
             raise ValueError('unknown stream command')
         _integer(sequence, 'client sequence', 0, _MAX_SEQ)
         if frame is not None:
             _integer(frame, 'frame', 0, self.frame_count - 1)
-        if name in ('seek', 'play') and frame is None:
-            raise ValueError('seek and play need absolute frame')
+        if name in ('seek', 'advance', 'play') and frame is None:
+            raise ValueError('seek, advance and play need absolute frame')
         if name == 'target_fps' and target_fps is None:
             raise ValueError('FPS target is missing')
         if target_fps is not None:
@@ -108,27 +130,35 @@ class SeekStream:
                 raise ValueError('stream closed')
             if sequence <= self.cursor_seq:
                 return self.status('out_of_order')
+            self._verify_inputs()
             self.cursor_seq = sequence
+            self.request_at = self.clock()
             if frame is not None:
                 self.frame = frame
-            if name == 'play':
+            if name in ('play', 'advance'):
                 self.playing = True
             elif name in ('pause', 'stop'):
                 self.playing = False
                 self.last_stop = self.frame
             if target_fps is not None:
                 self.target_fps = target_fps
+            if self.controller and (name in ('seek', 'play', 'pause', 'stop') or target_fps is not None):
+                self.controller.reset(name, target_fps=target_fps)
             self.pending = None
             self._event('cursor', frame=self.frame, playing=self.playing)
-            if name != 'target_fps':
-                cached = self.cache.get(self.frame)
-                if cached is not None:
-                    self._event('frame-ready', **self._frame_data(cached, hit=True))
-                    if self.telemetry:
-                        self.telemetry.record_hit()
-                else:
-                    self.pending = (self.frame, sequence, monotonic())
-                    self.condition.notify_all()
+            cached = self.cache.get(self.frame)
+            if cached is not None:
+                if self.controller:
+                    self.controller.hit()
+                self._event('frame-ready', **self._frame_data(cached, hit=True))
+                if self.telemetry:
+                    self.telemetry.record_hit()
+            # A stopped-frame upgrade is foreground work, not the S4 worker.
+            if cached is None or (self.controller and not self.playing
+                                  and cached.quality_rank < self.controller.rank):
+                self.pending = (self.frame, sequence, self.clock(),
+                                self.controller.epoch if self.controller else 0)
+                self.condition.notify_all()
             return self.status('accepted')
 
     def since(self, last=0, timeout=3):
@@ -143,6 +173,28 @@ class SeekStream:
                              cursor_seq=self.cursor_seq, frame=self.frame)]
             return [dict(e) for e in self.events if e['id'] > last]
 
+    def acknowledge(self, sequence, frame, digest):
+        _integer(sequence, 'client sequence', 0, _MAX_SEQ)
+        _integer(frame, 'frame', 0, self.frame_count - 1)
+        if not isinstance(digest, str) or not re.fullmatch('[0-9a-f]{64}', digest):
+            raise ValueError('invalid image digest')
+        with self.condition:
+            identity = (sequence, frame, digest)
+            if self.closed or sequence != self.cursor_seq or identity in self.acks:
+                return False
+            delivered = any(e['type'] == 'frame-ready' and e['cursor_seq'] == sequence
+                            and e['frame'] == frame and e['image_sha256'] == digest for e in self.events)
+            if not delivered:
+                return False
+            self.acks.append(identity)
+            repeated = frame == self.last_presented_frame
+            self.last_presented_frame = frame
+            if self.controller:
+                self.controller.acknowledge(max(0, (self.clock()-self.request_at)*1000), repeated=repeated)
+            if self.telemetry:
+                self.telemetry.record_presentation(repeated=repeated)
+            return True
+
     def image(self, frame, generation, digest):
         _integer(frame, 'frame', 0, self.frame_count-1)
         _integer(generation, 'generation', 0, 2**63-1)
@@ -151,6 +203,7 @@ class SeekStream:
         with self.condition:
             if self.closed:
                 raise ValueError('stream closed')
+            self._verify_inputs()
             hit = self.cache.get(frame)
             return (hit.png if hit is not None and hit.generation == generation
                     and hit.image_sha256 == digest else None)
@@ -160,8 +213,15 @@ class SeekStream:
             self.closed = True
             self.pending = None
             self.condition.notify_all()
-        # The daemon can finish a native call, but may never publish afterward.
         self.worker.join(timeout=0.1)
+
+    def _worker(self):
+        try:
+            self._run()
+        finally:
+            close = getattr(self.renderer, 'close', None)
+            if callable(close):
+                close()  # Release contexts on their creating thread.
 
     def _run(self):
         while True:
@@ -169,31 +229,53 @@ class SeekStream:
                 self.condition.wait_for(lambda: self.closed or self.pending is not None)
                 if self.closed:
                     return
-                frame, sequence, queued = self.pending
+                frame, sequence, queued, epoch = self.pending
+                profile_id = self.controller.profile_id if self.controller else 'Q0'
                 self.pending = None
-            started = perf_counter()
+            started = self.clock()
             try:
-                ticket = self.cache.ticket(frame, 'Q0')
-                image = q0_png(self.renderer(frame), (ticket.width, ticket.height))
+                ticket = self.cache.ticket(frame, profile_id)
+                if self.controller:
+                    image = self.renderer(frame, profile_id)
+                    _verified_png(image, ticket.width, ticket.height)  # Never resize to fake a rank.
+                else:
+                    image = q0_png(self.renderer(frame), (ticket.width, ticket.height))
                 with self.condition:
                     if self.closed or self.cursor_seq != sequence or self.frame != frame:
                         continue
-                    outcome = self.cache.publish(ticket, image, settings_sha256=canonical_digest({
-                        'renderer_abi': RENDERER_ABI, 'pipeline': ticket.pipeline_fingerprint,
-                        'profile': 'Q0'}))
+                    self._verify_inputs()
+                    settings = {'renderer_abi': ADAPTIVE_ABI if self.controller else RENDERER_ABI,
+                                'pipeline': ticket.pipeline_fingerprint, 'profile': profile_id}
+                    if self.controller:
+                        settings['settings'] = self.capabilities[ticket.quality_rank]['settings_sha256']
+                    outcome = self.cache.publish(ticket, image, settings_sha256=canonical_digest(settings))
+                    duration_ms, queue_ms = max(0, (self.clock()-started)*1000), max(0, (started-queued)*1000)
                     if outcome in ('stale', 'quota_rejected'):
                         self._event('overload', frame=frame, reason=outcome)
+                        continue
+                    decision = (self.controller.observe(duration_ms, queue_ms=queue_ms,
+                                setup_ms=min(duration_ms, max(0, getattr(self.renderer, "last_setup_ms", 0))),
+                                epoch=epoch, profile_id=profile_id) if self.controller else None)
+                    if decision:
+                        self._event('quality-changed', frame=frame, **decision)
+                    cached = self.cache.get(frame)
+                    if cached is not None:
+                        self._event('frame-ready', **self._frame_data(cached, hit=False))
                     else:
-                        cached = self.cache.get(frame)
-                        if cached is not None:
-                            self._event('frame-ready', **self._frame_data(cached, hit=False))
+                        self._event('overload', frame=frame, reason='cache_evicted')
                     if self.telemetry:
-                        self.telemetry.record_render(render_ms=(perf_counter()-started)*1000,
-                                                     queue_ms=(started-queued)*1000)
+                        self.telemetry.record_render(render_ms=duration_ms, queue_ms=queue_ms)
             except Exception as exc:
                 with self.condition:
                     if not self.closed and self.cursor_seq == sequence:
-                        self._event('render-error', frame=frame, error_type=type(exc).__name__)
+                        decision = (self.controller.allocation_failure(epoch=epoch, profile_id=profile_id)
+                                    if self.controller and isinstance(exc, MemoryError) else None)
+                        if decision:
+                            self._event('quality-changed', frame=frame, **decision)
+                            self.pending = (frame, sequence, self.clock(), self.controller.epoch)
+                            self.condition.notify_all()
+                        else:
+                            self._event('render-error', frame=frame, error_type=type(exc).__name__)
                         if self.telemetry:
                             self.telemetry.record_rejection(failure=True)
 
@@ -202,18 +284,19 @@ class PreviewStreamAPI:
     """One active revision, bound to the preview server's validated project."""
 
     def __init__(self, project_file, validate_draft, render_one, *, telemetry=None,
-                 cache_root=None, project_loader=None):
+                 cache_root=None, project_loader=None, adaptive_renderer_factory=None):
         self.path = Path(project_file).resolve()
         self.validate = validate_draft
         self.render = render_one
         self.telemetry = telemetry
         self.loader = project_loader
+        self.adaptive_renderer_factory = adaptive_renderer_factory
         self.root = Path(cache_root) if cache_root else (Path.home()/'.cache'/'framerudiments'/'stream-s2')
         self.lock = RLock()
         self.active = None
 
     def open(self, body):
-        if not isinstance(body, dict) or set(body)-{'project','sidecars','frame','target_fps'}:
+        if not isinstance(body, dict) or set(body)-{'project','sidecars','frame','target_fps','adaptive'}:
             raise ValueError('invalid stream start')
         if self.loader:
             original = self.loader(self.path)
@@ -230,24 +313,49 @@ class PreviewStreamAPI:
         frame = body.get('frame', 0)
         _integer(frame, 'frame', 0, original.frame_count-1)
         target = requested_target_fps(original, body.get('target_fps'))
-        project_hash = project_fingerprint(original, renderer_abi=RENDERER_ABI)
-        pipeline = canonical_digest(dict(renderer_abi=RENDERER_ABI, draft=draft, sidecars=sidecars))
+        adaptive = body.get('adaptive', False)  # Preserve the API of existing S2 clients.
+        if type(adaptive) is not bool:
+            raise ValueError('adaptive must be boolean')
+        candidate = copy(original)
+        candidate.data = deepcopy(draft)
+        if adaptive and draft.get('render_quality') != original.data.get('render_quality'):
+            from .output_quality import OutputQuality
+            candidate.output_quality = OutputQuality(draft.get('render_quality'))
+        capabilities = profile_capabilities(candidate) if adaptive else None
+        if capabilities is not None and not capabilities[5]['supported']:
+            raise ValueError(capabilities[5]['reason'])
+        abi = ADAPTIVE_ABI if adaptive else RENDERER_ABI
+        project_hash = project_fingerprint(original, renderer_abi=abi)
+        pipeline = canonical_digest(dict(renderer_abi=abi, draft=draft, sidecars=sidecars))
+        guard = (PinnedInputGuard(getattr(original, 'base', self.path.parent), draft,
+                                  getattr(original, 'inputs', ())) if adaptive else None)
         cache = PreviewFrameCache(self.root/project_hash/pipeline,
                                   project_fingerprint=project_hash, pipeline_fingerprint=pipeline,
-                                  renderer_abi=RENDERER_ABI,
+                                  renderer_abi=abi,
                                   segments=section_segments(original, project_hash=project_hash),
-                                  profiles=quality_profiles(original), max_bytes=512*1024**2,
+                                  profiles=quality_profiles(candidate if adaptive else original), max_bytes=512*1024**2,
                                   min_free_bytes=16*1024**2, ram_bytes=16*1024**2)
         draft, sidecars = deepcopy(draft), deepcopy(sidecars)
         def renderer(n):
             return self.render(self.path, draft, n, quality='fast', sidecars=sidecars)
-        stream = SeekStream(cache, renderer, original.frame_count, target_fps=max(15,target),
-                            telemetry=self.telemetry)
         with self.lock:
-            prior, self.active = self.active, stream
-            if prior:
-                prior.close()
-            return stream.command('seek', sequence=0, frame=frame)
+            if self.active:
+                self.active.close()
+                if self.active.worker.is_alive():
+                    raise RuntimeError('Previous render is retiring; retry stream start')
+            if adaptive:
+                from .preview_native_renderer import NativePreviewRenderer
+                factory = self.adaptive_renderer_factory or NativePreviewRenderer
+                renderer = factory(self.path, draft, sidecars, validate_draft=self.validate,
+                                   temp_parent=cache.root/'sessions', verifier=guard)
+            stream = SeekStream(cache, renderer, original.frame_count, target_fps=max(15,target),
+                                telemetry=self.telemetry, capabilities=capabilities, verifier=guard)
+            self.active = stream
+            try:
+                return stream.command('seek', sequence=0, frame=frame)
+            except BaseException:
+                stream.close()
+                raise
 
     def get(self, token):
         with self.lock:
@@ -267,7 +375,7 @@ class PreviewStreamAPI:
             if not self.active or self.active.token != token:
                 return dict(closed=False)
             self.active.close()
-            self.active = None
+            # Retain a retiring native worker so open() cannot stack another.
             return dict(closed=True)
 
     def shutdown(self):
@@ -322,12 +430,16 @@ def get_route(handler):
             else:
                 handler._send(200,image,'image/png')
             return True
-        if set(q)-{'session','after'}:
+        if set(q)-{'session','after','continuous'}:
             raise ValueError('invalid SSE query')
         last = _uint(_get_one(q,'after')) if 'after' in q else 0
         header = handler.headers.get('Last-Event-ID')
         if header:
             last = max(last,_uint(header))
+        if 'continuous' in q:
+            if _get_one(q, 'continuous') != '1':
+                raise ValueError('invalid continuous SSE mode')
+            return _continuous_events(handler, stream, last)
         rows = stream.since(last, timeout=3)
         lines = ['retry: 250\n']
         for row in rows:
@@ -342,7 +454,7 @@ def get_route(handler):
 
 def post_route(handler):
     target = urlsplit(handler.path).path
-    if target not in ('/api/stream/start','/api/stream/control','/api/stream/close'):
+    if target not in ('/api/stream/start','/api/stream/control','/api/stream/close','/api/stream/presented'):
         return False
     if not handler._origin_ok():
         handler._json(403, {'error':'same-origin only'})
@@ -356,6 +468,11 @@ def post_route(handler):
             reply = handler.server.stream_api.open(data)
         elif target == '/api/stream/control':
             reply = handler.server.stream_api.command(data)
+        elif target == '/api/stream/presented':
+            if not isinstance(data, dict) or set(data) != {'session','sequence','frame','sha256'}:
+                raise ValueError('invalid presentation receipt')
+            active = handler.server.stream_api.get(data['session'])
+            reply = {'acknowledged': active.acknowledge(data['sequence'], data['frame'], data['sha256'])}
         else:
             if not isinstance(data, dict) or set(data)!={'session'}:
                 raise ValueError('stream close requires session')
@@ -363,4 +480,50 @@ def post_route(handler):
         handler._json(200,reply)
     except (ValueError, KeyError, TypeError, OSError, RuntimeError) as exc:
         handler._json(400, {'error':str(exc)[:160]})
+    return True
+
+
+def _continuous_events(handler, stream, last):
+    """Bounded persistent SSE: no 250ms reconnect delay on every delivered frame.
+
+    Old S2 clients retain finite polling responses. S3 requests continuous=1;
+    at most two subscribers/session, a 20s connection lease and 5s write timeout.
+    """
+    if not stream.event_slots.acquire(blocking=False):
+        handler._json(429, {'error': 'stream subscriber limit'})
+        return True
+    previous_timeout = handler.connection.gettimeout()
+    try:
+        handler.send_response(200)
+        handler.send_header('Content-Type', 'text/event-stream; charset=utf-8')
+        handler.send_header('Cache-Control', 'no-store')
+        handler.send_header('X-Content-Type-Options', 'nosniff')
+        handler.send_header('X-Accel-Buffering', 'no')
+        handler.send_header('Connection', 'close')
+        handler.end_headers()
+        handler.close_connection = True
+        handler.connection.settimeout(5)
+        handler.wfile.write(b'retry: 50\n\n')
+        handler.wfile.flush()
+        deadline = monotonic() + 20
+        while monotonic() < deadline:
+            rows = stream.since(last, timeout=1)
+            payload = []
+            for row in rows:
+                payload.append('id: %d\nevent: %s\ndata: %s\n\n' % (
+                    row['id'], row['type'], json.dumps(row, separators=(',', ':'))))
+                last = row['id']
+            handler.wfile.write((''.join(payload) or ': heartbeat\n\n').encode('utf-8'))
+            handler.wfile.flush()
+            if stream.closed:
+                break
+    except (OSError, TimeoutError):
+        pass  # A disconnected reader does not cancel rendering or write a second HTTP status.
+    finally:
+        try:
+            handler.connection.settimeout(previous_timeout)
+        except OSError:
+            pass
+        finally:
+            stream.event_slots.release()
     return True
