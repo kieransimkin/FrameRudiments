@@ -41,6 +41,8 @@ The body stays opaque to inspection. `scope: metadata_only` leaves GLSL
 syntax, includes, resource use, rights and render eligibility unverified.
 The command opens no OpenGL context and accepts no new project node. The
 subsequent shader execution milestones have their own acceptance gates.
+The separate [M9.2 GL Transitions adapter](gl-transitions.md) does not
+execute ISF shader bodies.
 [Roadmap](unified-effects-transitions-rendering-roadmap.md#m9--external-shader-adapters).
 
 ## Potential problems

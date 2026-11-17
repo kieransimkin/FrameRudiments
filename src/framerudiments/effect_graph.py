@@ -41,6 +41,7 @@ from .effect_graph_filter import (
     render_filter, validate_filter,
 )
 from .effect_graph_transitions import render_transition
+from .gl_transitions import GL_TRANSITION_FIELDS, validate_gl_transition
 from .effect_graph_transition_chains import expand_transition_chains
 from .effect_graph_transition_timing import (
     TIMING_DEFAULTS, TIMING_ENUMS, TIMING_RANGES,
@@ -70,7 +71,7 @@ MAX_NODES = 256
 MAX_INPUTS = 32
 KINDS = {'source', 'copy', 'opacity', 'matte', 'chroma_key', 'chromatic_displacement',
          'spectral_displacement', 'composite', 'transition', 'layer_style', 'spatial_warp', 'raster_effect', 'procedural_field', 'filter'}
-TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte', 'spectral', *GEOMETRIC_STYLES}
+TRANSITION_STYLES = {'dissolve', 'wipe', 'radial', 'matte', 'spectral', 'gl_transition', *GEOMETRIC_STYLES}
 TRANSITION_DIRECTIONS = {'right', 'left', 'down', 'up'}
 CONTROL_TARGETS = {
     'filter': set(FILTER_CONTROLS),
@@ -85,7 +86,7 @@ CONTROL_TARGETS = {
                    'key_space', 'alpha_source'},
     'chromatic_displacement': {f'{c}_offset.{axis}' for c in ('red', 'green', 'blue') for axis in ('x', 'y')},
     'spectral_displacement': {'mix', 'spectral_mode', 'alpha_mode'},
-    'transition': {'progress', 'feather', 'center.x', 'center.y', 'transition_style', 'direction',
+    'transition': {'progress', 'time_seconds', 'time_delta_seconds', 'feather', 'center.x', 'center.y', 'transition_style', 'direction',
                    'threshold', 'mask_gamma', 'matte_channel', 'invert', 'key_color.r',
                    'key_color.g', 'key_color.b', 'key_space', 'tolerance', 'softness',
                    'wash_variant', *GEOMETRY_RANGES},
@@ -146,13 +147,15 @@ class EffectGraph:
             if set(entry) - {'id', 'type', 'inputs', 'opacity', 'mode', 'invert', 'feather', 'key_color', 'tolerance', 'softness', 'despill', 'matte_channel', 'red_offset', 'green_offset', 'blue_offset', 'transition_style', 'direction', 'progress', 'center', 'expand', 'mask_opacity', 'mask_combine', 'key_space',
                                'key_colors', 'edge_expand', 'edge_feather', 'edge_decontaminate', 'edge_radius', 'alpha_source',
                                'bands', 'spectral_mode', 'alpha_mode', 'mix', 'threshold', 'mask_gamma',
-                               'timing', 'wash_variant', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS, *FIELD_FIELDS, *FILTER_FIELDS}:
+                               'timing', 'wash_variant', *GEOMETRY_RANGES, *STYLE_FIELDS, *WARP_FIELDS, *RASTER_FIELDS, *FIELD_FIELDS, *FILTER_FIELDS, *GL_TRANSITION_FIELDS}:
                 raise ValueError('unknown node property')
             key, kind = entry['id'], entry['type']
             if not isinstance(key, str) or not key or len(key) > 128 or key in self.nodes:
                 raise ValueError('duplicate or invalid node id')
             if kind not in KINDS:
                 raise ValueError(f'unsupported node type: {kind}')
+            if kind != 'transition' and GL_TRANSITION_FIELDS.intersection(entry):
+                raise ValueError('GL transition fields require a transition node')
             if 'alpha_source' in entry and kind not in {'matte', 'chroma_key', 'layer_style'}:
                 raise ValueError('alpha_source is only supported on matte, chroma_key and layer_style nodes')
             if kind != 'layer_style' and (STYLE_FIELDS - {'alpha_source'}) & entry.keys():
@@ -203,6 +206,7 @@ class EffectGraph:
             if kind == 'transition':
                 if entry.get('transition_style', 'dissolve') not in TRANSITION_STYLES:
                     raise ValueError('unsupported transition style')
+                validate_gl_transition(entry)
                 validate_transition_matte(entry)
                 validate_transition_spectral(entry)
                 validate_transition_geometry(entry)
@@ -258,6 +262,10 @@ class EffectGraph:
 
     def validate_control_target(self, node_id, property_name):
         node = self.nodes.get(node_id)
+        if (node is not None and node.kind == 'transition'
+                and property_name in {'time_seconds', 'time_delta_seconds'}
+                and node.config.get('transition_style') != 'gl_transition'):
+            raise ValueError('GL time controls require gl_transition style')
         if node is not None and node.kind == 'procedural_field':
             if property_name == 'opacity' or field_control_valid(node.config, property_name):
                 return
@@ -340,6 +348,9 @@ class EffectGraph:
         # A transition's input arity is immutable; categorical style changes
         # cannot swap a two-input effect into a three-input matte node.
         if node.kind == 'transition' and property_name == 'transition_style':
+            if any((style == 'gl_transition') !=
+                   (node.config.get('transition_style') == 'gl_transition') for style in choices):
+                raise ValueError('GL shader transition cannot switch to or from native styles')
             if any((style == 'matte') != (len(node.inputs) == 3) for style in choices):
                 raise ValueError('transition style choice changes input count')
             if any((style == 'spectral') != ('bands' in node.config) for style in choices):
@@ -539,6 +550,10 @@ class EffectGraph:
                 bounds = (0.5, 16)
             elif property_name == 'mask_gamma':
                 bounds = (0.1, 8)
+            elif property_name == 'time_seconds':
+                bounds = (0, 1e8)
+            elif property_name == 'time_delta_seconds':
+                bounds = (0, 3600)
             else:
                 bounds = (0, 1)
             if not bounds[0] <= value <= bounds[1]:
@@ -600,6 +615,7 @@ class EffectGraph:
                 validate_style_inputs(config, len(self.nodes[key].inputs))
             if self.nodes[key].kind == 'transition':
                 validate_transition_geometry(config)
+                validate_gl_transition(config)
         return configs
 
     def render(self, sources: dict[str, Image.Image], *, parameter_values=None,
@@ -819,7 +835,12 @@ class EffectGraph:
                     validate_transition_spectral(config)
                     validate_transition_geometry(config)
                     style = config.get('transition_style', 'dissolve')
-                    if gpu_backend is not None and 0 < config.get('progress', 0) < 1:
+                    if style == 'gl_transition':
+                        from .gl_transitions import render_gl_transition
+                        result = render_gl_transition(gpu_backend, inputs[0], inputs[1], config)
+                        if gpu_backend is not None and 0 < config.get('progress', 0) < 1:
+                            gpu_backend.last_dispatch['gpu_nodes'] += 1
+                    elif gpu_backend is not None and 0 < config.get('progress', 0) < 1:
                         if style not in {'dissolve', 'wipe', 'radial'}:
                             from .effect_graph_gpu import GPUUnsupported
                             if gpu_strict:

@@ -11,6 +11,8 @@ on:
   push:
     paths:
       - 'src/framerudiments/effect_graph*'
+      - 'src/framerudiments/gl_transitions.py'
+      - 'tests/test_gl_transitions*.py'
       - 'tests/test_effect_graph_gpu*'
       - 'integration/benchmark_effect_graph_gpu.py'
       - 'integration/benchmark_effect_graph_spectral_gpu.py'
@@ -25,6 +27,8 @@ on:
   pull_request:
     paths:
       - 'src/framerudiments/effect_graph*'
+      - 'src/framerudiments/gl_transitions.py'
+      - 'tests/test_gl_transitions*.py'
       - 'tests/test_effect_graph_gpu*'
       - 'integration/benchmark_effect_graph_gpu.py'
       - 'integration/benchmark_effect_graph_spectral_gpu.py'
@@ -72,7 +76,8 @@ jobs:
           tests/test_effect_graph_gpu_spectral_dispatch.py tests/test_effect_graph_gpu_transport.py
           tests/test_effect_graph_gpu_kernels.py tests/test_effect_graph_gpu_resident_egl.py
           tests/test_effect_graph_gpu_resident_m86_egl.py tests/test_effect_graph_gpu_resident_m87_egl.py
-          tests/test_effect_graph_gpu_spatial_egl.py --junitxml=gpu-transfer-results.xml
+          tests/test_effect_graph_gpu_spatial_egl.py tests/test_gl_transitions_egl.py
+          --junitxml=gpu-transfer-results.xml
       - name: Require real GPU transport and parity tests with no skips
         run: |
           python - <<'PYTEST'

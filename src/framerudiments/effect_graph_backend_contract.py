@@ -155,7 +155,7 @@ def gpu_requirements(kind, config, input_count, *, original_alpha=True, precise_
     if kind == 'transition':
         if input_count not in (2, 3):
             raise ValueError('transition must receive two or three inputs')
-        if config.get('transition_style', 'dissolve') not in {'dissolve', 'wipe', 'radial'}:
+        if config.get('transition_style', 'dissolve') not in {'dissolve', 'wipe', 'radial', 'gl_transition'}:
             return GPURequirements(False, 'transition_style_not_implemented')
         if input_count != 2:
             raise ValueError('GPU transition styles require two inputs')
@@ -295,6 +295,9 @@ def backend_registry(gpu_backend=None):
 
 
 def _numpy_needed(node):
+    if (node.kind == 'transition' and
+            node.config.get('transition_style') == 'gl_transition'):
+        return False  # No CPU shader implementation; exact endpoints are Pillow copies.
     if node.kind in {'source', 'copy', 'opacity', 'matte'}:
         return False
     if node.kind == 'composite' and node.config.get('mode', 'over') == 'over':
@@ -310,7 +313,7 @@ def _gpu_legacy_rejects(node):
     if node.kind in CPU_EFFECTS:
         return True
     if node.kind == 'transition':
-        return node.config.get('transition_style', 'dissolve') not in {'dissolve', 'wipe', 'radial'}
+        return node.config.get('transition_style', 'dissolve') not in {'dissolve', 'wipe', 'radial', 'gl_transition'}
     return False
 
 
@@ -416,6 +419,10 @@ def plan_effect_graph(graph, source_surfaces, *, mode='cpu', gpu_backend=None,
         cpu_impl = 'numpy' if _numpy_needed(node) else 'pillow'
         if selected == 'cpu' and not registry['packages'][cpu_impl]['module_discoverable']:
             errors.append(_diagnostic('cpu_dependency_missing', f'{cpu_impl} is required by this CPU contract', key))
+        if (node.kind == 'transition' and node.config.get('transition_style') == 'gl_transition'
+                and 0 < node.config.get('progress', 0) < 1 and selected != 'gpu_bridge'):
+            errors.append(_diagnostic('shader_requires_gpu',
+                                      'GL shader has no CPU fallback for intermediate progress', key))
         if node.kind == 'filter' and surface.width * surface.height > 16_777_216:
             errors.append(_diagnostic('filter_pixel_limit', 'Filter canvas exceeds 16M pixel budget', key))
         if node.kind in {'spatial_warp', 'raster_effect', 'procedural_field'}:

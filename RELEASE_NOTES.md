@@ -1,3 +1,10 @@
+# Unreleased — M9.2 candidate (not a published release)
+
+- Add a SHA-256-pinned, trusted-only GL Transitions graph style,
+  native progress/time bindings and single-pass ModernGL RGBA8 execution.
+- Document the GL transition host uniforms, limits, no-fallback behaviour
+  and synthetic test fixture; full CI and hardware acceptance remain pending.
+
 # FrameRudiments 0.4.33
 
 - Add `inspect-isf` for local ISF 2 fragments. It reports ordered typed

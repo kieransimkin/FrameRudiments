@@ -1,5 +1,9 @@
 # FrameRudiments
 
+M9.2 candidate: an [opt-in GL Transitions adapter](docs/gl-transitions.md)
+runs SHA-256-pinned, explicitly trusted single-pass GLSL in the existing
+ModernGL effect-graph bridge. Exact-head CI and release acceptance are pending.
+
 Version 0.4.33 adds [Interactive Shader Format metadata inspection](docs/isf-metadata.md).
 Use `inspect-isf` to read typed controls, classify the image inputs and
 record the source SHA-256 before choosing a shader. Inspection runs on the

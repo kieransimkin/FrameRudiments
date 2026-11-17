@@ -410,7 +410,7 @@ class Compositor:
             project, project.data.get("post_effects", {}), self.context, valid_elements=targets
         )
         self.effect_graph = (
-            EffectGraph(project.data["effect_graph"])
+            EffectGraph(project.effect_graph_spec)
             if "effect_graph" in project.data else None
         )
         if self.effect_graph is None and project.data.get("effect_graph_controls"):

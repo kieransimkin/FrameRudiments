@@ -81,6 +81,10 @@ class Project:
         if self.purpose not in {"short", "visualiser", "canvas"}:
             raise ValueError("purpose must be short, visualiser or canvas")
         self.inputs = []
+        self.effect_graph_spec = None
+        if 'effect_graph' in data:
+            from .gl_transitions import prepare_project_gl_transitions
+            self.effect_graph_spec = prepare_project_gl_transitions(self)
         # Set by the optional working-cache staging pass. Summaries retain the
         # canonical source identities while render consumers use cached paths.
         self.canonical_inputs = None
