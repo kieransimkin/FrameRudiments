@@ -52,10 +52,16 @@ editable timing contracts in `docs/timing-editing.md` of its upstream project.
   draggable points using the shared component's editable point timing control.
   The label-value inspector authors `opacity`, `x`, `y` and `rotation` values
   as 0..1 before FrameRudiments maps them to native property ranges.
-- **Graph:** Native layer nodes, Butterchurn/projectM stages and final output;
-  configure per-layer `visualiser_routing` feed/overlay and individual
-  `visualiser_stage_injections` for later stages. Effect-graph presets preserve
-  masks, displacement and routing, but NEVER include source assets or music.
+- **Graph:** The **Effect DAG** workspace shows the actual `effect_graph` as
+  topologically arranged RGBA8 nodes with distinct input/output ports and branch
+  connections. It supports selecting nodes, adding validated CPU-safe copy,
+  opacity and blur nodes, choosing an output, changing bounded opacity/filter
+  radius/transition progress and removing a safe terminal unary node. An absent
+  graph is initialized only with explicit action and starts from the final
+  `frame` source. Port dragging/rewiring is reserved for M10.2; advanced node
+  properties still require the Python executor's semantic validation.
+  The adjacent layer/visualiser overview configures per-layer `visualiser_routing`
+  and `visualiser_stage_injections`, not the executable DAG.
 - **Presets:** Style presets are copied into a selected Rudiment layer without
   changing its native DanceRudiments `motion` or pinned StemLab recording.
 - **Undo/redo:** Up to 100 complete reversible draft operations, in browser
@@ -75,7 +81,9 @@ source-bound, checksum-pinned and immutable during authoring.
 ## Export and verification
 
 **Export project & sidecars** produces a standards-compatible ZIP with a new
-`project.json`, edited `.lrc` sidecars, and `AUTHORING-README.txt`. Every newly
+`project.json`, edited `.lrc` sidecars, and `AUTHORING-README.txt`. The
+current executable `effect_graph` is serialized in `project.json`; reusable
+visualiser-routing presets deliberately exclude the DAG and pinned assets. Every newly
 written sidecar is hashed using browser WebCrypto SHA-256, with its hash stored
 in the new project ref. Unedited font, image, audio, model and recording file
 references retain their original SHA-256. No original master/source bytes are
@@ -91,7 +99,8 @@ correct song analysis, acceptable GPU effects or platform compliance.
 `tests/test_authoring_preview.py` tests source protection, cue conventions,
 local-only static/audio APIs, and refusal to read arbitrary new project refs.
 The UI's Node tests exercise repeated excerpts, LRC parsing/export, cue naming,
-keyframes, effects graphs, presets, hashes and valid ZIP headers. The
+keyframes, native effect-graph/port structure and nonmutating edits, presets,
+hashes and valid ZIP headers. The
 `.github/workflows/authoring.yml` matrix tests Python 3.11/3.13 on both
 Windows/Ubuntu and builds the React UI with the released timeline dependency.
 

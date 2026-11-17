@@ -1,5 +1,10 @@
 # FrameRudiments
 
+M10.1 adds a [visual executable effect-graph node/port editor](docs/authoring-workspace.md)
+to the existing React timeline workspace. The editor preserves native timing,
+source pins, explicit graph opt-in, and the exporter’s project schema. M10.2
+will introduce direct edge rewiring and broader semantic port checks.
+
 M9.5 adds [pinned GL shader goldens and real-EGL provenance verification](docs/gl-goldens.md):
 five independent RGBA8 reference PNGs, full-file shader/input hashes, mandatory
 byte-exact GPU comparisons and an uploadable renderer receipt. The references

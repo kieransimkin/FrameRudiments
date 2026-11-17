@@ -1,3 +1,17 @@
+# FrameRudiments M10.1 authoring candidate (unreleased)
+
+- Introduce a topologically arranged executable `effect_graph` canvas in the
+  shared React timeline workspace, with named input/output RGBA8 ports and
+  selectable node inspector. The existing renderer preview remains available.
+- Allow explicit opt-in graph initialisation, immutable insertion of copy,
+  opacity and blur templates, bounded numeric editing and safe output/removal.
+- Preserve source audio, DanceRudiment clocks, pinned assets, original graph
+  configuration and undo/redo/export semantics. Wire editing remains M10.2.
+- Test forked port layout, cycle/dangling-edge rejection, property limits and
+  preservation of unrelated project fields in browser-independent Node tests.
+- Keep the EGL-only M9.5 golden test out of CPU-only CI matrix jobs; it remains
+  mandatory in the dedicated GPU acceptance job.
+
 # FrameRudiments M9.5 development candidate (unreleased)
 
 - Add five pinned, deterministic shader-reference PNGs with explicit progress,

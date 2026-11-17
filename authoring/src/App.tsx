@@ -4,6 +4,9 @@ import {type Document, type Sidecars, type TimedItem, type TimingKind, CUE_TYPES
   editTiming, expandTiming, layerKeyframes, normalizedKeys, projectTiming, renameCue, serializeLrc,
   stylePreset, withKeyframe, withLayerRoute, withPreset, withStageInjection, graphPreset, withGraphPreset} from './model.ts';
 import {sha256, zipEntries} from './archive.ts';
+import {EffectGraphEditor} from './EffectGraphEditor.tsx';
+import {withInitialEffectGraph, withEffectNode, withEffectOpacity, withEffectBlurRadius,
+  withEffectProgress, withEffectOutput, withoutTerminalEffectNode} from './graphEditor.ts';
 
 interface Session { project:Document; lines:TimedItem[]; words:TimedItem[]; cues:TimedItem[];
   cueFormat:'lrc'|'cue'; beatTimeline?:Document|null; audioAvailable:boolean; notes:string[]; }
@@ -55,6 +58,7 @@ export function App() {
  const [audioUrl,setAudioUrl]=useState('');
  const [preview,setPreview]=useState('');
  const [quality,setQuality]=useState<'fast'|'full'>('fast');
+ const [graphView,setGraphView]=useState(false);
  const [previewError,setPreviewError]=useState('');
  const [cueType,setCueType]=useState('SECTION');
  const [cueTitle,setCueTitle]=useState('');
@@ -235,12 +239,23 @@ export function App() {
   {!project?<main className="fr-empty">Loading the pinned project…<p>Run through <code>scripts/authoring_preview.py</code> after building <code>authoring/</code>.</p></main>:
   <main className="fr-columns">
    <section className="fr-center">
-    <div className="fr-preview-head"><strong>Renderer preview</strong><label className="fr-scrub">Position <input aria-label="Seek draft preview" type="range" min="0" max={duration} step={1/(project.fps||60)}
+    <div className="fr-preview-head"><div className="fr-preview-modes" role="group" aria-label="Workspace mode">
+      <button className={!graphView?'selected':''} aria-pressed={!graphView} onClick={()=>setGraphView(false)}>Renderer</button>
+      <button className={graphView?'selected':''} aria-pressed={graphView} onClick={()=>setGraphView(true)}>Effect DAG</button>
+      </div><label className="fr-scrub">Position <input aria-label="Seek draft preview" type="range" min="0" max={duration} step={1/(project.fps||60)}
       value={time} onChange={e=>setTime(Number(e.target.value))}/></label><label>Quality <select value={quality} onChange={e=>setQuality(e.target.value as 'fast'|'full')}>
       <option value="fast">Draft (1×)</option><option value="full">Production AA</option></select></label>
       <span>Frame {Math.round(time*(project.fps||60))}</span></div>
-    <div className="fr-preview"><div className="fr-canvas">{preview?<img src={preview} alt="FrameRudiments composited draft frame"/>:<span>Preparing preview…</span>}</div>
-      {previewError&&<p className="fr-alert">{previewError}</p>}</div>
+    {graphView?<div className="fr-fx-preview"><EffectGraphEditor project={project}
+      onInit={()=>commit(s=>({...s,project:withInitialEffectGraph(s.project)}))}
+      onAdd={type=>commit(s=>({...s,project:withEffectNode(s.project,type)}))}
+      onOpacity={(id,value)=>commit(s=>({...s,project:withEffectOpacity(s.project,id,value)}))}
+      onBlur={(id,value)=>commit(s=>({...s,project:withEffectBlurRadius(s.project,id,value)}))}
+      onProgress={(id,value)=>commit(s=>({...s,project:withEffectProgress(s.project,id,value)}))}
+      onOutput={id=>commit(s=>({...s,project:withEffectOutput(s.project,id)}))}
+      onRemove={id=>commit(s=>({...s,project:withoutTerminalEffectNode(s.project,id)}))}/></div>:
+     <div className="fr-preview"><div className="fr-canvas">{preview?<img src={preview} alt="FrameRudiments composited draft frame"/>:<span>Preparing preview…</span>}</div>
+      {previewError&&<p className="fr-alert">{previewError}</p>}</div>}
     <div className="fr-transport-extra"><label>Exact excerpt audio <input type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg"
       onChange={e=>setLocalAudio(e.target.files?.[0]??null)}/></label>
       {!session?.audioAvailable&&<span>Choose a rendered excerpt for sample-aligned playback.</span>}
@@ -255,7 +270,7 @@ export function App() {
     </div>
    </section>
    <aside className="fr-side">
-    <section><h2>Layers & effect graph</h2><p>Choose a layer to edit its clean-feed routing, keyframes or style preset.</p>
+    <section><h2>Layers & visualiser routing</h2><p>Choose a layer for clean-feed routing or style presets. The executable graph has its own <strong>Effect DAG</strong> tab beside the renderer.</p>
      <div className="fr-graph"><div className="fr-node-title">Scene inputs</div>
        {(project.layers||[]).map((l:Document)=><button key={l.id} className={'fr-node '+(selected===`layer:${l.id}`?'chosen':'')}
          onClick={()=>setSelected(`layer:${l.id}`)}>{l.id}<small>{l.renderer||l.type||'sprite'}</small></button>)}
@@ -292,10 +307,10 @@ export function App() {
       <label>Prefix <select value={cueType} onChange={e=>setCueType(e.target.value)}>{CUE_TYPES.map(x=><option key={x}>{x}</option>)}</select></label>
       <label>Label <input value={cueTitle} onChange={e=>setCueTitle(e.target.value)} placeholder="INTRO / DROP 1"/></label>
       <button onClick={renameSelectedCue} disabled={selectedTiming?.kind!=='cue'}>Rename selected cue</button></section>
-    <section><h2>Reusable effect graphs</h2><p>Export existing routing, inter-stage injection, matte and displacement edges without source files.</p>
-      <button onClick={saveGraph}>Export graph</button>
-      <label>Import graph <input type="file" accept="application/json,.json" onChange={e=>setGraphFile(e.target.files?.[0]||null)}/></label>
-      <button onClick={loadGraph} disabled={!graphFile}>Apply validated graph</button></section>
+    <section><h2>Reusable visualiser routing</h2><p>Export routing, stage injection, mattes and displacement; this preset excludes the executable DAG and pinned sources. The full project export includes <code>effect_graph</code>.</p>
+      <button onClick={saveGraph}>Export routing preset</button>
+      <label>Import routing preset <input type="file" accept="application/json,.json" onChange={e=>setGraphFile(e.target.files?.[0]||null)}/></label>
+      <button onClick={loadGraph} disabled={!graphFile}>Apply routing preset</button></section>
     <section><h2>Style presets</h2><button onClick={saveStyle} disabled={!selectedLayer||selectedLayer.type!=='rudiment'}>Export selected style</button>
       <label>Import preset <input type="file" accept="application/json,.json" onChange={e=>setPresetFile(e.target.files?.[0]||null)}/></label>
       <button onClick={loadStyle} disabled={!presetFile}>Apply style preset</button></section>

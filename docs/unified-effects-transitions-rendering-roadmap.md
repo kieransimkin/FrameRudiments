@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.29 — 13 November 2026
+**Version:** 1.30 — 17 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -174,6 +174,10 @@ All external shader/model/media sources must be pinned or versioned, constrained
 
 ### M10 — Authoring interface
 - **M10.1** Graph node/port editor integrated with current React timeline workspace.
+  Implementation candidate: [M10.1 visual authoring](authoring-workspace.md#editing-operations).
+  Selectable, deterministic node/port layout, safe unary templates and inspector,
+  explicit graph creation, output control and nonmutating JSON export are present.
+  Full semantic rewiring belongs to M10.2; exact-head CI acceptance pending.
 - **M10.2** Fork/merge/matte/transition connection authoring and semantic validation.
 - **M10.3** Automatically generated parameter and DanceNotion control editors.
 - **M10.4** Transition previews and scrub-safe frame evaluation with quality/performance switch.
