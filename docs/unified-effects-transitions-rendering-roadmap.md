@@ -11,7 +11,9 @@ Version 0.4.30 adds bounded reuse of resident targets and optional driver memory
 Version 0.4.32 adds a portable renderer qualification run for the remaining hardware checks.
 Version 0.4.33 adds bounded ISF 2 metadata inspection and typed control discovery.
 A proposed M9.2 patch adds a trusted-only, pinned GL Transitions shader
-bridge and native progress/time bindings; exact-head CI is still pending.
+bridge and native progress/time bindings. M9.3 adds bounded multipass
+execution; M9.4 adds restricted, reviewed-source admission. Exact-head CI
+and cross-vendor acceptance remain pending.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
@@ -161,6 +163,10 @@ All external shader/model/media sources must be pinned or versioned, constrained
 - **M9.3** Controlled multipass execution and explicitly bounded shader resources.
   Implementation candidate: [M9.3 controlled GL multipass](gl-transitions.md#m93--controlled-multiple-gl-passes-implementation-candidate); exact-head CI pending.
 - **M9.4** Reject untrusted shader includes, unsupported operations and unsafe resource use.
+  Implementation candidate: [M9.4 restricted shader admission](gl-transitions.md#m94--restricted-glsl-source-admission-candidate).
+  A straight-line GLSL 3.30 subset, full-file pins, opt-in trust, typed host
+  uniforms and bounded source complexity are enforced before GPU compilation.
+  This is **not** an untrusted GPU sandbox. Exact-head and physical-device gates remain open.
 - **M9.5** Golden images + provenance for pinned shader fixtures.
 - **Exit:** supported imported shaders render reproducibly with mapped DanceRudiment controls.
 

@@ -1,10 +1,16 @@
 # FrameRudiments
 
+The M9.4 [restricted external-shader gate](docs/gl-transitions.md#m94--restricted-glsl-source-admission-candidate)
+requires reviewed SHA-256-pinned local shaders and admits only a bounded,
+straight-line GL Transitions subset. It rejects direct texture/sampler access,
+preprocessor directives, loops, resource writes and unsupported GLSL before
+compilation. **This is not a GPU security sandbox.** M9.5 goldens remain open.
+
 The M9.3 implementation adds [bounded multipass GL Transitions](docs/gl-transitions.md):
 up to four full-file-pinned shaders per transition, one GPU upload per source,
 one final readback, allocation-free byte preflight and a finite shader-program
 cache. The additional passes operate on the preceding pass's RGBA8 output.
-M9.4 untrusted-shader safety and M9.5 approved goldens remain outstanding.
+M9.4 restricts source admission; M9.5 approved goldens remain outstanding.
 
 M9.2 candidate: an [opt-in GL Transitions adapter](docs/gl-transitions.md)
 runs SHA-256-pinned, explicitly trusted single-pass GLSL in the existing

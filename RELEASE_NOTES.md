@@ -1,3 +1,16 @@
+# FrameRudiments M9.4 development candidate (unreleased)
+
+- Admit only a bounded straight-line `transition(vec2)` GLSL 3.30 subset after
+  SHA-256 verification and explicit `trusted_shader: true` review opt-in.
+- Reject preprocessor includes, loops, extra functions, extra samplers or image
+  resources, direct texture fetches, atomics, resource writes and unknown calls
+  before shader compilation. Cap per-pass lexical and expression complexity.
+- Scrub comments and remove validated host-uniform declarations safely; retain
+  original byte hashes. No claims of GPU execution isolation or time limits.
+- Add dedicated CPU security regressions and mandatory EGL compilation and
+  rejection cases. Correct M9.3 two-pass RGBA8 alpha golden (222 after rounding).
+- Require exact-head CI and cross-vendor review before release acceptance.
+
 # FrameRudiments M9.3 development candidate (unreleased)
 
 - Add explicitly bounded 1–4-pass GL Transitions chains. All shaders require

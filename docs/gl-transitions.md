@@ -1,6 +1,6 @@
 # M9.2 — Pinned GL Transitions on the effect graph
 
-**Status:** implementation candidate; exact-head CI and real-device acceptance pending. This is **not ISF execution**. `inspect-isf` remains metadata-only.
+**Status:** M9.4 restricted-shader source gate implemented; exact-head CI and cross-vendor acceptance pending. This is **not ISF execution**. `inspect-isf` remains metadata-only.
 
 A two-image, one-pass [GL Transitions](https://gl-transitions.com/) fragment exposes `vec4 transition(vec2 uv)` and samples `getFromColor(uv)` / `getToColor(uv)`. FrameRudiments composes it using its existing ModernGL 3.3 `GLMatteBackend`, RGBA8 transport, explicit GPU resource budget and cleanup. No extra base-install dependency is added; install `framerudiments[gpu]` to render intermediate frames. With `progress = 0` or `1`, the exact respective input is copied without a GPU upload.
 
@@ -98,8 +98,7 @@ planner reports the same payload size, transfer count and draw-pass count.
 Program objects from external shaders are retained in a **16-entry LRU** on
 each GPU backend and released when evicted. The budget measures texture
 payloads, not CPU images, driver shader compilation memory, VRAM fragmentation,
-execution time or the safety of arbitrary GLSL. M9.4 remains the separate
-untrusted-shader security milestone; do **not** run unreviewed shader sources.
+execution time or the safety of arbitrary GLSL. M9.4 now admits only a restricted, explicitly reviewed shader subset; do **not** run unreviewed shader sources.
 
 Project-relative paths for every additional pass are resolved and registered
 via `Project.ref` alongside the first shader for input provenance. Authored
@@ -111,3 +110,54 @@ Targeted CPU acceptance is in `tests/test_gl_multipass.py`; required real EGL
 parity, transfer, budget and shader-program-cache tests are in
 `tests/test_gl_multipass_egl.py`. Full exact-head CI and independent hardware
 vendor performance measurements remain pending.
+
+## M9.4 — Restricted GLSL source admission (candidate)
+
+The shader now passes a deterministic, **fail-closed source lexer and restricted
+statement validator** *after* its full-file SHA-256 pin and `trusted_shader:
+true` opt-in are checked and *before* GLSL compilation or GPU allocation. Every
+shader in a `shader_passes` chain must pass, including when progress is exactly
+zero or one. The active policy is `framerudiments.gl-transition-restricted.v1`.
+The original local file and its recorded digest are never rewritten. Comment
+text is removed from the compiled fragment, and matching source redeclarations of host uniforms
+are removed after checking their types (duplicates in the source are rejected).
+
+Only this **GL Transitions subset** is admitted:
+
+- A single `vec4 transition(vec2 uv)` body containing initialized scalar/vector
+  locals, assignments to existing mutable locals and a final `return`. Constant
+  global declarations and approved host-uniform redeclarations may precede it.
+- Straight-line expressions and bounded ternary `?:` expressions using GLSL
+  3.30 arithmetic/comparison operations, swizzles, approved pure built-ins and
+  only `getFromColor(vec2)` / `getToColor(vec2)` for image access.
+- At most 768 lexical tokens, 48 statements, 64 approved function calls and 12
+  nested expression parentheses **per pass**. Source remains capped at 64 KiB;
+  non-finite or greater-than-1e9 numeric literals are refused. The original
+  M9.3 pass count and RGBA8 texture payload limits remain in force.
+
+The validator refuses all `#` directives/includes, escaped line splicing,
+strings, unknown identifiers, extra/user-defined functions, recursive calls,
+loops, flow-control blocks, mutation of host values, extra textures/samplers,
+array indexing, direct `texture()` / `texelFetch()`, image/buffer reads or
+writes, atomics, barriers and unsupported language constructs. `gl_*` and
+other host symbol access is also disallowed. Commented-out examples of such
+code are inert. This is intentionally narrower than general GL Transitions;
+previously reviewed third-party shaders with arbitrary helpers, branches or
+texture fetches now require a restricted rewrite, not automatic acceptance.
+
+**Important:** This does **not** turn GLSL into a safe sandbox. Static analysis
+cannot prove maximum GPU driver/compiler time, that memory allocations outside
+RGBA8 payloads stay bounded, or immunity to driver bugs. The explicit
+`trusted_shader` flag is still compulsory; never submit untrusted source to a
+GPU device shared with other workloads. Untrusted render services require a
+separate, OS-isolated GPU execution boundary with hard timeouts and resource
+controls. No automatic download, execution of arbitrary ISF, or shader-library
+imports are enabled.
+
+Regression coverage: `tests/test_gl_shader_guard.py` exercises both permitted
+and refused language features, comment/directive handling, source immutability,
+limits, secondary-pass admission and endpoint protection without opening GL.
+`tests/test_gl_multipass_egl.py` runs a real, mandatory EGL compile/render
+and verifies refused source never uploads or enters the program cache. Full
+repository CI plus multi-vendor driver checks are separate acceptance gates.
+M9.5 retains pinned reference images and independent provenance evidence.

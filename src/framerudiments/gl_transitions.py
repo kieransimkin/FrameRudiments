@@ -1,7 +1,7 @@
-"""M9.2/M9.3: pinned GL Transitions and resource-bounded multipass execution.
+"""M9.2–M9.4 pinned GL Transitions with preflight and a restricted GLSL subset.
 
-This accepts the GL Transitions `vec4 transition(vec2 uv)` convention, not ISF.
-It is not a sandbox for untrusted GLSL; M9.4 will add a shader safety gate.
+Only reviewed, SHA-256-pinned sources may run. Static source checks are not a
+GPU execution sandbox; use process/device isolation for untrusted material.
 """
 
 from copy import deepcopy
@@ -12,6 +12,8 @@ import re
 
 from PIL import Image
 
+from .gl_shader_guard import inspect_restricted_gl_transition
+
 MAX_SHADER_BYTES = 64 * 1024
 MAX_SHADER_PASSES = 4
 MAX_SHADER_WORKING_BYTES = 256 * 1024 * 1024
@@ -20,12 +22,6 @@ GL_TRANSITION_FIELDS = frozenset({
     "shader_path", "shader_sha256", "trusted_shader", "time_seconds",
     "time_delta_seconds", "frame_index", "shader_passes", "max_pass_bytes",
 })
-_HOST_UNIFORMS = {
-    "progress": "float", "ratio": "float", "resolution": "vec2", "RENDERSIZE": "vec2",
-    "TIME": "float", "TIMEDELTA": "float", "FRAMEINDEX": "int",
-}
-_HOST_DECLARATION = re.compile(r"\buniform\s+(float|int|vec2|vec3|vec4|bool|sampler2D)\s+([A-Za-z_]\w*)\s*;")
-_TRANSITION_FUNCTION = re.compile(r"\bvec4\s+transition\s*\(\s*vec2\s+[A-Za-z_]\w*\s*\)")
 
 _FRAGMENT_HEADER = """#version 330
 uniform sampler2D from_tex;
@@ -82,29 +78,10 @@ def _local_fragment(config):
         raise ValueError("GL transition shader must be UTF-8") from exc
     if not source.strip() or "\x00" in source:
         raise ValueError("GL transition source is empty or contains a NUL byte")
-    # This is an explicitly limited subset, not comprehensive security analysis.
-    # Only opt-in, locally reviewed shaders are admitted; never accept remote GLSL.
-    if re.search(r"^\s*#", source, flags=re.MULTILINE):
-        raise ValueError("GL transition preprocessor directives are not supported in M9.2")
-    if re.search(r"\bvoid\s+main\s*\(", source):
-        raise ValueError("GL transition must expose transition(vec2), not main()")
-    if not _TRANSITION_FUNCTION.search(source):
-        raise ValueError("GL transition needs a vec4 transition(vec2 uv) function")
-    def remove_host_uniform(match):
-        kind, name = match.groups()
-        if name in _HOST_UNIFORMS:
-            if kind != _HOST_UNIFORMS[name]:
-                raise ValueError(f"GL transition host uniform {name} must have type {_HOST_UNIFORMS[name]}")
-            return ""
-        if name in {"from_tex", "to_tex"}:
-            raise ValueError("GL transition texture samplers are host-managed")
-        # Other uniforms need an explicit typed binding (future milestone).
-        raise ValueError(f"GL transition unsupported shader uniform: {name}")
-    source = _HOST_DECLARATION.sub(remove_host_uniform, source)
-    # Catch declarations the supported uniform grammar could not consume.
-    if re.search(r"\buniform\b", source):
-        raise ValueError("GL transition has an unsupported uniform declaration")
-    return actual, _FRAGMENT_HEADER + source + _FRAGMENT_FOOTER
+    # Validate all untrusted operations *before* shader compilation or texture
+    # allocation. Trust is still a separate explicit opt-in and not a sandbox.
+    safe_source, _receipt = inspect_restricted_gl_transition(source)
+    return actual, _FRAGMENT_HEADER + safe_source + _FRAGMENT_FOOTER
 
 
 def _shader_chain(config):
