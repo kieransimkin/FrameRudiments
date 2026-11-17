@@ -161,3 +161,11 @@ limits, secondary-pass admission and endpoint protection without opening GL.
 and verifies refused source never uploads or enters the program cache. Full
 repository CI plus multi-vendor driver checks are separate acceptance gates.
 M9.5 retains pinned reference images and independent provenance evidence.
+
+## M9.5 — Golden image and provenance acceptance (candidate)
+
+Five pinned host-reference PNGs, their exact shader/full-file hashes, a frozen
+RGBA8 fixture-generation contract, mandatory EGL pixel parity and actual-GL
+qualification receipts are specified in [M9.5 golden evidence](gl-goldens.md).
+They are not GPU captures until executed against a real driver. Source signing,
+physical-device inventory and perceptual approvals remain separately gated.

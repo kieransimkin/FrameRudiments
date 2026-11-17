@@ -1,0 +1,100 @@
+{
+  "schema": "framerudiments.gl-transition-goldens.v1",
+  "reference_kind": "deterministic_host_reference_not_gpu_capture",
+  "source_schema": "framerudiments.gl-transition-pattern.v1",
+  "size": [
+    64,
+    48
+  ],
+  "policy": "framerudiments.gl-transition-restricted.v1",
+  "sources": {
+    "outgoing_rgba_sha256": "4f76de21d48582bf5bba7f4be18a3f49b069320b77879b4b6b7a93edf3f4ca3d",
+    "incoming_rgba_sha256": "c3f4b79d918d110cf6d90f5465e6b8f9242a2a9269475a1a2ced4c240070a092"
+  },
+  "cases": [
+    {
+      "id": "crossfade-quarter",
+      "shaders": [
+        {
+          "path": "examples/gl-transition-crossfade.glsl",
+          "sha256": "b42ec29cc3c9b016bb9b1132d0222d9450b0a909d212eb4c4f9a9768b6688ac3"
+        }
+      ],
+      "progress": 0.25,
+      "time_seconds": 1.25,
+      "time_delta_seconds": 0.041666666666666664,
+      "frame_index": 30,
+      "golden": "docs/media/gl-goldens/crossfade-quarter.png",
+      "png_sha256": "bab9eb9d63480c4d8007602356370770afc8a444dcd7b583523d54a507ee668c",
+      "rgba_sha256": "5d7366394ba1996964f25d379c6d70e9474526dbceb0361144d6e88ff535d755"
+    },
+    {
+      "id": "crossfade-half",
+      "shaders": [
+        {
+          "path": "examples/gl-transition-crossfade.glsl",
+          "sha256": "b42ec29cc3c9b016bb9b1132d0222d9450b0a909d212eb4c4f9a9768b6688ac3"
+        }
+      ],
+      "progress": 0.5,
+      "time_seconds": 1.25,
+      "time_delta_seconds": 0.041666666666666664,
+      "frame_index": 30,
+      "golden": "docs/media/gl-goldens/crossfade-half.png",
+      "png_sha256": "1ef8750266986ed884fdb061b24132bdbf4c8b66860d9474cdebebca02a9b574",
+      "rgba_sha256": "adec8ed2a7d53c0c7f67249ff21cbbacc8221af9b5e865817f467cda6cf0ea53"
+    },
+    {
+      "id": "reinforce-two-pass",
+      "shaders": [
+        {
+          "path": "examples/gl-transition-crossfade.glsl",
+          "sha256": "b42ec29cc3c9b016bb9b1132d0222d9450b0a909d212eb4c4f9a9768b6688ac3"
+        },
+        {
+          "path": "examples/gl-transition-reinforce.glsl",
+          "sha256": "94569855acfd656918e3c675117fd7d76de11ec1d8ef0c27c6aa5bd34b5757b2"
+        }
+      ],
+      "progress": 0.5,
+      "time_seconds": 1.25,
+      "time_delta_seconds": 0.041666666666666664,
+      "frame_index": 30,
+      "golden": "docs/media/gl-goldens/reinforce-two-pass.png",
+      "png_sha256": "74f4959b7f48534e38046974f4f8e85ca5357d2672d443a09554e6d0f9b9dc4a",
+      "rgba_sha256": "3e3177ee8b318f63a6cdca862f6feaa4c39a3d711d5c59ab78a668adcbd98bc4"
+    },
+    {
+      "id": "timed-split-before",
+      "shaders": [
+        {
+          "path": "examples/gl-transition-timed-split.glsl",
+          "sha256": "1af2c717b586e7161c2357d9452f511cebf9852f62ad9c124bc69ff0bffbe4fb"
+        }
+      ],
+      "progress": 0.5,
+      "time_seconds": 0.0,
+      "time_delta_seconds": 0.041666666666666664,
+      "frame_index": 0,
+      "golden": "docs/media/gl-goldens/timed-split-before.png",
+      "png_sha256": "72c62b081e26c97f0ed26e950df158510565616d7dec5b4d4570a3ce523dcb37",
+      "rgba_sha256": "4f76de21d48582bf5bba7f4be18a3f49b069320b77879b4b6b7a93edf3f4ca3d"
+    },
+    {
+      "id": "timed-split-after",
+      "shaders": [
+        {
+          "path": "examples/gl-transition-timed-split.glsl",
+          "sha256": "1af2c717b586e7161c2357d9452f511cebf9852f62ad9c124bc69ff0bffbe4fb"
+        }
+      ],
+      "progress": 0.5,
+      "time_seconds": 1.25,
+      "time_delta_seconds": 0.041666666666666664,
+      "frame_index": 30,
+      "golden": "docs/media/gl-goldens/timed-split-after.png",
+      "png_sha256": "581c6027ec7637685740a63e5c807e4be5c2e94415c9d88c73172cc986afc704",
+      "rgba_sha256": "cbfba3295e63180d078a55c2859c91b8e99c71fc0121299c5eae42344c6496c0"
+    }
+  ]
+}

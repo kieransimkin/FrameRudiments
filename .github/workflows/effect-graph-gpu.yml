@@ -12,6 +12,12 @@ on:
     paths:
       - 'src/framerudiments/effect_graph*'
       - 'src/framerudiments/gl_transitions.py'
+      - 'src/framerudiments/gl_transition_goldens.py'
+      - 'src/framerudiments/gl_shader_guard.py'
+      - 'examples/gl-transition-*.glsl'
+      - 'docs/media/gl-goldens/**'
+      - 'tests/test_gl_goldens_egl.py'
+      - 'integration/qualify_gl_transition_goldens.py'
       - 'tests/test_gl_transitions*.py'
       - 'tests/test_effect_graph_gpu*'
       - 'integration/benchmark_effect_graph_gpu.py'
@@ -28,6 +34,12 @@ on:
     paths:
       - 'src/framerudiments/effect_graph*'
       - 'src/framerudiments/gl_transitions.py'
+      - 'src/framerudiments/gl_transition_goldens.py'
+      - 'src/framerudiments/gl_shader_guard.py'
+      - 'examples/gl-transition-*.glsl'
+      - 'docs/media/gl-goldens/**'
+      - 'tests/test_gl_goldens_egl.py'
+      - 'integration/qualify_gl_transition_goldens.py'
       - 'tests/test_gl_transitions*.py'
       - 'tests/test_effect_graph_gpu*'
       - 'integration/benchmark_effect_graph_gpu.py'
@@ -77,8 +89,16 @@ jobs:
           tests/test_effect_graph_gpu_kernels.py tests/test_effect_graph_gpu_resident_egl.py
           tests/test_effect_graph_gpu_resident_m86_egl.py tests/test_effect_graph_gpu_resident_m87_egl.py
           tests/test_effect_graph_gpu_spatial_egl.py tests/test_gl_transitions_egl.py
-          tests/test_gl_multipass_egl.py
+          tests/test_gl_multipass_egl.py tests/test_gl_goldens_egl.py
           --junitxml=gpu-transfer-results.xml
+      - name: Qualify pinned shader goldens on real EGL and capture driver identity
+        run: python integration/qualify_gl_transition_goldens.py --backend egl --output gl-goldens-egl.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gl-golden-provenance
+          path: gl-goldens-egl.json
+          if-no-files-found: ignore
       - name: Require real GPU transport and parity tests with no skips
         run: |
           python - <<'PYTEST'

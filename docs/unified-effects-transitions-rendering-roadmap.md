@@ -168,6 +168,8 @@ All external shader/model/media sources must be pinned or versioned, constrained
   uniforms and bounded source complexity are enforced before GPU compilation.
   This is **not** an untrusted GPU sandbox. Exact-head and physical-device gates remain open.
 - **M9.5** Golden images + provenance for pinned shader fixtures.
+  Implementation candidate: [M9.5 pinned host reference goldens and actual GL receipts](gl-goldens.md).
+  Require exact-head EGL comparisons and distinguish software-driver evidence from physical-adapter tests.
 - **Exit:** supported imported shaders render reproducibly with mapped DanceRudiment controls.
 
 ### M10 — Authoring interface

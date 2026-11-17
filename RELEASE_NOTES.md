@@ -1,3 +1,15 @@
+# FrameRudiments M9.5 development candidate (unreleased)
+
+- Add five pinned, deterministic shader-reference PNGs with explicit progress,
+  source pixels, time, frame index, pass-chain and SHA-256 provenance.
+- Require actual EGL shader output to match every approved RGBA8 golden byte;
+  keep host references explicitly distinct from GPU capture evidence.
+- Add a GPU qualification command that records the real renderer, GL version,
+  source pins, transfer totals and exact pixel hashes without rewriting goldens.
+- Include the reviewed shader fixtures in source distributions and run M9.5
+  tests in the existing CPU and mandatory GPU CI matrices. Hardware-vendor
+  checks and exact-head CI acceptance remain separate gates.
+
 # FrameRudiments M9.4 development candidate (unreleased)
 
 - Admit only a bounded straight-line `transition(vec2)` GLSL 3.30 subset after

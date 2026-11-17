@@ -1,5 +1,10 @@
 # FrameRudiments
 
+M9.5 adds [pinned GL shader goldens and real-EGL provenance verification](docs/gl-goldens.md):
+five independent RGBA8 reference PNGs, full-file shader/input hashes, mandatory
+byte-exact GPU comparisons and an uploadable renderer receipt. The references
+are deterministic host outputs, not preclaimed hardware captures.
+
 The M9.4 [restricted external-shader gate](docs/gl-transitions.md#m94--restricted-glsl-source-admission-candidate)
 requires reviewed SHA-256-pinned local shaders and admits only a bounded,
 straight-line GL Transitions subset. It rejects direct texture/sampler access,
