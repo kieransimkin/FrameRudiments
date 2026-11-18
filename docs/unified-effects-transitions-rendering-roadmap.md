@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.38 — 18 November 2026
+**Version:** 1.39 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -307,6 +307,13 @@ All external shader/model/media sources must be pinned or versioned, constrained
   offline [shared timeline viewer](https://kieransimkin.github.io/FrameRudiments/timeline/)
   with generated synthetic audio; it is not native preview service hosting.
 - **M13 Timeline:** OpenTimelineIO clip/transition import-export, precise duration and source provenance.
+  Implementation candidate: [M13 exact-frame OTIO interchange](timeline-interchange-m13.md).
+  Strict flat audio/video tracks, clips, gaps, standard dissolves, tagged wipes
+  and source-clocked markers roundtrip with explicit 24000/1001–60000/1001
+  rational output FPS, verified relative media identity and no silent sample
+  quantisation. A native pinned-project audio/cue export and downloadable OTIO
+  companion for the public React timeline are provided. Full nested editorial
+  structures, render-graph conformance and completed native CI are separate gates.
 - **M14 Computer vision:** optional ONNX segmentation/depth/flow outputs with model checksums and memory limits.
 - **M15 Experimental adapters:** isolated OpenFX host, OpenUSD/Hydra, GStreamer/NDI/Spout/Syphon, Vulkan/WebGPU, OSC/MIDI. Each integration requires licensing review and CI capability declaration before shipping.
 - **Exit:** no new hard runtime dependencies, pinned reproducible fixtures, explicit availability documentation.

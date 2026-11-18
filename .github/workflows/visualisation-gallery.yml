@@ -29,7 +29,7 @@ jobs:
           bash scripts/install_ci_render_dependencies.sh
           echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
       - name: Install distribution and test tooling
-        run: python -m pip install -e '.[dev]'
+        run: python -m pip install -e '.[dev,timeline_otio]'
       - name: Validate all visualisation modes and deterministic output
         run: python -m pytest -q tests/test_advanced_renderers.py tests/test_visualisation_modulation.py tests/test_effect_batch.py tests/test_scoped_effects.py tests/test_sprite_renderers.py tests/test_quality_effects.py tests/test_particle_engine.py tests/test_variable_bpm_words.py tests/test_rich_subtitles.py tests/test_default_antialias.py tests/test_supersampling.py tests/test_visualiser_routing.py
       - name: Validate renderer cross-quality and stateful scene contracts
@@ -94,6 +94,13 @@ jobs:
           cp -R authoring/dist-timeline/assets _site/timeline/assets
           python scripts/generate_timeline_gallery_audio.py --output _site/timeline
           python scripts/generate_timeline_gallery_audio.py --output _site/timeline --verify
+      - name: Publish source-pinned OpenTimelineIO companion for public timeline
+        run: |
+          python -m pytest -q tests/test_m13_timeline_pages.py
+          ruff check scripts/generate_m13_timeline_example.py tests/test_m13_timeline_pages.py
+          python scripts/generate_m13_timeline_example.py --site _site/timeline
+          python scripts/generate_m13_timeline_example.py --site _site/timeline --verify
+          test -s _site/timeline/example.otio
       - name: Validate generated site and image count
         run: |
           python - <<'PY'

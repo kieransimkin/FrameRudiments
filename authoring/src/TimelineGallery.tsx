@@ -85,7 +85,7 @@ export function TimelineGallery() {
         <h1>Timeline viewer</h1>
         <p>Explore the same <strong>react-timeline-sequence</strong> control used by the native FrameRudiments authoring workspace. Play, scrub, zoom and navigate; drag a word marker to change its local timing.</p>
       </div>
-      <nav aria-label="Gallery navigation"><a href="../">Visualisation atlas</a><a href="../m11-5/">Character showcase</a><a href="https://github.com/kieransimkin/FrameRudiments/tree/main/authoring">Editor source</a></nav>
+      <nav aria-label="Gallery navigation"><a href="../">Visualisation atlas</a><a href="../m11-5/">Character showcase</a><a href="./example.otio" download>Download OTIO example</a><a href="https://github.com/kieransimkin/FrameRudiments/tree/main/authoring">Editor source</a></nav>
     </header>
     <section className="fr-gallery-toolbox" aria-label="Timeline settings">
       <div className="fr-gallery-stat"><span>Current playhead</span><strong>{time.toFixed(2)} s</strong></div>
@@ -102,6 +102,6 @@ export function TimelineGallery() {
         onPlaybackError={()=>setSelected('Audio playback unavailable in this browser')}
         footer={<span>All timing and audio are original synthetic fixtures. Edits affect this tab only; no project or source file is changed.</span>}/>
     </main>
-    <footer className="fr-gallery-foot"><p><strong>About this demo.</strong> This is a real browser build of the timeline component, not a screenshot. It is a standalone Pages sample and cannot connect to the native renderer, read private projects or preview Butterchurn/projectM. For full local project editing and native preview, use <a href="https://github.com/kieransimkin/FrameRudiments/tree/main/authoring">the authoring workspace</a>.</p><p><a href="./catalogue.json">Generated audio and timing manifest</a> · <a href="https://github.com/kieransimkin/FrameRudiments/blob/main/docs/authoring-workspace.md">Editor documentation</a></p></footer>
+    <footer className="fr-gallery-foot"><p><strong>About this demo.</strong> This is a real browser build of the timeline component, not a screenshot. It is a standalone Pages sample and cannot connect to the native renderer, read private projects or preview Butterchurn/projectM. For full local project editing and native preview, use <a href="https://github.com/kieransimkin/FrameRudiments/tree/main/authoring">the authoring workspace</a>.</p><p><a href="./catalogue.json">Generated audio and timing manifest</a> · <a href="./example.otio">OTIO companion (fixed fixture, not browser edits)</a> · <a href="https://github.com/kieransimkin/FrameRudiments/blob/main/docs/authoring-workspace.md">Editor documentation</a></p></footer>
   </div>;
 }
