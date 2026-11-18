@@ -119,7 +119,12 @@ still fail. A stopped frame may upgrade on the foreground worker, but there is
 
 Pins are fully hashed at stream admission. Per-frame checks fence changes to
 file identity, size, mtime, ctime and symlink resolution before cache delivery
-and publication. Reopening rehashes inputs. Owned, source-timed edited sidecars
+and publication. Reopening rehashes inputs. On Windows, each guard reuse also
+rehashes every admitted input and checks its alias/metadata again afterwards:
+creation-time `ctime` and reused last-write timestamps can miss a same-length
+rewrite. This correctness fallback adds disk I/O for large media; it does not
+establish Windows real-time performance. POSIX retains the metadata reuse path.
+Owned, source-timed edited sidecars
 are created only in a private cache temporary tree, are separately pinned, and
 are cleaned when the native renderer closes. Source project/media files are
 never rewritten. This local change detector is not a hostile-filesystem or

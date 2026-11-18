@@ -1,11 +1,33 @@
 """Native integer-pip motion. Never substitute a Python movement engine."""
 
 import math
+from copy import deepcopy
 from importlib.metadata import version
 from functools import lru_cache
 
 from .io import file_ref, read_json, fields, number, integer, sha256
 from .stemlab import selected_match
+
+
+NAMED_MOTION_FIELDS = {
+    'rate': {'type': 'number', 'default': 1, 'minimum': .00001},
+    'phase_beats': {'type': 'number', 'default': 0, 'units': 'beats'},
+    'origin_beat': {'type': 'number', 'default': 0, 'units': 'beats'},
+    'repeat_clock': {'type': 'enum', 'default': 'continuous', 'choices': ['source', 'continuous']},
+    'interpolate': {'type': 'boolean', 'default': False, 'choices': [False, True]},
+}
+
+
+def native_motion_names():
+    """Discover released movements from the installed native catalogue."""
+    import dancerudiments as dr
+
+    return tuple(sorted(row['name'] for row in dr.catalogue()))
+
+
+def named_motion_descriptors():
+    """Detached clock/configuration metadata; this never samples a motion."""
+    return deepcopy(NAMED_MOTION_FIELDS)
 
 
 @lru_cache(maxsize=1)
@@ -51,15 +73,16 @@ class Motion:
             raise ValueError("Native DanceRudiments must use 64 pips per beat")
         self.config = config
         self.kind = config.get("kind", "named")
-        self.rate = number(config.get("rate", 1), "motion rate", minimum=0.00001)
-        self.phase = number(config.get("phase_beats", 0), "phase")
-        self.origin = number(config.get("origin_beat", 0), "motion origin")
+        self.rate = number(config.get("rate", NAMED_MOTION_FIELDS['rate']['default']), "motion rate",
+                           minimum=NAMED_MOTION_FIELDS['rate']['minimum'])
+        self.phase = number(config.get("phase_beats", NAMED_MOTION_FIELDS['phase_beats']['default']), "phase")
+        self.origin = number(config.get("origin_beat", NAMED_MOTION_FIELDS['origin_beat']['default']), "motion origin")
         self.file = file_ref(config["file"], base) if "file" in config else None
         self.evidence = {"native": native_identity(), "config": config, "file": self.file}
         self.files = [self.file] if self.file else []
         self.pattern = config.get("pattern")
         self.recording = None
-        if config.get("repeat_clock", "continuous") not in {"source", "continuous"}:
+        if config.get("repeat_clock", NAMED_MOTION_FIELDS['repeat_clock']['default']) not in NAMED_MOTION_FIELDS['repeat_clock']['choices']:
             raise ValueError("repeat_clock must be source or continuous")
         if self.kind == "composite":
             if not 1 <= len(config["channels"]) <= 3:
@@ -84,7 +107,7 @@ class Motion:
             self.origin = clock.beat_at(match["start_seconds"] + offset)
             self.window = (match["start_seconds"] + offset, match["end_seconds"] + offset)
         if self.kind in {"named", "match"}:
-            if self.pattern not in {x["name"] for x in dr.catalogue()}:
+            if self.pattern not in native_motion_names():
                 raise ValueError(f"Unknown native movement: {self.pattern}")
         elif self.kind == "recording":
             from dancerudiments_authoring.recording import load_recording

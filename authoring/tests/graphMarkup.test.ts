@@ -10,14 +10,14 @@ import type {Document} from '../src/model.ts';
 let server:ViteDevServer,Editor:ComponentType<any>;
 before(async()=>{
  server=await createServer({configFile:false,root:fileURLToPath(new URL('..',import.meta.url)),
-   logLevel:'error',optimizeDeps:{noDiscovery:true,include:[]},server:{middlewareMode:true,hmr:false,watch:null}});
+   logLevel:'error',optimizeDeps:{noDiscovery:true,include:[]},server:{middlewareMode:true,hmr:false,ws:false,watch:null}});
  Editor=(await server.ssrLoadModule('/src/EffectGraphEditor.tsx')).EffectGraphEditor;
 });
 after(async()=>{await server?.close();});
 const render=(project:Document)=>renderToStaticMarkup(createElement(Editor,{project,
  validation:{phase:'valid',message:'Native check complete'},
  onValidate(){},onInit(){},onSource(){},onAdd(){},onRewire(){},onInputs(){},
- onOpacity(){},onBlur(){},onProgress(){},onOutput(){},onRemove(){}}));
+ onNativeEdit(){return true;},onOutput(){},onRemove(){}}));
 const sources=[{id:'frame',type:'source'},{id:'background',type:'source'}];
 function noNestedButtons(markup:string){
  let depth=0;
@@ -37,6 +37,9 @@ test('graph markup exposes named ports, explicit joins and input selectors witho
    assert.ok(markup.includes(label),label);
  assert.match(markup,/aria-label="Select reveal, transition, graph output"/);
  assert.match(markup,/RGBA8/);
+ assert.match(markup,/Native parameter and motion editor/);
+ assert.match(markup,/Loading native parameter definitions/);
+ assert.doesNotMatch(markup,/>Output opacity<input|>Blur radius \(px\)<input/);
 });
 
 test('variable inputs expose native order and enforce the minimum in remove controls',()=>{

@@ -303,6 +303,9 @@ def completed_style_report(graph, nodes, result, *, context=None):
     }
 
 
+STYLE_DRIVER_LIMIT = 65536
+
+
 def style_driver_interval(interval):
     """Adapt only extended style ranges to the existing driver's [0,1] output.
 
@@ -314,9 +317,9 @@ def style_driver_interval(interval):
     if not isinstance(interval, (list, tuple)) or len(interval) != 2:
         raise ValueError('style control range must be [minimum, maximum]')
     lower, upper = interval
-    if (any(type(v) not in (int, float) or not math.isfinite(v) or abs(v) > 65536 for v in interval)
+    if (any(type(v) not in (int, float) or not math.isfinite(v) or abs(v) > STYLE_DRIVER_LIMIT for v in interval)
             or lower >= upper):
-        raise ValueError('style control range must be increasing, finite and within [-65536, 65536]')
+        raise ValueError(f'style control range must be increasing, finite and within [-{STYLE_DRIVER_LIMIT}, {STYLE_DRIVER_LIMIT}]')
     return (lower, upper) if lower < -10000 or upper > 10000 else None
 
 

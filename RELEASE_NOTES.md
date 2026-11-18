@@ -1,3 +1,22 @@
+# FrameRudiments M10.3 authoring candidate (unreleased)
+
+- Generate parameter forms from native metadata for all fourteen graph kinds,
+  with existing palette/band, vector/colour, timing and chain component paths.
+- Add native motion binding forms for released named motions and existing
+  pinned sources, including categorical choices and ordered relative controls.
+- Validate one immutable native proposal before adding one undo entry; fence
+  asynchronous responses to the entire draft/sidecar snapshot and selected target.
+- Preserve source clocks, pins, graph topology and shader authority. Validate
+  actual HTTP/TypeScript ZIP exports against independent native renders in
+  22 synthetic cases / 88 byte-exact RGB8 frame comparisons.
+- Extend authoring CI and source-package qualification. Exact-candidate CI and
+  browser interaction require their own observed results. See
+  [the M10.3 guide](docs/authoring-controls-m10-3.md); M10.4 is next.
+- Correct the inherited GPU-isolation test's obsolete direct-pytest assertion,
+  and rehash pinned inputs on Windows preview reuse where creation-time/last-
+  write metadata can miss a same-length rewrite. The Windows fallback adds disk
+  I/O; POSIX retains its existing metadata fast path.
+
 # FrameRudiments M10.1 authoring candidate (unreleased)
 
 - Introduce a topologically arranged executable `effect_graph` canvas in the

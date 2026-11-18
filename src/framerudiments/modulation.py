@@ -5,6 +5,7 @@ accumulator: any encoded frame can be rendered alone with identical pixels.
 """
 
 import math
+from copy import deepcopy
 
 from .io import fields, number, integer
 from .motion import Motion
@@ -70,6 +71,37 @@ GRADIENT_TARGET_ALIASES = {
 }
 MAX_MODULATORS = 32
 
+# The renderer and generated authoring forms share these field contracts. The
+# descriptors contain no oscillator or sampling state: Motion and _Modulator
+# remain the sole source of movement, transfer curves and source-clock timing.
+MODULATOR_FIELDS = {
+    'id': {'type': 'text', 'default': '', 'max_length': 64},
+    'axis': {'type': 'enum', 'default': 0, 'choices': [0]},
+    'range': {'type': 'number_pair', 'default': [-1, 1], 'range': [-10000, 10000]},
+    'curve': {'type': 'enum', 'default': 'linear', 'choices': sorted(CURVES)},
+    'steps': {'type': 'integer', 'default': 0, 'range': [0, 128], 'excluded': [1]},
+    'power': {'type': 'number', 'default': 1, 'range': [.01, 20]},
+    'invert': {'type': 'boolean', 'default': False, 'choices': [False, True]},
+    'combine': {'type': 'enum', 'default': 'set', 'choices': sorted(BLENDS)},
+    'weight': {'type': 'number', 'default': 1, 'range': [0, 1]},
+    'lag_frames': {'type': 'integer', 'default': 0, 'range': [0, 600], 'units': 'frames'},
+    'smoothing_frames': {'type': 'integer', 'default': 0, 'range': [0, 120], 'units': 'frames'},
+    'deadzone': {'type': 'number', 'default': 0, 'range': [0, .99]},
+    'sample_stride': {'type': 'integer', 'default': 1, 'range': [1, 60], 'units': 'frames'},
+}
+
+
+def modulation_descriptors():
+    """Detached native driver-field metadata for tools and authoring clients."""
+    return deepcopy(MODULATOR_FIELDS)
+
+
+def _driver_number(config, key, label):
+    contract = MODULATOR_FIELDS[key]
+    validate = integer if contract['type'] == 'integer' else number
+    lower, upper = contract['range']
+    return validate(config.get(key, contract['default']), label, minimum=lower, maximum=upper)
+
 
 def _clamp(v):
     return max(0.0, min(1.0, v))
@@ -129,8 +161,8 @@ class _Modulator:
         )
         if not isinstance(config.get("motion"), dict):
             raise ValueError("Modulator needs an independent DanceRudiment motion object")
-        self.id = config.get("id", "")
-        if not isinstance(self.id, str) or len(self.id) > 64:
+        self.id = config.get("id", MODULATOR_FIELDS['id']['default'])
+        if not isinstance(self.id, str) or len(self.id) > MODULATOR_FIELDS['id']['max_length']:
             raise ValueError("Modulator id must be a short string")
         self.motion = Motion(config["motion"], project.base, project.clock)
         self.target = GRADIENT_TARGET_ALIASES.get(config.get("target"), config.get("target"))
@@ -142,40 +174,39 @@ class _Modulator:
         if self.scope == "visual" and self.property not in VISUAL_RANGES:
             raise ValueError(f"Unknown visual modulation property: {self.property}")
         dim = self.motion.value_dimensions
-        axis = config.get("axis", 0)
+        axis = config.get("axis", MODULATOR_FIELDS['axis']['default'])
         if isinstance(axis, str):
             if axis not in dim:
                 raise ValueError(f"Unknown modulator source axis: {axis}")
             axis = dim.index(axis)
         self.axis = integer(axis, "modulation axis", maximum=len(dim) - 1)
-        interval = config.get("range", [-1, 1])
+        interval = config.get("range", MODULATOR_FIELDS['range']['default'])
         if not isinstance(interval, (list, tuple)) or len(interval) != 2:
             raise ValueError("Modulation range must be [minimum, maximum]")
         self.lower, self.upper = (
-            number(v, "modulation bound", minimum=-10000, maximum=10000) for v in interval
+            number(v, "modulation bound", minimum=MODULATOR_FIELDS['range']['range'][0],
+                   maximum=MODULATOR_FIELDS['range']['range'][1]) for v in interval
         )
         if self.upper <= self.lower:
             raise ValueError("Modulation range must be increasing")
-        self.curve = config.get("curve", "linear")
+        self.curve = config.get("curve", MODULATOR_FIELDS['curve']['default'])
         if self.curve not in CURVES:
             raise ValueError("Unknown modulator transfer curve")
-        self.steps = integer(config.get("steps", 0), "modulator steps", minimum=0, maximum=128)
-        if self.steps == 1:
+        self.steps = _driver_number(config, 'steps', 'modulator steps')
+        if self.steps in MODULATOR_FIELDS['steps']['excluded']:
             raise ValueError("Modulator steps must be zero or >=2")
-        self.power = number(config.get("power", 1), "modulator power", minimum=0.01, maximum=20)
-        self.invert = config.get("invert", False)
+        self.power = _driver_number(config, 'power', 'modulator power')
+        self.invert = config.get("invert", MODULATOR_FIELDS['invert']['default'])
         if not isinstance(self.invert, bool):
             raise ValueError("Modulator invert must be boolean")
-        self.combine = config.get("combine", "set")
+        self.combine = config.get("combine", MODULATOR_FIELDS['combine']['default'])
         if self.combine not in BLENDS:
             raise ValueError("Unknown modulator combination")
-        self.weight = number(config.get("weight", 1), "modulator weight", minimum=0, maximum=1)
-        self.lag = integer(config.get("lag_frames", 0), "modulator lag", minimum=0, maximum=600)
-        self.smoothing = integer(
-            config.get("smoothing_frames", 0), "modulator smoothing", minimum=0, maximum=120
-        )
-        self.stride = integer(config.get("sample_stride", 1), "modulator stride", minimum=1, maximum=60)
-        self.deadzone = number(config.get("deadzone", 0), "modulator deadzone", minimum=0, maximum=0.99)
+        self.weight = _driver_number(config, 'weight', 'modulator weight')
+        self.lag = _driver_number(config, 'lag_frames', 'modulator lag')
+        self.smoothing = _driver_number(config, 'smoothing_frames', 'modulator smoothing')
+        self.stride = _driver_number(config, 'sample_stride', 'modulator stride')
+        self.deadzone = _driver_number(config, 'deadzone', 'modulator deadzone')
         self.context_at = context_at
         self.evidence = dict(
             id=self.id,

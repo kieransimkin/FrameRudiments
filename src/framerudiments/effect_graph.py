@@ -11,24 +11,24 @@ from collections.abc import Mapping
 from math import isfinite
 from PIL import Image, ImageColor
 
+from .effect_graph_parameters import GENERIC_DEFAULTS, generic_control_bounds, graph_parameter_descriptors
+
 from .effect_graph_fields import (
     FIELD_CONTROLS, FIELD_ENUMS, FIELD_FIELDS, field_capabilities,
     field_control_apply, field_control_base, field_control_valid,
-    field_parameter_descriptors, render_procedural_field, validate_field,
+    render_procedural_field, validate_field,
 )
 from .effect_graph_raster import (
     RASTER_CONTROLS, RASTER_ENUMS, RASTER_FIELDS, raster_capabilities,
-    raster_control_apply, raster_control_base, raster_parameter_descriptors,
-    render_raster_with_alpha, validate_raster,
+    raster_control_apply, raster_control_base, render_raster_with_alpha, validate_raster,
 )
 from .effect_graph_spatial import (
     WARP_CONTROLS, WARP_ENUMS, WARP_FIELDS, spatial_capabilities,
-    spatial_control_apply, spatial_control_base, spatial_parameter_descriptors,
-    render_spatial_warp_with_alpha, spatial_is_identity, validate_spatial,
+    spatial_control_apply, spatial_control_base, render_spatial_warp_with_alpha, spatial_is_identity, validate_spatial,
 )
 from .effect_graph_blend import COMPOSITE_MODES, composite_blend
 from .effect_graph_style_contract import (
-    completed_style_report, graph_style_manifest, style_control_schema, style_node_report,
+    completed_style_report, graph_style_manifest, style_node_report,
 )
 from .effect_graph_layer_styles import (
     STYLE_CONTROLS, STYLE_ENUMS, STYLE_FIELDS, render_layer_style,
@@ -37,8 +37,7 @@ from .effect_graph_layer_styles import (
 )
 from .effect_graph_filter import (
     FILTER_FIELDS, FILTER_CONTROLS, FILTER_ENUMS, filter_capabilities,
-    filter_control_apply, filter_control_base, filter_parameter_descriptors,
-    render_filter, validate_filter,
+    filter_control_apply, filter_control_base, render_filter, validate_filter,
 )
 from .effect_graph_transitions import render_transition
 from .gl_transitions import GL_TRANSITION_FIELDS, validate_gl_transition
@@ -361,20 +360,26 @@ class EffectGraph:
             if 'wash_variant' in node.config and any(style != 'wash' for style in choices):
                 raise ValueError('wash transition settings require wash style')
 
-    def control_descriptors(self, node_id):
-        """Typed M6/M7 controls for authoring; other node descriptors remain separate."""
-        node = self.nodes.get(node_id)
-        if node is not None and node.kind == 'procedural_field':
-            return field_parameter_descriptors(node.config, input_count=len(node.inputs))
-        if node is not None and node.kind == 'raster_effect':
-            return raster_parameter_descriptors(node.config, input_count=len(node.inputs))
-        if node is not None and node.kind == 'spatial_warp':
-            return spatial_parameter_descriptors(node.config, input_count=len(node.inputs))
-        if node is not None and node.kind == 'filter':
-            return filter_parameter_descriptors(node.config)
-        if node is None or node.kind != 'layer_style':
-            raise ValueError('descriptor discovery requires a style, spatial, raster or procedural node')
-        return style_control_schema(node.config, input_count=len(node.inputs))
+    def control_descriptors(self, node_id, *, active_only=False):
+        """Detached native parameter metadata for every supported node kind."""
+        return graph_parameter_descriptors(self, node_id, active_only=active_only)
+
+    def apply_control_values(self, parameter_values):
+        """Apply native parameter paths to a new, fully validated static graph.
+
+        This uses the rendering resolver without a frame context, preserving
+        authored timing. Input configurations and nested fields remain untouched.
+        Transition chains retain their expanded addresses and discovery mapping;
+        authoring adapters own projection back to the original shorthand.
+        """
+        if not isinstance(parameter_values, Mapping):
+            raise ValueError('parameter_values must be a mapping')
+        configs = self._resolved_configs(parameter_values)
+        result = EffectGraph({'nodes': [deepcopy(configs.get(key, node.config))
+                                       for key, node in self.nodes.items()],
+                              'output': self.output})
+        result.chain_expansions = deepcopy(self.chain_expansions)
+        return result
 
     def field_manifest(self):
         """Detached M7.5 capabilities and controls for reachable generated fields."""
@@ -456,12 +461,7 @@ class EffectGraph:
             return ImageColor.getrgb(primary)[{'r': 0, 'g': 1, 'b': 2}[property_name[-1]]]
         if self.nodes[node_id].kind == 'transition' and property_name in GEOMETRY_RANGES:
             return config.get(property_name, 0 if property_name == 'wash_seed' else GEOMETRY_DEFAULTS[property_name])
-        return config.get(property_name, {'opacity': 1, 'mix': 1, 'feather': 0, 'tolerance': .1,
-                                          'softness': .1, 'despill': 0,
-                                          'progress': 0, 'threshold': .5, 'mask_gamma': 1,
-                                          'expand': 0, 'mask_opacity': 1,
-                                          'edge_expand': 0, 'edge_feather': 0, 'edge_decontaminate': 0,
-                                          'edge_radius': 3}.get(property_name, 0))
+        return config.get(property_name, GENERIC_DEFAULTS.get(property_name, 0))
 
     def backend_plan(self, source_surfaces, **kwargs):
         """Allocation-free, sample-specific backend/resource preflight (M8.1).
@@ -534,28 +534,7 @@ class EffectGraph:
                 continue
             if type(value) not in (float, int) or not isfinite(value):
                 raise ValueError('graph control must be finite numeric')
-            if node.kind == 'transition' and property_name in GEOMETRY_RANGES:
-                bounds = GEOMETRY_RANGES[property_name]
-            elif property_name.startswith('center.'):
-                bounds = (0, 1)
-            elif property_name.endswith(('.x', '.y')):
-                bounds = (-4096, 4096)
-            elif property_name.startswith(('key_color.', 'key_colors.')):
-                bounds = (0, 255)
-            elif property_name in {'expand', 'edge_expand'}:
-                bounds = (-64, 64)
-            elif property_name == 'feather' and node.kind == 'matte' or property_name == 'edge_feather':
-                bounds = (0, 128)
-            elif property_name == 'edge_radius':
-                bounds = (0.5, 16)
-            elif property_name == 'mask_gamma':
-                bounds = (0.1, 8)
-            elif property_name == 'time_seconds':
-                bounds = (0, 1e8)
-            elif property_name == 'time_delta_seconds':
-                bounds = (0, 3600)
-            else:
-                bounds = (0, 1)
+            bounds = generic_control_bounds(node.kind, property_name)
             if not bounds[0] <= value <= bounds[1]:
                 raise ValueError('graph control out of range')
             config = configs.setdefault(node_id, dict(node.config))

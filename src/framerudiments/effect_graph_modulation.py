@@ -7,9 +7,12 @@ from .modulation import _Modulator, _combine
 from .effect_graph_style_contract import remap_style_driver, style_driver_interval
 
 
+MAX_GRAPH_CONTROLS = 64
+
+
 class EffectGraphControls:
     def __init__(self, project, graph, configs, context_at):
-        if not isinstance(configs, list) or len(configs) > 64:
+        if not isinstance(configs, list) or len(configs) > MAX_GRAPH_CONTROLS:
             raise ValueError("effect_graph_controls must be a list of at most 64 bindings")
         if configs and graph is None:
             raise ValueError("effect_graph_controls requires effect_graph")

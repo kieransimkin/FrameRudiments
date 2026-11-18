@@ -81,7 +81,7 @@ def loopback(tmp_path):
         return result
 
     try:
-        yield SimpleNamespace(request=request, draft=draft, data=data, path=path, api=api,
+        yield SimpleNamespace(request=request, draft=draft, data=data, path=path, api=api, port=server.server_port,
                               owned=owned, cache=cache, directory=directory)
     finally:
         server.shutdown()
@@ -143,9 +143,9 @@ def test_bounded_request_shape_and_finite_json_rejected_before_native_prepare(lo
 @pytest.mark.parametrize('field,value', [
     ('audio', {'source': {'path': '/private/unpinned.wav', 'sha256': 'a' * 64}}),
     ('clock', {'bpm': 1, 'authority': 'changed', 'status': 'confirmed'}),
-    ('effect_graph_controls', []), ('effect_graph_backend', 'gpu'),
+    ('effect_graph_backend', 'gpu'),
 ])
-def test_source_clocks_controls_and_backend_remain_readonly(loopback, field, value):
+def test_source_clocks_and_backend_remain_readonly(loopback, field, value):
     draft = loopback.draft()
     draft[field] = value
     code, reply, _ = loopback.request(VALIDATE, {'project': draft})
@@ -173,7 +173,7 @@ def test_shader_admission_rejected_before_any_native_project_read(loopback, monk
 @pytest.mark.parametrize('field,value', [
     ('shader_path', '/private/other.frag'), ('shader_sha256', 'b' * 64), ('trusted_shader', True),
     ('shader_passes', [{'shader_path': '/private/pass.frag', 'shader_sha256': 'c' * 64}]),
-    ('max_pass_bytes', 4096), ('frame_index', 3), ('time_seconds', 4), ('time_delta_seconds', .2),
+    ('max_pass_bytes', 4096), ('frame_index', 3),
 ])
 def test_existing_shader_authority_is_readonly_in_nodes_and_chain_stages(nested, field, value):
     transition = {'transition_style': 'gl_transition', 'shader_path': 'admitted.frag',

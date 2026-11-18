@@ -5,9 +5,18 @@ Both suites still run on the real GPU CI runner and must not be skipped.
 """
 
 from pathlib import Path
+from shlex import split as shell_split
 
 
 CI = Path(__file__).resolve().parents[1] / ".github/workflows/ci.yml"
+
+
+def _xvfb_commands(section):
+    return [
+        shell_split(line.strip().removesuffix("\\").rstrip())
+        for line in section.splitlines()
+        if line.strip().startswith("xvfb-run ")
+    ]
 
 
 def test_gpu_mesh_and_projectm_run_in_separate_xvfb_processes():
@@ -21,12 +30,26 @@ def test_gpu_mesh_and_projectm_run_in_separate_xvfb_processes():
         "      - name: Verify both GPU suites ran without skipped tests", 1
     )
 
-    command = "xvfb-run -a python -X faulthandler -m pytest -vv -s"
-    assert mesh.count(command) == 1
-    assert legacy.count(command) == 1
-    assert gpu_job.count(command) == 2
+    # Each suite owns a fresh display and Python process, while the required
+    # wrapper owns its temporary-directory probe and unconditional cleanup.
+    # Faulthandler is inherited through the job environment rather than -X.
+    assert len(_xvfb_commands(gpu_job)) == 2
+    assert "PYTHONFAULTHANDLER: '1'" in gpu_job
+    for section in (mesh, legacy):
+        commands = _xvfb_commands(section)
+        assert len(commands) == 1
+        command = commands[0]
+        assert command[:3] == ["xvfb-run", "-a", "pwsh"]
+        assert "-NoLogo" in command and "-NoProfile" in command
+        assert command[command.index("-File") + 1] == "scripts/Invoke-Tests.ps1"
+        assert command[command.index("-Python") + 1] == "python"
+        assert "-vv" in command and "-s" in command
+        assert "set -euo pipefail" in section
+        assert "-m pytest" not in section
     assert "integration/test_music_spatial_gpu.py" in mesh
+    assert "integration/test_fire_volume_gpu.py" in mesh
     assert "--ignore=integration/test_music_spatial_gpu.py" in legacy
+    assert "--ignore=integration/test_fire_volume_gpu.py" in legacy
     assert "--junitxml=gpu-mesh-results.xml" in mesh
     assert "--junitxml=gpu-results.xml" in legacy
     assert "gpu-mesh-results.xml" in verification

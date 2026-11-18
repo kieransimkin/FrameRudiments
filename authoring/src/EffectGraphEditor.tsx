@@ -1,18 +1,19 @@
 /** M10.2 ordered RGBA8 connection authoring. Gestures are never exported. */
-import {useEffect,useMemo,useRef,useState,type ChangeEvent,type MouseEvent,type PointerEvent} from 'react';
+import {useEffect,useMemo,useRef,useState,type MouseEvent,type PointerEvent} from 'react';
 import './effect-graph-editor.css';
 import type {Document} from './model.ts';
 import {ADDABLE_EFFECTS,availableEffectSources,connectionIssue,effectInputContract,inspectEffectGraph,layoutEffectGraph,
   type AddableEffect,type EffectNode} from './graphEditor.ts';
 import {pendingConnectionText,selectGraphPort,type GraphEndpoint,type PendingConnection} from './graphInteraction.ts';
+import {GraphParameterEditor} from './GraphParameterEditor.tsx';
 
 export interface GraphValidationDisplay{phase:'none'|'checking'|'valid'|'invalid'|'unavailable';message:string;}
 interface Props {
- project:Document;revision?:object;validation:GraphValidationDisplay;onValidate:()=>void;
+ project:Document;revision?:object;sidecars?:Record<string,unknown>;validation:GraphValidationDisplay;onValidate:()=>void;
  onInit:()=>void;onSource:(id:string)=>void;
  onAdd:(type:AddableEffect,inputs?:string[],options?:{makeOutput?:boolean})=>void;
  onRewire:(target:string,index:number,source:string)=>void;onInputs:(target:string,inputs:string[])=>void;
- onOpacity:(id:string,value:number)=>void;onBlur:(id:string,value:number)=>void;onProgress:(id:string,value:number)=>void;
+ onNativeEdit?:(project:Document,revision:object)=>boolean;
  onOutput:(id:string)=>void;onRemove:(id:string)=>void;
 }
 const errorText=(error:unknown)=>error instanceof Error?error.message:'Graph operation failed';
@@ -21,8 +22,8 @@ const names:Record<AddableEffect,string>={copy:'Copy / fork',opacity:'Opacity',f
 const template=(kind:AddableEffect):EffectNode=>({id:'new-node',type:kind==='matte_transition'?'transition':kind,
  ...(kind==='matte_transition'?{transition_style:'matte'}:{})});
 
-export function EffectGraphEditor({project,revision=project,validation,onValidate,onInit,onSource,onAdd,onRewire,onInputs,
- onOpacity,onBlur,onProgress,onOutput,onRemove}:Props){
+export function EffectGraphEditor({project,revision=project,sidecars,validation,onValidate,onInit,onSource,onAdd,onRewire,onInputs,
+ onNativeEdit,onOutput,onRemove}:Props){
  const [selected,setSelected]=useState(''),[adding,setAdding]=useState<AddableEffect>('opacity');
  const [createInputs,setCreateInputs]=useState<string[]>([]),[makeOutput,setMakeOutput]=useState(true);
  const [newSource,setNewSource]=useState(''),[appendSource,setAppendSource]=useState('');
@@ -125,7 +126,6 @@ export function EffectGraphEditor({project,revision=project,validation,onValidat
    if(!active?.inputs)return;const next=[...active.inputs],other=index+direction;
    [next[index],next[other]]=[next[other],next[index]];act(()=>onInputs(active.id,next),'Input order changed.');
  };
- const setValue=(callback:(id:string,value:number)=>void,value:string)=>{if(active)act(()=>callback(active.id,Number(value)));};
  return <section className="fr-fx-editor" aria-label="Executable effect graph editor" onKeyDown={event=>{
    if(event.key==='Escape'&&(currentPending||drag.current)){event.preventDefault();cancel();}
  }}>
@@ -196,14 +196,7 @@ export function EffectGraphEditor({project,revision=project,validation,onValidat
            <button disabled={!active||graph!.nodes.length>=256} onClick={()=>active&&act(()=>onAdd('copy',[active.id],{makeOutput:false}),`Created a copy branch from ${active.id}.`)}>Fork copy</button>
            <button disabled={!canRemove} onClick={()=>active&&act(()=>{onRemove(active.id);setSelected('');})}>Remove terminal node</button></div>
          {active&&<>
-           <div className="fr-fx-inspector-fields">
-             <label>Output opacity<input type="number" min="0" max="1" step="0.05" value={typeof active.opacity==='number'?active.opacity:1}
-               onChange={(event:ChangeEvent<HTMLInputElement>)=>setValue(onOpacity,event.target.value)}/></label>
-             {active.type==='filter'&&<label>Blur radius (px)<input type="number" min="0" max="4" step="0.25" value={typeof active.filter_radius==='number'?active.filter_radius:1.5}
-               onChange={(event:ChangeEvent<HTMLInputElement>)=>setValue(onBlur,event.target.value)}/></label>}
-             {active.type==='transition'&&<label>Progress<input type="number" min="0" max="1" step="0.05" value={typeof active.progress==='number'?active.progress:0}
-               onChange={(event:ChangeEvent<HTMLInputElement>)=>setValue(onProgress,event.target.value)}/></label>}
-           </div>
+           <GraphParameterEditor project={project} revision={revision} sidecars={sidecars} node={activeId} onApply={onNativeEdit}/>
            <div className="fr-fx-port-details"><strong>Ordered input connections</strong>
              {!active.inputs?.length?<p>No inputs on this source.</p>:active.inputs.map((input,index)=><div className="fr-fx-input-row" key={index}>
                <label>{contract?.labels[index]??`input ${index+1}`}<select aria-label={`${active.id} ${contract?.labels[index]??`input ${index+1}`} source`} value={input}

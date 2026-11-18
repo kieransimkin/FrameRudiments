@@ -1,0 +1,47 @@
+/* Forms are generated from bounded native descriptors; only staged state is local. */
+.fr-parameter-editor{border-top:1px solid #35506b;margin-top:.6rem;padding-top:.4rem;min-width:0}
+.fr-parameter-editor label{font-size:.69rem;margin:.3rem 0;min-width:0}
+.fr-parameter-editor input:not([type=checkbox]),.fr-parameter-editor select{width:100%;min-width:0;font-size:.73rem;padding:.3rem .4rem}
+.fr-parameter-editor input[type=checkbox]{width:auto;min-width:0;margin:0}
+.fr-parameter-editor button{font-size:.67rem;padding:.25rem .45rem}
+.fr-parameter-editor button:disabled{opacity:.5}
+.fr-param-heading{display:flex;align-items:baseline;justify-content:space-between;gap:.5rem;margin:.4rem 0}
+.fr-param-heading h3{margin:0;font-size:.8rem;color:#e1eff6}
+.fr-param-heading>span{font-size:.62rem;color:#b2c8d9;white-space:nowrap}
+.fr-parameter-editor .fr-param-help{color:#b2c8d9;font-size:.68rem}
+.fr-param-status{display:flex;flex-direction:column;align-items:flex-start;gap:.5rem;border:1px solid #3d677c;border-radius:5px;padding:.55rem;margin:.3rem 0;font-size:.7rem;color:#d4e5ee;line-height:1.5}
+.fr-param-status.error,.fr-param-error{color:#ffd2c2}.fr-param-status.error{border-color:#9e6c54}
+.fr-parameter-editor .fr-param-toggle{display:flex;flex-direction:row;align-items:center;gap:.4rem;font-size:.67rem}
+.fr-param-group{border-bottom:1px solid #35506b}
+.fr-param-group>summary{cursor:pointer;padding:.55rem .1rem;color:#c8ebe6;font-size:.73rem;font-weight:650;overflow-wrap:anywhere}
+.fr-param-group>summary>span{float:right;font-size:.62rem;font-weight:400;color:#a9c3d3;margin:.1rem .3rem}
+.fr-param-row,.fr-param-readonly{padding:.25rem 0 .5rem;border-top:1px solid #2b455c}
+.fr-param-field{display:flex;flex-direction:column;gap:.15rem;min-width:0}
+.fr-param-field label{margin:.2rem 0}.fr-param-field small,.fr-param-pair small{font-size:.6rem;color:#9fb8ca;line-height:1.4;overflow-wrap:anywhere}
+.fr-param-field.fr-param-boolean{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.fr-param-boolean small{grid-column:1/-1}.fr-param-boolean input{margin-right:.3rem}
+.fr-param-actions{display:flex;flex-wrap:wrap;gap:.3rem;align-items:center;margin-top:.3rem}
+.fr-param-actions>span{font-size:.57rem;color:#9ec7c1;margin-left:auto}
+.fr-param-readonly{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:.25rem;color:#b0c1ce;font-size:.68rem}
+.fr-param-readonly strong{font-weight:500;overflow-wrap:anywhere}.fr-param-readonly output{max-width:9rem;overflow-wrap:anywhere;color:#d6e3ed}
+.fr-param-readonly small{grid-column:1/-1;font-size:.61rem;color:#a1b5c6;line-height:1.45}
+.fr-native-bindings{margin-top:.65rem;padding-top:.4rem;border-top:1px solid #426178}
+.fr-binding-list{list-style:none;padding:0;margin:.45rem 0}.fr-binding-list li{border:1px solid #3c5870;border-radius:4px;padding:.4rem;margin:.3rem 0}
+.fr-binding-list li>strong,.fr-binding-list li>span{display:block;overflow-wrap:anywhere;font-size:.68rem}
+.fr-binding-list li>span{color:#acc4d5;font-size:.62rem;margin-top:.2rem}
+.fr-binding-form{margin-top:.6rem;background:#102236;border-radius:5px}
+.fr-binding-form>fieldset{border:1px solid #548482;border-radius:5px;padding:.5rem .55rem}
+.fr-binding-form legend{font-size:.72rem;padding:0 .2rem;color:#aee4da}
+.fr-binding-form fieldset:disabled{opacity:.75}
+.fr-binding-fields{display:grid;grid-template-columns:minmax(0,1fr);gap:.4rem;margin:.5rem 0}
+.fr-param-pair{border:1px solid #36516a;border-radius:4px;padding:.35rem;margin:.35rem 0}
+.fr-param-pair>div{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.4rem}
+.fr-param-pair label{margin:.1rem 0}.fr-param-pair legend{font-size:.67rem;color:#c5dce9}
+.fr-motion-settings{margin:.5rem 0;padding:.35rem;border:1px solid #36516a;border-radius:4px}
+.fr-motion-settings summary{cursor:pointer;font-size:.67rem;color:#b2d7df;margin-bottom:.2rem}
+.fr-motion-settings .fr-param-field{margin:.3rem 0}
+.fr-binding-choices{border:1px solid #36516a;border-radius:4px;padding:.35rem;margin:.5rem 0}
+.fr-binding-choice{display:flex;gap:.25rem;align-items:end;margin:.3rem 0}.fr-binding-choice label{flex:1;margin:0}
+.fr-binding-choice button{height:1.75rem;padding:.2rem .3rem;font-size:.61rem}
+.fr-fx-workspace{grid-template-columns:minmax(0,1fr) minmax(270px,32%)}
+@media(max-width:760px){.fr-fx-workspace{grid-template-columns:minmax(0,1fr)}}

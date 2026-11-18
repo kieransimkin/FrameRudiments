@@ -6,7 +6,8 @@
 **Milestone numbering:** this original granular plan retains its M10 GPU / M11
 editor numbering. Current implementation increments use the consolidated
 roadmap, where [M10.2 is connection authoring](authoring-graph-m10-2.md) and
-M10.3 is generated parameter and DanceNotion control editing. The original
+[M10.3 supplies generated parameter and DanceNotion control editing](authoring-controls-m10-3.md).
+M10.4 transition preview work is next. The original
 future port-format and backend requirements below are not claims about the
 currently executable RGBA8 graph.
 

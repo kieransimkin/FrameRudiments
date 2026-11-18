@@ -139,8 +139,8 @@ and removes its owned input workspace. The authoring CI workflow runs the same
 qualifier. This CPU command requires no browser, GPU, FFmpeg or private media;
 it does not substitute for interactive browser or device qualification.
 
-The next planned authoring increment is **M10.3: automatically generated
-parameter and DanceNotion control editors** in the
+The subsequent **M10.3 generated parameter and DanceNotion control editors**
+are now an [implementation candidate](authoring-controls-m10-3.md) in the
 [unified roadmap](unified-effects-transitions-rendering-roadmap.md#m10--authoring-interface).
 M10.4 transition preview work and M10.5 broader round-trip/undo-redo qualification
 remain separately scoped. The older granular plan uses different milestone

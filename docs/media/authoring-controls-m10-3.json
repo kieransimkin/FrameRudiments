@@ -1,0 +1,988 @@
+{
+  "schema": "framerudiments.authoring-controls-qualification.v1",
+  "passed": true,
+  "runtime": {
+    "python": "3.12.14",
+    "node": "v24.22.1",
+    "dancerudiments": "0.3.0",
+    "pillow": "13.0.0"
+  },
+  "scope": {
+    "actual_typescript_operations": true,
+    "actual_same_origin_http": true,
+    "actual_export_zip": true,
+    "native_project_validation": true,
+    "native_compositor": true,
+    "named_and_recorded_native_motion": true,
+    "gpu": false,
+    "browser": false,
+    "perceptual_approval": false,
+    "encoded_video": false
+  },
+  "pixel_comparison": {
+    "format": "RGB8",
+    "maximum_channel_error": 0,
+    "reference": "independently authored native projects"
+  },
+  "frames": [
+    0,
+    5,
+    17,
+    5
+  ],
+  "cases": [
+    {
+      "name": "opacity",
+      "parameters": 1,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "868ba96d05fcc0a1bc84c0163a973d2d3ccd89fd15433fadfd9a8f4c51905844",
+      "frame_sha256": [
+        "4359d8a867e8cc72d2d9418a2ba8c628c67352f0119f990d43728baa456e5644",
+        "4359d8a867e8cc72d2d9418a2ba8c628c67352f0119f990d43728baa456e5644",
+        "4359d8a867e8cc72d2d9418a2ba8c628c67352f0119f990d43728baa456e5644",
+        "4359d8a867e8cc72d2d9418a2ba8c628c67352f0119f990d43728baa456e5644"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "copy_opacity",
+      "parameters": 1,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "d4dce80ed27827ee162e007d1adb24f390c67b1da21bffd45d5389fde3bc8459",
+      "frame_sha256": [
+        "ad8a69f4d626ab7fe896815ded6eccdb106ad619c2f69761e8e77b005eb7e7a6",
+        "ad8a69f4d626ab7fe896815ded6eccdb106ad619c2f69761e8e77b005eb7e7a6",
+        "ad8a69f4d626ab7fe896815ded6eccdb106ad619c2f69761e8e77b005eb7e7a6",
+        "ad8a69f4d626ab7fe896815ded6eccdb106ad619c2f69761e8e77b005eb7e7a6"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "source_opacity",
+      "parameters": 1,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "1ae6114fe3a2eee6bc481f5d786130856df553210868380d2204f1dca40a306f",
+      "frame_sha256": [
+        "eea09d2f0ec2e0fc9e2e137a88583162bfbbd74a043c427563e6f56bb317021e",
+        "eea09d2f0ec2e0fc9e2e137a88583162bfbbd74a043c427563e6f56bb317021e",
+        "eea09d2f0ec2e0fc9e2e137a88583162bfbbd74a043c427563e6f56bb317021e",
+        "eea09d2f0ec2e0fc9e2e137a88583162bfbbd74a043c427563e6f56bb317021e"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "matte_invert",
+      "parameters": 8,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "f00d72b1ddc70dc09290be3ee77290dd8c6ba599de858e54030421d4c1bdcc5a",
+      "frame_sha256": [
+        "a173e335832daee7328a29c8be5480656c26a625a289afb0c748bb23cc3cafcc",
+        "a173e335832daee7328a29c8be5480656c26a625a289afb0c748bb23cc3cafcc",
+        "a173e335832daee7328a29c8be5480656c26a625a289afb0c748bb23cc3cafcc",
+        "a173e335832daee7328a29c8be5480656c26a625a289afb0c748bb23cc3cafcc"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "chroma_colour",
+      "parameters": 19,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "7271c09fd9817871aeceda90092ae7b7f96eb5d74c6c8743b20fe4cd54f410fa",
+      "frame_sha256": [
+        "80873d6d43ed995029701e14ea178dd82a04708ff0b2e60efae1a2bc340cb236",
+        "80873d6d43ed995029701e14ea178dd82a04708ff0b2e60efae1a2bc340cb236",
+        "80873d6d43ed995029701e14ea178dd82a04708ff0b2e60efae1a2bc340cb236",
+        "80873d6d43ed995029701e14ea178dd82a04708ff0b2e60efae1a2bc340cb236"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "chromatic_vector",
+      "parameters": 7,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "bd00b3cb6d49a4f52b2bbc6083d961950b44d8ab82061d4431a0b1fcbe99f1d9",
+      "frame_sha256": [
+        "add17672c9a1858f5d5ba38be7ebb319f8b762eedea5f07a705befb35dc1434b",
+        "add17672c9a1858f5d5ba38be7ebb319f8b762eedea5f07a705befb35dc1434b",
+        "add17672c9a1858f5d5ba38be7ebb319f8b762eedea5f07a705befb35dc1434b",
+        "add17672c9a1858f5d5ba38be7ebb319f8b762eedea5f07a705befb35dc1434b"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "spectral_band",
+      "parameters": 17,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "1821ab3da777ba20a0ea7cbb785ea4fca76f5bd614bb2d2567bf19733a31f712",
+      "frame_sha256": [
+        "f75ea3cfb0786c9bfd4aa9283d99469dde26d5e3823b2ae6834690b4331b2fb7",
+        "f75ea3cfb0786c9bfd4aa9283d99469dde26d5e3823b2ae6834690b4331b2fb7",
+        "f75ea3cfb0786c9bfd4aa9283d99469dde26d5e3823b2ae6834690b4331b2fb7",
+        "f75ea3cfb0786c9bfd4aa9283d99469dde26d5e3823b2ae6834690b4331b2fb7"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "composite_mode",
+      "parameters": 2,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "ed2eddcf91a27d4bef11cbe4d5fd91ff4202f4d25f4cab707cef29482ffb1084",
+      "frame_sha256": [
+        "79147c58e41c1c7a81206f5bff88f4890bc45f9bc62f592f0a593e4d7c72ab74",
+        "79147c58e41c1c7a81206f5bff88f4890bc45f9bc62f592f0a593e4d7c72ab74",
+        "79147c58e41c1c7a81206f5bff88f4890bc45f9bc62f592f0a593e4d7c72ab74",
+        "79147c58e41c1c7a81206f5bff88f4890bc45f9bc62f592f0a593e4d7c72ab74"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "transition_timing",
+      "parameters": 15,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "e377ff6d40288ddbcf797132661907cb3ae08cb11ad88d93e7b7b55991946137",
+      "frame_sha256": [
+        "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e",
+        "44a094399f9be265b92f935efe548b1eca1e7a89a6951306b909f886677d7961",
+        "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773",
+        "44a094399f9be265b92f935efe548b1eca1e7a89a6951306b909f886677d7961"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "gradient_stop",
+      "parameters": 73,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "98330ebb2c7ef68e14bfee1357b9cd75763600bec0f2a0206005e830277b3675",
+      "frame_sha256": [
+        "6fa727b057fe202cd16452c4c494d1f8580b52f1b223b5aef2acd9c7b523c36f",
+        "6fa727b057fe202cd16452c4c494d1f8580b52f1b223b5aef2acd9c7b523c36f",
+        "6fa727b057fe202cd16452c4c494d1f8580b52f1b223b5aef2acd9c7b523c36f",
+        "6fa727b057fe202cd16452c4c494d1f8580b52f1b223b5aef2acd9c7b523c36f"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "spatial_vector",
+      "parameters": 22,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "9d803628a755136d20a7bc1dbce987078ace40a72ccfa0fdea9ef3d64439b3b4",
+      "frame_sha256": [
+        "fc1f5f7e47c1dce3a7a976feb94d8ff9504b52076f42a99179f1c4450355a2cb",
+        "fc1f5f7e47c1dce3a7a976feb94d8ff9504b52076f42a99179f1c4450355a2cb",
+        "fc1f5f7e47c1dce3a7a976feb94d8ff9504b52076f42a99179f1c4450355a2cb",
+        "fc1f5f7e47c1dce3a7a976feb94d8ff9504b52076f42a99179f1c4450355a2cb"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "raster_integer",
+      "parameters": 43,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "acb03a2a501161387092bb3682bc674bc265c66bbc419d4bc7ab28011fe75ba7",
+      "frame_sha256": [
+        "6117b7e13e8e75ba4ff928e01416e401b52f84d6e19262162d0717b83addf83c",
+        "6117b7e13e8e75ba4ff928e01416e401b52f84d6e19262162d0717b83addf83c",
+        "6117b7e13e8e75ba4ff928e01416e401b52f84d6e19262162d0717b83addf83c",
+        "6117b7e13e8e75ba4ff928e01416e401b52f84d6e19262162d0717b83addf83c"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "field_integer",
+      "parameters": 67,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "32f85a5d58ed83d2ef9ea0b40c7802b6821824718b71ad862e0583348d1449c2",
+      "frame_sha256": [
+        "f59b0ce5f841238825bb6096183299c0cb5ee2139c88ae3a79627e1aaadd3b8f",
+        "f59b0ce5f841238825bb6096183299c0cb5ee2139c88ae3a79627e1aaadd3b8f",
+        "f59b0ce5f841238825bb6096183299c0cb5ee2139c88ae3a79627e1aaadd3b8f",
+        "f59b0ce5f841238825bb6096183299c0cb5ee2139c88ae3a79627e1aaadd3b8f"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "filter_subtype",
+      "parameters": 7,
+      "operations": 2,
+      "rejected_stale_responses": 2,
+      "native_validation": true,
+      "export_zip_sha256": "d43048cac8e288f3f029ac4211c940da37ff7ae1f4d709d7a3056f8463bf47d9",
+      "frame_sha256": [
+        "c9b5183615b506aa82be71487d780f29164ef8d751852dde3c189461c9408206",
+        "c9b5183615b506aa82be71487d780f29164ef8d751852dde3c189461c9408206",
+        "c9b5183615b506aa82be71487d780f29164ef8d751852dde3c189461c9408206",
+        "c9b5183615b506aa82be71487d780f29164ef8d751852dde3c189461c9408206"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "chain_stage",
+      "parameters": 7,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "f0bbf57aeb35cdcb38d3af9aac0bb7785526157ea0486c9054fd124f725dc10d",
+      "frame_sha256": [
+        "01752979c2f5da82f8b6342055cee15b70a9227d87044d4f3eb62c66f1b9e367",
+        "01752979c2f5da82f8b6342055cee15b70a9227d87044d4f3eb62c66f1b9e367",
+        "01752979c2f5da82f8b6342055cee15b70a9227d87044d4f3eb62c66f1b9e367",
+        "01752979c2f5da82f8b6342055cee15b70a9227d87044d4f3eb62c66f1b9e367"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "chain_input",
+      "parameters": 1,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "245f68613096c8430ea28aef6b8b1bcf4655b5e8f378d42ed1639da4b494abdb",
+      "frame_sha256": [
+        "d6cac5afd368ef636083ac0d5da17d67a1e4be14e468220c3833362acd9aafe9",
+        "d6cac5afd368ef636083ac0d5da17d67a1e4be14e468220c3833362acd9aafe9",
+        "d6cac5afd368ef636083ac0d5da17d67a1e4be14e468220c3833362acd9aafe9",
+        "d6cac5afd368ef636083ac0d5da17d67a1e4be14e468220c3833362acd9aafe9"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "named_binding",
+      "parameters": 1,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "0de70e66eb7bc0983c5dbf58d37cf9f18837213fbeef17e6044cf236efda3e5a",
+      "frame_sha256": [
+        "a5a3164b8853dc41bb2bc3d237ef919cf551d33ecebe0f126ec8f6055b4ce7ff",
+        "f6484faa28b93382789d897bd898bd90dca7815f99bbe7a90680fdd2f638c2b6",
+        "f8d42a2ee8f0b08c339811d23eb08d43f7c56dc91c6f48ffcd3ec61e6b184783",
+        "f6484faa28b93382789d897bd898bd90dca7815f99bbe7a90680fdd2f638c2b6"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "recording_binding",
+      "parameters": 1,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "d398dd0da95f28c3477265538790f052c79a6b5f1879c5c2c07d003732c88a0d",
+      "frame_sha256": [
+        "ab2f389764d09eb309c12f3668507a13cf3f5e0718e6ffae8fdca34bc7f10559",
+        "a817740e2432e8d3f440451cd77598bcaed1d5e8161f45c0b0f4615abc8717a9",
+        "a817740e2432e8d3f440451cd77598bcaed1d5e8161f45c0b0f4615abc8717a9",
+        "a817740e2432e8d3f440451cd77598bcaed1d5e8161f45c0b0f4615abc8717a9"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "categorical_binding",
+      "parameters": 7,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "016f23091adbe0a69458d92526615b75ddc4b79c7c4a37009051eb7cb332aadd",
+      "frame_sha256": [
+        "e51fb858c3d67cacd680a69e58629091c575bb47bc3e1ff18cc0ec917ef3327f",
+        "02f9d057164329e5fc0a13672158f0d00175ea964dee2b5b92533085116b18a6",
+        "02f9d057164329e5fc0a13672158f0d00175ea964dee2b5b92533085116b18a6",
+        "02f9d057164329e5fc0a13672158f0d00175ea964dee2b5b92533085116b18a6"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "edited_binding",
+      "parameters": 1,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "3e5c5cbde41236327883e89739dc33bb716e4cd88b4fd6626bc0ba6f6d6462ed",
+      "frame_sha256": [
+        "4397185fe14d13a7b1179cdadc6c6451f82253458f15dc07ad8ddec0e1b0431d",
+        "c40873547fd53220fa39feaf4c85e010e3d2e988f4bf4c2c75ac0f2e9458446a",
+        "c40873547fd53220fa39feaf4c85e010e3d2e988f4bf4c2c75ac0f2e9458446a",
+        "c40873547fd53220fa39feaf4c85e010e3d2e988f4bf4c2c75ac0f2e9458446a"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "removed_binding",
+      "parameters": 1,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "f5d4f0aebad3d9149368776e5157a2e08439b491a0102474825b10231104ff4b",
+      "frame_sha256": [
+        "a5a3164b8853dc41bb2bc3d237ef919cf551d33ecebe0f126ec8f6055b4ce7ff",
+        "a5a3164b8853dc41bb2bc3d237ef919cf551d33ecebe0f126ec8f6055b4ce7ff",
+        "a5a3164b8853dc41bb2bc3d237ef919cf551d33ecebe0f126ec8f6055b4ce7ff",
+        "a5a3164b8853dc41bb2bc3d237ef919cf551d33ecebe0f126ec8f6055b4ce7ff"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    },
+    {
+      "name": "reordered_binding",
+      "parameters": 1,
+      "operations": 1,
+      "rejected_stale_responses": 1,
+      "native_validation": true,
+      "export_zip_sha256": "4d3a327b6c0946afa08680a21bad5919e65ae5424f8138a7334044eed12bc29d",
+      "frame_sha256": [
+        "1102c7c436db29a7a24bfb7f16dab3283dac5481f5dd90363e1ce03e3596f6b3",
+        "4a57f99207f7674c072b52276bce6e6e92d605245e9489b1a689cb56334c7910",
+        "4a57f99207f7674c072b52276bce6e6e92d605245e9489b1a689cb56334c7910",
+        "4a57f99207f7674c072b52276bce6e6e92d605245e9489b1a689cb56334c7910"
+      ],
+      "clock": [
+        {
+          "frame": 0,
+          "source_seconds": 0.0,
+          "beat": 0.0,
+          "source_beat": 0.0
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 17,
+          "source_seconds": 0.4166666666666667,
+          "beat": 2.8333333333333335,
+          "source_beat": 0.8333333333333334
+        },
+        {
+          "frame": 5,
+          "source_seconds": 0.4166666666666667,
+          "beat": 0.8333333333333334,
+          "source_beat": 0.8333333333333334
+        }
+      ],
+      "compared_frames": 4,
+      "max_rgb8_error": 0,
+      "changes_pixels": true
+    }
+  ],
+  "http_and_typescript_seconds": 10.364,
+  "http_requests": 45,
+  "source_inputs_unchanged": true,
+  "proposal_temporary_trees_removed": true,
+  "http_server_closed": true,
+  "contact_sheet_sha256": "fc75cc0437fa8cbfcf0ce1083716fb0fbe2fd8cbac7bc56ce124ec68f981c46c",
+  "owned_temporary_tree_removed": true
+}

@@ -12,6 +12,20 @@ validate the result with the existing FrameRudiments `plan` / `preflight`
 commands. The one-shot preview omits GPU feedback; the opt-in adaptive stream
 uses the verified S6 replay route below.
 
+## M10.3 native parameter and control forms
+
+Select an **Effect DAG** node to open generated typed parameter forms. Search
+the fields, stage a value and press **Apply**; native Python validation must
+accept it before the project receives one undo entry. Existing chain stages
+and input effects are selectable through their native targets.
+
+Add, edit, remove or reorder native motion bindings in the same panel. Search
+the full released motion catalogue or choose an existing pinned recording,
+table, matched-report or composite source. Parameter and driver bounds come
+from the native registries. Rejected and stale responses leave the draft intact.
+See the [M10.3 guide](../docs/authoring-controls-m10-3.md) for applicability,
+source-clock rules, limits and actual native export/render qualification.
+
 ## M10.2 graph connections
 
 Open **Effect DAG** to connect an output to an input by clicking either port

@@ -46,7 +46,7 @@ def refs(tree):
 
 
 def _shader_admissions(document):
-    """Authored shader authority is immutable during connection editing.
+    """Authored shader authority is immutable during graph editing.
 
     GL pins use shader_path/shader_sha256 rather than the ordinary file-ref
     shape. Check them before native Project preparation can open any path.
@@ -71,8 +71,12 @@ def _shader_admissions(document):
             name = node.get('id')
             if not isinstance(name, str) or (name, stage) in result:
                 raise ValueError('Invalid shader admission identity')
+            # These two declared numeric uniforms are native graph parameters;
+            # shader trust, source pins, passes, frame identity and budgets are
+            # still immutable authority, not parameter-editing capabilities.
+            authority = GL_TRANSITION_FIELDS - {'time_seconds', 'time_delta_seconds'}
             result[name, stage] = {'transition_style': entry.get('transition_style'),
-                                  **{key: deepcopy(entry[key]) for key in GL_TRANSITION_FIELDS if key in entry}}
+                                  **{key: deepcopy(entry[key]) for key in authority if key in entry}}
     return result
 
 
@@ -83,7 +87,7 @@ def check_draft(original, draft):
     allowed_top = {"layers", "layer_animations", "layer_masks", "layer_displacement",
                    "visualiser_routing", "visualiser_stage_injections", "post_effects",
                    "effects", "captions", "word_captions", "word_indicator", "identity",
-                   "lyric_art", "background", "render_quality", "effect_graph"}
+                   "lyric_art", "background", "render_quality", "effect_graph", "effect_graph_controls"}
     for key in set(original) | set(draft):
         if key not in allowed_top and draft.get(key) != original.get(key):
             raise ValueError(f"Read-only source field changed: {key}")
@@ -92,6 +96,8 @@ def check_draft(original, draft):
     for ref in refs(draft):
         if ref not in trusted:
             raise ValueError("Edited project introduces an unpinned or changed input reference")
+    from framerudiments.graph_authoring_controls import check_control_sources
+    check_control_sources(original, draft)
     admitted = _shader_admissions(original)
     for location, descriptor in _shader_admissions(draft).items():
         if admitted.get(location) != descriptor:
@@ -334,6 +340,8 @@ class AuthoringHandler(BaseHTTPRequestHandler):
             return
         if urlsplit(self.path).path == '/api/graph/validate':
             return self._validate_graph()
+        if urlsplit(self.path).path in {'/api/graph/catalog', '/api/graph/edit'}:
+            return self._graph_controls()
         if urlsplit(self.path).path != "/api/preview":
             return self._json(404, {"error":"Unknown endpoint"})
         if not self._origin_ok():
@@ -360,6 +368,33 @@ class AuthoringHandler(BaseHTTPRequestHandler):
             PREVIEW_TELEMETRY.record_rejection(failure=True)
             self._json(400, {"error": str(exc)})
 
+    def _read_graph_request(self, extra_fields=()):
+        """Shared strict, bounded framing for every native graph endpoint."""
+        if urlsplit(self.path).query or self.headers.get('Transfer-Encoding'):
+            raise ValueError('unexpected request framing')
+        lengths = self.headers.get_all('Content-Length', [])
+        if len(lengths) != 1 or not lengths[0].isdigit():
+            raise ValueError('invalid body length')
+        size = int(lengths[0])
+        if not 1 <= size <= MAX_BODY:
+            raise ValueError('invalid body size')
+        if self.headers.get('Content-Type', '').split(';', 1)[0].strip().lower() != 'application/json':
+            raise ValueError('invalid content type')
+        self.connection.settimeout(10)
+        def nonfinite(_value):
+            raise ValueError('nonfinite JSON')
+        encoded = self.rfile.read(size)
+        if len(encoded) != size:
+            raise ValueError('incomplete body')
+        body = json.loads(encoded, parse_constant=nonfinite)
+        if (not isinstance(body, dict) or set(body) - {'project', 'sidecars', *extra_fields}
+                or not isinstance(body.get('project'), dict)
+                or not isinstance(body.get('sidecars', {}), dict)):
+            raise ValueError('invalid payload')
+        if set(body.get('sidecars', {})) - {'lines', 'words', 'cues'}:
+            raise ValueError('invalid sidecars')
+        return body
+
     def _validate_graph(self):
         """Native graph/schema/source/binding check, with no frame or GPU work."""
         from framerudiments.graph_authoring import validate_graph_draft
@@ -367,27 +402,8 @@ class AuthoringHandler(BaseHTTPRequestHandler):
         if not self._origin_ok():
             return self._json(403, {'error': 'Same-origin graph validation only', 'code': 'request_invalid'})
         try:
-            if urlsplit(self.path).query or self.headers.get('Transfer-Encoding'):
-                raise ValueError('unexpected request framing')
-            lengths = self.headers.get_all('Content-Length', [])
-            if len(lengths) != 1 or not lengths[0].isdigit():
-                raise ValueError('invalid body length')
-            size = int(lengths[0])
-            if not 1 <= size <= MAX_BODY:
-                raise ValueError('invalid body size')
-            if self.headers.get('Content-Type', '').split(';', 1)[0].strip().lower() != 'application/json':
-                raise ValueError('invalid content type')
-            self.connection.settimeout(10)
-            def nonfinite(_value):
-                raise ValueError('nonfinite JSON')
-            body = json.loads(self.rfile.read(size), parse_constant=nonfinite)
-            if (not isinstance(body, dict) or set(body) - {'project', 'sidecars'}
-                    or not isinstance(body.get('project'), dict)
-                    or not isinstance(body.get('sidecars', {}), dict)):
-                raise ValueError('invalid payload')
+            body = self._read_graph_request()
             sidecars = body.get('sidecars', {})
-            if set(sidecars) - {'lines', 'words', 'cues'}:
-                raise ValueError('invalid sidecars')
         except (ValueError, TypeError, OSError, RecursionError):
             return self._json(400, {'error': 'Invalid graph validation request', 'code': 'request_invalid'})
         try:
@@ -404,6 +420,44 @@ class AuthoringHandler(BaseHTTPRequestHandler):
             return self._json(200, result)
         except (ValueError, KeyError, TypeError, OSError, RuntimeError, RecursionError):
             return self._json(400, {'error': 'Native graph validation could not complete', 'code': 'request_invalid'})
+        finally:
+            GRAPH_VALIDATION_SLOTS.release()
+
+    def _graph_controls(self):
+        """Generate selected-node forms or return one immutable native proposal."""
+        from framerudiments.graph_authoring_controls import (
+            AuthoringControlError, control_catalog_draft, edit_graph_draft,
+        )
+
+        if not self._origin_ok():
+            return self._json(403, {'error': 'Same-origin graph editing only', 'code': 'request_invalid'})
+        editing = urlsplit(self.path).path == '/api/graph/edit'
+        try:
+            body = self._read_graph_request({'node', 'operation'} if editing else {'node'})
+            if (not isinstance(body.get('node'), str) or not 1 <= len(body['node']) <= 128
+                    or editing and not isinstance(body.get('operation'), dict)):
+                raise ValueError('invalid graph selection or operation')
+        except (ValueError, TypeError, OSError, RecursionError):
+            return self._json(400, {'error': 'Invalid native graph editing request', 'code': 'request_invalid'})
+        try:
+            check_draft(self.session_data['project'], body['project'])
+        except (ValueError, KeyError, TypeError, RecursionError):
+            return self._json(400, {'error': 'Draft changes a read-only source, pin or shader admission',
+                                    'code': 'draft_rejected'})
+        if not GRAPH_VALIDATION_SLOTS.acquire(blocking=False):
+            return self._json(429, {'error': 'Native graph editing busy; retry after completion', 'code': 'busy'})
+        try:
+            kwargs = dict(sidecars=body.get('sidecars', {}), node=body['node'], validate_draft=check_draft,
+                          temp_parent=getattr(self.server, 'graph_temp_parent', ROOT / '.tmp' / 'authoring-graph'))
+            if editing:
+                result = edit_graph_draft(self.project_file, body['project'], operation=body['operation'], **kwargs)
+            else:
+                result = control_catalog_draft(self.project_file, body['project'], **kwargs)
+            return self._json(200, result)
+        except AuthoringControlError as exc:
+            return self._json(400, {'error': str(exc), 'code': exc.code})
+        except (ValueError, KeyError, TypeError, OSError, RuntimeError, RecursionError):
+            return self._json(400, {'error': 'Native graph editing could not complete', 'code': 'request_invalid'})
         finally:
             GRAPH_VALIDATION_SLOTS.release()
 

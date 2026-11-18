@@ -8,8 +8,8 @@ import {EffectGraphEditor, type GraphValidationDisplay} from './EffectGraphEdito
 import {GraphValidationFence, readGraphValidation, type GraphValidationReport} from './graphValidation.ts';
 import {StreamPreview} from './StreamPreview.tsx';
 import './stream-preview.css';
-import {withInitialEffectGraph, withEffectNode, withEffectSource, withEffectConnection, withEffectInputs, withEffectOpacity, withEffectBlurRadius,
-  withEffectProgress, withEffectOutput, withoutTerminalEffectNode} from './graphEditor.ts';
+import {withInitialEffectGraph, withEffectNode, withEffectSource, withEffectConnection, withEffectInputs,
+  withEffectOutput, withoutTerminalEffectNode} from './graphEditor.ts';
 
 interface Session { project:Document; lines:TimedItem[]; words:TimedItem[]; cues:TimedItem[];
   cueFormat:'lrc'|'cue'; beatTimeline?:Document|null; audioAvailable:boolean; notes:string[]; }
@@ -149,6 +149,15 @@ export function App() {
         return {current:updated,past:[...previous.past,previous.current].slice(-100),future:[]};
       }catch(exc){setError(message(exc));return previous;}
    });
+ };
+ const commitNativeGraph=(nextProject:Document,revision:object):boolean=>{
+   if(currentRef.current!==revision)return false;
+   setHistory(previous=>{
+     // Do not add a no-op undo entry when a queued edit overtakes the proposal.
+     if(!previous||previous.current!==revision)return previous;
+     return {current:{...previous.current,project:nextProject},past:[...previous.past,previous.current].slice(-100),future:[]};
+   });
+   setError('');return true;
  };
  const undo=()=>setHistory(previous=>!previous?.past.length?previous:{
    current:previous.past[previous.past.length-1],past:previous.past.slice(0,-1),future:[previous.current,...previous.future]});
@@ -303,15 +312,13 @@ export function App() {
       value={time} onChange={e=>setTime(Number(e.target.value))}/></label><label>Quality <select value={quality} onChange={e=>setQuality(e.target.value as 'fast'|'full')}>
       <option value="fast">Draft (1×)</option><option value="full">Production AA</option></select></label>
       <span>Frame {Math.round(time*(project.fps||60))}</span></div>
-    {graphView?<div className="fr-fx-preview"><EffectGraphEditor project={project} revision={current} validation={graphStatus} onValidate={()=>setValidationRetry(value=>value+1)}
+    {graphView?<div className="fr-fx-preview"><EffectGraphEditor project={project} revision={current} sidecars={streamSidecars}
+      onNativeEdit={commitNativeGraph} validation={graphStatus} onValidate={()=>setValidationRetry(value=>value+1)}
       onInit={()=>commit(s=>({...s,project:withInitialEffectGraph(s.project)}))}
       onSource={id=>commit(s=>({...s,project:withEffectSource(s.project,id)}))}
       onAdd={(type,inputs,options)=>commit(s=>({...s,project:withEffectNode(s.project,type,inputs,options)}))}
       onRewire={(target,index,source)=>commit(s=>({...s,project:withEffectConnection(s.project,target,index,source)}))}
       onInputs={(target,inputs)=>commit(s=>({...s,project:withEffectInputs(s.project,target,inputs)}))}
-      onOpacity={(id,value)=>commit(s=>({...s,project:withEffectOpacity(s.project,id,value)}))}
-      onBlur={(id,value)=>commit(s=>({...s,project:withEffectBlurRadius(s.project,id,value)}))}
-      onProgress={(id,value)=>commit(s=>({...s,project:withEffectProgress(s.project,id,value)}))}
       onOutput={id=>commit(s=>({...s,project:withEffectOutput(s.project,id)}))}
       onRemove={id=>commit(s=>({...s,project:withoutTerminalEffectNode(s.project,id)}))}/></div>:
      <div className="fr-preview">{!graphReady?<div className="fr-canvas fr-fx-preview-blocked" role="status"><strong>{graphStatus.phase==='checking'?'Checking graph before preview':'Preview is waiting for a valid graph'}</strong>

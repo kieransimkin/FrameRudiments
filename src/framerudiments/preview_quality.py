@@ -6,13 +6,18 @@ seeds and artistic effect values retain their authored meanings.
 """
 from copy import copy, deepcopy
 from dataclasses import asdict
-from hashlib import sha256
 from math import isfinite
 from pathlib import Path
+import sys
 
+from .io import sha256 as file_sha256
 from .preview_stream_contract import _hex, canonical_digest, quality_profiles
 
 RENDERER_ABI = 'framerudiments.preview-s6-verified-seek.v1'
+# Windows ctime currently denotes creation, and last-write timestamps may be
+# reused by rapid same-size writes. Metadata cannot prove byte identity there.
+# Keep the stat-only fast path on platforms with a change-time fence.
+_REHASH_PINNED_REUSE = sys.platform == 'win32'
 _PIXEL_STYLES = {
     'particles': {'padding': (4, 0, False), 'radius': (3, .5, False)},
     'bars': {'padding': (4, 0, False), 'gap': (2, 0, False)},
@@ -260,8 +265,10 @@ def render_project_view(project, profile_id, *, allow_stateful=False):
 class PinnedInputGuard:
     """Hash declared inputs at admission; fence filesystem changes before reuse.
 
-    Includes symlink resolution, inode, size, mtime and ctime. Reopen rehashes
-    sources. This is a local-preview change detector, not a hostile-FS sandbox.
+    Includes symlink resolution, inode, size, mtime and ctime. Windows rehashes
+    at reuse because ctime is creation time and last-write timestamps may be
+    unchanged after a same-size rewrite. Other platforms retain the stat-only
+    reuse path. This is a local-preview change detector, not a hostile-FS sandbox.
     """
     def __init__(self, base, document, references=()):
         def pins(value):
@@ -275,6 +282,7 @@ class PinnedInputGuard:
                 for child in value:
                     yield from pins(child)
         self.files = []
+        self._rehash_reuse = _REHASH_PINNED_REUSE
         seen = set()
         for name, digest in pins([document, list(references)]):
             if not isinstance(name, str) or not name:
@@ -289,13 +297,9 @@ class PinnedInputGuard:
             if not resolved.is_file():
                 raise ValueError('pinned source must be a regular file')
             before = self._signature(resolved)
-            h = sha256()
-            with resolved.open('rb') as source:
-                for chunk in iter(lambda: source.read(1024 * 1024), b''):
-                    h.update(chunk)
-            if h.hexdigest() != expected or self._signature(resolved) != before:
+            if file_sha256(resolved) != expected or self._signature(resolved) != before:
                 raise ValueError('pinned source SHA-256 mismatch or changed during admission')
-            self.files.append((alias, resolved, before))
+            self.files.append((alias, resolved, before, expected))
 
     @staticmethod
     def _signature(path):
@@ -303,6 +307,12 @@ class PinnedInputGuard:
         return s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns, s.st_ctime_ns
 
     def __call__(self):
-        for alias, resolved, signature in self.files:
-            if alias.resolve(strict=True) != resolved or self._signature(resolved) != signature:
-                raise ValueError('pinned source changed since admission')
+        for alias, resolved, signature, expected in self.files:
+            try:
+                if alias.resolve(strict=True) != resolved or self._signature(resolved) != signature:
+                    raise ValueError('pinned source changed since admission')
+                if self._rehash_reuse and (file_sha256(resolved) != expected
+                        or self._signature(resolved) != signature or alias.resolve(strict=True) != resolved):
+                    raise ValueError('pinned source changed since admission')
+            except OSError as exc:
+                raise ValueError('pinned source changed since admission') from exc

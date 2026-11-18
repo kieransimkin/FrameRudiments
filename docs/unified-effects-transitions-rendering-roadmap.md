@@ -187,9 +187,15 @@ All external shader/model/media sources must be pinned or versioned, constrained
   stale responses cannot approve a newer draft. Native pixel qualification and
   exact-head CI remain distinct from device and perceptual acceptance.
 - **M10.3** Automatically generated parameter and DanceNotion control editors.
-  Next planned major authoring milestone; M10.2 preserves existing specialised
-  settings and bindings without introducing a second parameter schema.
+  Implementation candidate: [native generated forms](authoring-controls-m10-3.md).
+  All fourteen node kinds expose shared native metadata, including dynamic
+  colour/vector, palette/band, timing and chain addresses. Parameter and binding
+  edits validate in Python before one undo entry; complete snapshot/selection
+  fences preserve source pins, clocks and shader authority. Actual HTTP/TypeScript
+  ZIP exports match independent native renders in 22 cases / 88 RGB8 comparisons.
+  Browser interaction and exact-candidate platform/GPU CI remain separate gates.
 - **M10.4** Transition previews and scrub-safe frame evaluation with quality/performance switch.
+  Next planned major authoring milestone.
 - **M10.5** Round-trip JSON fixture and undo/redo tests.
 - **M10.S — seekable adaptive real-time streaming preview (S0–S7 candidates).**
   [Dedicated S0–S7 implementation plan](seekable-adaptive-streaming-plan.md):

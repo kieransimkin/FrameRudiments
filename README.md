@@ -19,6 +19,16 @@ keeps external-engine, physical-device and perceptual acceptance explicit.
 The one-shot renderer and production pipeline retain their existing behavior;
 source/audio clocks are unchanged.
 
+M10.3 adds [generated parameter and DanceNotion control editors](docs/authoring-controls-m10-3.md)
+to **Effect DAG**. Native metadata supplies typed forms for all fourteen graph
+kinds, existing gradient/spectral paths, transition timing and chain components.
+The same inspector adds, edits and reorders native motion bindings. Python
+validates each proposal before one undo entry is created; original sources and
+clocks stay pinned. The cross-language qualifier exports actual editor changes
+through the native HTTP API and compares 88 rendered frames across 22 synthetic
+cases. This is an unreleased implementation candidate; browser interaction and
+exact-candidate platform/GPU CI remain separate qualification.
+
 M10.2 extends the [visual effect-graph editor](docs/authoring-graph-m10-2.md)
 with direct connection editing, independent branches, ordered composites,
 alpha mattes and two-image or mask-driven transitions. Edits preserve native

@@ -56,9 +56,10 @@ editable timing contracts in `docs/timing-editing.md` of its upstream project.
   topologically arranged RGBA8 nodes with distinct input/output ports and branch
   connections. [M10.2](authoring-graph-m10-2.md) adds click or drag connections,
   independent forks, explicit ordered composite/matte/transition templates and
-  bounded input addition, removal and reordering. The inspector preserves
-  specialised settings while retaining bounded opacity/filter radius/transition
-  progress controls, output selection and safe terminal unary removal. An absent
+  bounded input addition, removal and reordering. [M10.3](authoring-controls-m10-3.md)
+  generates the parameter inspector from native registries and adds atomic
+  DanceNotion binding forms, including existing chain targets. Output selection
+  and safe terminal unary removal remain available. An absent
   graph is initialized only with explicit action and starts from the final
   `frame` source. Every branch and existing control binding must pass the native
   Python validator before the current graph draft can preview or export.
@@ -155,6 +156,10 @@ fencing; browser interaction and physical GPU qualification require their own
 observed evidence. The [M10.2 cross-language qualifier](authoring-graph-m10-2.md#qualification-and-next-milestone)
 exports real TypeScript graph edits and compares native Python pixels against
 independent reference graphs through the authoring CI route.
+The [M10.3 qualifier](authoring-controls-m10-3.md#reproducible-native-qualification)
+adds real same-origin catalogue/edit requests, typed parameter and control
+operations, and native named/recorded motion. Its 22 exported fixtures produce
+88 exact native frame comparisons; browser interaction remains a separate gate.
 
 The first release uses the shared component's editable **cue-shaped timing
 marker** for keyframes, because its published v0.4.0 `TimingKind` supports only

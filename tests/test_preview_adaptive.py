@@ -179,6 +179,61 @@ def test_source_guard_rehashes_admission_detects_rewrites_and_preserves_bytes(tm
         PinnedInputGuard(tmp_path, {'audio': pin})
 
 
+def test_windows_source_guard_detects_same_size_rewrite_even_when_all_stat_fields_repeat(tmp_path, monkeypatch):
+    from framerudiments import preview_quality
+
+    path = tmp_path / 'source.bin'
+    path.write_bytes(b'original')
+    pin = {'path': path.name, 'sha256': sha256(path.read_bytes()).hexdigest()}
+    signature = PinnedInputGuard._signature(path)
+    # Reproduce the Windows CI failure on every platform: creation-time ctime,
+    # an unchanged last-write timestamp and an in-place same-size rewrite.
+    monkeypatch.setattr(preview_quality, '_REHASH_PINNED_REUSE', True)
+    monkeypatch.setattr(PinnedInputGuard, '_signature', staticmethod(lambda _path: signature))
+    guard = PinnedInputGuard(tmp_path, {'audio': pin})
+    guard()
+    path.write_bytes(b'altered!')
+    assert PinnedInputGuard._signature(path) == signature
+    with pytest.raises(ValueError, match='changed'):
+        guard()
+    assert path.read_bytes() == b'altered!' and pin['sha256'] == sha256(b'original').hexdigest()
+    with pytest.raises(ValueError, match='SHA-256'):
+        PinnedInputGuard(tmp_path, {'audio': pin})
+
+
+def test_windows_source_guard_fences_a_change_during_rehash(tmp_path, monkeypatch):
+    from framerudiments import preview_quality
+
+    path = tmp_path / 'source.bin'
+    path.write_bytes(b'original')
+    pin = {'path': path.name, 'sha256': sha256(path.read_bytes()).hexdigest()}
+    monkeypatch.setattr(preview_quality, '_REHASH_PINNED_REUSE', True)
+    guard = PinnedInputGuard(tmp_path, {'audio': pin})
+    native_hash = preview_quality.file_sha256
+    def rewrite_after_read(filename):
+        digest = native_hash(filename)
+        path.write_bytes(b'changed after the digest read')
+        return digest
+    monkeypatch.setattr(preview_quality, 'file_sha256', rewrite_after_read)
+    with pytest.raises(ValueError, match='changed'):
+        guard()
+
+
+def test_stat_capable_source_guard_keeps_unchanged_reuse_free_of_full_file_reads(tmp_path, monkeypatch):
+    from framerudiments import preview_quality
+
+    path = tmp_path / 'source.bin'
+    path.write_bytes(b'original')
+    pin = {'path': path.name, 'sha256': sha256(path.read_bytes()).hexdigest()}
+    monkeypatch.setattr(preview_quality, '_REHASH_PINNED_REUSE', False)
+    guard = PinnedInputGuard(tmp_path, {'audio': pin})
+    def forbidden(_path):
+        raise AssertionError('unchanged stat-capable reuse must not read whole pinned media')
+    monkeypatch.setattr(preview_quality, 'file_sha256', forbidden)
+    guard()
+    guard()
+
+
 def test_no_oscillation_around_budget_and_invalid_capabilities():
     clock = Clock()
     control = AdaptiveController(30, clock=clock)
