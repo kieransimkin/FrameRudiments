@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.40 — 18 November 2026
+**Version:** 1.41 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -322,7 +322,16 @@ All external shader/model/media sources must be pinned or versioned, constrained
   a time-limited worker, SHA-256 output receipts and no network/model downloads.
   These are inferred estimates, never M12 native geometry or metric depth.
   Windows/Linux ONNX Runtime CPU qualification is required for acceptance.
-  M14.2 model profiles/render routing and M14.3 GPU-provider/device parity remain gated.
+  M14.2 implementation candidate: [versioned profiles and content-addressed graph sources](vision-inference-m14.md#m142--versioned-model-profiles-and-native-effect-graph-sources).
+  Explicit frame-addressed `vision:<id>` sources provide segmentation alpha,
+  relative-depth previews and model-flow displays to the existing effect graph.
+  Cache keys include pinned models, images, profiles, runtime and implementation;
+  reads independently verify the estimate bytes and provenance receipts.
+  Changed shared inputs conservatively invalidate dependent preview frames.
+  Prewarming can run inference before rendering, with quotas and rollback.
+  No implicit model downloads, flow-as-geometry, GPU model providers or
+  unsupported temporal/spatial supersampling are claimed. M14.3 will qualify
+  accelerated model providers, resource budgets and device parity separately.
 - **M15 Experimental adapters:** isolated OpenFX host, OpenUSD/Hydra, GStreamer/NDI/Spout/Syphon, Vulkan/WebGPU, OSC/MIDI. Each integration requires licensing review and CI capability declaration before shipping.
 - **Exit:** no new hard runtime dependencies, pinned reproducible fixtures, explicit availability documentation.
 

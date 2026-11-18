@@ -119,3 +119,115 @@ preprocessing identities, optional per-frame post-effect routing, selective
 caching and conservative frame-invalidation boundaries. **M14.3:** explicit
 GPU-provider capabilities and actual output/budget parity, without claiming
 that software fallbacks qualify physical devices.
+
+
+## M14.2 — versioned model profiles and native effect-graph sources
+
+**Implementation candidate:** the opt-in `vision_sources` field in a normal
+`framerudiments.project.v1` declares one or more **explicitly frame-addressed**
+M14.1 inference requests and shared versioned profiles. No model or media is
+fetched, and no inference runs in projects without `vision_sources`.
+
+A graph may use `vision:<id>` in the same way as any other `source` node. A
+segmentation prediction becomes white RGBA with probability in **alpha** (for
+`matte` inputs); relative depth is visualised as fixed-range grayscale and
+optical flow as bounded signed-R/G component previews with B magnitude. These
+RGBA8 surfaces **are not** physically measured geometry AOVs, input-pixel
+flow fields or scene-linear HDR data. M12 remains the authority for real
+geometry-derived depth, normals and motion. The model task and tensor shape
+must match the named profile exactly.
+
+```json
+{
+  "vision_sources": {
+    "schema": "framerudiments.vision-graph.v1",
+    "cache_dir": "_vision_cache",
+    "max_cache_bytes": 536870912,
+    "profiles": [{
+      "schema": "framerudiments.vision-profile.v1",
+      "id": "people", "task": "segmentation",
+      "model_sha256": "<actual-model-sha256>",
+      "width": 640, "height": 360,
+      "input_names": ["input"], "output_name": "output",
+      "preprocess": {"mean": [0, 0, 0], "std": [1, 1, 1]},
+      "activation": "identity", "display_range": [0, 1]
+    }],
+    "sources": [{
+      "id": "people-mask", "profile": "people", "missing": "transparent",
+      "resample": "nearest",
+      "frames": [{"frame": 0, "request": {
+        "path": "vision/frame-0000.json", "sha256": "<actual-request-sha256>"
+      }}]
+    }]
+  },
+  "effect_graph": {
+    "nodes": [
+      {"id": "frame", "type": "source"},
+      {"id": "vision:people-mask", "type": "source"},
+      {"id": "masked", "type": "matte",
+       "inputs": ["frame", "vision:people-mask"], "matte_channel": "alpha"}
+    ], "output": "masked"
+  },
+  "render_quality": {"enabled": false}
+}
+```
+
+The excerpt above shows **additional project fields**; preserve all existing
+required project fields, including pinned audio and the authoritative clock.
+A request manifest is exactly the [M14.1 format](#request-manifest), and its
+own model/current/previous PNG references are verified before compositor
+construction. Each `profiles[]` entry identifies a specific model hash,
+preprocessing, activation and tensor I/O contract; it is **never** inferred from
+a filename. `frames[]` contains at most 256 unique integer output-frame IDs,
+with `missing` equal to `error` (default), `transparent` or `hold`. `hold`
+never reads a future authored frame.
+
+There is no implicit resampling. If model and native project sizes differ,
+segmentation/depth sources may explicitly choose `nearest` or `bilinear`.
+Optical-flow projections require matching dimensions: remapping signed
+vectors into a different pixel ruler is not silently permitted. `display_range`
+is authored and remains fixed across frames; relative depth does not invent
+metres or normalise independently each frame. Since M14.1 inputs are bounded to
+1024×1024, larger native projects need explicit input resizing for mask/depth.
+
+Caches live under the declared local project directory, have a 64 MiB–2 GiB
+quota (512 MiB default), and are keyed by profile digest, request and media
+hashes, implementation source SHA-256 and installed ONNX Runtime version.
+A hit independently validates every output byte, float32 shape, M14.1 receipt,
+cache seal and current model/PNG pins. Missing entries run M14.1's strict
+CPU subprocess and publish only after verification; incomplete or edited
+entries **fail closed** instead of falling back to another model. Full-frame
+preview/S5 includes `vision_sources` among global dependencies: edits to
+model pins, frame mappings, preprocessing, display mapping or graph parameters
+invalidate dependent output frames conservatively. Changing the prior PNG
+invalidates a flow estimate through the M14.1 request identity.
+
+This candidate intentionally limits a vision-backed graph to a **single native
+sample per encoded frame at 1× spatial resolution**; set `render_quality` to
+`{"enabled": false}` or explicitly configure both sample factors to 1.
+It does not pretend to support subframe inference, high-resolution inferred
+flow, GPU inference, unbounded model sequences or arbitrary realtime video
+analysis. The normal RGB8 pipeline, external visualisers and actual M12
+geometry AOVs are unchanged. The cache is not trusted storage; do not edit
+or symlink cache entries and prune stale keys offline if the quota fills.
+
+The new CLI command can warm graph caches before a production render, without
+opening a compositor or starting an HTTP preview server:
+
+```bash
+framerudiments-vision warm-graph ./project.json --frame 0 --frame 12 \
+  --source vision:people-mask
+```
+
+The first miss invokes the existing isolated ONNX CPU worker; subsequent hits
+load verified cached float32 arrays. A warm receipt reports the exact source,
+frame and cache key. Missing model inputs and unreadable cache contents are
+errors, never silently replaced with random predictions. A `transparent`
+missing-frame policy returns a transparent RGBA image with no inference.
+
+M14.2 regression tests include real Project/Compositor graph-source routing,
+cache hits and corruption, profile conflicts, frame gaps, signed vector
+projection, model input edits and the Windows absolute-path rejection fix.
+The M14 CI workflow runs the tests across Windows/Linux Python 3.11/3.13;
+real native ONNX and full production acceptance are separate from mock-worker
+and pixel regressions.

@@ -4,7 +4,12 @@ on:
     branches: [main]
     paths:
       - 'src/framerudiments/vision_m14*.py'
+      - 'src/framerudiments/vision_graph_m14.py'
+      - 'src/framerudiments/effect_graph_integration.py'
+      - 'src/framerudiments/compositor.py'
+      - 'src/framerudiments/project.py'
       - 'tests/test_vision_m14*.py'
+      - 'tests/test_vision_graph*.py'
       - 'docs/vision-inference-m14.md'
       - '.github/workflows/vision-m14.yml'
       - 'pyproject.toml'
@@ -31,9 +36,9 @@ jobs:
       - name: Verify native ONNX Runtime CPU provider is installed
         run: python -c "import onnx, onnxruntime; assert 'CPUExecutionProvider' in onnxruntime.get_available_providers()"
       - name: Lint native inference implementation and tests
-        run: ruff check src/framerudiments/vision_m14.py src/framerudiments/vision_m14_cli.py tests/test_vision_m14.py tests/test_vision_m14_real.py
+        run: ruff check src/framerudiments/vision_m14.py src/framerudiments/vision_m14_cli.py src/framerudiments/vision_graph_m14.py src/framerudiments/effect_graph_integration.py tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py
       - name: Exercise all three actual ONNX operators and isolated CPU worker
-        run: python -m pytest -q -rs tests/test_vision_m14.py tests/test_vision_m14_real.py
+        run: python -m pytest -q -rs tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py
       - name: No skipped native qualification cases
         shell: python
         run: |

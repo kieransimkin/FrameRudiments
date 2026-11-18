@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 import math
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 import re
 import shutil
 import subprocess
@@ -61,7 +61,9 @@ def _local_pinned(base, value, *, extension, limit):
     if not isinstance(raw, str) or not raw or not isinstance(expected, str) or not _SHA.fullmatch(expected):
         raise ValueError("File requires a relative path and complete SHA-256")
     relative = Path(raw)
-    if relative.is_absolute() or ".." in relative.parts or ":" in raw or "\\" in raw:
+    if (relative.is_absolute() or PurePosixPath(raw).is_absolute() or raw.startswith("/")
+            or PureWindowsPath(raw).is_absolute() or ".." in relative.parts
+            or ":" in raw or "\\" in raw):
         raise ValueError("Pinned file must be a local relative path without traversal")
     path = (base / relative).resolve(strict=True)
     if not path.is_relative_to(base) or not path.is_file() or path.suffix.lower() != extension:

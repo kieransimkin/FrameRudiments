@@ -11,11 +11,11 @@ from collections.abc import Mapping
 from PIL import Image
 
 
-def validate_graph_sources(graph, available_elements):
+def validate_graph_sources(graph, available_elements, *, extra_sources=()):
     """Fail at compositor construction, before expensive frame evaluation."""
     if graph is None:
         return
-    unknown = graph.source_ids - (set(available_elements) | {'frame'})
+    unknown = graph.source_ids - (set(available_elements) | {'frame'} | set(extra_sources))
     if unknown:
         raise ValueError(f"Unknown effect graph source: {', '.join(sorted(unknown))}")
 
@@ -53,7 +53,7 @@ def create_gpu_backend(mode='cpu', *, report=None):
 
 
 def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str, Image.Image],
-                          *, gpu_backend=None, gpu_strict=False):
+                          *, gpu_backend=None, gpu_strict=False, vision_sources=None):
     """Resolve a frame without transferring ownership of any input surface."""
     if graph is None:
         return frame
@@ -62,6 +62,11 @@ def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str
         raise ValueError('Effect graph requires a composited RGBA frame')
     sources = {'frame': frame, **surfaces}
     for source_id in graph.source_ids:
+        if source_id.startswith('vision:'):
+            if vision_sources is None or source_id not in vision_sources.source_ids:
+                raise ValueError(f'Unknown vision graph source: {source_id}')
+            sources[source_id] = vision_sources.source(source_id, context.frame)
+            continue
         # Valid source IDs may legitimately have no ink on this frame. Keep
         # the source identity and its transparent alpha rather than raising.
         if source_id not in sources:

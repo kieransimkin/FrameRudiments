@@ -46,6 +46,7 @@ class Project:
                 "effect_graph",
                 "effect_graph_controls",
                 "effect_graph_backend",
+                "vision_sources",
                 "stemlab_loop",
                 "notes",
                 "lyric_art",
@@ -328,6 +329,8 @@ class Project:
             ),
             **({"post_effects": self.data["post_effects"]} if "post_effects" in self.data else {}),
             **({"effect_graph": self.data["effect_graph"]} if "effect_graph" in self.data else {}),
+            **({"vision_sources": self.data["vision_sources"]}
+               if "vision_sources" in self.data else {}),
             **(
                 {"effect_graph_controls": self.data["effect_graph_controls"]}
                 if "effect_graph_controls" in self.data else {}

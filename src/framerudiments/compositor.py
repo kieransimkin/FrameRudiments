@@ -425,7 +425,18 @@ class Compositor:
             EffectGraphControls(project, self.effect_graph, project.data.get("effect_graph_controls", []), self.context)
             if self.effect_graph is not None else None
         )
-        validate_graph_sources(self.effect_graph, targets)
+        # M14.2 opt-in cached ONNX estimates are external pinned graph sources,
+        # not native geometry buffers. Legacy rendering never imports ONNX.
+        self.vision_graph = None
+        if "vision_sources" in project.data:
+            if self.effect_graph is None:
+                raise ValueError("M14.2 vision_sources requires an effect_graph")
+            if project.output_quality.vector_scale != 1 or project.output_quality.time_samples != 1:
+                raise ValueError("M14.2 vision_sources requires render_quality spatial_scale and temporal_samples 1")
+            from .vision_graph_m14 import VisionGraphSources
+            self.vision_graph = VisionGraphSources(project, project.data["vision_sources"])
+        validate_graph_sources(self.effect_graph, targets,
+                               extra_sources=self.vision_graph.source_ids if self.vision_graph else ())
         self.effect_graph_backend_mode = project.data.get("effect_graph_backend", "cpu")
         self._owns_effect_graph_gpu = _shared_effect_graph_gpu is _CREATE_EFFECT_GRAPH_BACKEND
         if self._owns_effect_graph_gpu:
@@ -642,6 +653,7 @@ class Compositor:
             self.effect_graph, self.effect_graph_controls, ctx, image, mask_surfaces,
             gpu_backend=self.effect_graph_gpu,
             gpu_strict=self.effect_graph_backend_mode == "gpu",
+            vision_sources=self.vision_graph,
         )
 
     def _final_output(self, image, context, apply_quality):
@@ -839,6 +851,9 @@ class Compositor:
             transformed_alpha_extents=self.extents,
             text_states=self.text_states,
             render_quality=self.output_quality.evidence,
+            **({"vision_sources": {**self.vision_graph.evidence,
+                "last_used": deepcopy(self.vision_graph.last_used)}}
+               if self.vision_graph is not None else {}),
             **({"effect_graph_backend": {
                 "requested": self.effect_graph_backend_mode,
                 "actual": "gpu" if self.effect_graph_gpu is not None else "cpu",
