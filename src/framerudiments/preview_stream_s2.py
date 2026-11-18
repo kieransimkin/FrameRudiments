@@ -6,7 +6,7 @@ Neither mode claims production approval. The existing audio clock remains author
 """
 from __future__ import annotations
 
-from collections import deque
+from collections import OrderedDict, deque
 from copy import copy, deepcopy
 from io import BytesIO
 from pathlib import Path
@@ -20,6 +20,8 @@ import re
 from PIL import Image, UnidentifiedImageError
 
 from .preview_frame_cache import PreviewFrameCache, _verified_png
+from .preview_dependencies import build_dependency_index, cache_namespace, implementation_fingerprint
+from .preview_segment_cache import SectionFrameCache
 from .preview_adaptive import AdaptiveController
 from .preview_quality import RENDERER_ABI as ADAPTIVE_ABI, PinnedInputGuard, profile_capabilities
 from .preview_stream_contract import (
@@ -60,6 +62,8 @@ class SeekStream:
         self.frame_count, self.target_fps = frame_count, target_fps
         self.telemetry, self.verifier, self.clock = telemetry, verifier, clock
         self.capabilities = capabilities
+        self.invalidation = getattr(cache, 'last_revision', None)
+        self.source_revoked = False
         self.controller = (AdaptiveController(target_fps, clock=clock, supported_ranks=[
             row['quality_rank'] for row in capabilities if row['supported']])
             if capabilities is not None else None)
@@ -113,11 +117,13 @@ class SeekStream:
                     profile=self.controller.profile_id if self.controller else 'Q0',
                     adaptive_fps=self.controller is not None, production_equivalent=False,
                     adaptive=self.controller.snapshot() if self.controller else None,
-                    capabilities=self.capabilities,
+                    capabilities=self.capabilities, invalidation=self.invalidation,
                     refinement=self.refinement.snapshot() if self.refinement else dict(enabled=False))
 
     def _settings(self, ticket):
         """Identical settings identity for foreground and background Q5 CAS."""
+        if getattr(self.cache, 'scoped_dependencies', False):
+            return self.cache.settings_identity(ticket)
         settings = {'renderer_abi': ADAPTIVE_ABI if self.controller else RENDERER_ABI,
                     'pipeline': ticket.pipeline_fingerprint, 'profile': ticket.profile_id}
         if self.controller:
@@ -131,11 +137,20 @@ class SeekStream:
                 (not self.refinement.thread.is_alive() and self.refinement.quiescent)))
 
     def _verify_inputs(self):
+        if self.source_revoked:
+            raise ValueError('Pinned source changed; reopen a verified project')
         if self.verifier:
             try:
                 self.verifier()
             except (ValueError, OSError):
+                self.source_revoked = True
+                self.pending = None
+                if self.refinement:
+                    self.refinement.suspend()
                 self.cache.invalidate_all()
+                self.invalidation = getattr(self.cache, 'last_revision', None)
+                if self.invalidation is not None:
+                    self._event('cache-invalidated', invalidation=self.invalidation)
                 raise ValueError('Pinned source changed; reopen a verified project') from None
 
     def command(self, name, *, sequence, frame=None, target_fps=None):
@@ -381,10 +396,42 @@ class PreviewStreamAPI:
         self.root = Path(cache_root) if cache_root else (Path.home()/'.cache'/'framerudiments'/'stream-s2')
         self.lock = RLock()
         self.active = None
+        self._open_epoch = 0
+        self._clients = OrderedDict()
+        self._cancelled_jobs = 0
+
+    def _start_intent(self, body):
+        """Fence reordered draft-start requests before any slow source validation.
+
+        Client IDs are opaque per-tab tokens, never cache paths or authorities.
+        Retrying the same revision is allowed only for the same render snapshot.
+        All clients additionally share the server's single latest-intent epoch.
+        """
+        client, revision = body.get('client_id'), body.get('edit_sequence')
+        if client is not None or revision is not None:
+            if not isinstance(client, str) or not re.fullmatch(r'[A-Za-z0-9_-]{16,80}', client):
+                raise ValueError('invalid stream edit client')
+            _integer(revision, 'edit sequence', 1, _MAX_SEQ)
+        snapshot = canonical_digest({k: body.get(k) for k in ('project', 'sidecars', 'adaptive', 'refine')})
+        with self.lock:
+            if client is not None:
+                previous = self._clients.get(client)
+                if previous and (revision < previous[0] or (revision == previous[0] and snapshot != previous[1])):
+                    raise ValueError('superseded or conflicting draft revision')
+                if client not in self._clients and len(self._clients) >= 64:
+                    # Do not evict anti-replay state and later accept an old tab's
+                    # revision as new. Reopening the local server resets the bound.
+                    raise ValueError('too many edit clients; restart the preview server')
+                self._clients[client] = (revision, snapshot)
+            self._open_epoch += 1
+            return self._open_epoch
 
     def open(self, body):
-        if not isinstance(body, dict) or set(body)-{'project','sidecars','frame','target_fps','adaptive','refine'}:
+        allowed = {'project', 'sidecars', 'frame', 'target_fps', 'adaptive', 'refine',
+                   'client_id', 'edit_sequence'}
+        if not isinstance(body, dict) or set(body) - allowed:
             raise ValueError('invalid stream start')
+        intent = self._start_intent(body)
         if self.loader:
             original = self.loader(self.path)
         else:
@@ -400,7 +447,7 @@ class PreviewStreamAPI:
         frame = body.get('frame', 0)
         _integer(frame, 'frame', 0, original.frame_count-1)
         target = requested_target_fps(original, body.get('target_fps'))
-        adaptive = body.get('adaptive', False)  # Preserve the API of existing S2 clients.
+        adaptive = body.get('adaptive', False)
         if type(adaptive) is not bool:
             raise ValueError('adaptive must be boolean')
         refine = body.get('refine', False)
@@ -419,20 +466,42 @@ class PreviewStreamAPI:
         pipeline = canonical_digest(dict(renderer_abi=abi, draft=draft, sidecars=sidecars))
         guard = (PinnedInputGuard(getattr(original, 'base', self.path.parent), draft,
                                   getattr(original, 'inputs', ())) if adaptive else None)
-        cache = PreviewFrameCache(self.root/project_hash/pipeline,
-                                  project_fingerprint=project_hash, pipeline_fingerprint=pipeline,
-                                  renderer_abi=abi,
-                                  segments=section_segments(original, project_hash=project_hash),
-                                  profiles=quality_profiles(candidate if adaptive else original), max_bytes=512*1024**2,
-                                  min_free_bytes=16*1024**2, ram_bytes=16*1024**2)
+        manifest = (build_dependency_index(candidate, draft, sidecars,
+                    namespace=cache_namespace(self.path), renderer_abi=abi,
+                    implementation=implementation_fingerprint(), capabilities=capabilities)
+                    if adaptive else None)
         draft, sidecars = deepcopy(draft), deepcopy(sidecars)
         def renderer(n):
             return self.render(self.path, draft, n, quality='fast', sidecars=sidecars)
         with self.lock:
+            if intent != self._open_epoch:
+                raise ValueError('superseded draft admission')
             if self.active:
+                with self.active.condition:
+                    if not self.active.closed:
+                        self._cancelled_jobs += int(self.active.pending is not None)
+                        self._cancelled_jobs += int(self.active.foreground_active)
+                        self._cancelled_jobs += int(bool(self.active.refinement and self.active.refinement.active))
                 self.active.close()
                 if not self.active.retired:
                     raise RuntimeError('Previous render is retiring; retry stream start')
+            limits = dict(max_bytes=512*1024**2, min_free_bytes=16*1024**2, ram_bytes=16*1024**2)
+            profiles = quality_profiles(candidate if adaptive else original)
+            if adaptive:
+                # Stable per-workspace storage; per-section closures, not a new
+                # directory for every edited draft, own cache validity.
+                previous_cache = self.active.cache if self.active else None
+                if isinstance(previous_cache, SectionFrameCache) and previous_cache.project_hash == manifest.namespace:
+                    cache = previous_cache
+                    cache.revise(manifest, renderer_abi=abi, profiles=profiles)
+                else:
+                    cache = SectionFrameCache(self.root/'section-cache-v1'/manifest.namespace,
+                                manifest=manifest, renderer_abi=abi, profiles=profiles, **limits)
+            else:
+                cache = PreviewFrameCache(self.root/project_hash/pipeline,
+                            project_fingerprint=project_hash, pipeline_fingerprint=pipeline,
+                            renderer_abi=abi, segments=section_segments(original, project_hash=project_hash),
+                            profiles=profiles, **limits)
             if adaptive:
                 from .preview_native_renderer import NativePreviewRenderer
                 factory = self.adaptive_renderer_factory or NativePreviewRenderer
@@ -450,6 +519,11 @@ class PreviewStreamAPI:
                                 telemetry=self.telemetry, capabilities=capabilities, verifier=guard,
                                 refinement_factory=refinement_factory)
             self.active = stream
+            if stream.invalidation is not None:
+                stream.invalidation = {**stream.invalidation, 'cancelled_jobs': self._cancelled_jobs}
+                self._cancelled_jobs = 0
+                with stream.condition:
+                    stream._event('cache-invalidated', invalidation=stream.invalidation)
             try:
                 return stream.command('seek', sequence=0, frame=frame)
             except BaseException:

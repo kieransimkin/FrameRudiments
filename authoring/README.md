@@ -22,3 +22,13 @@ clock is never driven by this worker. See the [S4 worker contract and tests](../
 
 Q5 uses the authored quality settings, but remains preview evidence rather than
 production or perceptual approval. Sequential feedback still needs S6/M11.
+
+## Section-aware draft edits
+
+S5 keeps a stable preview-cache workspace across edited drafts. A change to a
+time-bounded layer, or its scoped post-effects/animation/matte/displacement,
+invalidates **every cached frame in each dependent section**, while independent
+sections keep their best retained pixels. Shared graph, source-clock, quality,
+implementation and unknown dependencies invalidate conservatively. The preview
+shows an invalidation receipt; an obsolete edit request cannot replace a newer
+one. No authored files are rewritten. See the [S5 scope and concurrency contract](../docs/preview-stream-s5.md).

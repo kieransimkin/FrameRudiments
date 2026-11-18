@@ -186,22 +186,26 @@ class PreviewFrameCache:
         conn.execute('PRAGMA journal_mode=WAL')
         return conn
 
+    @staticmethod
+    def _create_tables(db):
+        db.execute('CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
+        db.execute('''CREATE TABLE IF NOT EXISTS segments (
+            id TEXT PRIMARY KEY, first_frame INTEGER NOT NULL,
+            end_frame INTEGER NOT NULL, generation INTEGER NOT NULL)''')
+        db.execute('''CREATE TABLE IF NOT EXISTS frames (
+            segment_id TEXT NOT NULL, frame INTEGER NOT NULL, generation INTEGER NOT NULL,
+            profile_id TEXT NOT NULL, quality_rank INTEGER NOT NULL,
+            width INTEGER NOT NULL, height INTEGER NOT NULL, image_sha TEXT NOT NULL,
+            pixel_sha TEXT NOT NULL, byte_size INTEGER NOT NULL,
+            cache_key TEXT NOT NULL, settings_sha TEXT NOT NULL,
+            last_access INTEGER NOT NULL,
+            PRIMARY KEY (segment_id,frame))''')
+
     def _initialize(self):
         with self._guard, closing(self._connect()) as db:
             db.execute('BEGIN IMMEDIATE')
             try:
-                db.execute('CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)')
-                db.execute('''CREATE TABLE IF NOT EXISTS segments (
-                    id TEXT PRIMARY KEY, first_frame INTEGER NOT NULL,
-                    end_frame INTEGER NOT NULL, generation INTEGER NOT NULL)''')
-                db.execute('''CREATE TABLE IF NOT EXISTS frames (
-                    segment_id TEXT NOT NULL, frame INTEGER NOT NULL, generation INTEGER NOT NULL,
-                    profile_id TEXT NOT NULL, quality_rank INTEGER NOT NULL,
-                    width INTEGER NOT NULL, height INTEGER NOT NULL, image_sha TEXT NOT NULL,
-                    pixel_sha TEXT NOT NULL, byte_size INTEGER NOT NULL,
-                    cache_key TEXT NOT NULL, settings_sha TEXT NOT NULL,
-                    last_access INTEGER NOT NULL,
-                    PRIMARY KEY (segment_id,frame))''')
+                self._create_tables(db)
                 values = dict(db.execute('SELECT key, value FROM meta'))
                 expected = {'schema': CACHE_SCHEMA, 'project_hash': self.project_hash,
                             'pipeline_hash': self.pipeline_hash, 'renderer_abi': self.renderer_abi,
@@ -302,6 +306,16 @@ class PreviewFrameCache:
             finally:
                 db.execute('ROLLBACK')
 
+    def _frame_identity(self, db, segment, frame, profile):
+        """Overridable identity hook; legacy S1 keys remain byte-for-byte stable."""
+        descriptor = Segment(segment['id'], segment['first_frame'], segment['end_frame'],
+                             self.project_hash, segment['generation'])
+        return frame_cache_identity(self.project_hash, descriptor, frame, profile,
+                                    renderer_abi=self.renderer_abi)
+
+    def _pipeline_identity(self, db, segment):
+        return self.pipeline_hash
+
     def ticket(self, frame, profile_id):
         """Capture generation so an old render cannot commit after invalidation."""
         if not isinstance(profile_id, str) or profile_id not in {p.id for p in self.profiles}:
@@ -318,11 +332,10 @@ class PreviewFrameCache:
                 profile = next(p for p in self.profiles if p.id == profile_id)
                 segment = Segment(row['id'], row['first_frame'], row['end_frame'],
                                   self.project_hash, row['generation'])
-                return FrameTicket(self.project_hash, self.pipeline_hash, self.renderer_abi,
+                return FrameTicket(self.project_hash, self._pipeline_identity(db, row), self.renderer_abi,
                                    segment.id, segment.generation, frame, profile.id,
                                    profile.quality_rank, profile.output_width, profile.output_height,
-                                   frame_cache_identity(self.project_hash, segment, frame, profile,
-                                                        renderer_abi=self.renderer_abi))
+                                   self._frame_identity(db, row, frame, profile))
             finally:
                 db.execute('ROLLBACK')
 
@@ -342,10 +355,7 @@ class PreviewFrameCache:
                 or not isinstance(row['pixel_sha'], str) or not _HEX.fullmatch(row['pixel_sha'])
                 or not 0 < row['byte_size'] <= MAX_PNG_BYTES):
             return False
-        segment = Segment(seg['id'], seg['first_frame'], seg['end_frame'],
-                          self.project_hash, seg['generation'])
-        return row['cache_key'] == frame_cache_identity(
-            self.project_hash, segment, row['frame'], profile, renderer_abi=self.renderer_abi)
+        return row['cache_key'] == self._frame_identity(db, seg, row['frame'], profile)
 
     def _ticket_current(self, db, ticket):
         if not isinstance(ticket, FrameTicket) or not self._validate_identity(db):
@@ -359,13 +369,10 @@ class PreviewFrameCache:
         if profile is None or (ticket.profile_id, ticket.width, ticket.height) != (
                 profile.id, profile.output_width, profile.output_height):
             return False
-        segment = Segment(row['id'], row['first_frame'], row['end_frame'], self.project_hash,
-                          row['generation'])
         return (ticket.project_fingerprint == self.project_hash
-                and ticket.pipeline_fingerprint == self.pipeline_hash
+                and ticket.pipeline_fingerprint == self._pipeline_identity(db, row)
                 and ticket.renderer_abi == self.renderer_abi
-                and ticket.cache_key == frame_cache_identity(self.project_hash, segment,
-                                                               ticket.frame, profile, renderer_abi=self.renderer_abi))
+                and ticket.cache_key == self._frame_identity(db, row, ticket.frame, profile))
 
     @staticmethod
     def _stat_identity(path):

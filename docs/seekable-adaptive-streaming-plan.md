@@ -1,6 +1,6 @@
 # Seekable adaptive streaming preview and monotonic frame cache — implementation plan
 
-**Status:** S0–S4 implementation candidates; S5–S7 remain planned.
+**Status:** S0–S5 implementation candidates; S6–S7 remain planned.
 S3 native integration and exact-head CI qualification remain open; see
 [adaptive rendering and its supported subset](preview-stream-s3.md).
 **Owner:** FrameRudiments authoring/runtime.
@@ -344,7 +344,8 @@ preview cache, quality-rank compare-and-swap, generation fencing, recoverable
 atomic writes, RAM LRU and bounded disk quotas. Refer to the
 [S1 storage contract, API and regression tests](preview-frame-cache-s1.md).
 S0's fingerprints still conservatively bind **every** section to the whole
-project. Do not claim isolated section invalidation before S5.
+project in legacy stores. The S5 section-aware store below supplies scoped closures;
+legacy stores are not silently migrated.
 
 ### S2 implementation candidate — seekable cache transport
 
@@ -364,8 +365,8 @@ continuous SSE and independently counted fresh-render/decode rates. Unsupported
 lower-resolution semantics impose an explicit quality floor; required graph
 nodes are not removed. Cache hits and stale completions never train the controller.
 Native setup time remains reported separately from steady-state render service.
-The S4 extension below builds on these foreground contracts. S5 precise segment
-invalidation and S6 stateful checkpoint seeking remain separate increments. Exact-head CI must run the
+The S4/S5 extensions below build on these foreground contracts. S6 stateful
+checkpoint seeking remains a separate increment. Exact-head CI must run the
 new unmocked native Project/Compositor regressions before acceptance.
 
 ### S4 implementation candidate — isolated stopped-cursor Q5 refinement
@@ -376,7 +377,26 @@ paused-only foreground resource yielding, generation-fenced cache upgrades,
 owned temporary-file cleanup and current-frame-only upgrade presentation.
 The parent exclusively owns cache admission; background timings never train
 the adaptive controller. UI opt-in preserves the existing timeline/audio clock.
-S5 precise segment invalidation and S6 state reconstruction remain outstanding.
+S5 below adds precise supported-section invalidation. S6 state reconstruction
+remains outstanding.
+
+### S5 implementation candidate — whole-section dependency invalidation
+
+The [S5 dependency, transaction and admission contract](preview-stream-s5.md)
+adds a stable workspace cache with server-computed per-section render closures,
+explicit asset/layer/node reverse dependencies, native source-window/repeat
+mapping and conservative temporal read reach. Time-gated layer/scoped-effect
+edits tombstone all frames in affected sections while independent Q5 entries
+retain their pixels and generations. Shared/unknown dependencies stay global.
+
+One SQLite revision transaction replaces affected section identities and fences
+old tickets; undo and restored boundaries never resurrect revoked generations.
+Foreground and background use a common per-section settings identity. Live edits
+avoid full PNG recovery scans, while cold opens and ordinary reads retain the
+existing corruption checks. Monotonic client edit sequences, retiring-worker
+gates, invalidation receipts and immediate stale-image clearing cover the UI
+and transport. The native Q5 retention tests are a separate exact-head CI gate.
+Temporal propagation is modelled, not executed: stateful seek remains S6/M11.
 
 ## Test and performance matrix
 

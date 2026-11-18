@@ -2,6 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import {PresentationFence,previewFrame,validFrameUrl} from './streamAdaptive.ts';
 import {StoppedCursor,observeTimelinePlayback} from './streamRefinement.ts';
+import {invalidationSummary,invalidatesFrame,nextDraftRevision,sameDraftImage} from './streamInvalidation.ts';
 
 type Props={project:Record<string,any>;sidecars:Record<string,unknown[]>;
   time:number;fps:number;duration:number};
@@ -21,6 +22,8 @@ async function post(path:string,data:Record<string,unknown>,signal?:AbortSignal)
 const rate=(n:number|null|undefined)=>n==null?'measuring':n.toFixed(1);
 export function StreamPreview({project,sidecars,time,fps,duration}:Props){
   const [picture,setPicture]=useState('');
+  const [pictureSource,setPictureSource]=useState<{project:Props['project'];sidecars:Props['sidecars'];refine:boolean}|null>(null);
+  const [invalidation,setInvalidation]=useState('');
   const [status,setStatus]=useState('Connecting adaptive stream…');
   const [target,setTarget]=useState(Math.max(15,Math.min(60,fps)));
   const [tier,setTier]=useState('');
@@ -35,13 +38,15 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
   const timeRef=useRef(time);timeRef.current=time;
   const request=useRef<((frame:number,command?:string)=>void)|null>(null);
   useEffect(()=>{
+    const revision=nextDraftRevision();
     let disposed=false,events:EventSource|null=null,token='',busy=true;
     let fence=new PresentationFence(previewFrame(timeRef.current,fps,duration));
     let desired=fence.frame,lastObserved=desired,nextSendAt=0,decodeId=0;
     let stopped=new StoppedCursor(desired,performance.now());
     let fetching:AbortController|null=null,pictureUrl='',retryTimer:number|undefined;
-    let restarting=false;
-    setPicture('');setDisplayed(null);setMetrics(null);setTier('');setRefinement(null);
+    let restarting=false,pictureFrame:number|null=null;
+    setPicture('');setPictureSource(null);setInvalidation('');
+    setDisplayed(null);setMetrics(null);setTier('');setRefinement(null);
     setStatus('Connecting adaptive stream…');
     const send=(frame:number,command='advance')=>{
       if(!token||disposed)return;
@@ -77,7 +82,8 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
         if(disposed||serial!==decodeId||token!==session||!fence.accepts(sequence,row.frame)){
           URL.revokeObjectURL(url);return;
         }
-        const old=pictureUrl;pictureUrl=url;setPicture(url);setDisplayed(row.frame);
+        const old=pictureUrl;pictureUrl=url;pictureFrame=row.frame;setPicture(url);setDisplayed(row.frame);
+        setPictureSource({project,sidecars,refine});
         if(old)URL.revokeObjectURL(old);
         setTier(`${row.profile_id} · ${row.origin==='refinement'?'background refinement':row.cache_hit?'cache hit':'fresh render'}`);
         if(row.refinement)setRefinement(row.refinement);
@@ -101,14 +107,27 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
       try{
         const initial=previewFrame(timeRef.current,fps,duration);
         const reply=await post('/api/stream/start',{project,sidecars,frame:initial,
-          target_fps:targetRef.current,adaptive:true,refine});
+          target_fps:targetRef.current,adaptive:true,refine,...revision});
         if(disposed){void post('/api/stream/close',{session:reply.session}).catch(()=>{});return;}
         token=reply.session;fence=new PresentationFence(initial);
         stopped=new StoppedCursor(initial,performance.now());
         setRefinement(reply.refinement??null);
+        setInvalidation(invalidationSummary(reply.invalidation)??'');
         desired=lastObserved=previewFrame(timeRef.current,fps,duration);
         events=new EventSource('/api/stream/events?session='+encodeURIComponent(token)+'&after=0&continuous=1');
         events.addEventListener('frame-ready',receive);
+        events.addEventListener('cache-invalidated',event=>{
+          if(disposed||!(event instanceof MessageEvent))return;
+          try{
+            const receipt=JSON.parse(event.data).invalidation;
+            setInvalidation(invalidationSummary(receipt)??'');
+            if(invalidatesFrame(receipt,pictureFrame??fence.frame)){
+              fetching?.abort();decodeId++;setPicture('');setPictureSource(null);setDisplayed(null);
+              if(pictureUrl){URL.revokeObjectURL(pictureUrl);pictureUrl='';}pictureFrame=null;
+              setStatus('Section invalidated; awaiting a current frame');
+            }
+          }catch{setStatus('Invalid cache revision event');}
+        });
         events.addEventListener('refinement-progress',event=>{
           if(disposed||!(event instanceof MessageEvent))return;
           try{const row=JSON.parse(event.data);if(row.refinement)setRefinement(row.refinement);}
@@ -159,8 +178,9 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
   };
   const desiredFrame=previewFrame(time,fps,duration);
   return <div className="fr-stream-preview" role="region" aria-label="Adaptive cached streaming preview">
-    {picture?<img src={picture} alt={`Cached preview frame ${displayed}`}/>:<span>Rendering seek position…</span>}
+    {picture&&sameDraftImage(pictureSource,project,sidecars,refine)?<img src={picture} alt={`Cached preview frame ${displayed}`}/>:<span>Rendering seek position…</span>}
     <small role="status">{status} · {tier} · {displayed!==null&&displayed!==desiredFrame?'late frame':'current request'} · preview only</small>
+    {invalidation&&<small role="status">{invalidation}</small>}
     <small>Fresh render FPS {rate(metrics?.fresh_fps)} · acknowledged FPS {rate(metrics?.acknowledged_fps)} ·
       p95 {rate(metrics?.render_ms_p95)} ms · floor {metrics?.quality_floor??'checking'}</small>
     <label><input type="checkbox" checked={refine} onChange={event=>setRefine(event.target.checked)}/>
