@@ -3,6 +3,13 @@
 **Version:** 1.1 · **24 October 2026** · **Status:** active; CPU graph and initial integration merged, full CI gates pending.
 **Companion:** [effect-graph-design.md](effect-graph-design.md); see the [consolidated effects/transitions/rendering roadmap](unified-effects-transitions-rendering-roadmap.md) for newer milestones and integration dependencies.
 
+**Milestone numbering:** this original granular plan retains its M10 GPU / M11
+editor numbering. Current implementation increments use the consolidated
+roadmap, where [M10.2 is connection authoring](authoring-graph-m10-2.md) and
+M10.3 is generated parameter and DanceNotion control editing. The original
+future port-format and backend requirements below are not claims about the
+currently executable RGBA8 graph.
+
 ## Baseline and verified dependencies
 
 Current repository files include `src/framerudiments/{compositor,post_effects,scoped_effects,effects,effect_catalogue,effect_renderers,modulation,layer_masks,layer_displacement,layer_animation,gpu_spatial_backend,project,render}.py`. Existing documentation `docs/scoped-post-effects.md` already specifies per-element and finished-frame post effects with DanceRudiment modulation; `docs/phase3-compositing.md` specifies animated layer transforms, displacement and GPU stage injection. Extend these routes rather than create incompatible replacements. `docs/project-format.md` describes strict `framerudiments.project.v1` validation and hashed asset references. The `authoring/` application uses React/TypeScript/Vite.

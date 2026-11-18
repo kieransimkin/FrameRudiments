@@ -123,6 +123,12 @@ controls, not a security sandbox for arbitrary native code.
 The parent verifies scope termination before deleting result/sidecar/profile
 directories or admitting a replacement. A cleanup failure blocks replacement.
 No cleanup searches for or kills unrelated browsers or arbitrary process IDs.
+The M10.2 increment also corrects inherited scoped Butterchurn cleanup: the
+owned page is closed and acknowledged while CDP is connected, before browser
+disconnect and owned-process shutdown. The page, browser, process and profile
+checks remain required; a failed page close still attempts the remaining owned
+cleanup and blocks replacement. This lifecycle correction is separate from
+M10.2 graph editing and still requires the native no-skip visualiser CI gate.
 These bounds cover explicit cancellation/shutdown. Abrupt termination of the
 whole server is not a POSIX crash-recovery guarantee for a blocked native call;
 external executables that deliberately escape the inherited session are outside

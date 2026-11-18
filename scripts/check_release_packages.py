@@ -22,6 +22,9 @@ REQUIRED_SOURCE = (
     "scripts/preset_behaviour_pipeline.py", "scripts/check_release_packages.py",
     "integration/qualify_effect_graph_m8_9.py", "integration/benchmark_effect_graph_m8_9_gpu.py",
     "integration/benchmark_effect_graph_m8_9_precision.py", "integration/benchmark_effect_graph_m8_9_resources.py",
+    "integration/qualify_graph_authoring_m10_2.py", "integration/butterchurn_cleanup.test.mjs",
+    "authoring/integration/graphRoundtrip.ts", "authoring/src/graphEditor.ts", "authoring/src/archive.ts",
+    "src/framerudiments/visualiser_assets/butterchurn-cleanup.mjs",
 )
 
 

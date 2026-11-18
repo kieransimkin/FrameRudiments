@@ -1,9 +1,10 @@
 import {createRequire} from 'node:module';
-import {readFile, readdir, mkdtemp, rm} from 'node:fs/promises';
+import {readFile, readdir, mkdtemp} from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
 import readline from 'node:readline';
 import {fileURLToPath} from 'node:url';
+import {closeButterchurnResources} from './butterchurn-cleanup.mjs';
 
 const lines = readline.createInterface({input: process.stdin, crlfDelay: Infinity});
 let browser, profile, page, scopedProcess;
@@ -75,17 +76,7 @@ try {
 } finally {
   lines.close();
   try {
-    let cleanupError;
-    try { if (browser) await browser.close(); } catch (error) { cleanupError = error; }
-    // Also owns launch/connect failures for which no Browser object exists.
-    try { if (scopedProcess) await scopedProcess.close(); } catch (error) { cleanupError ??= error; }
-    // Only this freshly allocated profile is removed. Windows may briefly retain
-    // file locks after browser.close() resolves; bounded fs retries handle that.
-    if (profile) await rm(profile, {recursive: true, force: true, maxRetries: 15, retryDelay: 200});
-    if (cleanupError) throw cleanupError;
-    send({ok: true, cleanup: {browser_closed: !browser || !browser.connected,
-      page_closed: !page || page.isClosed(), owned_profile_removed: true,
-      ...(scopedProcess ? {owned_process_closed: true} : {})}});
+    send({ok: true, cleanup: await closeButterchurnResources({page, browser, scopedProcess, profile})});
   } catch (error) {
     send({ok: false, error: `Owned visualiser cleanup failed: ${error}`});
     process.exitCode = 1;

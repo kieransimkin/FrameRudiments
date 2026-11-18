@@ -54,12 +54,14 @@ editable timing contracts in `docs/timing-editing.md` of its upstream project.
   as 0..1 before FrameRudiments maps them to native property ranges.
 - **Graph:** The **Effect DAG** workspace shows the actual `effect_graph` as
   topologically arranged RGBA8 nodes with distinct input/output ports and branch
-  connections. It supports selecting nodes, adding validated CPU-safe copy,
-  opacity and blur nodes, choosing an output, changing bounded opacity/filter
-  radius/transition progress and removing a safe terminal unary node. An absent
+  connections. [M10.2](authoring-graph-m10-2.md) adds click or drag connections,
+  independent forks, explicit ordered composite/matte/transition templates and
+  bounded input addition, removal and reordering. The inspector preserves
+  specialised settings while retaining bounded opacity/filter radius/transition
+  progress controls, output selection and safe terminal unary removal. An absent
   graph is initialized only with explicit action and starts from the final
-  `frame` source. Port dragging/rewiring is reserved for M10.2; advanced node
-  properties still require the Python executor's semantic validation.
+  `frame` source. Every branch and existing control binding must pass the native
+  Python validator before the current graph draft can preview or export.
   The adjacent layer/visualiser overview configures per-layer `visualiser_routing`
   and `visualiser_stage_injections`, not the executable DAG.
 - **Presets:** Style presets are copied into a selected Rudiment layer without
@@ -115,6 +117,14 @@ source-bound, checksum-pinned and immutable during authoring.
 
 ## Export and verification
 
+When `effect_graph` is present, preview and export wait for a successful native
+validation of the current project and sidecar snapshot. Any edit or undo/redo
+invalidates the prior approval. The same-origin `/api/graph/validate` route
+checks canonical graph parameters, all expanded dependencies, available source
+names and existing native control bindings. It does not render pixels or open
+a GPU, and cannot certify the whole project's visual output. A failed or
+unavailable check leaves the draft editable and can be retried.
+
 **Export project & sidecars** produces a standards-compatible ZIP with a new
 `project.json`, edited `.lrc` sidecars, and `AUTHORING-README.txt`. The
 current executable `effect_graph` is serialized in `project.json`; reusable
@@ -134,12 +144,17 @@ correct song analysis, acceptable GPU effects or platform compliance.
 `tests/test_authoring_preview.py` tests source protection, cue conventions,
 local-only static/audio APIs, and refusal to read arbitrary new project refs.
 The UI's Node tests exercise repeated excerpts, LRC parsing/export, cue naming,
-keyframes, native effect-graph/port structure and nonmutating edits, presets,
+keyframes, atomic graph rewiring, native port roles and nonmutating edits, presets,
 hashes and valid ZIP headers. Streaming tests cover the full 15–120 FPS target
 range, current/stale frame labels, session/invalidation fencing, numeric
 measurement validation and bounded content-free report projection. The
 `.github/workflows/authoring.yml` matrix tests Python 3.11/3.13 on both
 Windows/Ubuntu and builds the React UI with the released timeline dependency.
+M10.2 additionally tests all-branch native graph validation and stale validation
+fencing; browser interaction and physical GPU qualification require their own
+observed evidence. The [M10.2 cross-language qualifier](authoring-graph-m10-2.md#qualification-and-next-milestone)
+exports real TypeScript graph edits and compares native Python pixels against
+independent reference graphs through the authoring CI route.
 
 The first release uses the shared component's editable **cue-shaped timing
 marker** for keyframes, because its published v0.4.0 `TimingKind` supports only

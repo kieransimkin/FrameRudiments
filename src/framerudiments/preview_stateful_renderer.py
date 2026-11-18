@@ -177,7 +177,8 @@ class ExternalRuntimeGuard:
                         capture(Path(runtime) / name, 'npm/' + name, tree=name == 'node_modules')
                 else:
                     manifest.append(('npm', 'unset'))
-                for name in ('package-lock.json', 'butterchurn-page.js', 'butterchurn-worker.mjs'):
+                for name in ('package-lock.json', 'butterchurn-page.js', 'butterchurn-worker.mjs',
+                             'butterchurn-cleanup.mjs'):
                     capture(assets / name, 'bridge/' + name)
             if 'projectm' in engines:
                 library = self._environment['FRAMERUDIMENTS_PROJECTM_LIBRARY']

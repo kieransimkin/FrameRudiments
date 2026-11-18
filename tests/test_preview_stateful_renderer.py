@@ -346,6 +346,26 @@ def test_runtime_guard_detects_new_transitive_module(runtime):
         guard()
 
 
+def test_cleanup_helper_changes_revoke_runtime_identity_and_running_frame(runtime, monkeypatch):
+    import framerudiments.preview_stateful_renderer as module
+
+    package = runtime.parent/'package'
+    assets = package/'visualiser_assets'
+    assets.mkdir(parents=True)
+    helper = assets/'butterchurn-cleanup.mjs'
+    helper.write_text('export const cleanup = "before";', encoding='utf-8')
+    monkeypatch.setattr(module, '__file__', str(package/'preview_stateful_renderer.py'))
+    document = {'effects': [{'engine': 'butterchurn'}]}
+    guard = ExternalRuntimeGuard(document)
+    guard.verify_frame()
+    helper.write_text('export const cleanup = "changed";', encoding='utf-8')
+    assert ExternalRuntimeGuard(document).digest != guard.digest
+    with pytest.raises(StatefulSeekUnavailable, match='runtime_identity_changed'):
+        guard.verify_frame()
+    with pytest.raises(StatefulSeekUnavailable, match='runtime_identity_changed'):
+        guard()
+
+
 def test_missing_runtime_is_recorded_and_later_availability_invalidates(runtime, monkeypatch):
     missing = runtime/'missing'
     monkeypatch.setenv('FRAMERUDIMENTS_BUTTERCHURN_RUNTIME', str(missing))

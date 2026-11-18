@@ -6,6 +6,8 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+env:
+  POWERSHELL_TELEMETRY_OPTOUT: '1'
 jobs:
   authoring-backend:
     name: Local authoring safety / Python ${{ matrix.python }} (${{ matrix.os }})
@@ -20,9 +22,23 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
+      - name: Probe owned Python temporary files
+        shell: python
+        run: |
+          import os, pathlib, tempfile, sys
+          print(sys.version)
+          with tempfile.TemporaryDirectory(prefix='authoring-probe-', dir='.') as owned:
+              source = pathlib.Path(owned) / 'source'
+              source.write_bytes(b'authoring-preflight')
+              assert source.read_bytes() == b'authoring-preflight'
+              renamed = source.with_name('renamed')
+              os.replace(source, renamed)
+              renamed.unlink()
       - run: python -m pip install -e '.[dev]'
-      - run: ruff check scripts/authoring_preview.py tests/test_authoring_preview.py
-      - run: python -m pytest -q tests/test_authoring_preview.py
+      - run: ruff check scripts/authoring_preview.py src/framerudiments/graph_authoring.py tests/test_authoring_preview.py tests/test_graph_authoring.py tests/test_authoring_graph_http.py
+      - name: Native authoring safety and semantic validation
+        shell: pwsh
+        run: ./scripts/Invoke-Tests.ps1 -Python python -PytestArgs @('-q', 'tests/test_authoring_preview.py', 'tests/test_graph_authoring.py', 'tests/test_authoring_graph_http.py')
   shared-timeline-frontend:
     name: React Timeline Sequence authoring / Node 24
     runs-on: ubuntu-24.04
@@ -31,13 +47,49 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Probe exact authoring runtimes
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const owned=fs.mkdtempSync('authoring/.preflight-');
+          try {
+            fs.writeFileSync(`${owned}/source`,'authoring-preflight');
+            if(fs.readFileSync(`${owned}/source`,'utf8')!=='authoring-preflight')throw Error('readback failed');
+            fs.renameSync(`${owned}/source`,`${owned}/renamed`);
+            fs.unlinkSync(`${owned}/renamed`);
+          } finally {fs.rmdirSync(owned);}
+          console.log(process.version);
+          JS
+          python - <<'PY'
+          import os, pathlib, tempfile, sys
+          print(sys.version)
+          with tempfile.TemporaryDirectory(prefix='authoring-probe-', dir='.') as owned:
+              source = pathlib.Path(owned) / 'source'
+              source.write_bytes(b'authoring-preflight')
+              assert source.read_bytes() == b'authoring-preflight'
+              renamed = source.with_name('renamed')
+              os.replace(source, renamed)
+              renamed.unlink()
+          PY
       - name: Install exact declared React and released timeline versions
         run: npm --prefix authoring install --no-audit --no-fund
+      - name: Install canonical native renderer for exported-project qualification
+        run: python -m pip install -e '.[dev]'
       - name: Verify published shared timeline component version
         run: node -e "const p=require('./authoring/node_modules/react-timeline-sequence/package.json');if(p.version!=='0.4.0')process.exit(1)"
       - run: npm --prefix authoring test
       - run: npm --prefix authoring run typecheck
       - run: npm --prefix authoring run build
+      - name: Export edited graphs and compare actual native frames
+        run: python integration/qualify_graph_authoring_m10_2.py --output graph-authoring-qualification
+      - uses: actions/upload-artifact@v6
+        with:
+          name: graph-authoring-native-roundtrip
+          path: graph-authoring-qualification/
+          if-no-files-found: error
       - uses: actions/upload-artifact@v6
         with:
           name: framerudiments-authoring-local-ui

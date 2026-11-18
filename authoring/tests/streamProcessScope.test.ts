@@ -12,11 +12,15 @@ const parent = fileURLToPath(new URL('../', import.meta.url))
 const puppeteerMock = `
 const fs = require('node:fs');
 const log = item => fs.appendFileSync(process.env.SCOPE_TEST_LOG, JSON.stringify(item)+'\\n');
-let closed=false;
+let closed=false,connected=true;
 const page={setRequestInterception:async()=>{},on:()=>{},setContent:async()=>{},addScriptTag:async()=>{},
- evaluate:async()=>({renderer:'explicit-test-double'}),isClosed:()=>closed};
+ evaluate:async()=>({renderer:'explicit-test-double'}),isClosed:()=>closed,
+ close:async()=>{log({event:'page.close'});await new Promise(resolve=>setImmediate(resolve));
+ if(!connected)throw Error('CDP disconnected before page close acknowledgement');
+ if(process.env.SCOPE_TEST_FAILURE==='page.close')throw Error('injected page close failure');
+ closed=true;log({event:'page.closed'});}};
 function browser(){ return {connected:true, newPage:async()=>page,version:async()=>'double-browser',
- close:async function(){log({event:'browser.close'});closed=true;this.connected=false;
+ close:async function(){log({event:'browser.close'});connected=false;this.connected=false;
  if(process.env.SCOPE_TEST_FAILURE==='close')throw Error('injected close failure');}}; }
 // Pinned Puppeteer25 defaultArgs is async. A synchronous double concealed a
 // real native-launch failure by accepting an unresolved Promise as argv.
@@ -98,7 +102,8 @@ test('S6 browser stays in owned scope and closes both browser and process', asyn
   assert.ok(launch.options.args.includes('--remote-debugging-port=0'))
   assert.equal(calls.some(call=>call.event==='launch'),false)
   assert.deepEqual(calls.filter(call=>call.event.endsWith('.close')).map(call=>call.event),
-    ['browser.close','process.close'])
+    ['page.close','browser.close','process.close'])
+  assert.ok(calls.findIndex(call=>call.event==='page.closed')<calls.findIndex(call=>call.event==='browser.close'))
   assert.equal(messages.at(-1).cleanup.owned_process_closed,true)
   assert.ok(Object.values(messages.at(-1).cleanup).every(Boolean))
 })
@@ -128,6 +133,14 @@ test('S6 failed browser close still closes owned process and reports cleanup fai
   assert.equal(code,1)
   assert.equal(calls.filter(call=>call.event==='process.close').length,1)
   assert.match(messages.at(-1).error,/Owned visualiser cleanup failed/)
+})
+
+test('S6 failed page close still closes browser and process and reports cleanup failure',async()=>{
+  const {code,calls,messages}=await exercise(true,'page.close')
+  assert.equal(code,1)
+  assert.deepEqual(calls.filter(call=>call.event.endsWith('.close')).map(call=>call.event),
+    ['page.close','browser.close','process.close'])
+  assert.match(messages.at(-1).error,/Owned visualiser cleanup failed: Error: injected page close failure/)
 })
 
 test('ordinary visualiser rendering retains its existing Puppeteer launch route',async()=>{

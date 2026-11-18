@@ -40,9 +40,9 @@ test('layout displays separate input ports and preserves fork identities',()=>{
 
 test('existing 3-input matte transition and unsupported specialised nodes are displayed without rewriting',()=>{
  const graph=withGraph([
-  {id:'frame',type:'source'}, {id:'mask',type:'source'},
+  {id:'frame',type:'source'}, {id:'background',type:'source'},
   {id:'key',type:'chroma_key',inputs:['frame'],key_color:'#00ff00'},
-  {id:'mix',type:'transition',inputs:['frame','key','mask'],transition_style:'matte',progress:.5},
+  {id:'mix',type:'transition',inputs:['frame','key','background'],transition_style:'matte',progress:.5},
  ],'mix');
  const view=layoutEffectGraph(graph)!;
  assert.deepEqual(view.nodes.find(n=>n.id==='mix')!.inputs.map(x=>x.label),['from','to','matte']);
@@ -58,7 +58,7 @@ test('invalid graph structures and port references fail without silent rewrite',
  assert.throws(()=>inspectEffectGraph(withGraph([{id:'a',type:'source'}],'absent')),/output/);
  assert.throws(()=>withEffectNode(base,'opacity'),/Create/);
  assert.throws(()=>withInitialEffectGraph(withInitialEffectGraph(base)),/already exists/);
- assert.throws(()=>withEffectNode(withInitialEffectGraph(base),'transition' as any),/Unsupported/);
+ assert.throws(()=>withEffectNode(withInitialEffectGraph(base),'future_effect' as any),/Unsupported/);
 });
 
 test('bounds, output and terminal removal are checked against references',()=>{

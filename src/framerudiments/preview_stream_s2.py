@@ -500,7 +500,7 @@ class PreviewStreamAPI:
     def __init__(self, project_file, validate_draft, render_one, *, telemetry=None,
                  cache_root=None, project_loader=None, adaptive_renderer_factory=None, refinement_factory=None,
                  stateful_renderer_factory=None, stateful_guard_factory=None,
-                 acknowledgement_source='client_decode_ack', cache_limits=None):
+                 acknowledgement_source='client_decode_ack', cache_limits=None, graph_validator=None):
         self.path = Path(project_file).resolve()
         self.validate = validate_draft
         self.render = render_one
@@ -510,6 +510,7 @@ class PreviewStreamAPI:
         self.refinement_factory = refinement_factory
         self.stateful_renderer_factory = stateful_renderer_factory
         self.stateful_guard_factory = stateful_guard_factory
+        self.graph_validator = graph_validator
         if acknowledgement_source not in ('client_decode_ack', 'harness_png_decode'):
             raise ValueError('unsupported acknowledgement source')
         self.acknowledgement_source = acknowledgement_source
@@ -570,6 +571,10 @@ class PreviewStreamAPI:
         if (not isinstance(sidecars, dict) or set(sidecars)-{'lines','words','cues'}
                 or any(not isinstance(v, list) or len(v)>100000 for v in sidecars.values())):
             raise ValueError('invalid sidecars')
+        if self.graph_validator is not None:
+            # Production authoring validates the exact project/sidecar snapshot
+            # before any cache reuse or worker can bypass semantic admission.
+            self.graph_validator(self.path, draft, sidecars)
         frame = body.get('frame', 0)
         _integer(frame, 'frame', 0, original.frame_count-1)
         target = requested_target_fps(original, body.get('target_fps'))

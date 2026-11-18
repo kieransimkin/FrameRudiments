@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.31 — 18 November 2026
+**Version:** 1.32 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -177,9 +177,18 @@ All external shader/model/media sources must be pinned or versioned, constrained
   Implementation candidate: [M10.1 visual authoring](authoring-workspace.md#editing-operations).
   Selectable, deterministic node/port layout, safe unary templates and inspector,
   explicit graph creation, output control and nonmutating JSON export are present.
-  Full semantic rewiring belongs to M10.2; exact-head CI acceptance pending.
+  M10.2 extends this surface with connection editing and native semantic checks.
 - **M10.2** Fork/merge/matte/transition connection authoring and semantic validation.
+  Implementation candidate: [M10.2 graph connections](authoring-graph-m10-2.md).
+  Atomic ordered input edits, explicit fork/merge/matte/transition templates,
+  available project sources and configuration-specific RGBA8 port roles are
+  present. The Python validator admits the entire graph and existing native
+  control bindings before the current graph draft can preview or export;
+  stale responses cannot approve a newer draft. Native pixel qualification and
+  exact-head CI remain distinct from device and perceptual acceptance.
 - **M10.3** Automatically generated parameter and DanceNotion control editors.
+  Next planned major authoring milestone; M10.2 preserves existing specialised
+  settings and bindings without introducing a second parameter schema.
 - **M10.4** Transition previews and scrub-safe frame evaluation with quality/performance switch.
 - **M10.5** Round-trip JSON fixture and undo/redo tests.
 - **M10.S — seekable adaptive real-time streaming preview (S0–S7 candidates).**

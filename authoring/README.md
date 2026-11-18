@@ -12,6 +12,29 @@ validate the result with the existing FrameRudiments `plan` / `preflight`
 commands. The one-shot preview omits GPU feedback; the opt-in adaptive stream
 uses the verified S6 replay route below.
 
+## M10.2 graph connections
+
+Open **Effect DAG** to connect an output to an input by clicking either port
+first or dragging from an output. The selected node's ordered input controls
+provide the same operation without dragging. Escape cancels a pending wire.
+Fork from a selected node, register an available project source, or create a
+copy, opacity, blur, composite, matte, dissolve transition or matte transition.
+Multi-input templates require complete ordered source choices before creation;
+composites and mattes also support bounded input addition, removal and reordering.
+
+Every connection carries RGBA8 pixels. Mask, displacement and texture labels
+describe their native interpretation. Missing sources, self-connections,
+cycles and invalid input counts leave the previous draft intact. Existing
+specialised effect parameters, native controls and source clocks are retained.
+Projects still opt in to `effect_graph` explicitly.
+
+A graph draft needs a current successful check from the native Python validator
+before preview or project export. Editing, undoing or redoing invalidates the
+previous check; an unavailable check can be retried. The check covers canonical
+graph parameters, all branches, provider names and existing control bindings,
+without rendering a frame or opening a GPU. Read the [M10.2 connection and
+validation contract](../docs/authoring-graph-m10-2.md) for limits and qualification.
+
 ## Adaptive preview and paused Q5 refinement
 
 Enable **Adaptive cache preview** in the renderer workspace. Its **Refine paused

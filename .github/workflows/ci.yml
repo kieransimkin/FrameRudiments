@@ -114,6 +114,9 @@ jobs:
   visualiser-acceptance:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
+    env:
+      POWERSHELL_TELEMETRY_OPTOUT: '1'
+      PYTHONFAULTHANDLER: '1'
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -122,6 +125,21 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
+      - name: Connected-browser cleanup lifecycle regressions
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          fs.mkdirSync('.test-tmp',{recursive:true});
+          const owned=fs.mkdtempSync('.test-tmp/cleanup-probe-');
+          try {
+            fs.writeFileSync(`${owned}/source`,'cleanup-preflight');
+            if(fs.readFileSync(`${owned}/source`,'utf8')!=='cleanup-preflight')throw Error('readback failed');
+            fs.renameSync(`${owned}/source`,`${owned}/renamed`);
+            fs.unlinkSync(`${owned}/renamed`);
+          } finally {fs.rmdirSync(owned);}
+          console.log(process.version);
+          JS
+          node --test integration/butterchurn_cleanup.test.mjs
       - name: Native and headless rendering dependencies
         run: |
           bash scripts/install_ci_render_dependencies.sh --gpu
@@ -146,7 +164,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          xvfb-run -a python -X faulthandler -m pytest -vv -s \
+          xvfb-run -a pwsh -NoLogo -NoProfile -File scripts/Invoke-Tests.ps1 -Python python -vv -s \
             integration/test_music_spatial_gpu.py \
             integration/test_fire_volume_gpu.py \
             --junitxml=gpu-mesh-results.xml 2>&1 | tee gpu-mesh-console.log
@@ -154,7 +172,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          xvfb-run -a python -X faulthandler -m pytest -vv -s \
+          xvfb-run -a pwsh -NoLogo -NoProfile -File scripts/Invoke-Tests.ps1 -Python python -vv -s \
             integration --ignore=integration/test_music_spatial_gpu.py --ignore=integration/test_fire_volume_gpu.py \
             --junitxml=gpu-results.xml 2>&1 | tee gpu-console.log
       - name: Verify both GPU suites ran without skipped tests
