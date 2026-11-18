@@ -1,4 +1,4 @@
-# M12.1 — scene-linear colour and pinned float32 AOV interchange
+# M12 — scene-linear colour, OpenEXR interchange and native spatial AOVs
 
 **Status: implementation candidate.** This is an opt-in, offline adapter. It does **not** silently change
 FrameRudiments' established RGB8 compositor or existing encoded H.264/AAC renderer. A native character,
@@ -66,6 +66,65 @@ three-component normal direction in the producer's declared frame of reference. 
 velocity in **pixels per encoded frame**. **No inferred geometry, units or coordinate transform** is applied.
 Data consumers should agree on camera space and motion-vector convention explicitly before interchange.
 
+
+## M12.2 — Native CPU solid mesh HDR and geometry AOVs
+
+`framerudiments.solid_spatial_aov` adds explicit float32 captures from the **actual**
+`SolidSpatialRenderer` triangle rasteriser, supporting its existing torus, sphere and
+animated terrain families. There is no image-based depth, normal, or motion estimator:
+all pixel coverage and occlusion use the native `_raster_triangle` reciprocal-Z test,
+with the same source-clock mesh vertices, camera projection and material settings.
+The only entry point is opt-in; normal `render()` and project MP4 output retain their
+existing bytes, postprocessing, clock and API.
+
+```python
+from framerudiments.solid_spatial_aov import render_solid_aov, export_solid_exr
+
+# Obtain renderer and current/previous RudimentFrame objects from the existing
+# native rendering pipeline. Supplying previous_frame is optional.
+frame = render_solid_aov(renderer, current_frame, previous_frame=previous_frame,
+                         light_stops=0.0)
+assert frame.colour_space == "Linear-sRGB"
+assert {"RGB", "A", "Z", "N", "motion"} <= set(frame.channels())
+receipt = export_solid_exr(renderer, current_frame, "./solid-aovs.exr",
+                           previous_frame=previous_frame)
+```
+
+- **Beauty RGB** comes from the same real Cook-Torrance/GGX native material equations,
+  **before** the legacy sRGB8 clamp. An explicitly requested `light_stops` between -8
+  and +8 changes direct illuminance and preserves float highlights above 1.0.
+  The background is explicitly decoded from its authored sRGB8 colour; it is not
+  silently upgraded to a captured HDR environment. The colour-space name is
+  `Linear-sRGB`, **not** ACEScg unless a separate trusted OCIO transform is applied.
+- **Depth Z** is positive camera-forward distance, calculated at the winning
+  surface using the native perspective-correct z-buffer. Background has depth 0;
+  the channel is **not** a world-space height map or a luminance estimate.
+- **Normals N.X/Y/Z** are camera-oriented unit face normals at the winning
+  triangle, using the native camera rotation. Background normals are zero.
+- **Motion motion.X/Y** is the screen-pixel displacement from the *explicitly
+  supplied* adjacent previous native frame to the current one, reconstructed
+  from the same mesh vertex identities with homogeneous perspective reprojection.
+  No previous frame => no motion AOV. Incorrect adjacency, reversed clock and
+  faces unprojectable at the earlier frame fail closed. Static meshes produce
+  approximately zero motion, rather than bogus vectors from screen blending.
+- **Alpha A** records opaque winning geometry over the actual configured
+  background alpha. The captures are **pre-fog, pre-glow, pre-output-AA**;
+  they do not reconstruct depth or coverage for postprocessing and external
+  visualiser effects. Rendering optical flow, separate volume depth and object-ID
+  AOVs remains future work.
+
+Captures are detached, immutable float32 `AOVFrame`s using M12.1 EXR encoding
+and readback. Preflight checks the combined logical payload against **512 MiB**
+before allocating, and the actual peak can be higher because AOVFrame detaches
+copies and the z-buffer is separately retained. No GPU AOV support is claimed:
+GPU mesh/fog paths, multi-layer composites, production ACES parity and real
+hardware HDR qualification are separate M12.3+ gates.
+
+Run local deterministic kernels with
+`python -m pytest -q tests/test_solid_spatial_aov_m12.py`, and the existing
+`.github/workflows/colour-aov-m12.yml` matrix runs that suite alongside the
+M12.1 native OpenEXR and OCIO tests on Windows/Linux.
+
 ## Qualification / follow-on work
 
 `tests/test_colour_aov_m12.py` checks validation, file pins, no overwrite, rollback, the OCIO processing
@@ -74,7 +133,7 @@ boundary and an injected EXR interface. The separate workflow
 and `opencolorio` on Windows/Linux, Python 3.11/3.13, then runs actual float32 EXR readback through
 `tests/test_colour_aov_m12_real.py`. Full device/HDR/ACES colour reference approval remains open.
 
-Next: M12.2 explicit scene-linear producer buffers and real depth/normal/velocity attachments from
-supported spatial/mesh engines; M12.3 ACES reference profiles, actual external LUT identity and HDR
-GPU/CPU parity. M13 timeline I/O remains independently scheduled. M12.1 never equates synthetic AOVs
+M12.2 covers the native CPU solid-surface producer only. Next: M12.3 OCIO/ACES
+reference profiles, actual external LUT identity, GPU mesh/AOV parity, HDR encoded
+outputs, and broader compositor/scene-layer geometry integration. M13 timeline I/O remains independently scheduled. M12.1 never equates synthetic AOVs
 with measured, motion-captured or production geometry.

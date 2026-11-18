@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.36 — 18 November 2026
+**Version:** 1.37 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -290,9 +290,15 @@ All external shader/model/media sources must be pinned or versioned, constrained
   interchange](colour-aov-m12.md). Opt-in OpenColorIO colour conversion,
   checksum-pinned authored R/G/B, alpha, depth, normals and velocity channels,
   strict resource checks and independently decoded ZIP OpenEXR receipts.
-  Existing RGB8 compositor/production encoder remain untouched. M12.2 native
-  AOV producers and M12.3 ACES reference/GPU-HDR parity are separately gated;
-  no depth or motion data is invented from RGB images.
+  Existing RGB8 compositor/production encoder remain untouched. Native CPU
+  geometry integration is described below; M12.3 ACES/GPU-HDR parity remains
+  separately gated. No depth or motion is invented from RGB images.
+  M12.2 implementation candidate: opt-in [native CPU solid-mesh AOV capture](colour-aov-m12.md#m122--native-cpu-solid-mesh-hdr-and-geometry-aovs).
+  The real torus/sphere/terrain projector supplies unclipped scene-linear GGX,
+  native reciprocal-Z depth, camera-facing facet normals and explicitly sourced
+  adjacent-frame motion vectors. EXR receipts preserve channel identities.
+  Normal RGB8 renders remain unchanged, and GPU/ACES/device qualification
+  remains open. This is geometry AOV capture, not inferred optical flow.
 - **M13 Timeline:** OpenTimelineIO clip/transition import-export, precise duration and source provenance.
 - **M14 Computer vision:** optional ONNX segmentation/depth/flow outputs with model checksums and memory limits.
 - **M15 Experimental adapters:** isolated OpenFX host, OpenUSD/Hydra, GStreamer/NDI/Spout/Syphon, Vulkan/WebGPU, OSC/MIDI. Each integration requires licensing review and CI capability declaration before shipping.

@@ -5,7 +5,10 @@ on:
     branches: [main]
     paths:
       - 'src/framerudiments/colour_aov*.py'
+      - 'src/framerudiments/solid_spatial_aov.py'
+      - 'src/framerudiments/solid_spatial_renderers.py'
       - 'tests/test_colour_aov_m12*.py'
+      - 'tests/test_solid_spatial_aov_m12.py'
       - 'pyproject.toml'
       - '.github/workflows/colour-aov-m12.yml'
   pull_request:
@@ -32,6 +35,6 @@ jobs:
       - name: Require real native APIs, not mocked availability
         run: python -c "import OpenEXR, PyOpenColorIO, numpy; assert hasattr(OpenEXR, 'File')"
       - name: Lint colour adapters and tests
-        run: ruff check src/framerudiments/colour_aov.py src/framerudiments/colour_aov_cli.py tests/test_colour_aov_m12.py tests/test_colour_aov_m12_real.py
+        run: ruff check src/framerudiments/colour_aov.py src/framerudiments/colour_aov_cli.py src/framerudiments/solid_spatial_aov.py tests/test_colour_aov_m12.py tests/test_colour_aov_m12_real.py tests/test_solid_spatial_aov_m12.py
       - name: Unit tests and real EXR readback (no skipped cases)
-        run: python -m pytest -q -rs tests/test_colour_aov_m12.py tests/test_colour_aov_m12_real.py
+        run: python -m pytest -q -rs tests/test_colour_aov_m12.py tests/test_colour_aov_m12_real.py tests/test_solid_spatial_aov_m12.py

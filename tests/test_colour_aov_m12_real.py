@@ -8,11 +8,11 @@ import hashlib
 import numpy as np
 import pytest
 
+from framerudiments.colour_aov import AOVFrame, read_exr, write_exr
+
 OpenEXR = pytest.importorskip("OpenEXR")
 if not hasattr(OpenEXR, "File"):
     pytest.skip("OpenEXR modern File API is required", allow_module_level=True)
-
-from framerudiments.colour_aov import AOVFrame, read_exr, write_exr
 
 
 def sha256(path):
