@@ -6,8 +6,12 @@ import {ADDABLE_EFFECTS,availableEffectSources,connectionIssue,effectInputContra
   type AddableEffect,type EffectNode} from './graphEditor.ts';
 import {pendingConnectionText,selectGraphPort,type GraphEndpoint,type PendingConnection} from './graphInteraction.ts';
 import {GraphParameterEditor} from './GraphParameterEditor.tsx';
+import {NativeFramePreview} from './NativeFramePreview.tsx';
+import type {PreviewQuality} from './graphPreview.ts';
+import type {GraphControlCatalog} from './graphControls.ts';
 
 export interface GraphValidationDisplay{phase:'none'|'checking'|'valid'|'invalid'|'unavailable';message:string;}
+interface PreviewSettings {frame:number;quality:PreviewQuality;enabled:boolean;blockedMessage?:string;}
 interface Props {
  project:Document;revision?:object;sidecars?:Record<string,unknown>;validation:GraphValidationDisplay;onValidate:()=>void;
  onInit:()=>void;onSource:(id:string)=>void;
@@ -15,6 +19,7 @@ interface Props {
  onRewire:(target:string,index:number,source:string)=>void;onInputs:(target:string,inputs:string[])=>void;
  onNativeEdit?:(project:Document,revision:object)=>boolean;
  onOutput:(id:string)=>void;onRemove:(id:string)=>void;
+ preview?:PreviewSettings;
 }
 const errorText=(error:unknown)=>error instanceof Error?error.message:'Graph operation failed';
 const names:Record<AddableEffect,string>={copy:'Copy / fork',opacity:'Opacity',filter:'Blur',composite:'Composite layers',
@@ -22,8 +27,20 @@ const names:Record<AddableEffect,string>={copy:'Copy / fork',opacity:'Opacity',f
 const template=(kind:AddableEffect):EffectNode=>({id:'new-node',type:kind==='matte_transition'?'transition':kind,
  ...(kind==='matte_transition'?{transition_style:'matte'}:{})});
 
+/** The accepted native catalogue owns chain expansion and target names. */
+export function SelectedGraphPreview({catalog,project,revision,sidecars,owner,preview}:{
+ catalog:GraphControlCatalog;project:Document;revision:object;sidecars?:Record<string,unknown>;owner:string;preview:PreviewSettings;
+}){
+ if(catalog.node.type==='transition')return <NativeFramePreview project={project} revision={revision} sidecars={sidecars}
+   frame={preview.frame} quality={preview.quality} enabled={preview.enabled} blockedMessage={preview.blockedMessage}
+   target={{id:catalog.node.id,label:catalog.node.label,request_sha256:catalog.request_sha256}}/>;
+ if(catalog.targets.some(target=>target.authored_id===owner&&target.type==='transition'))return <p className="fr-transition-hint">
+   Choose a transition stage in Parameter target to compare its inputs and result.</p>;
+ return null;
+}
+
 export function EffectGraphEditor({project,revision=project,sidecars,validation,onValidate,onInit,onSource,onAdd,onRewire,onInputs,
- onNativeEdit,onOutput,onRemove}:Props){
+ onNativeEdit,onOutput,onRemove,preview}:Props){
  const [selected,setSelected]=useState(''),[adding,setAdding]=useState<AddableEffect>('opacity');
  const [createInputs,setCreateInputs]=useState<string[]>([]),[makeOutput,setMakeOutput]=useState(true);
  const [newSource,setNewSource]=useState(''),[appendSource,setAppendSource]=useState('');
@@ -196,7 +213,9 @@ export function EffectGraphEditor({project,revision=project,sidecars,validation,
            <button disabled={!active||graph!.nodes.length>=256} onClick={()=>active&&act(()=>onAdd('copy',[active.id],{makeOutput:false}),`Created a copy branch from ${active.id}.`)}>Fork copy</button>
            <button disabled={!canRemove} onClick={()=>active&&act(()=>{onRemove(active.id);setSelected('');})}>Remove terminal node</button></div>
          {active&&<>
-           <GraphParameterEditor project={project} revision={revision} sidecars={sidecars} node={activeId} onApply={onNativeEdit}/>
+           <GraphParameterEditor project={project} revision={revision} sidecars={sidecars} node={activeId} onApply={onNativeEdit}
+             renderPreview={preview?catalog=><SelectedGraphPreview catalog={catalog} project={project} revision={revision}
+               sidecars={sidecars} owner={activeId} preview={preview}/>:undefined}/>
            <div className="fr-fx-port-details"><strong>Ordered input connections</strong>
              {!active.inputs?.length?<p>No inputs on this source.</p>:active.inputs.map((input,index)=><div className="fr-fx-input-row" key={index}>
                <label>{contract?.labels[index]??`input ${index+1}`}<select aria-label={`${active.id} ${contract?.labels[index]??`input ${index+1}`} source`} value={input}

@@ -25,6 +25,9 @@ REQUIRED_SOURCE = (
     "integration/qualify_graph_authoring_m10_2.py", "integration/butterchurn_cleanup.test.mjs",
     "integration/qualify_graph_controls_m10_3.py", "authoring/integration/graphControlsRoundtrip.ts",
     "authoring/src/graphControls.ts", "authoring/src/GraphParameterEditor.tsx",
+    "integration/qualify_graph_preview_m10_4.py", "authoring/integration/graphPreviewRoundtrip.ts",
+    "authoring/src/graphPreview.ts", "authoring/src/NativeFramePreview.tsx",
+    "authoring/src/native-frame-preview.css",
     "authoring/integration/graphRoundtrip.ts", "authoring/src/graphEditor.ts", "authoring/src/archive.ts",
     "src/framerudiments/visualiser_assets/butterchurn-cleanup.mjs",
 )

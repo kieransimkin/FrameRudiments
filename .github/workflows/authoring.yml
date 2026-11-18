@@ -35,10 +35,10 @@ jobs:
               os.replace(source, renamed)
               renamed.unlink()
       - run: python -m pip install -e '.[dev]'
-      - run: ruff check scripts/authoring_preview.py src/framerudiments/graph_authoring.py src/framerudiments/graph_authoring_controls.py src/framerudiments/effect_graph_parameters.py tests/test_authoring_preview.py tests/test_graph_authoring.py tests/test_authoring_graph_http.py tests/test_effect_graph_parameters.py tests/test_graph_authoring_controls.py tests/test_graph_authoring_controls_http.py
+      - run: ruff check scripts/authoring_preview.py src/framerudiments/graph_authoring.py src/framerudiments/graph_authoring_controls.py src/framerudiments/graph_authoring_preview.py src/framerudiments/effect_graph_parameters.py tests/test_authoring_preview.py tests/test_graph_authoring.py tests/test_authoring_graph_http.py tests/test_effect_graph_parameters.py tests/test_graph_authoring_controls.py tests/test_graph_authoring_controls_http.py tests/test_graph_authoring_preview.py tests/test_graph_authoring_preview_http.py
       - name: Native authoring safety and semantic validation
         shell: pwsh
-        run: ./scripts/Invoke-Tests.ps1 -Python python -PytestArgs @('-q', 'tests/test_authoring_preview.py', 'tests/test_graph_authoring.py', 'tests/test_authoring_graph_http.py', 'tests/test_effect_graph_parameters.py', 'tests/test_graph_authoring_controls.py', 'tests/test_graph_authoring_controls_http.py')
+        run: ./scripts/Invoke-Tests.ps1 -Python python -PytestArgs @('-q', 'tests/test_authoring_preview.py', 'tests/test_graph_authoring.py', 'tests/test_authoring_graph_http.py', 'tests/test_effect_graph_parameters.py', 'tests/test_graph_authoring_controls.py', 'tests/test_graph_authoring_controls_http.py', 'tests/test_graph_authoring_preview.py', 'tests/test_graph_authoring_preview_http.py')
   shared-timeline-frontend:
     name: React Timeline Sequence authoring / Node 24
     runs-on: ubuntu-24.04
@@ -87,6 +87,8 @@ jobs:
         run: python integration/qualify_graph_authoring_m10_2.py --output graph-authoring-qualification
       - name: Edit native parameters and controls through HTTP, export and compare frames
         run: python integration/qualify_graph_controls_m10_3.py --output graph-controls-qualification
+      - name: Compare scrubbed transition previews against independent native frames
+        run: python integration/qualify_graph_preview_m10_4.py --output graph-preview-qualification
       - uses: actions/upload-artifact@v6
         with:
           name: graph-authoring-native-roundtrip
@@ -96,6 +98,11 @@ jobs:
         with:
           name: graph-controls-native-roundtrip
           path: graph-controls-qualification/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v6
+        with:
+          name: graph-preview-native-comparison
+          path: graph-preview-qualification/
           if-no-files-found: error
       - uses: actions/upload-artifact@v6
         with:

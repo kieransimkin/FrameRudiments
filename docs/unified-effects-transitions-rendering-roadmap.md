@@ -195,8 +195,15 @@ All external shader/model/media sources must be pinned or versioned, constrained
   ZIP exports match independent native renders in 22 cases / 88 RGB8 comparisons.
   Browser interaction and exact-candidate platform/GPU CI remain separate gates.
 - **M10.4** Transition previews and scrub-safe frame evaluation with quality/performance switch.
-  Next planned major authoring milestone.
+  Implementation candidate: [native transition previews](authoring-preview-m10-4.md).
+  From/Result/To comparisons use the selected native transition or expanded chain
+  stage at one integer frame; Fast/Authored changes output quality while retaining
+  native clocks and temporal history. Coalesced requests and decoded-image identity
+  checks fence stale output in both normal and transition views. Actual HTTP and
+  TypeScript previews match 312 independent transition images plus two normal
+  frames; browser paint and exact-candidate CI remain separate gates.
 - **M10.5** Round-trip JSON fixture and undo/redo tests.
+  Next planned major authoring milestone.
 - **M10.S — seekable adaptive real-time streaming preview (S0–S7 candidates).**
   [Dedicated S0–S7 implementation plan](seekable-adaptive-streaming-plan.md):
   [S0 clock/quality/telemetry contracts](preview-stream-s0-contract.md) and

@@ -148,10 +148,12 @@ def render_preview(project_file, draft, frame, *, quality="fast", sidecars=None)
     from framerudiments.project import Project
     from framerudiments.compositor import Compositor
     from framerudiments.io import sha256 as file_sha
+    from framerudiments.graph_authoring_preview import check_preview_size, check_preview_png
     from PIL import Image
 
     original = Project.load(project_file)
     check_draft(original.data, draft)
+    check_preview_size(original.width, original.height)
     if type(frame) is not int or frame < 0 or frame >= original.frame_count:
         raise ValueError("Preview frame outside programme")
     if quality not in ("fast", "full"):
@@ -176,6 +178,7 @@ def render_preview(project_file, draft, frame, *, quality="fast", sidecars=None)
         if quality == "fast":
             contents["render_quality"] = {"enabled": False}
         candidate = Project(contents, original.base)
+        check_preview_size(candidate.width, candidate.height)
         # Independent source refs are always rechecked before paint.
         candidate.verify_inputs()
         if 'effect_graph' in contents or contents.get('effect_graph_controls'):
@@ -193,7 +196,9 @@ def render_preview(project_file, draft, frame, *, quality="fast", sidecars=None)
             raise RuntimeError("Preview renderer returned an invalid frame")
         stream = io.BytesIO()
         image.save(stream, format="PNG")
-        return stream.getvalue()
+        encoded = stream.getvalue()
+        check_preview_png(encoded)
+        return encoded
 
 
 
@@ -342,10 +347,14 @@ class AuthoringHandler(BaseHTTPRequestHandler):
             return self._validate_graph()
         if urlsplit(self.path).path in {'/api/graph/catalog', '/api/graph/edit'}:
             return self._graph_controls()
+        if urlsplit(self.path).path == '/api/graph/preview':
+            return self._transition_preview()
         if urlsplit(self.path).path != "/api/preview":
             return self._json(404, {"error":"Unknown endpoint"})
         if not self._origin_ok():
             return self._json(403, {"error":"Same-origin local previews only"})
+        from framerudiments.graph_authoring_preview import AuthoringPreviewError
+
         try:
             size = int(self.headers.get("Content-Length", "-1"))
             if not 1 <= size <= MAX_BODY:
@@ -364,6 +373,9 @@ class AuthoringHandler(BaseHTTPRequestHandler):
             finally:
                 PREVIEW_SLOTS.release()
             self._send(200, image, "image/png")
+        except AuthoringPreviewError as exc:
+            PREVIEW_TELEMETRY.record_rejection(failure=True)
+            self._json(400, {'error': str(exc), 'code': exc.code})
         except (ValueError, KeyError, TypeError, OSError, RuntimeError) as exc:
             PREVIEW_TELEMETRY.record_rejection(failure=True)
             self._json(400, {"error": str(exc)})
@@ -460,6 +472,45 @@ class AuthoringHandler(BaseHTTPRequestHandler):
             return self._json(400, {'error': 'Native graph editing could not complete', 'code': 'request_invalid'})
         finally:
             GRAPH_VALIDATION_SLOTS.release()
+
+    def _transition_preview(self):
+        """Bounded, same-origin native From / Result / To comparison."""
+        from framerudiments.graph_authoring_preview import AuthoringPreviewError, preview_transition_draft
+
+        if not self._origin_ok():
+            return self._json(403, {'error': 'Same-origin transition previews only', 'code': 'request_invalid'})
+        try:
+            body = self._read_graph_request({'node', 'frame', 'quality'})
+            if (not isinstance(body.get('node'), str) or not 1 <= len(body['node']) <= 128
+                    or type(body.get('frame')) is not int or body['frame'] < 0
+                    or body.get('quality') not in ('fast', 'full')):
+                raise ValueError('invalid transition preview selection')
+        except (ValueError, TypeError, OSError, RecursionError):
+            return self._json(400, {'error': 'Invalid transition preview request', 'code': 'request_invalid'})
+        try:
+            check_draft(self.session_data['project'], body['project'])
+        except (ValueError, KeyError, TypeError, RecursionError):
+            return self._json(400, {'error': 'Draft changes a read-only source, pin or shader admission',
+                                    'code': 'draft_rejected'})
+        if not PREVIEW_SLOTS.acquire(blocking=False):
+            PREVIEW_TELEMETRY.record_rejection()
+            return self._json(429, {'error': 'Native preview busy; retry after completion', 'code': 'busy'})
+        try:
+            started_ns = perf_counter_ns()
+            result = preview_transition_draft(self.project_file, body['project'],
+                sidecars=body.get('sidecars', {}), node=body['node'], frame=body['frame'], quality=body['quality'],
+                validate_draft=check_draft,
+                temp_parent=getattr(self.server, 'graph_temp_parent', ROOT / '.tmp' / 'authoring-graph'))
+            PREVIEW_TELEMETRY.record_render(render_ms=(perf_counter_ns() - started_ns) / 1e6)
+            return self._json(200, result)
+        except AuthoringPreviewError as exc:
+            PREVIEW_TELEMETRY.record_rejection(failure=True)
+            return self._json(400, {'error': str(exc), 'code': exc.code})
+        except (ValueError, KeyError, TypeError, OSError, RuntimeError, RecursionError):
+            PREVIEW_TELEMETRY.record_rejection(failure=True)
+            return self._json(400, {'error': 'Native transition preview could not complete', 'code': 'render_failed'})
+        finally:
+            PREVIEW_SLOTS.release()
 
 
 def main(argv=None):

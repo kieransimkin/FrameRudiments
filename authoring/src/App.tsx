@@ -7,6 +7,9 @@ import {sha256, zipEntries} from './archive.ts';
 import {EffectGraphEditor, type GraphValidationDisplay} from './EffectGraphEditor.tsx';
 import {GraphValidationFence, readGraphValidation, type GraphValidationReport} from './graphValidation.ts';
 import {StreamPreview} from './StreamPreview.tsx';
+import {FramePreviewControls,NativeFramePreview} from './NativeFramePreview.tsx';
+import {previewFrame} from './streamAdaptive.ts';
+import type {PreviewQuality} from './graphPreview.ts';
 import './stream-preview.css';
 import {withInitialEffectGraph, withEffectNode, withEffectSource, withEffectConnection, withEffectInputs,
   withEffectOutput, withoutTerminalEffectNode} from './graphEditor.ts';
@@ -60,24 +63,15 @@ export function App() {
  const [injectStage,setInjectStage]=useState(1);
  const [localAudio,setLocalAudio]=useState<File|null>(null);
  const [audioUrl,setAudioUrl]=useState('');
- const [preview,setPreview]=useState('');
- const [quality,setQuality]=useState<'fast'|'full'>('fast');
+ const [quality,setQuality]=useState<PreviewQuality>('fast');
  const [streaming,setStreaming]=useState(false);
  const [graphView,setGraphView]=useState(false);
  const [checkedGraph,setCheckedGraph]=useState<CheckedGraph|null>(null);
  const [validationRetry,setValidationRetry]=useState(0);
- const [previewError,setPreviewError]=useState('');
  const [cueType,setCueType]=useState('SECTION');
  const [cueTitle,setCueTitle]=useState('');
  const [editProperty,setEditProperty]=useState('opacity');
  const [editValue,setEditValue]=useState(.5);
- const requestCount=useRef(0);
- const timeRef=useRef(0);
- const [previewAt,setPreviewAt]=useState(0);
- useEffect(()=>{timeRef.current=time;},[time]);
- useEffect(()=>{if(streaming)return;
-   const task=window.setInterval(()=>setPreviewAt(timeRef.current),230);
-   return ()=>window.clearInterval(task);},[streaming]);
  const current=history?.current;
  const project=current?.project;
  const currentRef=useRef<Snapshot|undefined>(current);currentRef.current=current;
@@ -88,6 +82,8 @@ export function App() {
  const graphReady=!!project&&(!graphPresent||graphStatus.phase==='valid');
  const graphReadyRef=useRef(graphReady);graphReadyRef.current=graphReady;
  const duration=project?projectTiming(project).duration:0;
+ const fps=project?.fps||60;
+ const desiredFrame=previewFrame(time,fps,duration),lastFrame=previewFrame(duration,fps,duration);
  const streamSidecars=useMemo<Record<string,TimedItem[]>>(()=>{
    const rows:Record<string,TimedItem[]>={};
    for(const key of ['lines','words','cues'] as const)if(current?.dirty[key])rows[key]=current.sidecars[key];
@@ -217,25 +213,6 @@ export function App() {
   return views;
  },[project,current,keys,session,duration,selectedTiming]);
 
- useEffect(()=>{
-   const index=++requestCount.current;
-   if(!graphReady){setPreview(old=>{if(old)URL.revokeObjectURL(old);return '';});setPreviewError('');return;}
-   if(streaming||!project||!current)return;
-   const controller=new AbortController();
-   const job=setTimeout(()=>{
-     const frame=Math.max(0,Math.min(Math.ceil(duration*(project.fps||60))-1,Math.round(previewAt*(project.fps||60))));
-     const sidecars:Record<string,TimedItem[]>={};
-     for(const key of ['lines','words','cues'] as const)if(current.dirty[key])sidecars[key]=current.sidecars[key];
-     fetch('/api/preview',{method:'POST',headers:{'Content-Type':'application/json'},
-       body:JSON.stringify({project,frame,quality,sidecars}),signal:controller.signal})
-       .then(async r=>{if(!r.ok){let err;try{err=await r.json();}catch{}throw Error(err?.error||`Preview status ${r.status}`);}return r.blob();})
-       .then(blob=>{if(index===requestCount.current&&currentRef.current===current&&graphReadyRef.current){const url=URL.createObjectURL(blob);setPreview(old=>{if(old)URL.revokeObjectURL(old);return url;});setPreviewError('');}})
-       .catch(e=>{if(e.name!=='AbortError'&&index===requestCount.current)setPreviewError(message(e));});
-   },30);
-   return ()=>{clearTimeout(job);controller.abort();};
- },[project,current,previewAt,quality,duration,streaming,graphReady]);
- useEffect(()=>()=>{if(preview)URL.revokeObjectURL(preview);},[preview]);
-
  const changeKey=()=>{
    if(!project)return;
    commit(s=>({...s,project:withKeyframe(s.project,selected,editProperty,{time:Math.min(duration-0.001,Math.max(0,time)),value:editValue})}));
@@ -308,11 +285,10 @@ export function App() {
     <div className="fr-preview-head"><div className="fr-preview-modes" role="group" aria-label="Workspace mode">
       <button className={!graphView?'selected':''} aria-pressed={!graphView} onClick={()=>setGraphView(false)}>Renderer</button>
       <button className={graphView?'selected':''} aria-pressed={graphView} onClick={()=>setGraphView(true)}>Effect DAG</button>
-      </div><label className="fr-scrub">Position <input aria-label="Seek draft preview" type="range" min="0" max={duration} step={1/(project.fps||60)}
-      value={time} onChange={e=>setTime(Number(e.target.value))}/></label><label>Quality <select value={quality} onChange={e=>setQuality(e.target.value as 'fast'|'full')}>
-      <option value="fast">Draft (1×)</option><option value="full">Production AA</option></select></label>
-      <span>Frame {Math.round(time*(project.fps||60))}</span></div>
+      </div><FramePreviewControls frame={desiredFrame} lastFrame={lastFrame} fps={fps} quality={quality}
+        showQuality={graphView||!streaming} onFrame={frame=>setTime(frame/fps)} onQuality={setQuality}/></div>
     {graphView?<div className="fr-fx-preview"><EffectGraphEditor project={project} revision={current} sidecars={streamSidecars}
+      preview={{frame:desiredFrame,quality,enabled:graphReady,blockedMessage:graphStatus.message}}
       onNativeEdit={commitNativeGraph} validation={graphStatus} onValidate={()=>setValidationRetry(value=>value+1)}
       onInit={()=>commit(s=>({...s,project:withInitialEffectGraph(s.project)}))}
       onSource={id=>commit(s=>({...s,project:withEffectSource(s.project,id)}))}
@@ -323,10 +299,9 @@ export function App() {
       onRemove={id=>commit(s=>({...s,project:withoutTerminalEffectNode(s.project,id)}))}/></div>:
      <div className="fr-preview">{!graphReady?<div className="fr-canvas fr-fx-preview-blocked" role="status"><strong>{graphStatus.phase==='checking'?'Checking graph before preview':'Preview is waiting for a valid graph'}</strong>
        <p>{graphStatus.message}</p>{graphStatus.phase!=='checking'&&<button onClick={()=>setValidationRetry(value=>value+1)}>Retry native graph check</button>}</div>:streaming
-       ?<StreamPreview project={project} sidecars={streamSidecars} time={time} fps={project.fps||60} duration={duration}/>
-       :<><div className="fr-canvas">{preview?<img src={preview} alt="FrameRudiments composited draft frame"/>:<span>Preparing preview…</span>}</div>
-         {previewError&&<p className="fr-alert">{previewError}</p>}</>}</div>}
-    <div className="fr-transport-extra"><label><input type="checkbox" checked={streaming} onChange={e=>setStreaming(e.target.checked)}/> Adaptive cache preview (Q0–Q5)</label>
+       ?<StreamPreview project={project} sidecars={streamSidecars} time={time} fps={fps} duration={duration}/>
+       :<NativeFramePreview project={project} revision={current!} sidecars={streamSidecars} frame={desiredFrame} quality={quality}/>}</div>}
+    <div className="fr-transport-extra">{!graphView&&<label><input type="checkbox" checked={streaming} onChange={e=>setStreaming(e.target.checked)}/> Adaptive cache preview (Q0–Q5)</label>}
       <label>Exact excerpt audio <input type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg"
       onChange={e=>setLocalAudio(e.target.files?.[0]??null)}/></label>
       {!session?.audioAvailable&&<span>Choose a rendered excerpt for sample-aligned playback.</span>}

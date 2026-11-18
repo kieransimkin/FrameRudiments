@@ -1,5 +1,5 @@
 /** Native metadata forms. Staged values never enter the draft before validation. */
-import {useEffect,useLayoutEffect,useMemo,useRef,useState,type FormEvent} from 'react';
+import {useEffect,useLayoutEffect,useMemo,useRef,useState,type FormEvent,type ReactNode} from 'react';
 import type {Document} from './model.ts';
 import {GraphControlFence,moveGraphBinding,putGraphBinding,readGraphControlResponse,removeGraphBinding,
   setGraphParameter,type GraphBindingFieldDescriptor,type GraphControlBinding,type GraphControlCatalog,
@@ -305,6 +305,7 @@ interface EditState {context:EditorContext;phase:'pending'|'error'|'cancelled';m
 export interface GraphParameterEditorProps {
  project:Document;revision:object;node:string;sidecars?:Record<string,unknown>;
  onApply?:(project:Document,revision:object)=>boolean;
+ renderPreview?:(catalog:GraphControlCatalog)=>ReactNode;
 }
 function responseError(value:unknown,status:number):string {
  const row=value&&typeof value==='object'?value as Record<string,unknown>:null;
@@ -313,7 +314,7 @@ function responseError(value:unknown,status:number):string {
    status===400?'The native validator rejected this proposal. Check its values and existing connections.':'The native editor could not complete the request.';
 }
 
-export function GraphParameterEditor({project,revision,node,sidecars=EMPTY_SIDECARS,onApply}:GraphParameterEditorProps){
+export function GraphParameterEditor({project,revision,node,sidecars=EMPTY_SIDECARS,onApply,renderPreview}:GraphParameterEditorProps){
  const [selection,setSelection]=useState({owner:node,target:node}),[retry,setRetry]=useState(0);
  const enabled=!!onApply;
  const target=selection.owner===node?selection.target:node;
@@ -393,6 +394,7 @@ export function GraphParameterEditor({project,revision,node,sidecars=EMPTY_SIDEC
        {targets.length>1&&<label>Parameter target<select value={target} onChange={event=>setSelection({owner:node,target:event.target.value})}>
          {targets.map(row=><option key={row.id} value={row.id}>{row.label} · {row.type}</option>)}
        </select></label>}
+       {renderPreview?.(catalog)}
        {currentEdit&&<div className={`fr-param-status ${currentEdit.phase}`} role={currentEdit.phase==='error'?'alert':'status'}>{currentEdit.message}
          {pending&&<button type="button" onClick={cancelProposal}>Cancel proposal</button>}
          {currentEdit.phase==='error'&&<button type="button" onClick={()=>propose(currentEdit.operation)}>Retry last proposal</button>}

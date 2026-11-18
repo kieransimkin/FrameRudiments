@@ -1,0 +1,4745 @@
+{
+  "schema": "framerudiments.authoring-preview-qualification.v1",
+  "passed": true,
+  "runtime": {
+    "python": "3.12.14",
+    "node": "v24.22.1",
+    "dancerudiments": "0.3.0",
+    "pillow": "13.0.0"
+  },
+  "scope": {
+    "actual_same_origin_http": true,
+    "actual_typescript_controller": true,
+    "native_project_validation": true,
+    "native_compositor": true,
+    "named_and_recorded_native_motion": true,
+    "actual_png_decoding": "Pillow",
+    "browser_decode_and_paint": false,
+    "gpu": false,
+    "perceptual_approval": false,
+    "encoded_video": false
+  },
+  "pixel_comparison": {
+    "format": "RGB8",
+    "maximum_channel_error": 0,
+    "reference": "independent native output projects"
+  },
+  "frames": [
+    0,
+    5,
+    17,
+    5
+  ],
+  "qualities": [
+    "fast",
+    "full"
+  ],
+  "cases": [
+    {
+      "name": "dissolve_start",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "dissolve_end",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "timed_continuous",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "3fc26697a460c8ee24a5736f8496849249fbd0a60d1dd35db4a2c6892a7fff2c",
+              "pixel_sha256": "133ae801a363bdaec180a08544d55c83115ca236f7d8f9607d47aa2d5a7401ea"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "3fc26697a460c8ee24a5736f8496849249fbd0a60d1dd35db4a2c6892a7fff2c",
+              "pixel_sha256": "133ae801a363bdaec180a08544d55c83115ca236f7d8f9607d47aa2d5a7401ea"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "76c9b79cb7a3f8e7db470199191e34ca0ccadce02e0faf91084de633abf64b55",
+              "pixel_sha256": "c65172a3e4084d48859e9cfdee78512ffb4fcc31f59f8342d1ada7821f3af406"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "35f667a13edc5a6c1ee7109a98a4ab6daf4511bb542c24810721f34e287a467e",
+              "pixel_sha256": "32a9af6c32726cf4ff9c1da3c70ee20e6badc56af40c948b215ab4ad6d8e8ea9"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "35f667a13edc5a6c1ee7109a98a4ab6daf4511bb542c24810721f34e287a467e",
+              "pixel_sha256": "32a9af6c32726cf4ff9c1da3c70ee20e6badc56af40c948b215ab4ad6d8e8ea9"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "timed_source",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "3fc26697a460c8ee24a5736f8496849249fbd0a60d1dd35db4a2c6892a7fff2c",
+              "pixel_sha256": "133ae801a363bdaec180a08544d55c83115ca236f7d8f9607d47aa2d5a7401ea"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "3fc26697a460c8ee24a5736f8496849249fbd0a60d1dd35db4a2c6892a7fff2c",
+              "pixel_sha256": "133ae801a363bdaec180a08544d55c83115ca236f7d8f9607d47aa2d5a7401ea"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "3fc26697a460c8ee24a5736f8496849249fbd0a60d1dd35db4a2c6892a7fff2c",
+              "pixel_sha256": "133ae801a363bdaec180a08544d55c83115ca236f7d8f9607d47aa2d5a7401ea"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "76c9b79cb7a3f8e7db470199191e34ca0ccadce02e0faf91084de633abf64b55",
+              "pixel_sha256": "c65172a3e4084d48859e9cfdee78512ffb4fcc31f59f8342d1ada7821f3af406"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "35f667a13edc5a6c1ee7109a98a4ab6daf4511bb542c24810721f34e287a467e",
+              "pixel_sha256": "32a9af6c32726cf4ff9c1da3c70ee20e6badc56af40c948b215ab4ad6d8e8ea9"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "35f667a13edc5a6c1ee7109a98a4ab6daf4511bb542c24810721f34e287a467e",
+              "pixel_sha256": "32a9af6c32726cf4ff9c1da3c70ee20e6badc56af40c948b215ab4ad6d8e8ea9"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "35f667a13edc5a6c1ee7109a98a4ab6daf4511bb542c24810721f34e287a467e",
+              "pixel_sha256": "32a9af6c32726cf4ff9c1da3c70ee20e6badc56af40c948b215ab4ad6d8e8ea9"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "matte",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "5ca35b978e99f3099214002befddbb2e0b3973e18cc3b466e35d50d463abbd81",
+              "pixel_sha256": "817d9b1d0d832fe9876248d668ba6c994f80a7e28013a11110d1fe205c3f2525"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "5ca35b978e99f3099214002befddbb2e0b3973e18cc3b466e35d50d463abbd81",
+              "pixel_sha256": "817d9b1d0d832fe9876248d668ba6c994f80a7e28013a11110d1fe205c3f2525"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "5ca35b978e99f3099214002befddbb2e0b3973e18cc3b466e35d50d463abbd81",
+              "pixel_sha256": "817d9b1d0d832fe9876248d668ba6c994f80a7e28013a11110d1fe205c3f2525"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "5ca35b978e99f3099214002befddbb2e0b3973e18cc3b466e35d50d463abbd81",
+              "pixel_sha256": "817d9b1d0d832fe9876248d668ba6c994f80a7e28013a11110d1fe205c3f2525"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "fbcfd7c57a207c9a79b1df7fb9d31c19e4667cdde75cb887e1fb073176b35231",
+              "pixel_sha256": "e85d24705ce7bb9904a7a0b7c704230317b61a10c5462284ddfc1cc7e9faa440"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "fbcfd7c57a207c9a79b1df7fb9d31c19e4667cdde75cb887e1fb073176b35231",
+              "pixel_sha256": "e85d24705ce7bb9904a7a0b7c704230317b61a10c5462284ddfc1cc7e9faa440"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "fbcfd7c57a207c9a79b1df7fb9d31c19e4667cdde75cb887e1fb073176b35231",
+              "pixel_sha256": "e85d24705ce7bb9904a7a0b7c704230317b61a10c5462284ddfc1cc7e9faa440"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "fbcfd7c57a207c9a79b1df7fb9d31c19e4667cdde75cb887e1fb073176b35231",
+              "pixel_sha256": "e85d24705ce7bb9904a7a0b7c704230317b61a10c5462284ddfc1cc7e9faa440"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "geometry_zoom",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "a2325bd0ee6ae79afc7fa7c2afadbcddffd8b7561180375f04c2f5faa1921916",
+              "pixel_sha256": "88c462f9572fe8c95fea1e565ad904ff95605f53637bcd2c2e6d4b9acd7fd8ad"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "a2325bd0ee6ae79afc7fa7c2afadbcddffd8b7561180375f04c2f5faa1921916",
+              "pixel_sha256": "88c462f9572fe8c95fea1e565ad904ff95605f53637bcd2c2e6d4b9acd7fd8ad"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "a2325bd0ee6ae79afc7fa7c2afadbcddffd8b7561180375f04c2f5faa1921916",
+              "pixel_sha256": "88c462f9572fe8c95fea1e565ad904ff95605f53637bcd2c2e6d4b9acd7fd8ad"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "a2325bd0ee6ae79afc7fa7c2afadbcddffd8b7561180375f04c2f5faa1921916",
+              "pixel_sha256": "88c462f9572fe8c95fea1e565ad904ff95605f53637bcd2c2e6d4b9acd7fd8ad"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "c44e29f5d26d1335bf886af0b334f3c26f8aecdddeccc1a4d4f45ef045ac7039",
+              "pixel_sha256": "c6da150db9c9e8cb0f0cb993dbd84063d92e4c86a24f9ba2a3210801ac065c9d"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "c44e29f5d26d1335bf886af0b334f3c26f8aecdddeccc1a4d4f45ef045ac7039",
+              "pixel_sha256": "c6da150db9c9e8cb0f0cb993dbd84063d92e4c86a24f9ba2a3210801ac065c9d"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "c44e29f5d26d1335bf886af0b334f3c26f8aecdddeccc1a4d4f45ef045ac7039",
+              "pixel_sha256": "c6da150db9c9e8cb0f0cb993dbd84063d92e4c86a24f9ba2a3210801ac065c9d"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "c44e29f5d26d1335bf886af0b334f3c26f8aecdddeccc1a4d4f45ef045ac7039",
+              "pixel_sha256": "c6da150db9c9e8cb0f0cb993dbd84063d92e4c86a24f9ba2a3210801ac065c9d"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "spectral",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "e2d2aec62f064655be3ccaa79c429980899f0b32e9333d0d7e0715fd85eab72a",
+              "pixel_sha256": "ee3f9841e81b5ce36c4d713279a8b86340af94d7f39785cd3628e8536ef36d6c"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "e2d2aec62f064655be3ccaa79c429980899f0b32e9333d0d7e0715fd85eab72a",
+              "pixel_sha256": "ee3f9841e81b5ce36c4d713279a8b86340af94d7f39785cd3628e8536ef36d6c"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "e2d2aec62f064655be3ccaa79c429980899f0b32e9333d0d7e0715fd85eab72a",
+              "pixel_sha256": "ee3f9841e81b5ce36c4d713279a8b86340af94d7f39785cd3628e8536ef36d6c"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "e2d2aec62f064655be3ccaa79c429980899f0b32e9333d0d7e0715fd85eab72a",
+              "pixel_sha256": "ee3f9841e81b5ce36c4d713279a8b86340af94d7f39785cd3628e8536ef36d6c"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "4070a7dd6f9db73bc66b898c24af70b54c2ebcad273e0d27f0cf780c5fc0adb4",
+              "pixel_sha256": "537357d889ce3df034cc7a6dcf0fecb4b731151ee8dba522606bc29bfa8a13c3"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "4070a7dd6f9db73bc66b898c24af70b54c2ebcad273e0d27f0cf780c5fc0adb4",
+              "pixel_sha256": "537357d889ce3df034cc7a6dcf0fecb4b731151ee8dba522606bc29bfa8a13c3"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "4070a7dd6f9db73bc66b898c24af70b54c2ebcad273e0d27f0cf780c5fc0adb4",
+              "pixel_sha256": "537357d889ce3df034cc7a6dcf0fecb4b731151ee8dba522606bc29bfa8a13c3"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "4070a7dd6f9db73bc66b898c24af70b54c2ebcad273e0d27f0cf780c5fc0adb4",
+              "pixel_sha256": "537357d889ce3df034cc7a6dcf0fecb4b731151ee8dba522606bc29bfa8a13c3"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "native_named",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "d719400f2a9f7fe453c8d6728532163f66ccf04577011220eef330a08c1594de",
+              "pixel_sha256": "5e1a322b46800f637234b8b10be8db1488d1dc1e72ae90464133bfd398afe132"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "066648ecf09ccfe6de45fae4f3c93a499b76b8a0269ccb979c7011075de0828c",
+              "pixel_sha256": "49df53e0aed6066b3eb7ddcbd7ad20829079057fc6eca1bd0ec39f8066cca361"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "066648ecf09ccfe6de45fae4f3c93a499b76b8a0269ccb979c7011075de0828c",
+              "pixel_sha256": "49df53e0aed6066b3eb7ddcbd7ad20829079057fc6eca1bd0ec39f8066cca361"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "066648ecf09ccfe6de45fae4f3c93a499b76b8a0269ccb979c7011075de0828c",
+              "pixel_sha256": "49df53e0aed6066b3eb7ddcbd7ad20829079057fc6eca1bd0ec39f8066cca361"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "be523ac3ab19c8a8c729d4aa08255795dd368e6c0b63601c746ccaf093ddd4ea",
+              "pixel_sha256": "94f0259dfc3a7b7f192d431a877740533298f5229e788033024cd011e511c292"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "66e737cdf9ca6d1a91acf4f67821f05f9b8d44424695f29f7d94a6cba7d5021d",
+              "pixel_sha256": "76c35250bb007299322759fa1673117bd4503b137d4f1cb629c10c1bb6cf7ee8"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "66e737cdf9ca6d1a91acf4f67821f05f9b8d44424695f29f7d94a6cba7d5021d",
+              "pixel_sha256": "76c35250bb007299322759fa1673117bd4503b137d4f1cb629c10c1bb6cf7ee8"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "66e737cdf9ca6d1a91acf4f67821f05f9b8d44424695f29f7d94a6cba7d5021d",
+              "pixel_sha256": "76c35250bb007299322759fa1673117bd4503b137d4f1cb629c10c1bb6cf7ee8"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "native_recorded",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "1a3c255304097709cea39e47505fbf3f7f5da7b05eb297a027658d517c02ccb5",
+              "pixel_sha256": "d649b4b1331eb1a839ad9626b7033890e440a303c70b0e4667de00de28849abb"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "217921b68b06ef5be02e75b8c3216024dc3698c6a9cf3c127eec2b73c6a65172",
+              "pixel_sha256": "967a7b3d96add0d190733cb868a6cef43c821b44be123b1d91d6c5ee2defea44"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "217921b68b06ef5be02e75b8c3216024dc3698c6a9cf3c127eec2b73c6a65172",
+              "pixel_sha256": "967a7b3d96add0d190733cb868a6cef43c821b44be123b1d91d6c5ee2defea44"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "217921b68b06ef5be02e75b8c3216024dc3698c6a9cf3c127eec2b73c6a65172",
+              "pixel_sha256": "967a7b3d96add0d190733cb868a6cef43c821b44be123b1d91d6c5ee2defea44"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "cc7f62fe6c87f14fffb21e9a3dedbca7e4bfa208cdbd057a21833a09fd58a8f6",
+              "pixel_sha256": "01937aa3a786de6b84365406dbf59c0f19b2d7b48039d84e78dd412fcbde3e17"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "a6079af7ae00246c19a5bb1243ee734f10a281488ef959cda2f49197794f3d54",
+              "pixel_sha256": "5a149a371ed892201d5d8e0f32eec8657f9b75abcaa26171f528240a51e5718c"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "a6079af7ae00246c19a5bb1243ee734f10a281488ef959cda2f49197794f3d54",
+              "pixel_sha256": "5a149a371ed892201d5d8e0f32eec8657f9b75abcaa26171f528240a51e5718c"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "a6079af7ae00246c19a5bb1243ee734f10a281488ef959cda2f49197794f3d54",
+              "pixel_sha256": "5a149a371ed892201d5d8e0f32eec8657f9b75abcaa26171f528240a51e5718c"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "temporal_history",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "febd31318a31f88739cca202990557fa3461119f4c72f3b941a15397f5ed0478",
+              "pixel_sha256": "8d9a7476a6c203c04de1e19b9d756416603462af9d33ede55f64d26592940f69"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "febd31318a31f88739cca202990557fa3461119f4c72f3b941a15397f5ed0478",
+              "pixel_sha256": "8d9a7476a6c203c04de1e19b9d756416603462af9d33ede55f64d26592940f69"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "09d7f123199fa130684c0e9e2f147880d2e2ee27d63fa1f9d8e81b731d0cea91",
+              "pixel_sha256": "575c9fed2fb9d5032e3f41bcc357d9c9ed11d82d5dd561df2871f90e93f02661"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "09d7f123199fa130684c0e9e2f147880d2e2ee27d63fa1f9d8e81b731d0cea91",
+              "pixel_sha256": "575c9fed2fb9d5032e3f41bcc357d9c9ed11d82d5dd561df2871f90e93f02661"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "edited_cues",
+      "node": "mix",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "df015e0a6700c11b968790e5cb2196ed61883311d06775323e550b8426e8e74f",
+              "pixel_sha256": "7e36bec0af80ff78cd2cba3643b862a6c0e3ec56e52acabe92b246dcd6ad4816"
+            },
+            {
+              "role": "result",
+              "sha256": "2eeb87a6f86ee46dd7788398b4d7c8a116525f58417e73fd4a72265368eb3a4f",
+              "pixel_sha256": "011807872720741177b604ff8e96c305d3f6f294921f8daee380ea7ed732e785"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "3af4ff8853b7ee3228ddb8560975fd4c53efe4ea7d2208454ec43a7724ce329f",
+              "pixel_sha256": "837b1670e3b54ed04d1be736c8f80161712ac5ac01aa6379eed1e23b73f409c1"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "3af4ff8853b7ee3228ddb8560975fd4c53efe4ea7d2208454ec43a7724ce329f",
+              "pixel_sha256": "837b1670e3b54ed04d1be736c8f80161712ac5ac01aa6379eed1e23b73f409c1"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0224305e68d9f3a1c1fc61acc22dda43e819e217b029b399c7e6dd8fdde8fe20",
+              "pixel_sha256": "db12eb9686666fe2675210be911b070dc97811554869475b7f50039ef607f45e"
+            },
+            {
+              "role": "result",
+              "sha256": "3af4ff8853b7ee3228ddb8560975fd4c53efe4ea7d2208454ec43a7724ce329f",
+              "pixel_sha256": "837b1670e3b54ed04d1be736c8f80161712ac5ac01aa6379eed1e23b73f409c1"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "df015e0a6700c11b968790e5cb2196ed61883311d06775323e550b8426e8e74f",
+              "pixel_sha256": "7e36bec0af80ff78cd2cba3643b862a6c0e3ec56e52acabe92b246dcd6ad4816"
+            },
+            {
+              "role": "result",
+              "sha256": "b04dce939007b2d540bbcb932fd0bec38c0f455511f4edd1376d7dbfcc8229e8",
+              "pixel_sha256": "3ec138e5adede5cf18ec8e59266ed65599e3287298c7d213e09878199110336a"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "397c683414b8a7778dff4f247a2a54dec0ba7b8d0f3a69c49a0b1b76de1b664d",
+              "pixel_sha256": "47f7022e6a06994c7047e05704819800288b33459049c0a6611a80e6987be5a4"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "397c683414b8a7778dff4f247a2a54dec0ba7b8d0f3a69c49a0b1b76de1b664d",
+              "pixel_sha256": "47f7022e6a06994c7047e05704819800288b33459049c0a6611a80e6987be5a4"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "0892e8a4cb0fb82d4645fc216765d2f4254a746aa34c185eec44809a383f2d0e",
+              "pixel_sha256": "9ed4d3dae676373548d5e68b0c0f913c5b7f6e65cc4b74817e7d16fee3793add"
+            },
+            {
+              "role": "result",
+              "sha256": "397c683414b8a7778dff4f247a2a54dec0ba7b8d0f3a69c49a0b1b76de1b664d",
+              "pixel_sha256": "47f7022e6a06994c7047e05704819800288b33459049c0a6611a80e6987be5a4"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "chain_first",
+      "node": "chain::stage::first",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "c0005402b0c8ddf765b85e329b3463c51747beee8e8c0c64ae10767c1ad284a2",
+              "pixel_sha256": "d97f74a1c7b5f3428b770d4afaaff02195f31ac73693c732637da778182dcaca"
+            },
+            {
+              "role": "result",
+              "sha256": "c0005402b0c8ddf765b85e329b3463c51747beee8e8c0c64ae10767c1ad284a2",
+              "pixel_sha256": "d97f74a1c7b5f3428b770d4afaaff02195f31ac73693c732637da778182dcaca"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "c0005402b0c8ddf765b85e329b3463c51747beee8e8c0c64ae10767c1ad284a2",
+              "pixel_sha256": "d97f74a1c7b5f3428b770d4afaaff02195f31ac73693c732637da778182dcaca"
+            },
+            {
+              "role": "result",
+              "sha256": "e2ca1093661130e4611d1ca1b173962bf52c9b637f7a73ab9b66588a2cbafcb4",
+              "pixel_sha256": "979784b003eff4b759530375237f2ba313f1cd2cb7480a4a773d81bd9ba6cecb"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "c0005402b0c8ddf765b85e329b3463c51747beee8e8c0c64ae10767c1ad284a2",
+              "pixel_sha256": "d97f74a1c7b5f3428b770d4afaaff02195f31ac73693c732637da778182dcaca"
+            },
+            {
+              "role": "result",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "c0005402b0c8ddf765b85e329b3463c51747beee8e8c0c64ae10767c1ad284a2",
+              "pixel_sha256": "d97f74a1c7b5f3428b770d4afaaff02195f31ac73693c732637da778182dcaca"
+            },
+            {
+              "role": "result",
+              "sha256": "e2ca1093661130e4611d1ca1b173962bf52c9b637f7a73ab9b66588a2cbafcb4",
+              "pixel_sha256": "979784b003eff4b759530375237f2ba313f1cd2cb7480a4a773d81bd9ba6cecb"
+            },
+            {
+              "role": "to",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "a3b7b074681ebddbf6b64afee43bb6e78619217a3739970935c24aa2e130c87b",
+              "pixel_sha256": "1a5806e079a51981b276001bd78fd599963cdb2e09edfa5b80ccaef1058f9c4a"
+            },
+            {
+              "role": "result",
+              "sha256": "a3b7b074681ebddbf6b64afee43bb6e78619217a3739970935c24aa2e130c87b",
+              "pixel_sha256": "1a5806e079a51981b276001bd78fd599963cdb2e09edfa5b80ccaef1058f9c4a"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "a3b7b074681ebddbf6b64afee43bb6e78619217a3739970935c24aa2e130c87b",
+              "pixel_sha256": "1a5806e079a51981b276001bd78fd599963cdb2e09edfa5b80ccaef1058f9c4a"
+            },
+            {
+              "role": "result",
+              "sha256": "6b8562b3a7d3bd23f39cd07c822bdb9bf78e4eb6f950132426dd55eb46427f5e",
+              "pixel_sha256": "95fe80ad0abc003f257c39c64effc6d0d616b75b5853ba3c53fbbae8a4807cb7"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "a3b7b074681ebddbf6b64afee43bb6e78619217a3739970935c24aa2e130c87b",
+              "pixel_sha256": "1a5806e079a51981b276001bd78fd599963cdb2e09edfa5b80ccaef1058f9c4a"
+            },
+            {
+              "role": "result",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "a3b7b074681ebddbf6b64afee43bb6e78619217a3739970935c24aa2e130c87b",
+              "pixel_sha256": "1a5806e079a51981b276001bd78fd599963cdb2e09edfa5b80ccaef1058f9c4a"
+            },
+            {
+              "role": "result",
+              "sha256": "6b8562b3a7d3bd23f39cd07c822bdb9bf78e4eb6f950132426dd55eb46427f5e",
+              "pixel_sha256": "95fe80ad0abc003f257c39c64effc6d0d616b75b5853ba3c53fbbae8a4807cb7"
+            },
+            {
+              "role": "to",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    },
+    {
+      "name": "chain_second",
+      "node": "chain::stage::second",
+      "requests": 8,
+      "compared_images": 24,
+      "native_validation": true,
+      "max_rgb8_error": 0,
+      "quality_changes_pixels": true,
+      "nonsequential_repeats_identical": true,
+      "comparisons": [
+        {
+          "frame": 0,
+          "quality": "fast",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "c0005402b0c8ddf765b85e329b3463c51747beee8e8c0c64ae10767c1ad284a2",
+              "pixel_sha256": "d97f74a1c7b5f3428b770d4afaaff02195f31ac73693c732637da778182dcaca"
+            },
+            {
+              "role": "result",
+              "sha256": "b50537d0fefbcfa31acb4e18c9bc67fbde9148030aca0fd66ca55d560af30fdf",
+              "pixel_sha256": "f2e4edc1b7be42228b588cd7af46da4de94756551c61b744ed75318e7346e627"
+            },
+            {
+              "role": "to",
+              "sha256": "2f5dcb758eadc5b40721c18613cb504d05a3d5b50487f2b9946d60f7f83dea01",
+              "pixel_sha256": "f7986cb862a618c7cfc00d5e2b91c76ae1e602229a6dd061df373f2e06e46864"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "e2ca1093661130e4611d1ca1b173962bf52c9b637f7a73ab9b66588a2cbafcb4",
+              "pixel_sha256": "979784b003eff4b759530375237f2ba313f1cd2cb7480a4a773d81bd9ba6cecb"
+            },
+            {
+              "role": "result",
+              "sha256": "bad298bab519332be429fd0f0a69acdbbd5c40b9a46fd8c82c78411ad2feaa2f",
+              "pixel_sha256": "a5dda829b42ab40d016a049c56bdd113bc9347982eed33bbe1645d310bae0da1"
+            },
+            {
+              "role": "to",
+              "sha256": "2f5dcb758eadc5b40721c18613cb504d05a3d5b50487f2b9946d60f7f83dea01",
+              "pixel_sha256": "f7986cb862a618c7cfc00d5e2b91c76ae1e602229a6dd061df373f2e06e46864"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "fast",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "b4cd6af51077bd856e43cf090ddc3728e0b834a6dcd928613392d0cee64ce4fe",
+              "pixel_sha256": "bcf2c7469ec5d12752d9a2cea6b50fb0bcf264630fbeef367255aeb0e661e773"
+            },
+            {
+              "role": "result",
+              "sha256": "bf1b64d855d171da9fa613b49f730b1e58a4b77ecd484bdaff1dc6c7b3859b81",
+              "pixel_sha256": "b17086c545db7678d197ff5acdb0faeabe60702284cca0514632bc540f487902"
+            },
+            {
+              "role": "to",
+              "sha256": "2f5dcb758eadc5b40721c18613cb504d05a3d5b50487f2b9946d60f7f83dea01",
+              "pixel_sha256": "f7986cb862a618c7cfc00d5e2b91c76ae1e602229a6dd061df373f2e06e46864"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "fast",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": false,
+            "spatial_scale": 1,
+            "temporal_samples": 1,
+            "antialias": 0,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 3,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "e2ca1093661130e4611d1ca1b173962bf52c9b637f7a73ab9b66588a2cbafcb4",
+              "pixel_sha256": "979784b003eff4b759530375237f2ba313f1cd2cb7480a4a773d81bd9ba6cecb"
+            },
+            {
+              "role": "result",
+              "sha256": "bad298bab519332be429fd0f0a69acdbbd5c40b9a46fd8c82c78411ad2feaa2f",
+              "pixel_sha256": "a5dda829b42ab40d016a049c56bdd113bc9347982eed33bbe1645d310bae0da1"
+            },
+            {
+              "role": "to",
+              "sha256": "2f5dcb758eadc5b40721c18613cb504d05a3d5b50487f2b9946d60f7f83dea01",
+              "pixel_sha256": "f7986cb862a618c7cfc00d5e2b91c76ae1e602229a6dd061df373f2e06e46864"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 0,
+          "quality": "full",
+          "clock": {
+            "frame": 0,
+            "seconds": 0,
+            "source_seconds": 0,
+            "beat": 0,
+            "source_beat": 0
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "a3b7b074681ebddbf6b64afee43bb6e78619217a3739970935c24aa2e130c87b",
+              "pixel_sha256": "1a5806e079a51981b276001bd78fd599963cdb2e09edfa5b80ccaef1058f9c4a"
+            },
+            {
+              "role": "result",
+              "sha256": "adc801c1eb8184caa400f254994d94ca506c5eed86acea581ab5fd279fdc278b",
+              "pixel_sha256": "0ca1566ea6ffb845a94cdf913517fddc525d1a5d913028dad288d7e1700e1db5"
+            },
+            {
+              "role": "to",
+              "sha256": "2f5dcb758eadc5b40721c18613cb504d05a3d5b50487f2b9946d60f7f83dea01",
+              "pixel_sha256": "f7986cb862a618c7cfc00d5e2b91c76ae1e602229a6dd061df373f2e06e46864"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "6b8562b3a7d3bd23f39cd07c822bdb9bf78e4eb6f950132426dd55eb46427f5e",
+              "pixel_sha256": "95fe80ad0abc003f257c39c64effc6d0d616b75b5853ba3c53fbbae8a4807cb7"
+            },
+            {
+              "role": "result",
+              "sha256": "b65bf389fd373edaeaa1f9f8db9888e08815d91b116783bae10939860af43c3f",
+              "pixel_sha256": "6a9420cd80035927b58aaab070df55940156c64da81fd0e3f615f2d3524fbda6"
+            },
+            {
+              "role": "to",
+              "sha256": "2f5dcb758eadc5b40721c18613cb504d05a3d5b50487f2b9946d60f7f83dea01",
+              "pixel_sha256": "f7986cb862a618c7cfc00d5e2b91c76ae1e602229a6dd061df373f2e06e46864"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 17,
+          "quality": "full",
+          "clock": {
+            "frame": 17,
+            "seconds": 1.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 2.8333333333333335,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "a588fde5b50c9a654fadcd1b25e84a4c5b3f5d7be1a640c230d9d6c1336e4a5d",
+              "pixel_sha256": "22b6312d17a09a434cb066834088499ad0aefacbcfb47cb4171c08e3013d192f"
+            },
+            {
+              "role": "result",
+              "sha256": "05cc38212acc07c2040820305b2ab6db1e1fa444e520d0f5e91671b2536b4fe0",
+              "pixel_sha256": "69b14fb218e3e0bb82d9913e344aa4cf401b4455bc357676f75eb617f5b46920"
+            },
+            {
+              "role": "to",
+              "sha256": "2f5dcb758eadc5b40721c18613cb504d05a3d5b50487f2b9946d60f7f83dea01",
+              "pixel_sha256": "f7986cb862a618c7cfc00d5e2b91c76ae1e602229a6dd061df373f2e06e46864"
+            }
+          ],
+          "max_rgb8_error": 0
+        },
+        {
+          "frame": 5,
+          "quality": "full",
+          "clock": {
+            "frame": 5,
+            "seconds": 0.4166666666666667,
+            "source_seconds": 0.4166666666666667,
+            "beat": 0.8333333333333334,
+            "source_beat": 0.8333333333333334
+          },
+          "render_quality": {
+            "enabled": true,
+            "spatial_scale": 2,
+            "temporal_samples": 3,
+            "antialias": 0.7,
+            "antialias_radius": 0.75,
+            "antialias_threshold": 0.04,
+            "antialias_passes": 2,
+            "spatial_method": "true high-resolution pinned-font and procedural-vector raster; Lanczos reduction",
+            "temporal_method": "real native-source-clock subframe renders; linear-light shutter integration",
+            "final_method": "premultiplied edge-aware AA after GPU output, before encode",
+            "optical_flow": false,
+            "gpu_feedback_subframes": false
+          },
+          "images": [
+            {
+              "role": "from",
+              "sha256": "6b8562b3a7d3bd23f39cd07c822bdb9bf78e4eb6f950132426dd55eb46427f5e",
+              "pixel_sha256": "95fe80ad0abc003f257c39c64effc6d0d616b75b5853ba3c53fbbae8a4807cb7"
+            },
+            {
+              "role": "result",
+              "sha256": "b65bf389fd373edaeaa1f9f8db9888e08815d91b116783bae10939860af43c3f",
+              "pixel_sha256": "6a9420cd80035927b58aaab070df55940156c64da81fd0e3f615f2d3524fbda6"
+            },
+            {
+              "role": "to",
+              "sha256": "2f5dcb758eadc5b40721c18613cb504d05a3d5b50487f2b9946d60f7f83dea01",
+              "pixel_sha256": "f7986cb862a618c7cfc00d5e2b91c76ae1e602229a6dd061df373f2e06e46864"
+            }
+          ],
+          "max_rgb8_error": 0
+        }
+      ]
+    }
+  ],
+  "http_and_typescript_seconds": 9.257,
+  "http_requests": 121,
+  "coalescing": {
+    "submitted_intents": 202,
+    "requested": [
+      {
+        "frame": 0,
+        "quality": "fast"
+      },
+      {
+        "frame": 5,
+        "quality": "full"
+      }
+    ],
+    "presented": [
+      {
+        "frame": 5,
+        "quality": "full"
+      }
+    ],
+    "only_latest_presented": true,
+    "owned_urls_removed": true
+  },
+  "normal_preview": [
+    {
+      "name": "timed_continuous",
+      "frame": 5,
+      "quality": "fast",
+      "png_sha256": "5b835e7b3dcbacf3fdabc35ed2a73f5ed6a5ef1806daae335ace6b888defcdcd",
+      "pixel_sha256": "c24362be97db8e34acfdb70afb5a14bb9940c33a7c74bbbda088ebeddcb5a261",
+      "reference_clock": {
+        "frame": 5,
+        "seconds": 0.4166666666666667,
+        "source_seconds": 0.4166666666666667,
+        "beat": 0.8333333333333334,
+        "source_beat": 0.8333333333333334
+      },
+      "max_rgb8_error": 0
+    },
+    {
+      "name": "timed_continuous",
+      "frame": 5,
+      "quality": "full",
+      "png_sha256": "d1a0d7852d5ab5e8d49217c205270b5cae7788a1286cda676db27f96b3103304",
+      "pixel_sha256": "8c4376bd264b0edd2ac6ccca32e6f2f8e6e8f0e9afdb482e3811f3852b4c3df3",
+      "reference_clock": {
+        "frame": 5,
+        "seconds": 0.4166666666666667,
+        "source_seconds": 0.4166666666666667,
+        "beat": 0.8333333333333334,
+        "source_beat": 0.8333333333333334
+      },
+      "max_rgb8_error": 0
+    }
+  ],
+  "quality_changes_pixels": [
+    "dissolve_start",
+    "dissolve_end",
+    "timed_continuous",
+    "timed_source",
+    "matte",
+    "geometry_zoom",
+    "spectral",
+    "native_named",
+    "native_recorded",
+    "temporal_history",
+    "edited_cues",
+    "chain_first",
+    "chain_second"
+  ],
+  "source_and_recorded_clocks_repeat": true,
+  "continuous_clock_advances_across_repeat": true,
+  "source_inputs_unchanged": true,
+  "authored_projects_unchanged": true,
+  "preview_temporary_trees_removed": true,
+  "http_server_closed": true,
+  "contact_sheet_sha256": "086cfdb9ec158f39b89a782e5091c2c80d4bc9fb958b31e819d5e1196722e25c",
+  "owned_temporary_tree_removed": true
+}

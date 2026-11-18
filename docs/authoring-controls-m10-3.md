@@ -174,6 +174,6 @@ unchanged-signature case without sleeps. POSIX retains its existing fast path.
 This Windows correctness fallback adds large-media disk I/O; exact-candidate
 Windows CI and host performance remain to be observed.
 
-The next planned major authoring milestone is **M10.4: transition previews and
-scrub-safe frame evaluation with a quality/performance switch**. M10.5 retains
-the broader round-trip and undo/redo qualification work.
+[M10.4 supplies transition comparisons and scrub-safe frame evaluation with a
+quality/performance switch](authoring-preview-m10-4.md). The next planned major
+authoring milestone is **M10.5: round-trip JSON fixture and undo/redo tests**.

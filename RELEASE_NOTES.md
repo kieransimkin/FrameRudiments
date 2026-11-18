@@ -1,3 +1,29 @@
+# FrameRudiments M10.4 preview candidate (unreleased)
+
+- Compare a selected native transition or expanded chain stage as From, Result
+  and To at the same output frame, using the ordinary native compositor.
+- Add Fast / Authored preview quality and exact preview-frame controls. Preserve
+  native clocks, motion bindings and temporal post-effect history; authored
+  quality retains spatial and temporal sampling. Preview controls do not edit
+  the project or seek the shared timeline's audio transport.
+- Share one active request plus one replaceable pending cursor across normal
+  and transition previews. Invalidate superseded output immediately, verify
+  response identity and PNGs, and publish comparison images only after every
+  image decodes. Cancellation, explicit retry and owned image cleanup are bounded.
+- Validate the entire native draft and retain pinned inputs. Bound one-shot
+  frames to 8,388,608 pixels, each PNG to 24 MiB and transition JSON to 64 MiB;
+  oversized requests report a fixed error without silently resizing pixels.
+- Qualify actual HTTP/TypeScript previews against independent native rendering:
+  thirteen cases, 312 transition images and two normal previews, including
+  authored quality, repeated seeks, source clocks, motion, cues and chain stages.
+  A 202-intent scrub sequence renders only its first and final requests and
+  presents only the final result. Extend authoring CI and package qualification.
+- Fix an inherited HTTP test-fixture race by waiting for that request's handler
+  cleanup before asserting capacity. Production semaphore behavior is unchanged.
+  Browser paint/layout, exact-candidate CI and production visual acceptance need
+  their own observed evidence. See [the M10.4 guide](docs/authoring-preview-m10-4.md).
+  M10.5 round-trip JSON fixture and undo/redo tests are next.
+
 # FrameRudiments M10.3 authoring candidate (unreleased)
 
 - Generate parameter forms from native metadata for all fourteen graph kinds,
@@ -11,7 +37,7 @@
   22 synthetic cases / 88 byte-exact RGB8 frame comparisons.
 - Extend authoring CI and source-package qualification. Exact-candidate CI and
   browser interaction require their own observed results. See
-  [the M10.3 guide](docs/authoring-controls-m10-3.md); M10.4 is next.
+  [the M10.3 guide](docs/authoring-controls-m10-3.md).
 - Correct the inherited GPU-isolation test's obsolete direct-pytest assertion,
   and rehash pinned inputs on Windows preview reuse where creation-time/last-
   write metadata can miss a same-length rewrite. The Windows fallback adds disk

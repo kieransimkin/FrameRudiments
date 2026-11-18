@@ -16,8 +16,20 @@ JSON export. A native seek/edit/refinement gallery runs through the existing CI
 and release validation route, including Windows/Linux CPU and software-EGL GPU
 profiles. The [implementation plan](docs/seekable-adaptive-streaming-plan.md)
 keeps external-engine, physical-device and perceptual acceptance explicit.
-The one-shot renderer and production pipeline retain their existing behavior;
-source/audio clocks are unchanged.
+Source/audio clocks and production rendering are unchanged.
+
+M10.4 adds [transition comparisons and scrub-safe native previews](docs/authoring-preview-m10-4.md).
+Select a transition or expanded chain stage in **Effect DAG** to compare its
+**From / Result / To** images at one authoritative frame. **Fast / Authored**
+changes preview output quality while preserving native timing and bounded
+temporal history. Normal and transition previews share a coalesced request
+controller, decoded-image checks and immediate invalidation of stale images.
+Preview frame controls use the existing frame grid. The native HTTP/TypeScript
+qualifier compares 312 transition images across thirteen cases, plus two normal
+previews, against independent native renders. One-shot previews are explicitly
+bounded to 8,388,608 pixels; sequential visualisers remain outside this view.
+This is an unreleased implementation candidate; browser interaction and
+exact-candidate platform/GPU CI retain separate qualification.
 
 M10.3 adds [generated parameter and DanceNotion control editors](docs/authoring-controls-m10-3.md)
 to **Effect DAG**. Native metadata supplies typed forms for all fourteen graph

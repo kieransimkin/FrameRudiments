@@ -69,11 +69,17 @@ editable timing contracts in `docs/timing-editing.md` of its upstream project.
   changing its native DanceRudiments `motion` or pinned StemLab recording.
 - **Undo/redo:** Up to 100 complete reversible draft operations, in browser
   memory only. Nothing is automatically pushed to GitHub or published.
-- **Preview:** A local `Compositor` renders a PNG for the requested output frame.
-  Fast mode explicitly lowers quality to 1× spatial / 1 temporal sample; full
-  mode uses the original project settings. **Sequential Butterchurn/projectM
-  effects are not replayed in this interactive preview.** Use a real preflight
-  and encoded render to approve those stages.
+- **Preview:** A local `Compositor` renders the requested integer output frame.
+  [M10.4](authoring-preview-m10-4.md) adds **From / Result / To** comparisons for
+  a selected transition or expanded chain stage, a shared coalesced request
+  controller and checks that all returned images decode before presentation.
+  **Fast** disables output render quality (1× spatial / one temporal sample);
+  **Authored** retains the project's complete quality settings. Native temporal
+  post-effect history remains active in both modes. Preview position, frame and
+  previous/next controls use the existing frame grid; they do not seek audio.
+  **Sequential Butterchurn/projectM effects are not replayed in one-shot normal
+  or transition previews.** Use the existing verified feedback streaming path
+  where supported, followed by normal preflight and encoded-render approval.
 
 **Opt-in streaming implementation candidate:** enable Adaptive cache preview
 for [native quality adjustment](preview-stream-s3.md),
@@ -86,7 +92,7 @@ bounded-history shutters or an isolated, independently verified frame-zero
 feedback replay at authored Q5. The panel distinguishes reconstruction from
 verification and shows `stateful_seek_unavailable` when a runtime, reset or
 budget cannot provide verified output. Cached pixels remain preview evidence;
-production rendering and the one-shot `/api/preview` behavior are unchanged.
+production rendering retains its existing pipeline.
 See the [remaining implementation/qualification plan](seekable-adaptive-streaming-plan.md).
 
 [S7 measurements](preview-qualification-s7.md) distinguish the requested frame
@@ -160,6 +166,11 @@ The [M10.3 qualifier](authoring-controls-m10-3.md#reproducible-native-qualificat
 adds real same-origin catalogue/edit requests, typed parameter and control
 operations, and native named/recorded motion. Its 22 exported fixtures produce
 88 exact native frame comparisons; browser interaction remains a separate gate.
+The [M10.4 qualifier](authoring-preview-m10-4.md) drives the actual TypeScript
+preview controller through HTTP and compares 312 transition images and two
+normal previews against independent native renders. It checks repeated and
+out-of-order frames, Fast/Authored quality, motion clocks and coalesced scrubbing.
+Pillow decodes the returned PNGs; browser paint/layout remains unobserved.
 
 The first release uses the shared component's editable **cue-shaped timing
 marker** for keyframes, because its published v0.4.0 `TimingKind` supports only
@@ -170,8 +181,11 @@ an unpublished Git commit or fork to consume it. The currently published
 package works without this extension.
 
 For very long songs, large FFT archives or CPU-heavy 3D scenes, preview requests
-may be slow; they are bounded to two concurrent renders and are not cached
-across edits. Playback of clipped or repeated source programmes requires the
+may be slow. The server admits two concurrent preview requests; each mounted
+normal or transition panel keeps one active request and one latest pending
+cursor. One-shot frames are limited to 8,388,608 pixels, each PNG to 24 MiB and
+the transition JSON response to 64 MiB. Oversized work fails explicitly without
+resizing, and results are not cached across edits. Playback of clipped or repeated source programmes requires the
 user to select an exact rendered audio excerpt. Direct full-file audio is
 served only when a WAV has `start_sample=0`, `repeats=1` and a matching
 sample-rate/end-sample count. Trimmed or compressed masters require an exact

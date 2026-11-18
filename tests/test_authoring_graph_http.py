@@ -6,8 +6,9 @@ from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
 from io import BytesIO
 import json
-from threading import Thread
+from threading import Event, Thread
 from types import SimpleNamespace
+from uuid import uuid4
 
 from PIL import Image
 import pytest
@@ -41,6 +42,7 @@ def loopback(tmp_path):
     cache = tmp_path / 'stream-cache'
     api = PreviewStreamAPI(path, author.check_draft, author.render_preview, cache_root=cache,
         graph_validator=partial(author.validate_preview_graph, temp_parent=owned))
+    completed_requests = {}
 
     class Handler(author.AuthoringHandler):
         project_file = path
@@ -48,6 +50,15 @@ def loopback(tmp_path):
 
         def log_message(self, *_args):
             pass
+
+        def finish(self):
+            try:
+                super().finish()
+            finally:
+                headers = getattr(self, 'headers', {})
+                event = completed_requests.get(headers.get('X-Test-Request'))
+                if event is not None:
+                    event.set()
 
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
     server.stream_api = api
@@ -58,18 +69,30 @@ def loopback(tmp_path):
 
     def request(endpoint, body=None, *, origin='same', headers=None, raw=None, method='POST', binary=False):
         payload = raw if raw is not None else json.dumps(body, ensure_ascii=False).encode('utf-8')
-        fields = {'Content-Type': 'application/json'}
+        identity, completed = str(uuid4()), Event()
+        completed_requests[identity] = completed
+        fields = {'Content-Type': 'application/json', 'X-Test-Request': identity}
         if origin is not None:
             fields['Origin'] = base if origin == 'same' else origin
         fields.update(headers or {})
         connection = HTTPConnection('127.0.0.1', server.server_port, timeout=5)
+        received = False
         try:
             connection.request(method, endpoint, body=payload if method == 'POST' else None, headers=fields)
             response = connection.getresponse()
             result = response.read()
+            received = True
             return response.status, result if binary else json.loads(result), dict(response.getheaders())
         finally:
             connection.close()
+            try:
+                if received:
+                    # A complete HTTP body can arrive before handler finally
+                    # releases its slot. Observe actual cleanup before testing
+                    # slot availability; avoid timing-dependent sleeps/retries.
+                    assert completed.wait(5), 'HTTP handler cleanup did not finish'
+            finally:
+                completed_requests.pop(identity, None)
 
     def draft():
         result = deepcopy(data)

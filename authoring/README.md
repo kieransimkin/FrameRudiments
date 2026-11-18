@@ -12,6 +12,28 @@ validate the result with the existing FrameRudiments `plan` / `preflight`
 commands. The one-shot preview omits GPU feedback; the opt-in adaptive stream
 uses the verified S6 replay route below.
 
+## M10.4 transition preview and exact-frame inspection
+
+Select a transition in **Effect DAG** to compare its native **From / Result / To**
+views. Choose an existing chain stage through **Parameter target**. The views
+retain upstream processing and use the same project frame and source clocks.
+
+**Preview position**, **Preview frame** and previous/next-frame buttons inspect
+integer output frames without changing the project or seeking audio. Timeline
+transport remains the audio owner. **Fast (1×)** skips output supersampling and
+finishing AA while retaining native temporal effects; **Authored quality** keeps
+the complete project output-quality configuration, including temporal samples.
+Adaptive preview continues to use its own Q controls.
+
+One active request and one latest pending request coalesce rapid scrubs. Older
+draft, frame, target or quality results cannot display, and accepted PNGs must
+decode before replacing the view. Cancel/retry is explicit. Transition views
+stop before sequential Butterchurn/projectM stages and show transparency over
+black; the panel reports excluded stages. The real HTTP/native qualifier checks
+13 cases, 312 transition images and two ordinary preview images. See the
+[M10.4 guide](../docs/authoring-preview-m10-4.md) for scope, limits, reproduction
+and the distinction between native pixel evidence and browser/GPU acceptance.
+
 ## M10.3 native parameter and control forms
 
 Select an **Effect DAG** node to open generated typed parameter forms. Search
