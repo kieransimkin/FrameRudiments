@@ -653,7 +653,11 @@ class Compositor:
     def temporal_contract(self):
         """Inspect native temporal work without rendering pixels or external engines."""
         from .compositor_temporal import temporal_contract
-        return temporal_contract(self.project)
+        result = temporal_contract(self.project)
+        fx = self.temporal_fx_contract()
+        if fx is not None:
+            result['temporal_fx'] = fx
+        return result
 
     def temporal_plan(self, frame):
         """Plan native input sampling for one encoded step, before feedback.
@@ -662,6 +666,17 @@ class Compositor:
         """
         from .compositor_temporal import temporal_plan
         return temporal_plan(self, frame)
+
+    def temporal_fx_contract(self):
+        """Read-only M11.3 supported effects and bounded source reach."""
+        from .compositor_temporal_fx import temporal_fx_contract
+        return temporal_fx_contract(self)
+
+    def temporal_fx_plan(self, frame):
+        """All deduplicated native read taps for the requested M11.3 output."""
+        from .compositor_temporal_fx import temporal_fx_plan
+        plan = temporal_fx_plan(self, frame)
+        return plan.document() if plan is not None else None
 
     def sample_frames(self, anchor, offsets, *, boundary='error', repeat_local=True,
                       apply_quality=True):
@@ -698,6 +713,10 @@ class Compositor:
         if self.post_pipeline.feedback is not None:
             from .compositor_feedback import render_feedback_frame
             return render_feedback_frame(self, frame, apply_quality=apply_quality,
+                cancelled=cancelled, progress=progress)
+        if self.post_pipeline.temporal_fx is not None:
+            from .compositor_temporal_fx import render_temporal_fx_frame
+            return render_temporal_fx_frame(self, frame, apply_quality=apply_quality,
                 cancelled=cancelled, progress=progress)
         from .compositor_temporal import render_scheduled_frame
         return render_scheduled_frame(self, frame, apply_quality=apply_quality, cancelled=cancelled)
@@ -780,7 +799,8 @@ class Compositor:
 
     def post_effect_reports(self):
         return (dict(self.post_pipeline.last_report)
-                if self.post_pipeline.enabled or self.post_pipeline.feedback is not None else {})
+                if (self.post_pipeline.enabled or self.post_pipeline.feedback is not None
+                    or self.post_pipeline.temporal_fx is not None) else {})
 
     def close(self):
         feedback = getattr(self, '_feedback_session', None)
@@ -811,6 +831,9 @@ class Compositor:
         return dict(
             **({'feedback': {'contract': self.feedback_contract(), 'state': self.feedback_snapshot()}}
                if self.post_pipeline.feedback is not None else {}),
+            **({'temporal_fx': {'contract': self.temporal_fx_contract(),
+                    'last_execution': deepcopy(getattr(self, '_last_temporal_fx', None))}}
+               if self.post_pipeline.temporal_fx is not None else {}),
             temporal_schedule={"contract": self.temporal_contract(),
                 "last_execution": deepcopy(getattr(self, "_last_temporal_schedule", None))},
             transformed_alpha_extents=self.extents,
@@ -876,5 +899,6 @@ class Compositor:
                 else {}
             ),
             **({"post_effects": self.post_pipeline.evidence}
-               if self.post_pipeline.enabled or self.post_pipeline.feedback is not None else {}),
+               if (self.post_pipeline.enabled or self.post_pipeline.feedback is not None
+                   or self.post_pipeline.temporal_fx is not None) else {}),
         )

@@ -1,3 +1,19 @@
+# FrameRudiments M11.3 native temporal effects candidate (unreleased)
+
+- Add opt-in `post_effects.temporal_fx` with deterministic rational time remap,
+  bounded motion echoes, observed native-frame directional blur and x/y slit scan.
+  Effects read deduplicated M11.1 schedules; source-bound cycles and requested
+  frame clocks stay exact, with no synthetic optical-flow or hidden GPU fallbacks.
+- Add native DanceRudiment strength modulation, exact plans/contracts, per-frame
+  evidence and preview temporal reach for cache invalidation. A bounded native
+  stage feeds into the existing M11.2 checkpointed feedback recurrence.
+- Retain a pre-AA RGB8 result, finish once, preserve target metadata and roll
+  back on failure/cancellation. Validate fan-out and feedback replay budgets
+  before expensive rasterisation. Existing projects stay on the original path.
+- Add isolated and real-compositor tests and document exact-clock/resource
+  limits in [M11.3 temporal FX](docs/temporal-fx-m11-3.md). New code requires
+  exact-head CI, distribution smoke and device/perceptual acceptance separately.
+
 # FrameRudiments M11.2 feedback history candidate (unreleased)
 
 - Add opt-in `post_effects.feedback` with an explicit positive encoded-frame

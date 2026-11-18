@@ -122,6 +122,9 @@ jobs:
           name: feedback-history-${{ matrix.os }}
           path: feedback-history-qualification/
           if-no-files-found: error
+      - name: Qualify M11.3 exact native temporal effects
+        if: matrix.python == '3.13'
+        run: python -m pytest -q tests/test_temporal_fx_m11.py tests/test_compositor_temporal_fx.py
       - run: python -m build
       - run: python -m twine check --strict dist/*
 

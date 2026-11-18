@@ -53,8 +53,14 @@ def temporal_read_bounds(document):
     post = document.get('post_effects', {})
     if not isinstance(post, dict):
         raise ValueError('post_effects must be an object')
-    return (8 if post.get('temporal') is not None else 0,
-            1 if quality.time_samples > 1 else 0)
+    past = 8 if post.get('temporal') is not None else 0
+    future = 1 if quality.time_samples > 1 else 0
+    if 'temporal_fx' in post:
+        from .temporal_fx_m11 import temporal_fx_bounds
+        fx_past, fx_future = temporal_fx_bounds(post['temporal_fx'])
+        past += fx_past
+        future += fx_future
+    return past, future
 
 
 def temporal_contract(project):

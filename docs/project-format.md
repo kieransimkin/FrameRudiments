@@ -151,6 +151,14 @@ may target `feedback.mix`. Missing pre-reset history uses the current native
 image unattenuated; otherwise its linear-light blend reads an earlier feedback
 output. See [M11.2 feedback history](feedback-history-m11-2.md) for the complete
 field table, exact reset semantics, actual checkpoint API and qualification.
+
+`post_effects.temporal_fx` adds M11.3 motion echoes, observed-frame directional
+blur, slit scan and exact rational time remap. It selects bounded native RGB8
+taps before optional `feedback` recurrence; each tap retains the legacy
+subframe and historical-shutter pipeline. Declare explicit remap window bounds,
+source-repeat/programme sampling policy and optional native strength drivers.
+See [M11.3 native temporal effects](temporal-fx-m11-3.md) for parameters,
+ordered stages, limits, read-only plans and qualification.
 The existing same-frame effect graph continues to reject cycles.
 
 ## Bitmap and sprite-backed Rudiment renderers

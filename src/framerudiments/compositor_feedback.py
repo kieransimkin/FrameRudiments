@@ -223,12 +223,12 @@ class NativeFeedback:
         return self.engine.plan(frame)
 
     def _evaluate(self, frame, history):
-        from .compositor_temporal import render_scheduled_frame
+        from .compositor_temporal_fx import render_temporal_fx_frame
 
         image = prior = pixels = None
         try:
             self.verify()
-            image, context = render_scheduled_frame(self.compositor, frame,
+            image, context = render_temporal_fx_frame(self.compositor, frame,
                 apply_quality=False, cancelled=self.cancelled)
             mix, modulations = self.settings.parameters(context)
             previous = history[0]
@@ -284,11 +284,17 @@ class NativeFeedback:
             check_cancelled = cancelled or (lambda: False)
             self.verify()
             plan = self.engine.plan(frame)
-            # Admit every nested native schedule before the first raster callback.
-            for index in range(plan.start_frame, plan.target_frame + 1):
-                if check_cancelled():
-                    raise FeedbackCancelled('superseded native feedback request')
-                temporal_plan(owner, index)
+            # Admit every nested source schedule, including bounded temporal-FX
+            # fan-out, before advancing even one committed feedback history frame.
+            if owner.post_pipeline.temporal_fx is not None:
+                from .compositor_temporal_fx import preflight_feedback_tap_work
+                preflight_feedback_tap_work(owner, plan.start_frame, plan.target_frame,
+                    check_cancelled)
+            else:
+                for index in range(plan.start_frame, plan.target_frame + 1):
+                    if check_cancelled():
+                        raise FeedbackCancelled('superseded native feedback request')
+                    temporal_plan(owner, index)
             self.cancelled = check_cancelled
             self.target_frame, self.apply_quality = frame, apply_quality
             self.target_output = None

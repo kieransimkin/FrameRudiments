@@ -233,7 +233,7 @@ def build_dependency_index(project, draft, sidecars, *, namespace, renderer_abi,
         raise ValueError('post_effects.elements must be an object')
     if reach is None:
         mode = ('feedback' if draft.get('effects') else
-                'unknown' if 'temporal' in post else 'independent')
+                'unknown' if 'temporal' in post or 'temporal_fx' in post else 'independent')
         reach = TemporalReach(mode)
     if not isinstance(reach, TemporalReach):
         raise ValueError('engine temporal dependency contract required')
@@ -288,7 +288,8 @@ def build_dependency_index(project, draft, sidecars, *, namespace, renderer_abi,
         # Enabling the isolation pipeline can change final alpha/matte behaviour
         # even on inactive layers. Its dispatch flags are therefore GLOBAL.
         dispatch['post_effects'] = bool(post.get('all_elements') or post.get('frame') or
-                                        any(post.get('elements', {}).values()) or 'temporal' in post)
+                                        any(post.get('elements', {}).values()) or 'temporal' in post
+                                        or 'temporal_fx' in post)
     components = {}
     component_edges = set()
     def add(key, value):

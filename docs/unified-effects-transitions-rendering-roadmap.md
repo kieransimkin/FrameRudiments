@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.32 — 18 November 2026
+**Version:** 1.33 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -254,7 +254,13 @@ All external shader/model/media sources must be pinned or versioned, constrained
   and actual work saved. Opaque external-engine checkpoints, candidate GPU/
   platform CI, browser interaction and perceptual acceptance remain separate.
 - **M11.3** Motion echoes, directional blur, slit-scan and time-remapping effects.
-  Next planned major milestone after the M11.2 implementation candidate.
+  Implementation candidate: [bounded native temporal FX](temporal-fx-m11-3.md).
+  Exact frame-addressed RGB8 taps, rational source interpolation and
+  repeat/programme boundaries produce native motion echoes, observed-frame
+  directional exposure and slit-scan without inventing optical flow. Read-only
+  plans, bounded fan-out/memory, M11.2 feedback integration and source-change
+  reach are included; exact-head CI, full encoded qualification and physical-
+  device/perceptual acceptance remain separate gates.
 - **M11.4** Video input/output adapters with rational timebase handling.
 - **M11.5** CI-published side-by-side gallery: music-driven Kandi Boom ⇄ visualiser, mattes and spectral transitions.
 - **Exit:** sequential vs nonsequential renders agree; CI publishes inspected media and metadata.

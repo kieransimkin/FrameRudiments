@@ -247,7 +247,7 @@ class CompositingEffects:
     """
 
     def __init__(self, project, config, context_at, *, valid_elements):
-        fields(config, {"all_elements", "elements", "frame", "temporal", "feedback"}, "post_effects")
+        fields(config, {"all_elements", "elements", "frame", "temporal", "feedback", "temporal_fx"}, "post_effects")
         elements = config.get("elements", {})
         if not isinstance(elements, dict) or len(elements) > MAX_TARGETS:
             raise ValueError("post_effects.elements must be an object with <=256 targets")
@@ -273,7 +273,13 @@ class CompositingEffects:
         from .compositor_feedback import FeedbackSettings
 
         self.feedback = FeedbackSettings(project, config['feedback'], context_at) if 'feedback' in config else None
-        # Feedback is an encoded-frame stage; it must not change the individual
+        from .temporal_fx_m11 import NativeTemporalFX
+
+        self.temporal_fx = (
+            NativeTemporalFX(project, config['temporal_fx'], context_at)
+            if 'temporal_fx' in config else None
+        )
+        # Feedback and temporal FX are encoded-frame stages; neither changes the individual
         # native sample's ordinary composition route merely by being present.
         self.enabled = bool(
             self.all_elements or self.frame or any(self.elements.values()) or self.temporal is not None
@@ -288,6 +294,8 @@ class CompositingEffects:
             self.files.extend(self.temporal.files)
         if self.feedback is not None:
             self.files.extend(self.feedback.files)
+        if self.temporal_fx is not None:
+            self.files.extend(self.temporal_fx.files)
         project.inputs.extend(self.files)
         self.evidence = dict(
             order="background, scene, layers, identity, caption/art; then frame; then GPU effects",
@@ -296,6 +304,7 @@ class CompositingEffects:
             frame=[stage.evidence for stage in self.frame],
             temporal=self.temporal.evidence if self.temporal else None,
             **({'feedback': self.feedback.evidence} if self.feedback else {}),
+            **({'temporal_fx': self.temporal_fx.evidence} if self.temporal_fx else {}),
         )
         self.last_report = {}
 

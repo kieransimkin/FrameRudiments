@@ -18,6 +18,17 @@ profiles. The [implementation plan](docs/seekable-adaptive-streaming-plan.md)
 keeps external-engine, physical-device and perceptual acceptance explicit.
 Source/audio clocks and production rendering are unchanged.
 
+M11.3 adds [motion echoes, observed-frame directional blur, slit-scan and exact time remapping](docs/temporal-fx-m11-3.md).
+Opt-in `post_effects.temporal_fx` composes bounded, deduplicated native RGB frame
+reads with rational interpolation, source-repeat or programme limits and native
+modulation of effect strength. It preserves the requested output clock and
+metadata under arbitrary seek order. Temporal FX feeds M11.2 feedback when
+configured, before final output quality and external visualisers; no optical
+flow, GPU-time-state serialization or model inference is implied. Read-only
+`inspect-temporal` exposes exact tap plans and conservative cache-invalidating
+read bounds. This is an unreleased implementation candidate with native host and
+exact-head CI qualification remaining.
+
 M11.2 adds [delayed native feedback, bounded checkpoints and random-access reconstruction](docs/feedback-history-m11-2.md).
 Opt-in `post_effects.feedback` blends a native frame with an explicitly delayed
 previous feedback result in linear light. History advances once per encoded
@@ -29,8 +40,8 @@ the compositor while retaining one bounded checkpoint. Read-only inspection
 reports both the native source plan and feedback reconstruction. Actual native
 and CLI-encoded fixtures measure pixel agreement and reduced checkpoint work.
 This is an unreleased implementation candidate; candidate platform/GPU CI and
-device/perceptual acceptance retain their own gates. M11.3 temporal effects are
-the next planned major milestone.
+device/perceptual acceptance retain their own gates. M11.3 temporal effects
+are described above.
 
 M11.1 adds [exact temporal dependencies and deterministic native scheduling](docs/temporal-scheduling-m11-1.md).
 The compositor executes one bounded dependency plan for native subframes,

@@ -46,6 +46,9 @@ def inspect_temporal(project_file, frames):
             if frame not in plans:
                 plan = compositor.temporal_plan(frame)
                 plans[frame] = {'frame': frame, 'digest': plan.digest, 'schedule': plan.document()}
+                fx = compositor.temporal_fx_plan(frame)
+                if fx is not None:
+                    plans[frame]['temporal_fx'] = fx
                 feedback = compositor.feedback_plan(frame)
                 if feedback is not None:
                     plans[frame]['feedback'] = feedback
@@ -60,6 +63,9 @@ def inspect_temporal(project_file, frames):
         feedback = compositor.feedback_contract()
         if feedback is not None:
             result['feedback'] = feedback
+        fx = compositor.temporal_fx_contract()
+        if fx is not None:
+            result['temporal_fx'] = fx
         project.verify_inputs()
         if path.read_bytes() != original:
             raise ValueError('Project changed during temporal inspection')
