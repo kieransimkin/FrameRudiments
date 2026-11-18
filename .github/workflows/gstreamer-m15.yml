@@ -1,0 +1,52 @@
+name: M15.1 GStreamer offline MP4 qualification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/framerudiments/gstreamer_m15*.py'
+      - 'tests/test_gstreamer_m15.py'
+      - 'integration/qualify_gstreamer_m15.py'
+      - 'docs/gstreamer-m15.md'
+      - '.github/workflows/gstreamer-m15.yml'
+      - 'pyproject.toml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-gstreamer:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install real GStreamer and independent FFmpeg verification
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            gstreamer1.0-tools gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good gstreamer1.0-plugins-bad \
+            gstreamer1.0-plugins-ugly ffmpeg
+      - name: Install FrameRudiments with regular development checks
+        run: python -m pip install -e '.[dev]'
+      - name: Verify lint and pinned-source/rollback contracts
+        run: |
+          ruff check src/framerudiments/gstreamer_m15.py src/framerudiments/gstreamer_m15_cli.py tests/test_gstreamer_m15.py integration/qualify_gstreamer_m15.py
+          python -m pytest -q tests/test_gstreamer_m15.py
+      - name: Require every native GStreamer element (no skip/fallback)
+        run: framerudiments-gstreamer inspect
+      - name: Encode and independently decode rational-PTS sample videos
+        run: python integration/qualify_gstreamer_m15.py --output gstreamer-qa
+      - uses: actions/upload-artifact@v6
+        with:
+          name: gstreamer-m15-${{ matrix.python }}-encoded-evidence
+          path: gstreamer-qa/
+          if-no-files-found: error
