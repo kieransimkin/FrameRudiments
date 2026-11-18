@@ -101,6 +101,17 @@ jobs:
           python scripts/generate_m13_timeline_example.py --site _site/timeline
           python scripts/generate_m13_timeline_example.py --site _site/timeline --verify
           test -s _site/timeline/example.otio
+      - name: Publish real M15.2 GStreamer variable-PTS and synthetic live-capture demo
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+            gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
+            gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly gstreamer1.0-libav ffmpeg
+          ruff check src/framerudiments/gstreamer_ingest_m15.py tests/test_gstreamer_ingest_m15.py integration/qualify_gstreamer_ingest_m15.py
+          python -m pytest -q tests/test_gstreamer_ingest_m15.py
+          python integration/qualify_gstreamer_ingest_m15.py --output _site/m15-2
+          test -s _site/m15-2/index.html && test -s _site/m15-2/ingest/index.json
+          test -s _site/m15-2/live/index.json && test -s _site/m15-2/source-vfr.mp4
       - name: Validate generated site and image count
         run: |
           python - <<'PY'

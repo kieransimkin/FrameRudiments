@@ -22,17 +22,23 @@ resource, cleanup and licensing gates.
 
 Reference: [GStreamer adapter and acceptance contract](gstreamer-m15.md).
 
-## M15.2 — GStreamer offline ingest and optional live media graph
+## M15.2 — GStreamer offline ingest and optional live media graph (implementation candidate)
 
-- Real decoded-presentation-PTS ingestion through a bounded, explicit video
-  source contract, compatible with M11.4 VFR rules and SHA-pinned originals.
-- Explicitly provided local device permissions / network endpoints. No default
-  device enumeration, broadcast, server bind, mDNS, or stream forwarding.
-- Audio/video clock reconciliation at an explicit sample/rational-frame boundary.
-- Start/stop/reconnect, timeout, backpressure, active process ownership and
-  partial-frame cleanup tests. GStreamer owns its decode contexts.
-- CI publishes timed comparison media and a displayable Gallery sample, and
-  tests fail if native runtime availability is required but absent.
+- [x] Read SHA-256-pinned local video via GStreamer and independently check
+  **all** decoded presentation PTS against M11.4's exact VFR FFprobe index.
+- [x] Produce a bounded, independently hashed PNG/PTS ledger, not a fabricated
+  constant-frame-rate export or a changed native render clock.
+- [x] Report pinned audio sample-clock alignment without implicit resampling or muxing.
+- [x] Finite, opt-in `videotestsrc` capture with bounded leaky queue, timeouts,
+  whole-attempt reconnection, OS process supervision and partial-frame cleanup.
+- [x] Strictly opt-in `/dev/videoN` and unauthenticated loopback RTSP TCP
+  input profiles; no default device enumeration or network access.
+- [x] Native GStreamer/FFmpeg qualification fixture and CI-generated visual
+  demo with actual decoded images and a playable VFR source MP4.
+- [ ] Post-merge exact-head CI, physical capture-device and real RTSP source
+  acceptance. These cannot be inferred from a synthetic GStreamer source.
+
+Reference: [M15.2 ingest and finite live capture contract](gstreamer-m15-2.md).
 
 ## M15.3 — OpenFX plugin-host boundary
 
