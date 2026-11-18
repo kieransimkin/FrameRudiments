@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.39 — 18 November 2026
+**Version:** 1.40 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -315,6 +315,14 @@ All external shader/model/media sources must be pinned or versioned, constrained
   companion for the public React timeline are provided. Full nested editorial
   structures, render-graph conformance and completed native CI are separate gates.
 - **M14 Computer vision:** optional ONNX segmentation/depth/flow outputs with model checksums and memory limits.
+  M14.1 implementation candidate: [pinned offline CPU inference](vision-inference-m14.md).
+  A strict static float32 NCHW contract accepts locally pinned, trusted ONNX
+  models and exact RGB8 PNG inputs; produces typed segmentation probabilities,
+  model-relative depth or previous-to-current optical flow with bounded pixels,
+  a time-limited worker, SHA-256 output receipts and no network/model downloads.
+  These are inferred estimates, never M12 native geometry or metric depth.
+  Windows/Linux ONNX Runtime CPU qualification is required for acceptance.
+  M14.2 model profiles/render routing and M14.3 GPU-provider/device parity remain gated.
 - **M15 Experimental adapters:** isolated OpenFX host, OpenUSD/Hydra, GStreamer/NDI/Spout/Syphon, Vulkan/WebGPU, OSC/MIDI. Each integration requires licensing review and CI capability declaration before shipping.
 - **Exit:** no new hard runtime dependencies, pinned reproducible fixtures, explicit availability documentation.
 

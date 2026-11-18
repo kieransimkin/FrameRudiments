@@ -19,6 +19,7 @@ materials = ["numpy>=1.26"]
 effect_graph = ["numpy>=1.26"]
 colour_aov = ["numpy>=1.26", "OpenEXR>=3.4.16,<4", "opencolorio>=2.5,<3"]
 timeline_otio = ["opentimelineio>=0.18.0,<0.19"]
+vision = ["numpy>=1.26", "onnxruntime>=1.20,<2"]
 dev = ["pytest>=8", "build>=1.2", "ruff>=0.9", "twine>=6", "numpy>=1.26"]
 
 [project.urls]
@@ -31,6 +32,7 @@ Documentation = "https://github.com/kieransimkin/FrameRudiments#readme"
 framerudiments = "framerudiments.cli:main"
 framerudiments-colour = "framerudiments.colour_aov_cli:main"
 framerudiments-timeline = "framerudiments.timeline_otio_cli:main"
+framerudiments-vision = "framerudiments.vision_m14_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
