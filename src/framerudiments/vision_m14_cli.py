@@ -31,6 +31,17 @@ def main(argv=None):
     seed.add_argument("project", help="Pinned FrameRudiments project")
     seed.add_argument("manifest", help="The M14.3 batch used to create the output")
     seed.add_argument("batch_output", help="Existing verified M14.3 batch output directory")
+    qualified = sub.add_parser(
+        "seed-provider-graph-batch", help="Import pinned CPU-compared GPU predictions without rerunning inference")
+    qualified.add_argument("project", help="Pinned FrameRudiments project")
+    qualified.add_argument("manifest", help="Original provider-specific M14.3 batch manifest")
+    qualified.add_argument("batch_output", help="Verified GPU batch output directory")
+    for name in ("inspect-preview", "warm-preview"):
+        item = sub.add_parser(name, help="Plan or precompute explicit Q0..Q5 preview inference taps")
+        item.add_argument("project")
+        item.add_argument("--frame", type=int, action="append", required=True)
+        item.add_argument("--source", action="append", default=[])
+        item.add_argument("--quality", type=int, required=True, choices=range(6))
     sub.add_parser("providers", help="List locally installed ONNX execution providers")
     args = cli.parse_args(argv)
     try:
@@ -65,6 +76,30 @@ def main(argv=None):
                 raise ValueError("Project has no opt-in vision_sources")
             owner = VisionGraphSources(project, project.data["vision_sources"])
             result = seed_graph_cache(owner, args.manifest, args.batch_output)
+        elif args.command == "seed-provider-graph-batch":
+            from .project import Project
+            from .vision_graph_m14 import VisionGraphSources
+            from .vision_provider_cache_m14 import seed_provider_graph_cache
+
+            project = Project.load(args.project)
+            if "vision_sources" not in project.data:
+                raise ValueError("Project has no opt-in vision_sources")
+            owner = VisionGraphSources(project, project.data["vision_sources"])
+            result = seed_provider_graph_cache(owner, args.manifest, args.batch_output)
+        elif args.command in ("inspect-preview", "warm-preview"):
+            from .project import Project
+            from .vision_graph_m14 import VisionGraphSources
+            from .vision_temporal_m14 import plan_preview, warm_preview
+
+            project = Project.load(args.project)
+            if "vision_sources" not in project.data:
+                raise ValueError("Project has no opt-in vision_sources")
+            owner = VisionGraphSources(project, project.data["vision_sources"])
+            options = {"quality": args.quality, "sources": args.source or None}
+            result = (plan_preview(owner, args.frame, **options)
+                      if args.command == "inspect-preview"
+                      else warm_preview(owner, args.frame, **options))
+            project.verify_inputs()
         elif args.command == "providers":
             import onnxruntime as runtime
             result = {"schema": "framerudiments.vision-providers.v1",

@@ -320,3 +320,14 @@ and requires native tests without skips. The separate manual
 comparison receipt. CPU CI cannot be used as evidence of GPU support. Complete
 hardware/driver coverage, inference kernels unsupported by the strict provider,
 and model perceptual/semantic accuracy remain independently gated.
+
+
+## M14.4 — qualified GPU estimate caching and Q0..Q5 prediction reuse
+
+The next opt-in increment is documented in [M14.4 provider caches and bounded
+preview prediction scheduling](vision-preview-m14-4.md). It adds a distinct
+checksum-pinned GPU provider cache imported only from independently CPU-compared
+M14.3 batches, as well as a read-only frame-tap planner and explicit
+`inspect-preview` / `warm-preview` commands. Normal authored renders and M14.2
+CPU prediction identities are unchanged. Real preview-host integration and
+physical GPU acceptance remain separate gates.

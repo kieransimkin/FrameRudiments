@@ -134,32 +134,46 @@ def inspect_batch(path):
                      max_error, mean_error, tuple(items))
 
 
-def _process_peak_rss_bytes():
-    """Process high-water RSS when the OS exposes it; not GPU device VRAM."""
+def _windows_peak_rss_bytes():
+    """Read Windows 64-bit process peak RSS with an explicitly typed WINAPI ABI.
+
+    ctypes defaults to c_int for undeclared function arguments. Passing the
+    pseudo-handle returned by GetCurrentProcess to an untyped PSAPI function
+    overflows on 64-bit Windows. This optional metric must never abort inference.
+    """
+    import ctypes
+
     try:
-        if os.name == "nt":
-            import ctypes
+        class MemoryCounters(ctypes.Structure):
+            _fields_ = [("cb", ctypes.c_ulong), ("PageFaultCount", ctypes.c_ulong),
+                        ("PeakWorkingSetSize", ctypes.c_size_t),
+                        ("WorkingSetSize", ctypes.c_size_t),
+                        ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                        ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                        ("PagefileUsage", ctypes.c_size_t),
+                        ("PeakPagefileUsage", ctypes.c_size_t)]
 
-            class MemoryCounters(ctypes.Structure):
-                _fields_ = [("cb", ctypes.c_ulong), ("PageFaultCount", ctypes.c_ulong),
-                            ("PeakWorkingSetSize", ctypes.c_size_t),
-                            ("WorkingSetSize", ctypes.c_size_t),
-                            ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
-                            ("QuotaPagedPoolUsage", ctypes.c_size_t),
-                            ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
-                            ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
-                            ("PagefileUsage", ctypes.c_size_t),
-                            ("PeakPagefileUsage", ctypes.c_size_t)]
+        counters = MemoryCounters()
+        counters.cb = ctypes.sizeof(MemoryCounters)
+        current_process = ctypes.windll.kernel32.GetCurrentProcess
+        current_process.restype = ctypes.c_void_p
+        get_memory_info = ctypes.windll.psapi.GetProcessMemoryInfo
+        get_memory_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(MemoryCounters), ctypes.c_ulong]
+        get_memory_info.restype = ctypes.c_int
+        if not get_memory_info(current_process(), ctypes.byref(counters), counters.cb):
+            return None
+        return int(counters.PeakWorkingSetSize)
+    except (AttributeError, ctypes.ArgumentError, OSError, ValueError, OverflowError, TypeError):
+        return None
 
-            counters = MemoryCounters()
-            counters.cb = ctypes.sizeof(MemoryCounters)
-            kernel = ctypes.windll.kernel32
-            kernel.GetCurrentProcess.restype = ctypes.c_void_p
-            handle = kernel.GetCurrentProcess()
-            if not ctypes.windll.psapi.GetProcessMemoryInfo(
-                    handle, ctypes.byref(counters), counters.cb):
-                return None
-            return int(counters.PeakWorkingSetSize)
+
+def _process_peak_rss_bytes():
+    """Best-effort worker peak RSS; never a provider GPU/VRAM measurement."""
+    if os.name == "nt":
+        return _windows_peak_rss_bytes()
+    try:
         import resource
         import sys
 

@@ -1,4 +1,4 @@
-name: M14.3 explicit GPU ONNX provider and parity qualification
+name: M14.4 explicit GPU ONNX parity and provider cache acceptance
 on:
   workflow_dispatch:
     inputs:
@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 30
     env:
       FRAMERUDIMENTS_M14_GPU_PROVIDER: ${{ inputs.provider }}
-      FRAMERUDIMENTS_M14_GPU_EVIDENCE: m14-3-gpu-evidence
+      FRAMERUDIMENTS_M14_GPU_EVIDENCE: m14-4-gpu-evidence
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -40,11 +40,11 @@ jobs:
       - name: Verify the selected physical provider is installed
         run: python -m framerudiments.vision_m14_cli providers
       - name: Execute real GPU and independent CPU sessions, prove kernel assignment and compare pixels
-        run: python -m pytest -q -rs integration/test_vision_batch_gpu_m14_native.py
+        run: python -m pytest -q -rs integration/test_vision_batch_gpu_m14_native.py integration/test_vision_provider_cache_gpu_m14_native.py
       - name: Upload hardware qualification report
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: m14-3-selected-device-parity-${{ inputs.provider }}
-          path: m14-3-gpu-evidence/
+          name: m14-4-selected-device-parity-and-cache-${{ inputs.provider }}
+          path: m14-4-gpu-evidence/
           if-no-files-found: warn

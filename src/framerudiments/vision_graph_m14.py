@@ -186,15 +186,37 @@ class VisionGraphSources:
         if len(self.profiles) != len(profiles):
             raise ValueError("Duplicate M14.2 profile ID")
         self.sources = {}
+        # M14.4 policies are opt-in and kept separate from the historical
+        # (profile, missing, resample, frame-map) tuple to preserve M14.2 users.
+        self.provider_pins = {}
+        self.preview_ages = {}
         self.evidence = {"schema": SCHEMA, "profile_digests": {k: v.digest for k, v in self.profiles.items()},
                          "model_estimated": True, "native_geometry": False}
         for row in entries:
-            _object(row, ("id", "profile", "frames", "missing", "resample"), "source",
+            _object(row, ("id", "profile", "frames", "missing", "resample",
+                          "provider", "preview_max_age_frames"), "source",
                     ("id", "profile", "frames"))
             name = "vision:" + _name(row["id"], "source ID")
             if name in self.sources or row["profile"] not in self.profiles:
                 raise ValueError("Duplicate M14.2 source or unknown profile")
             profile = self.profiles[row["profile"]]
+            provider = row.get("provider")
+            if provider is not None:
+                _object(provider, ("name", "batch_sha256"), "GPU provider",
+                        ("name", "batch_sha256"))
+                if provider["name"] not in ("CUDAExecutionProvider", "DmlExecutionProvider"):
+                    raise ValueError("M14.4 provider cache requires an explicit GPU provider")
+                self.provider_pins[name] = (provider["name"], _hex(provider["batch_sha256"],
+                                                                 "GPU batch receipt"))
+            ages = row.get("preview_max_age_frames")
+            if ages is not None:
+                if (not isinstance(ages, list) or len(ages) != 6 or
+                        any(type(age) is not int or not 0 <= age <= 64 for age in ages) or
+                        ages[-1] != 0 or any(x < y for x, y in zip(ages, ages[1:]))):
+                    raise ValueError("M14.4 preview ages must be six decreasing integers ending in 0")
+                if profile.task == "optical_flow" and any(ages):
+                    raise ValueError("M14.4 cannot reuse optical flow across distinct frames")
+                self.preview_ages[name] = tuple(ages)
             resample = row.get("resample", "none")
             if resample not in ("none", "nearest", "bilinear"):
                 raise ValueError("M14.2 requires an explicit supported resampling rule")
@@ -245,6 +267,9 @@ class VisionGraphSources:
                 raise ValueError("M14.3 element alpha mask requires a segmentation profile")
             self.element_masks[element] = source
         self.evidence["element_masks"] = dict(self.element_masks)
+        self.evidence["gpu_provider_pins"] = {name: {"provider": provider,
+            "batch_receipt_sha256": digest} for name, (provider, digest) in self.provider_pins.items()}
+        self.evidence["preview_max_age_frames"] = dict(self.preview_ages)
         self.last_used = {}
 
     def _identity(self, profile, spec):
@@ -340,27 +365,62 @@ class VisionGraphSources:
                 receipt.get("preview_sha256") != _hash(staged / "preview.png")):
             raise ValueError("Invalid M14.2 native worker receipt before sealing")
 
-    def source(self, source_id, frame):
+    def selection(self, source_id, frame, *, quality=None):
+        """Plan one exact or explicitly quality-bounded source frame; no inference.
+
+        `quality` is Q0..Q5 only when explicitly requested by a preview host.
+        The normal compositor never supplies this argument, so authored output
+        preserves the original M14.2 missing-frame contract byte-for-byte.
+        """
         if source_id not in self.sources:
-            raise ValueError("Unknown M14.2 graph source")
+            raise ValueError("Unknown M14.4 graph source")
         if type(frame) is not int or not 0 <= frame < self.project.frame_count:
-            raise ValueError("M14.2 source requires a valid integer output frame")
-        profile, missing, resample, mapping = self.sources[source_id]
-        selected = mapping.get(frame)
-        if selected is None and missing == "hold":
-            previous = [n for n in mapping if n <= frame]
-            if previous:
-                selected = mapping[max(previous)]
-        if selected is None:
+            raise ValueError("M14.4 source needs an exact output frame")
+        if quality is not None and (type(quality) is not int or not 0 <= quality <= 5):
+            raise ValueError("M14.4 explicit preview quality must be Q0..Q5")
+        profile, missing, _resample, mapping = self.sources[source_id]
+        selected_at = frame if frame in mapping else None
+        reason = "exact" if selected_at is not None else "missing"
+        if selected_at is None:
+            older = [n for n in mapping if n <= frame]
+            if quality is None and missing == "hold" and older:
+                selected_at, reason = max(older), "authored_hold"
+            elif quality is not None and source_id in self.preview_ages and older:
+                age = self.preview_ages[source_id][quality]
+                candidate = max(older)
+                if frame - candidate <= age:
+                    selected_at, reason = candidate, "preview_reuse"
+        if selected_at is None:
             if missing == "transparent":
-                self.last_used.pop(source_id, None)
-                return Image.new("RGBA", (self.project.width, self.project.height))
-            raise ValueError(f"Missing M14.2 inference request for {source_id} frame {frame}")
-        estimated = self._estimate(profile, selected)
-        self.last_used[source_id] = {"frame": frame, "profile_sha256": profile.digest,
+                return None, None, "transparent"
+            raise ValueError(f"Missing M14.4 inference request for {source_id} frame {frame}")
+        return selected_at, mapping[selected_at], reason
+
+    def source(self, source_id, frame, *, quality=None):
+        selected_frame, selected, reason = self.selection(source_id, frame, quality=quality)
+        if selected is None:
+            self.last_used.pop(source_id, None)
+            return Image.new("RGBA", (self.project.width, self.project.height))
+        profile, _missing, resample, _mapping = self.sources[source_id]
+        pin = self.provider_pins.get(source_id)
+        if pin is None:
+            estimated = self._estimate(profile, selected)
+            key = self._identity(profile, selected)
+            provider = "CPUExecutionProvider"
+        else:
+            # Qualified GPU outputs must have been independently computed and
+            # seeded; NEVER fall back to a CPU inference on a GPU cache miss.
+            from .vision_provider_cache_m14 import provider_cache_key, load_provider_estimate
+
+            provider, batch_sha256 = pin
+            key = provider_cache_key(profile, selected, provider, batch_sha256, selected_frame)
+            estimated = load_provider_estimate(self, profile, selected, provider,
+                                               batch_sha256, selected_frame)
+        self.last_used[source_id] = {"frame": frame, "source_frame": selected_frame,
+                                     "selection": reason, "preview_quality": quality,
+                                     "provider": provider, "profile_sha256": profile.digest,
                                      "request_sha256": selected.manifest_sha256,
-                                     "cache_key": self._identity(profile, selected),
-                                     "model_estimated": True}
+                                     "cache_key": key, "model_estimated": True}
         image = encode_graph_surface(estimated, profile)
         if resample != "none" and image.size != (self.project.width, self.project.height):
             method = (Image.Resampling.NEAREST if resample == "nearest" else Image.Resampling.BILINEAR)

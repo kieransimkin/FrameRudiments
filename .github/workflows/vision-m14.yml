@@ -6,13 +6,20 @@ on:
       - 'src/framerudiments/vision_m14*.py'
       - 'src/framerudiments/vision_graph_m14.py'
       - 'src/framerudiments/vision_batch_m14.py'
+      - 'src/framerudiments/vision_provider_cache_m14.py'
+      - 'src/framerudiments/vision_temporal_m14.py'
       - 'src/framerudiments/effect_graph_integration.py'
       - 'src/framerudiments/compositor.py'
       - 'src/framerudiments/project.py'
       - 'tests/test_vision_m14*.py'
       - 'tests/test_vision_graph*.py'
       - 'tests/test_vision_batch_m14*.py'
+      - 'tests/test_vision_provider_cache_m14.py'
+      - 'tests/test_vision_temporal_m14.py'
+      - 'tests/test_vision_batch_windows_m14.py'
+      - 'docs/vision-preview-m14-4.md'
       - 'integration/test_vision_batch*_m14_native.py'
+      - 'integration/test_vision_provider_cache_gpu_m14_native.py'
       - 'docs/vision-inference-m14.md'
       - '.github/workflows/vision-m14.yml'
       - 'pyproject.toml'
@@ -39,9 +46,9 @@ jobs:
       - name: Verify native ONNX Runtime CPU provider is installed
         run: python -c "import onnx, onnxruntime; assert 'CPUExecutionProvider' in onnxruntime.get_available_providers()"
       - name: Lint native inference implementation and tests
-        run: ruff check src/framerudiments/vision_m14.py src/framerudiments/vision_m14_cli.py src/framerudiments/vision_graph_m14.py src/framerudiments/vision_batch_m14.py src/framerudiments/effect_graph_integration.py tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py tests/test_vision_batch_m14.py integration/test_vision_batch_m14_native.py integration/test_vision_batch_gpu_m14_native.py
+        run: ruff check src/framerudiments/vision_m14.py src/framerudiments/vision_m14_cli.py src/framerudiments/vision_graph_m14.py src/framerudiments/vision_batch_m14.py src/framerudiments/effect_graph_integration.py tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py tests/test_vision_batch_m14.py tests/test_vision_provider_cache_m14.py tests/test_vision_temporal_m14.py integration/test_vision_batch_m14_native.py integration/test_vision_batch_gpu_m14_native.py integration/test_vision_provider_cache_gpu_m14_native.py src/framerudiments/vision_provider_cache_m14.py src/framerudiments/vision_temporal_m14.py tests/test_vision_batch_windows_m14.py
       - name: Exercise all three actual ONNX operators and isolated CPU worker
-        run: python -m pytest -q -rs tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py tests/test_vision_batch_m14.py integration/test_vision_batch_m14_native.py
+        run: python -m pytest -q -rs tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py tests/test_vision_batch_m14.py tests/test_vision_provider_cache_m14.py tests/test_vision_temporal_m14.py integration/test_vision_batch_m14_native.py tests/test_vision_batch_windows_m14.py
       - name: No skipped native qualification cases
         shell: python
         run: |
