@@ -311,7 +311,7 @@ footer>div{max-width:1280px;margin:auto} .notice{border-left:3px solid #f8c477;p
         + str(sum(x["family"] == "spectrogram" for x in rows))
         + """ spectrogram views</span><span>4 timeline samples</span><span>CI-generated, no private audio</span></div>
 <p class="notice"><strong>Scientific accuracy:</strong> Spectral cards use <em>invented, calibrated-format Fourier-band values</em> for renderer tests. They do not depict measured music. Mel/Bark/ERB/log options remap existing band positions, not recalculate those transforms. Waveform cards show Rudiment motion channels, not PCM or stereo phase.</p>
-<p><strong><a href="timeline/">Launch the interactive timeline viewer</a></strong> · <a href="m11-5/">Character / visualiser showcase</a> · <a href="m15-2/">GStreamer VFR &amp; live capture</a></p>
+<p><strong><a href="timeline/">Launch the interactive timeline viewer</a></strong> · <a href="m11-5/">Character / visualiser showcase</a> · <a href="m15-2/">GStreamer VFR &amp; live capture</a> · <a href="m15-3/">OpenFX native filter demo</a></p>
 <p><a href="https://github.com/kieransimkin/FrameRudiments">Source</a> · <a href="https://github.com/kieransimkin/FrameRudiments/blob/main/docs/visualisation-atlas.md">Methods and limitations</a> · <a href="catalogue.json">Machine-readable catalogue</a></p></header>
 <div class="controls"><div class="controls-inner"><input type="search" id="search" aria-label="Find a visualiser" placeholder="Find a renderer or technique...">
 <select id="family" aria-label="Filter display family"><option value="all">All families</option><option value="motion">Rudiment motion</option><option value="spectrum">Instant spectrum</option><option value="spectrogram">History spectrograms</option></select>

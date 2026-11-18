@@ -33,6 +33,7 @@ framerudiments = "framerudiments.cli:main"
 framerudiments-colour = "framerudiments.colour_aov_cli:main"
 framerudiments-timeline = "framerudiments.timeline_otio_cli:main"
 framerudiments-gstreamer = "framerudiments.gstreamer_m15_cli:main"
+framerudiments-openfx = "framerudiments.openfx_m15_cli:main"
 framerudiments-vision = "framerudiments.vision_m14_cli:main"
 
 [tool.setuptools.packages.find]

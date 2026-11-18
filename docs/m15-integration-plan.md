@@ -40,17 +40,25 @@ Reference: [GStreamer adapter and acceptance contract](gstreamer-m15.md).
 
 Reference: [M15.2 ingest and finite live capture contract](gstreamer-m15-2.md).
 
-## M15.3 — OpenFX plugin-host boundary
+## M15.3 — OpenFX plugin-host boundary (implementation candidate)
 
-- Versioned descriptor scan **without loading** untrusted binary plugins in the
-  renderer. Curated, licensed bundles only; check plugin architecture, ABI and
-  declared image format before activation.
-- Native OpenFX host runs as a separate owned worker, with child-process scope,
-  bounded frame memory, timeout and explicit host-suite capabilities.
-- Frame-addressed RGB/RGBA CPU transfers with known colour and alpha space; GPU
-  texture sharing is separately qualified.
-- Crash/timeout/resource regression evidence and independent CPU golden frames
-  for at least one explicitly licensed test plugin.
+- [x] Read-only, versioned, SHA-256-pinned PE/ELF/Mach-O descriptor admission
+  with an explicit trusted-execution decision and licence declaration. The
+  scan **never loads the binary**, and cannot prove the declared licence.
+- [x] Native OpenFX Image Effect v1 **Filter** subset: real `OfxPlugin` entry
+  calls and standard property/image-effect suite layouts, one Source/Output,
+  CPU RGBA8 straight-alpha pixels and exact output frame time.
+- [x] Run plugin code only after separate Windows-Job/POSIX process ownership;
+  bounded inputs, timeout, no-overwrite publication, crash/error cleanup.
+- [x] Original MIT C reference plugin with independent RGB/alpha pixel golden,
+  plugin-abort/failed-status/deadline tests and separate native CI gate.
+- [x] Publish generated visual side-by-side frames and hash receipts via the
+  existing CI Pages gallery, with no executable binary in published assets.
+- [ ] Exact-head native Windows/Mac ABI, independently reviewed third-party
+  licences/implementations, parameter suites, GPU frame sharing, total RAM
+  caps and perceptual approval remain separate gated work.
+
+Reference: [M15.3 OpenFX host and acceptance contract](openfx-m15.md).
 
 ## M15.4 — OpenUSD / Hydra and interchange
 

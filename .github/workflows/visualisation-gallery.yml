@@ -112,6 +112,12 @@ jobs:
           python integration/qualify_gstreamer_ingest_m15.py --output _site/m15-2
           test -s _site/m15-2/index.html && test -s _site/m15-2/ingest/index.json
           test -s _site/m15-2/live/index.json && test -s _site/m15-2/source-vfr.mp4
+      - name: Render and publish real M15.3 OpenFX C filter demonstration
+        run: |
+          ruff check src/framerudiments/openfx_m15.py src/framerudiments/openfx_host_m15.py src/framerudiments/openfx_m15_cli.py integration/qualify_openfx_m15.py
+          python integration/qualify_openfx_m15.py --output _site/m15-3
+          test -s _site/m15-3/index.html && test -s _site/m15-3/qualification.json
+          test "$(find _site/m15-3 -name 'reference-*.png' | wc -l)" -eq 4
       - name: Validate generated site and image count
         run: |
           python - <<'PY'
