@@ -1,0 +1,37 @@
+name: M12 native colour + AOV qualification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/framerudiments/colour_aov*.py'
+      - 'tests/test_colour_aov_m12*.py'
+      - 'pyproject.toml'
+      - '.github/workflows/colour-aov-m12.yml'
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native-exr-colour:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install the complete opt-in codec stack
+        run: python -m pip install -e '.[dev,colour_aov]'
+      - name: Require real native APIs, not mocked availability
+        run: python -c "import OpenEXR, PyOpenColorIO, numpy; assert hasattr(OpenEXR, 'File')"
+      - name: Lint colour adapters and tests
+        run: ruff check src/framerudiments/colour_aov.py src/framerudiments/colour_aov_cli.py tests/test_colour_aov_m12.py tests/test_colour_aov_m12_real.py
+      - name: Unit tests and real EXR readback (no skipped cases)
+        run: python -m pytest -q -rs tests/test_colour_aov_m12.py tests/test_colour_aov_m12_real.py

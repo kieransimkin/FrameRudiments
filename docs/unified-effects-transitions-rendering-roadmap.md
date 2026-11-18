@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.35 — 18 November 2026
+**Version:** 1.36 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -286,6 +286,13 @@ All external shader/model/media sources must be pinned or versioned, constrained
 
 ### M12–M15 — Optional production and ecosystem integrations
 - **M12 Colour + AOV:** OpenColorIO/ACES, HDR buffers, EXR depth/normals/velocity roundtrip.
+  M12.1 implementation candidate: [pinned scene-linear colour and lossless float32 AOV
+  interchange](colour-aov-m12.md). Opt-in OpenColorIO colour conversion,
+  checksum-pinned authored R/G/B, alpha, depth, normals and velocity channels,
+  strict resource checks and independently decoded ZIP OpenEXR receipts.
+  Existing RGB8 compositor/production encoder remain untouched. M12.2 native
+  AOV producers and M12.3 ACES reference/GPU-HDR parity are separately gated;
+  no depth or motion data is invented from RGB images.
 - **M13 Timeline:** OpenTimelineIO clip/transition import-export, precise duration and source provenance.
 - **M14 Computer vision:** optional ONNX segmentation/depth/flow outputs with model checksums and memory limits.
 - **M15 Experimental adapters:** isolated OpenFX host, OpenUSD/Hydra, GStreamer/NDI/Spout/Syphon, Vulkan/WebGPU, OSC/MIDI. Each integration requires licensing review and CI capability declaration before shipping.

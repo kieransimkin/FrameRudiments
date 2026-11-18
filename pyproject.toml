@@ -17,6 +17,7 @@ projectm = ["glfw==2.10.2", "PyOpenGL==3.1.10", "numpy>=1.26"]
 gpu = ["moderngl>=5.11,<6", "numpy>=1.26"]
 materials = ["numpy>=1.26"]
 effect_graph = ["numpy>=1.26"]
+colour_aov = ["numpy>=1.26", "OpenEXR>=3.4.16,<4", "opencolorio>=2.5,<3"]
 dev = ["pytest>=8", "build>=1.2", "ruff>=0.9", "twine>=6", "numpy>=1.26"]
 
 [project.urls]
@@ -27,6 +28,7 @@ Documentation = "https://github.com/kieransimkin/FrameRudiments#readme"
 
 [project.scripts]
 framerudiments = "framerudiments.cli:main"
+framerudiments-colour = "framerudiments.colour_aov_cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
