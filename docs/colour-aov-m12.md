@@ -116,14 +116,59 @@ receipt = export_solid_exr(renderer, current_frame, "./solid-aovs.exr",
 Captures are detached, immutable float32 `AOVFrame`s using M12.1 EXR encoding
 and readback. Preflight checks the combined logical payload against **512 MiB**
 before allocating, and the actual peak can be higher because AOVFrame detaches
-copies and the z-buffer is separately retained. No GPU AOV support is claimed:
-GPU mesh/fog paths, multi-layer composites, production ACES parity and real
-hardware HDR qualification are separate M12.3+ gates.
+copies and the z-buffer is separately retained. M12.3 provides a separately
+opted-in GPU coverage/AOV path for the same mesh projector; the existing GPU
+terrain/fog shader, multi-layer composites and physical HDR acceptance are not
+implicitly supported.
 
 Run local deterministic kernels with
 `python -m pytest -q tests/test_solid_spatial_aov_m12.py`, and the existing
 `.github/workflows/colour-aov-m12.yml` matrix runs that suite alongside the
 M12.1 native OpenEXR and OCIO tests on Windows/Linux.
+
+## M12.3 — GPU float32 AOVs and pinned ACEScg reference
+
+`render_solid_aov_gpu(renderer, frame, previous_frame=..., backend="egl")`
+uses the **actual** native CPU mesh projector and linear-light flat-facet GGX
+reference, then rasterises triangle coverage, camera Z, normals and screen-space
+motion vectors into **OpenGL 3.3 RGBA32F multiple render targets** with hardware
+Z-testing. It does not reuse the unrelated GPU landscape shader's material
+system; claiming independent GPU lighting parity would be misleading.
+
+The GPU path is explicitly optional and bounded. It records GL vendor, renderer,
+version, shader SHA and raster evidence, and produces detached M12.1 `AOVFrame`
+objects. It never silently falls back to the CPU if GL is missing. A companion
+`parity_report` checks float32 colour, depth, normals, screen motion and raw
+silhouette overlap against the M12.2 CPU capture. It excludes facet boundary
+ownership differences from pixel-value statistics while retaining raw IoU as a
+separate pass/fail condition. No HDR data is inferred from an RGB8 preview.
+
+`to_acescg_reference` transforms `Linear-sRGB` (linear Rec.709/D65) through an
+**exact SHA-pinned trusted OpenColorIO config** into ACEScg (AP1/D60), verifies
+reverse-transform tolerance and proves unchanged alpha/depth/normals/velocity.
+The CI test serialises the specific published ASWF ACES **1.3 CG config**
+`cg-config-v2.2.0_aces-v1.3_ocio-v2.4`, then SHA-pins that actual config;
+it never uses the moving `ocio://latest` alias. This is a scene-linear colour
+space transform, **not** the ACES Reference Rendering Transform / Output Device
+Transform or a display-approved HDR image.
+
+The independent Linux software-EGL gate in
+`.github/workflows/colour-aov-m12.yml` requires real ModernGL, OpenEXR and
+PyOpenColorIO. `scripts/qualify_gpu_aces_m12.py` saves float32 CPU/GPU parity
+reports, comparison PNGs, actual EXR and pinned OCIO receipts in an Actions
+artifact. The Windows/Linux M12.1/M12.2 codec matrix stays separate. Hardware
+GPU parity, display calibration, OpenEXR over tiled/deep inputs, native volume
+AOVs, animated character geometry and production scene-wide HDR composition
+remain future integration work.
+
+To reproduce the reference fixture in a configured EGL environment:
+
+```bash
+python -m pip install -e '.[dev,colour_aov,gpu]'
+FRAMERUDIMENTS_REQUIRE_GPU_AOV=1 FRAMERUDIMENTS_REQUIRE_ACES=1 \
+  python -m pytest -q tests/test_gpu_spatial_aov_m12.py tests/test_aces_reference_m12.py
+python scripts/qualify_gpu_aces_m12.py --output m12-3-evidence
+```
 
 ## Qualification / follow-on work
 
@@ -133,7 +178,8 @@ boundary and an injected EXR interface. The separate workflow
 and `opencolorio` on Windows/Linux, Python 3.11/3.13, then runs actual float32 EXR readback through
 `tests/test_colour_aov_m12_real.py`. Full device/HDR/ACES colour reference approval remains open.
 
-M12.2 covers the native CPU solid-surface producer only. Next: M12.3 OCIO/ACES
-reference profiles, actual external LUT identity, GPU mesh/AOV parity, HDR encoded
-outputs, and broader compositor/scene-layer geometry integration. M13 timeline I/O remains independently scheduled. M12.1 never equates synthetic AOVs
-with measured, motion-captured or production geometry.
+M12.3 includes a real OpenGL float32 reference kernel and a trusted pinned
+ACEScg colour-space conversion. Next: physical-GPU and HDR-display validation,
+independent GPU materials, full scene-layer geometry, HDR encoded output and
+native volume AOVs. M13 remains the separately scheduled timeline I/O milestone.
+None of these stages equates synthetic AOVs with measured motion capture.

@@ -8,7 +8,8 @@
     "dev": "vite --host 127.0.0.1",
     "test": "node --experimental-strip-types --test tests/*.test.ts",
     "typecheck": "tsc --noEmit",
-    "build": "vite build && tsc --noEmit"
+    "build": "vite build && tsc --noEmit",
+    "build:gallery": "vite build --config vite.gallery.config.ts && tsc --noEmit"
   },
   "dependencies": {
     "react": "19.1.1",

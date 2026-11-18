@@ -6,9 +6,15 @@ on:
     paths:
       - 'src/framerudiments/colour_aov*.py'
       - 'src/framerudiments/solid_spatial_aov.py'
+      - 'src/framerudiments/gpu_spatial_aov.py'
+      - 'src/framerudiments/aces_reference_m12.py'
+      - 'scripts/qualify_gpu_aces_m12.py'
       - 'src/framerudiments/solid_spatial_renderers.py'
       - 'tests/test_colour_aov_m12*.py'
       - 'tests/test_solid_spatial_aov_m12.py'
+      - 'tests/test_gpu_spatial_aov_m12.py'
+      - 'tests/test_aces_reference_m12.py'
+      - 'tests/test_m12_3_qualification.py'
       - 'pyproject.toml'
       - '.github/workflows/colour-aov-m12.yml'
   pull_request:
@@ -38,3 +44,32 @@ jobs:
         run: ruff check src/framerudiments/colour_aov.py src/framerudiments/colour_aov_cli.py src/framerudiments/solid_spatial_aov.py tests/test_colour_aov_m12.py tests/test_colour_aov_m12_real.py tests/test_solid_spatial_aov_m12.py
       - name: Unit tests and real EXR readback (no skipped cases)
         run: python -m pytest -q -rs tests/test_colour_aov_m12.py tests/test_colour_aov_m12_real.py tests/test_solid_spatial_aov_m12.py
+
+  real-gpu-aces-reference:
+    name: Float32 OpenGL MRT and pinned ACEScg (Mesa/EGL only)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - name: Install software EGL renderer
+        run: bash scripts/install_ci_render_dependencies.sh --gpu
+      - name: Install exact optional GPU, EXR and OCIO stacks
+        run: python -m pip install -e '.[dev,gpu,colour_aov]'
+      - name: Qualify actual GL, native OCI conversions and source-matched AOVs
+        env:
+          FRAMERUDIMENTS_REQUIRE_GPU_AOV: '1'
+          FRAMERUDIMENTS_REQUIRE_ACES: '1'
+          PYOPENGL_PLATFORM: egl
+        run: |
+          ruff check src/framerudiments/gpu_spatial_aov.py src/framerudiments/aces_reference_m12.py scripts/qualify_gpu_aces_m12.py tests/test_gpu_spatial_aov_m12.py tests/test_aces_reference_m12.py tests/test_m12_3_qualification.py
+          python -m pytest -q -rs tests/test_gpu_spatial_aov_m12.py tests/test_aces_reference_m12.py tests/test_m12_3_qualification.py
+          python scripts/qualify_gpu_aces_m12.py --output m12-3-evidence
+      - name: Upload actual colour, depth and motion comparisons
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: framerudiments-m12-3-software-egl-aces
+          path: m12-3-evidence/
+          if-no-files-found: warn

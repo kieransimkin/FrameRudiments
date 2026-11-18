@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.37 — 18 November 2026
+**Version:** 1.38 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -297,8 +297,15 @@ All external shader/model/media sources must be pinned or versioned, constrained
   The real torus/sphere/terrain projector supplies unclipped scene-linear GGX,
   native reciprocal-Z depth, camera-facing facet normals and explicitly sourced
   adjacent-frame motion vectors. EXR receipts preserve channel identities.
-  Normal RGB8 renders remain unchanged, and GPU/ACES/device qualification
-  remains open. This is geometry AOV capture, not inferred optical flow.
+  Normal RGB8 renders remain unchanged. This is geometry AOV capture, not
+  inferred optical flow. M12.3 implementation candidate adds [float32 OpenGL
+  AOV capture and pinned ACEScg reference](colour-aov-m12.md#m123--gpu-float32-aovs-and-pinned-acescg-reference),
+  source-matched CPU/GPU geometry comparisons, GL driver identity and actual
+  EXR/image parity artifacts. Software-EGL CI and colour-space roundtrips are
+  acceptance gates; independent GPU shading, physical HDR output and devices
+  remain separately gated. The CI Pages site also publishes a live, entirely
+  offline [shared timeline viewer](https://kieransimkin.github.io/FrameRudiments/timeline/)
+  with generated synthetic audio; it is not native preview service hosting.
 - **M13 Timeline:** OpenTimelineIO clip/transition import-export, precise duration and source provenance.
 - **M14 Computer vision:** optional ONNX segmentation/depth/flow outputs with model checksums and memory limits.
 - **M15 Experimental adapters:** isolated OpenFX host, OpenUSD/Hydra, GStreamer/NDI/Spout/Syphon, Vulkan/WebGPU, OSC/MIDI. Each integration requires licensing review and CI capability declaration before shipping.

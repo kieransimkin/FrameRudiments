@@ -1,0 +1,12 @@
+:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;color-scheme:dark;color:#eaf5fa;background:#09131f}
+*{box-sizing:border-box}body{margin:0}a{color:#87ede1;text-underline-offset:3px}button{cursor:pointer;border:1px solid #3d6270;border-radius:8px;padding:.55rem .85rem;color:#e8f9ff;background:#163347;font:inherit}
+.fr-gallery-app{display:flex;flex-direction:column;min-height:100vh;min-width:0}
+.fr-gallery-head{display:flex;align-items:flex-start;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;padding:2rem clamp(1rem,4vw,3.5rem) 1.5rem;background:linear-gradient(120deg,#122b39,#102038 60%,#211c34);border-bottom:1px solid #34536a}
+.fr-gallery-heading{max-width:870px}.fr-gallery-eyebrow{color:#7addcf;font-size:.76rem;text-transform:uppercase;letter-spacing:.15em;font-weight:700}
+h1{font-size:clamp(2rem,4.2vw,3.6rem);letter-spacing:-.045em;line-height:1.05;margin:.55rem 0 .9rem}.fr-gallery-head p{max-width:770px;line-height:1.6;color:#b7cddd;margin:0}
+.fr-gallery-head nav{display:flex;gap:.65rem;flex-wrap:wrap}.fr-gallery-head nav a{padding:.5rem .7rem;border:1px solid #355268;border-radius:8px;text-decoration:none;white-space:nowrap}
+.fr-gallery-toolbox{display:flex;gap:1.15rem;flex-wrap:wrap;align-items:center;padding:1rem clamp(1rem,4vw,3.5rem);background:#101d2d;border-bottom:1px solid #33495b}
+.fr-gallery-stat{display:flex;flex-direction:column;gap:.12rem;min-width:130px}.fr-gallery-stat span{font-size:.72rem;color:#90b2be}.fr-gallery-stat strong{font-size:.95rem}.fr-gallery-toolbox label{display:flex;align-items:center;gap:.5rem;font-size:.88rem}.fr-gallery-toolbox input{accent-color:#69ddcd}
+.fr-gallery-timeline{height:clamp(440px,64vh,790px);margin:1.4rem clamp(1rem,4vw,3.5rem);border:1px solid #36536a;border-radius:14px;overflow:hidden;box-shadow:0 15px 55px #0006;--rts-accent:#67e1cb;--rts-playhead:#ffbc7c}
+.fr-gallery-timeline .rts-sequence{height:100%}.fr-gallery-foot{padding:0 clamp(1rem,4vw,3.5rem) 2rem;color:#a7c4d3;font-size:.88rem;line-height:1.6}.fr-gallery-foot p{max-width:1050px}
+@media(max-width:700px){.fr-gallery-timeline{height:65vh;min-height:400px;margin:.8rem}.fr-gallery-toolbox{gap:.8rem}}
