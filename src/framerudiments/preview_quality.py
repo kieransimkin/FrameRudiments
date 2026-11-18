@@ -45,6 +45,8 @@ def require_stateless(document):
         raise ValueError('post_effects must be an object')
     if post.get('temporal'):
         raise ProfileUnsupported('Temporal post effects require S6 bounded-history admission')
+    if post.get('feedback') is not None:
+        raise ProfileUnsupported('Native feedback requires M11.2 checkpoint reconstruction admission')
     layers = document.get('layers', [])
     if not isinstance(layers, list) or any(not isinstance(row, dict) for row in layers):
         raise ValueError('layers must be an array of objects')
@@ -205,8 +207,10 @@ def profile_document(project, profile_id, *, allow_stateful=False):
         post = admission.get('post_effects', {})
         if isinstance(post, dict):
             post.pop('temporal', None)
+            post.pop('feedback', None)
         require_stateless(admission)
-        if project.data.get('effects') and profile.quality_rank != 5:
+        feedback = project.data.get('post_effects', {}).get('feedback') is not None
+        if (project.data.get('effects') or feedback) and profile.quality_rank != 5:
             raise ProfileUnsupported('Feedback replay requires authored Q5 settings')
     else:
         require_stateless(project.data)

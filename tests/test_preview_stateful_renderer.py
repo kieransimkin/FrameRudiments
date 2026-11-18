@@ -15,7 +15,8 @@ import pytest
 
 from framerudiments.compositor import Compositor
 from framerudiments.encoding import binaries
-from framerudiments.preview_replay import ReplayCancelled, StatefulSeekUnavailable
+from framerudiments.preview_refinement_process import RefinementCancelled
+from framerudiments.preview_replay import ReplayCancelled, StatefulSeekUnavailable, VerifiedPrefixReplay
 from framerudiments.preview_stateful_renderer import ExternalRuntimeGuard, StatefulPreviewRenderer
 from framerudiments.project import Project
 from framerudiments.visualisers import EffectChain
@@ -181,6 +182,44 @@ def test_native_cancel_yields_only_hash_receipts_and_closes_all_engine_instances
         assert all(backend.closed for backend in backends)
     finally:
         renderer.close()
+
+
+def test_cancellable_dispatch_keeps_verified_external_replay_and_maps_cancellation(native, tmp_path):
+    _, _, renderer, backends, contexts, _, _ = native
+    updates = []
+    cancelled = [False]
+
+    def progress(status):
+        updates.append(status)
+        if status['current_request_frames'] >= 2:
+            cancelled[0] = True
+
+    try:
+        png = renderer.render_cancellable(2, 'Q5', lambda: False, updates.append)
+        assert isinstance(renderer.replay, VerifiedPrefixReplay)
+        assert renderer.stateful_status['mode'] == 'verified_prefix_replay'
+        assert renderer.stateful_status['phase'] == 'ready'
+        assert renderer.stateful_status['verification_rounds'] == 1
+        assert len(renderer.replay.receipts) == 3
+        assert {row['phase'] for row in updates} >= {'replaying', 'verifying', 'ready'}
+        assert all(row['mode'] == 'verified_prefix_replay' for row in updates)
+        with Image.open(BytesIO(png)) as image:
+            assert image.mode == 'RGBA' and image.size == (64, 48)
+            assert sha256(image.tobytes()).hexdigest() == renderer.verified_receipt(2)['pixels_sha256']
+        assert contexts and sum(not backend.closed for backend in backends) == 2
+        committed = renderer.replay.receipts
+        updates.clear()
+        with pytest.raises(RefinementCancelled, match='superseded external feedback') as failure:
+            renderer.render_cancellable(8, 'Q5', lambda: cancelled[0], progress)
+        assert isinstance(failure.value.__cause__, ReplayCancelled)
+        assert renderer.replay.receipts is committed
+        assert renderer.stateful_status['mode'] == 'verified_prefix_replay'
+        assert renderer.stateful_status['phase'] == 'cancelled'
+        assert updates[-1]['phase'] == 'cancelled'
+        assert all(backend.closed for backend in backends)
+    finally:
+        renderer.close()
+    assert not list((tmp_path / 'preview').iterdir())
 
 
 def test_native_already_cancelled_request_closes_live_state_before_returning(native):

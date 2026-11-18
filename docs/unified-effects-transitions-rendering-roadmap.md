@@ -243,8 +243,18 @@ All external shader/model/media sources must be pinned or versioned, constrained
   output. Exact-candidate platform/GPU CI and device/perceptual acceptance remain
   separate gates.
 - **M11.2** Feedback history with explicit delay, checkpoints and bounds; random-access reconstruction.
-  Next planned major milestone after the M11.1 implementation candidate.
+  Implementation candidate: [native feedback history](feedback-history-m11-2.md).
+  An explicit positive encoded-frame delay and exact repeat/programme resets
+  drive a bounded linear-light recurrence after native source sampling. Full
+  immutable history checkpoints bind source, configuration, runtime and backend
+  identity; cancellation/failure leaves prior committed state intact. Read-only
+  reconstruction plans, trusted digest-pinned restore, authored-Q5 preview
+  progress and reset-aware invalidation share this native owner. Independent
+  sequential, shuffled, restored and CLI-encoded fixtures measure exact pixels
+  and actual work saved. Opaque external-engine checkpoints, candidate GPU/
+  platform CI, browser interaction and perceptual acceptance remain separate.
 - **M11.3** Motion echoes, directional blur, slit-scan and time-remapping effects.
+  Next planned major milestone after the M11.2 implementation candidate.
 - **M11.4** Video input/output adapters with rational timebase handling.
 - **M11.5** CI-published side-by-side gallery: music-driven Kandi Boom ⇄ visualiser, mattes and spectral transitions.
 - **Exit:** sequential vs nonsequential renders agree; CI publishes inspected media and metadata.

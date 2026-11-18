@@ -1,3 +1,35 @@
+# FrameRudiments M11.2 feedback history candidate (unreleased)
+
+- Add opt-in `post_effects.feedback` with an explicit positive encoded-frame
+  delay, linear-light mix and exact repeat/programme reset policy. Native
+  DanceRudiments may modulate the mix. Feedback advances after source subframe
+  integration and historical shutter processing, before external engines and
+  final output antialiasing; clocks, source pins and same-frame DAG rules stay
+  authoritative.
+- Retain a bounded immutable history ring and complete checkpoints. A request
+  reconstructs from an eligible live state, checkpoint or exact reset; cancelled
+  or failed requests preserve the prior committed state. Enforce checkpoint
+  count, replay work and owned pixel-payload limits before accepting work.
+- Bind checkpoint reuse to source content at its document role, clocks, quality,
+  implementation, runtime and actual backend. Trusted cross-instance restore
+  requires the expected checkpoint digest. Checkpoints contain native RGB8
+  history, with no disk import format or opaque external-engine/GPU state.
+- Expose native feedback contract, reconstruction plan, state snapshot,
+  checkpoint and restore APIs. Extend `plan` and read-only `inspect-temporal`
+  reports while preserving the separate native source-sampling plan.
+- Add authored-Q5 adaptive preview reconstruction, content-free progress,
+  cooperative cancellation, pause/resume checkpoint retention and exact
+  repeat-aware dependency closures. Butterchurn/projectM retain S6 independent
+  prefix verification; native checkpoints do not qualify external engine state.
+- Add independent native recurrence and equivalent-encode fixtures, real
+  checkpoint work measurements, retained media, Windows/Linux CI qualification
+  and source-package admission. See [the M11.2 guide](docs/feedback-history-m11-2.md).
+- Repair the inherited quality-gallery synthetic clock fixture to provide the
+  explicit sample bounds required by M11.1's exact shutter planning. Regression
+  checks cover gallery presets and repeat resets without weakening native clocks.
+  Candidate CI, physical-GPU, browser and perceptual acceptance remain separate;
+  M11.3 motion echoes, directional blur, slit-scan and time-remapping follow next.
+
 # FrameRudiments M11.1 temporal scheduling candidate (unreleased)
 
 - Declare exact signed temporal offsets and sample grids with immutable frame
@@ -23,8 +55,8 @@
 - Repair the inherited archive-admission fixture's Windows separator handling:
   expected names now use the stored ZIP entry metadata, preserving the strict
   unsafe-entry rejection and no-write assertions on every platform.
-- See [the M11.1 guide](docs/temporal-scheduling-m11-1.md). Delayed feedback,
-  checkpoints and random-access reconstruction remain M11.2. Candidate CI,
+- See [the M11.1 guide](docs/temporal-scheduling-m11-1.md). M11.2 adds delayed
+  feedback, checkpoints and random-access reconstruction above. Candidate CI,
   external-engine, physical-GPU and perceptual acceptance remain distinct.
 
 # FrameRudiments M10.5 round-trip candidate (unreleased)

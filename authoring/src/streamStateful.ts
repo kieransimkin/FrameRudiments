@@ -1,18 +1,22 @@
 /** Content-free replay diagnostics. The timeline remains the only playback clock. */
-export type StatefulMode = 'verified_prefix_replay' | 'bounded_history' | 'independent';
-export type StatefulPhase = 'idle' | 'replaying' | 'verifying' | 'ready' | 'unavailable' | 'cancelled';
+export type StatefulMode = 'verified_prefix_replay' | 'checkpoint_replay' | 'bounded_history' | 'independent';
+export type StatefulPhase = 'idle' | 'replaying' | 'reconstructing' | 'verifying' | 'ready' | 'unavailable' | 'cancelled';
 export type StatefulStatus = {
   enabled: boolean; mode: StatefulMode; phase: StatefulPhase; requested_frame: number | null;
   verified_prefix_frames: number; live_next_frame: number; current_request_frames: number;
   replayed_frames: number; max_prefix_frames: number | null; max_request_frames: number | null;
+  checkpoint_count: number; restored_from_frame: number | null;
   last_reason: string | null;
 };
 
-const modes = new Set(['verified_prefix_replay','bounded_history','independent']);
-const phases = new Set(['idle','replaying','verifying','ready','unavailable','cancelled']);
+const modes = new Set(['verified_prefix_replay','checkpoint_replay','bounded_history','independent']);
+const phases = new Set(['idle','replaying','reconstructing','verifying','ready','unavailable','cancelled']);
 const reasons: Record<string,string> = {
   prefix_limit_exceeded: 'This position exceeds the preview history limit. Seek earlier.',
   replay_budget_exceeded: 'Reconstructing this position exceeds the frame budget. Seek earlier.',
+  state_budget_exceeded: 'The native feedback history exceeds its memory budget.',
+  invalid_feedback_result: 'The native feedback renderer returned an invalid frame. Reopen the preview.',
+  invalid_feedback_state: 'The native feedback history is invalid. Reopen the preview.',
   pcm_budget_exceeded: 'The full-programme audio cache exceeds the preview budget.',
   pcm_disk_budget_exceeded: 'There is insufficient working disk space for the feedback audio cache.',
   runtime_manifest_limit: 'The feedback runtime exceeds the preview verification limits.',
@@ -41,6 +45,8 @@ export function parseStateful(value: unknown): StatefulStatus | null {
   if (typeof row.enabled !== 'boolean' || typeof row.mode !== 'string' || !modes.has(row.mode) ||
       typeof row.phase !== 'string' || !phases.has(row.phase)) return null;
   if (row.requested_frame != null && !bounded(row.requested_frame,9_999_999)) return null;
+  if (row.checkpoint_count != null && !bounded(row.checkpoint_count,64)) return null;
+  if (row.restored_from_frame != null && !bounded(row.restored_from_frame,9_999_999)) return null;
   const counters = ['verified_prefix_frames','live_next_frame','current_request_frames','replayed_frames'] as const;
   for (const name of counters) if (row[name] != null && !bounded(row[name])) return null;
   for (const name of ['max_prefix_frames','max_request_frames'] as const)
@@ -54,11 +60,15 @@ export function parseStateful(value: unknown): StatefulStatus | null {
     replayed_frames: row.replayed_frames as number | undefined ?? 0,
     max_prefix_frames: row.max_prefix_frames as number | null | undefined ?? null,
     max_request_frames: row.max_request_frames as number | null | undefined ?? null,
+    checkpoint_count: row.checkpoint_count as number | undefined ?? 0,
+    restored_from_frame: row.restored_from_frame as number | null | undefined ?? null,
     last_reason: reasonCode(row.last_reason),
   };
   if (result.max_prefix_frames !== null && (result.verified_prefix_frames > result.max_prefix_frames ||
       result.live_next_frame > result.max_prefix_frames)) return null;
   if (result.max_request_frames !== null && result.current_request_frames > result.max_request_frames) return null;
+  if (result.mode === 'checkpoint_replay' && result.requested_frame !== null &&
+      result.restored_from_frame !== null && result.restored_from_frame > result.requested_frame) return null;
   return result;
 }
 
@@ -71,6 +81,14 @@ export function statefulSummary(value: StatefulStatus | null): string | null {
   const suffix = target === null ? '' : ` for frame ${target}`;
   if (value.phase === 'idle') return `Preparing feedback history${suffix}.`;
   if (value.phase === 'cancelled') return 'Feedback replay cancelled; following the latest request.';
+  if (value.mode === 'checkpoint_replay') {
+    const start = value.restored_from_frame === null ? '' : ` from frame ${value.restored_from_frame}`;
+    const checkpoints = `${value.checkpoint_count} saved checkpoints`;
+    if (value.phase === 'ready')
+      return `Native feedback reconstructed${suffix} · ${value.current_request_frames} work frames · ${checkpoints}`;
+    const budget = value.max_request_frames === null ? '' : ` / ${value.max_request_frames}`;
+    return `Reconstructing native feedback${suffix}${start} · ${value.current_request_frames}${budget} work frames · ${checkpoints}`;
+  }
   if (value.phase === 'ready') return `Feedback history verified${suffix} · ${value.verified_prefix_frames} verified frames`;
   const label = value.phase === 'verifying' ? 'Verifying an independent reset' : 'Replaying feedback from frame zero';
   const position = target === null ? `${value.live_next_frame} frames` :

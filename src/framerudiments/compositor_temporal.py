@@ -144,7 +144,7 @@ def _check_raster_budget(schedule, compositor):
 
 
 def temporal_plan(compositor, frame):
-    """The complete plan actually consumed by ``Compositor.frame``."""
+    """The native input plan executed for one encoded step, before feedback."""
     return _plan_details(compositor, frame)[0]
 
 
@@ -244,9 +244,18 @@ def _schedule_summary(schedule, compositor, frame, executed):
             'source_refs': [ref.document() for ref in schedule.source_refs], 'completed': True}
 
 
-def render_scheduled_frame(compositor, frame, *, apply_quality=True):
+def render_scheduled_frame(compositor, frame, *, apply_quality=True, cancelled=None):
     """Render the immutable dependency plan once, with bounded transient results."""
     compositor._last_temporal_schedule = None
+    if cancelled is not None and not callable(cancelled):
+        raise ValueError('native cancellation callback must be callable')
+
+    def check_cancelled():
+        if cancelled is not None and cancelled():
+            from .feedback_history import FeedbackCancelled
+            raise FeedbackCancelled('superseded native frame request')
+
+    check_cancelled()
     schedule, context, factor, indices, weights, settings, reports = _plan_details(compositor, frame)
     baseline = _metadata(compositor)
     virtual = None
@@ -263,6 +272,7 @@ def render_scheduled_frame(compositor, frame, *, apply_quality=True):
 
         def evaluate(ref, inputs):
             nonlocal executed
+            check_cancelled()
             executed += 1
             if ref.stage == 'native':
                 owner = virtual if virtual is not None else compositor
@@ -297,6 +307,7 @@ def render_scheduled_frame(compositor, frame, *, apply_quality=True):
             raise RuntimeError('unknown native temporal stage')
 
         value, = execute_schedule(schedule, evaluate)
+        check_cancelled()
         _restore(compositor, value.metadata)
         compositor._last_temporal_schedule = _schedule_summary(schedule, compositor, frame, executed)
         return value.image, context

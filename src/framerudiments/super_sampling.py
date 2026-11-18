@@ -231,6 +231,7 @@ def _virtual_project(original, factor):
     # Avoid applying historical encoded-frame shutter to each subframe. The
     # source compositor integrates the shutter after these subframes if asked.
     virtual.data.get("post_effects", {}).pop("temporal", None)
+    virtual.data.get("post_effects", {}).pop("feedback", None)
     # Index-based animation times are expressed in original output frames;
     # scale the time durations to keep the original seconds per transition.
     indicator = virtual.data.get("word_indicator")

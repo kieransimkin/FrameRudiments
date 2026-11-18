@@ -13,8 +13,17 @@ diagnostic; enable **Adaptive cache preview** for the S6 route.
 | --- | --- | --- | --- |
 | Existing independent frame sources | Existing native direct seek | Existing eligible Q0–Q5 subset | Existing explicit unsupported profiles |
 | `post_effects.temporal` | Native `TemporalShutter` recomposes its bounded prior-frame reads | Full-canvas Q3–Q5; Q5 retains authored settings | Native validation errors stay visible |
+| Native `post_effects.feedback` (M11.2) | Exact reset/live/checkpoint reconstruction of the complete RGB8 history ring | Authored Q5 only | Bounded native reconstruction diagnostics |
 | Butterchurn/projectM effect chain | Sequential frame-zero prefix, independently reset and compared | Authored Q5 only | `stateful_seek_unavailable`; no feedback-free replacement |
 | Unqualified layer families | Remain explicitly unsupported | None | Admission refuses them |
+
+The [M11.2 native feedback guide](feedback-history-m11-2.md) documents the added
+`checkpoint_replay` route, its memory/work limits and cooperative cancellation.
+Pause releases the native compositor while retaining one immutable checkpoint;
+resume verifies that checkpoint against a new native owner. Native source and
+runtime identity still govern the ordinary section cache. The external-engine
+verification and per-stream qualification rules below continue to apply to
+Butterchurn/projectM, including a pipeline that also uses native feedback.
 
 Temporal shutter dependencies use the native engine's maximum eight-frame
 lookback. The native sampler still excludes preceding repeat-cycle pixels.

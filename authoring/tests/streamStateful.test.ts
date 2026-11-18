@@ -81,3 +81,21 @@ test('only current typed progress may update replay status',()=>{
     {...event,cursor_seq:-1},{...event,frame:-1},{...event,stateful:null}])
     assert.equal(currentStatefulEvent(value,fence),null);
 });
+
+test('native checkpoint progress reports restored work without claiming an independent engine reset',()=>{
+  const state = parseStateful({...snapshot, mode:'checkpoint_replay', phase:'reconstructing',
+    max_prefix_frames:null, current_request_frames:3, checkpoint_count:4, restored_from_frame:16})!;
+  assert.equal(statefulSummary(state),
+    'Reconstructing native feedback for frame 19 from frame 16 · 3 / 3600 work frames · 4 saved checkpoints');
+  assert.equal(statefulSummary({...state,phase:'ready'}),
+    'Native feedback reconstructed for frame 19 · 3 work frames · 4 saved checkpoints');
+  for (const invalid of [
+    {...state, checkpoint_count:65}, {...state, checkpoint_count:-1},
+    {...state, restored_from_frame:20}, {...state, restored_from_frame:0.5},
+  ]) assert.equal(parseStateful(invalid),null);
+  const fence=new PresentationFence(19);
+  const event={type:'stateful-progress',cursor_seq:0,frame:19,stateful:state};
+  assert.equal(currentStatefulEvent(event,fence)?.checkpoint_count,4);
+  fence.request(19);
+  assert.equal(currentStatefulEvent(event,fence),null);
+});

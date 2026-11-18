@@ -6,6 +6,10 @@ positions, ordered input ports, supersampling, the historical shutter when
 configured, and final output. `Compositor.frame()` executes that plan. The
 same planning surface is available to Python callers and the CLI.
 
+With [M11.2 native feedback](feedback-history-m11-2.md), this is the schedule
+for one native recurrence input. `Compositor.feedback_plan()` separately
+describes the earlier encoded frames required to reconstruct feedback history.
+
 This is an unreleased implementation candidate on the consolidated roadmap.
 Existing `framerudiments.project.v1` fields, pinned inputs, source audio clocks,
 native DanceRudiments motion/recordings and the effect graph remain authoritative.
@@ -93,6 +97,13 @@ Custom scene hooks keep the existing encoded-frame identity and fractional
 source timestamp semantics. Optional external visualisers still execute once
 per encoded frame in their existing downstream pipeline.
 
+When `post_effects.feedback` is configured, each reconstruction frame executes
+these native stages without final output quality, then updates the encoded-frame
+feedback recurrence. Final quality applies once to the requested feedback
+result. The feedback owner restores the current target's metadata and owns its
+separate history/checkpoint budget; custom scene hooks are not admitted by that
+owner because they have no supported checkpoint identity.
+
 Native plans have stricter limits of 128 tasks, 256 edges and 24 live results,
 plus a 512 MiB preflight budget for retained RGB task results and captured or
 averaged RGBA routing surfaces. Historical task results do not retain extra
@@ -129,6 +140,13 @@ That contract describes conservative capability and reach; use
 `inspect-temporal` to see the actual tasks for selected frames and use native
 render evidence to establish which tasks executed.
 
+For projects configuring `post_effects.feedback`, `plan` also includes its
+structural `feedback` contract. `inspect-temporal` includes top-level `feedback`
+and a reconstruction plan in each `frames[i].feedback`. The existing `schedule`
+and `digest` continue to identify the selected frame's native input work. A
+fresh CLI inspector has no checkpoints, so the additional reconstruction plans
+start at their exact resets and do not claim executed pixels.
+
 ## Python sampling and reusable dependency declarations
 
 ```python
@@ -155,7 +173,9 @@ rejected. `repeat_local` defaults to true and the default boundary policy is
 render once per call, and each returned image is copied so a caller can modify
 one duplicate without changing another. The retained output/copy RGB estimate
 is capped at 256 MiB before callbacks; each nested native plan must also pass
-its own resource limits. The scheduler adds no persistent inter-call frame cache.
+its own resource limits. The M11.1 scheduler adds no persistent inter-call frame
+cache. If M11.2 feedback is configured, complete-frame requests use that owner's
+separate bounded history and checkpoint reconstruction.
 Projects configuring sequential external visualisers are rejected by this
 API because these results stop before those engines.
 
@@ -189,7 +209,9 @@ its modulation range. More than one native temporal sample reaches less than
 one frame forwards, represented as one conservative whole frame for segment
 invalidation. A forward-only quality dependency keeps the existing independent
 seek UI mode; it is not feedback history. External sequential engines retain
-the existing separately verified feedback-seek route.
+the existing separately verified feedback-seek route. M11.2's explicit native
+feedback has its own authored-Q5 `checkpoint_replay` mode and source-clock reset
+boundaries; it does not enable checkpoint restoration of external engines.
 
 ## Qualification and next milestone
 
@@ -222,7 +244,8 @@ Local CPU/CLI evidence does not establish GPU parity, browser interaction,
 physical-device behaviour, listening approval or artistic approval.
 Exact-candidate CI remains a separate gate.
 
-**M11.2 is next:** explicit delayed feedback, bounded history, checkpoints and
-random-access reconstruction. M11.1 rejects cycles rather than inventing a
-feedback reset or checkpoint. Creative temporal effects and rational video
-adapters remain the later M11.3 and M11.4 milestones.
+[M11.2](feedback-history-m11-2.md) adds explicit delayed feedback, bounded
+history, checkpoints and random-access reconstruction as a separate owner.
+The M11.1 dependency graph still rejects cycles; it does not infer feedback
+resets or checkpoint semantics from a cyclic graph. Creative temporal effects
+and rational video adapters remain the later M11.3 and M11.4 milestones.

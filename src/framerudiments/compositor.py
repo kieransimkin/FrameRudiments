@@ -297,6 +297,9 @@ class Sprite:
 class Compositor:
     def __init__(self, project, *, scene=None, renderers=None,
                  _shared_effect_graph_gpu=_CREATE_EFFECT_GRAPH_BACKEND):
+        post = project.data.get('post_effects', {})
+        if isinstance(post, dict) and 'feedback' in post and (scene is not None or renderers is not None):
+            raise ValueError('Native feedback requires declarative sources; custom scene/renderers have no checkpoint identity')
         self.project, self.scene = project, scene
         self.output_quality = project.output_quality
         self.effect_specs = effect_specs(project)
@@ -653,7 +656,10 @@ class Compositor:
         return temporal_contract(self.project)
 
     def temporal_plan(self, frame):
-        """Return the exact immutable task plan consumed by ``frame``."""
+        """Plan native input sampling for one encoded step, before feedback.
+
+        ``feedback_plan`` separately describes any delayed reconstruction.
+        """
         from .compositor_temporal import temporal_plan
         return temporal_plan(self, frame)
 
@@ -664,9 +670,37 @@ class Compositor:
         return sample_frames(self, anchor, offsets, boundary=boundary,
             repeat_local=repeat_local, apply_quality=apply_quality)
 
-    def frame(self, frame, *, apply_quality=True):
+    def feedback_contract(self):
+        from .compositor_feedback import feedback_contract
+        return feedback_contract(self)
+
+    def feedback_plan(self, frame):
+        from .compositor_feedback import feedback_plan
+        return feedback_plan(self, frame)
+
+    def feedback_snapshot(self):
+        from .compositor_feedback import feedback_snapshot
+        return feedback_snapshot(self)
+
+    def feedback_checkpoint(self):
+        from .compositor_feedback import feedback_session
+        session = feedback_session(self)
+        return session.checkpoint() if session is not None else None
+
+    def restore_feedback(self, checkpoint, *, expected_sha256):
+        from .compositor_feedback import feedback_session
+        session = feedback_session(self)
+        if session is None:
+            raise ValueError('This compositor has no configured native feedback')
+        session.restore(checkpoint, expected_sha256=expected_sha256)
+
+    def frame(self, frame, *, apply_quality=True, cancelled=None, progress=None):
+        if self.post_pipeline.feedback is not None:
+            from .compositor_feedback import render_feedback_frame
+            return render_feedback_frame(self, frame, apply_quality=apply_quality,
+                cancelled=cancelled, progress=progress)
         from .compositor_temporal import render_scheduled_frame
-        return render_scheduled_frame(self, frame, apply_quality=apply_quality)
+        return render_scheduled_frame(self, frame, apply_quality=apply_quality, cancelled=cancelled)
 
     def _native_frame(self, frame, *, apply_quality=False):
         """One native sample; only the temporal scheduler calls this draw path."""
@@ -745,9 +779,13 @@ class Compositor:
         return reports
 
     def post_effect_reports(self):
-        return dict(self.post_pipeline.last_report) if self.post_pipeline.enabled else {}
+        return (dict(self.post_pipeline.last_report)
+                if self.post_pipeline.enabled or self.post_pipeline.feedback is not None else {})
 
     def close(self):
+        feedback = getattr(self, '_feedback_session', None)
+        if feedback is not None:
+            feedback.close()
         if self._owns_effect_graph_gpu and self.effect_graph_gpu is not None:
             self.effect_graph_gpu.close()
         virtual = getattr(self, "_temporal_virtual", None)
@@ -771,6 +809,8 @@ class Compositor:
     def evidence(self):
         virtual = getattr(self, "_temporal_virtual", None)
         return dict(
+            **({'feedback': {'contract': self.feedback_contract(), 'state': self.feedback_snapshot()}}
+               if self.post_pipeline.feedback is not None else {}),
             temporal_schedule={"contract": self.temporal_contract(),
                 "last_execution": deepcopy(getattr(self, "_last_temporal_schedule", None))},
             transformed_alpha_extents=self.extents,
@@ -835,5 +875,6 @@ class Compositor:
                 if self.words
                 else {}
             ),
-            **({"post_effects": self.post_pipeline.evidence} if self.post_pipeline.enabled else {}),
+            **({"post_effects": self.post_pipeline.evidence}
+               if self.post_pipeline.enabled or self.post_pipeline.feedback is not None else {}),
         )

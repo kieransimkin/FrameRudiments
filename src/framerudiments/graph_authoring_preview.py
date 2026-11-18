@@ -117,7 +117,9 @@ def preview_transition_draft(project_file, draft, *, sidecars, node, frame, qual
     No authored project is saved or changed. Each projection retains every
     graph node and binding, so preview cannot bypass hidden-branch validation.
     The three native compositors are opened sequentially on this thread and
-    closed before the next one. No live GPU context is shared across threads.
+    closed before the next one. Each independently reconstructs optional native
+    feedback for its projected graph output. No live GPU context is shared
+    across threads.
     """
     if not isinstance(node, str) or not 1 <= len(node) <= 128:
         raise AuthoringPreviewError('node_invalid')
@@ -158,6 +160,8 @@ def preview_transition_draft(project_file, draft, *, sidecars, node, frame, qual
                             'native_temporal_post_effects': bool(project.data.get('post_effects', {}).get('temporal')),
                             'black_matte': True, 'production_approved': False},
                   'images': []}
+        if project.data.get('post_effects', {}).get('feedback') is not None:
+            result['scope']['native_feedback'] = True
         for role, target in (('from', selected.inputs[0]), ('result', node), ('to', selected.inputs[1])):
             image, clock, settings = _render_view(owner, target, locations[target].label, role, frame, quality)
             if result['clock'] is not None and result['clock'] != clock:

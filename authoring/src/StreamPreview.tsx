@@ -140,6 +140,7 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
         setStateful(replay);
         setMetrics(row.adaptive??null);
         setStatus(replay?.mode==='verified_prefix_replay'?'Verified feedback preview':
+          replay?.mode==='checkpoint_replay'?'Native feedback preview':
           row.adaptive?.target_unattainable?'At quality floor: target cannot be sustained':'Adaptive preview');
         requestAnimationFrame(()=>{
           if(disposed||serial!==decodeId||!fence.accepts(sequence,row.frame))return;
@@ -279,7 +280,7 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
     request.current?.(previewFrame(timeRef.current,fps,duration),'target_fps');
   };
   const desiredFrame=previewFrame(time,fps,duration);
-  const replaying=stateful?.enabled&&stateful.mode==='verified_prefix_replay';
+  const replaying=stateful?.enabled&&['verified_prefix_replay','checkpoint_replay'].includes(stateful.mode);
   const replayStatus=statefulSummary(stateful);
   const currentObservation=sameDraftImage(observationSource,project,sidecars,refine)?qualification:null;
   const visible=sameDraftImage(pictureSource,project,sidecars,refine)&&!!picture;
@@ -314,7 +315,9 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
           {cache?` · ${cache.q5_frames} / ${currentObservation!.frame_count}`:''}</dd></div>
         <div><dt>PNG cache</dt><dd>{cache?`${formatBytes(cache.bytes)} / ${formatBytes(cache.quota_bytes)}`:'measuring'}</dd></div>
       </dl>
-      <small>{replaying?'Feedback stays at authored Q5; replay and verification consume the reconstruction budget.':
+      <small>{replaying?(stateful?.mode==='checkpoint_replay'?
+        'Native feedback stays at authored Q5; checkpoints reduce reconstruction work.':
+        'Feedback stays at authored Q5; replay and verification consume the reconstruction budget.'):
         `Quality floor ${metrics?.quality_floor??'checking'}. Fresh FPS excludes cache hits and background refinement.`}
         {' '}Decoded FPS counts client acknowledgements, not physical display refreshes.</small>
       <label><input type="checkbox" checked={refine} onChange={event=>setRefine(event.target.checked)}/>

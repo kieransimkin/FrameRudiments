@@ -46,6 +46,9 @@ def inspect_temporal(project_file, frames):
             if frame not in plans:
                 plan = compositor.temporal_plan(frame)
                 plans[frame] = {'frame': frame, 'digest': plan.digest, 'schedule': plan.document()}
+                feedback = compositor.feedback_plan(frame)
+                if feedback is not None:
+                    plans[frame]['feedback'] = feedback
         result = {
             'schema': SCHEMA,
             'project_sha256': sha256(original).hexdigest(),
@@ -54,6 +57,9 @@ def inspect_temporal(project_file, frames):
             'scope': {'pixels_rendered': False, 'sequential_external_engines': False,
                       'gpu_context_created': False, 'stage': 'pre_external_effects'},
         }
+        feedback = compositor.feedback_contract()
+        if feedback is not None:
+            result['feedback'] = feedback
         project.verify_inputs()
         if path.read_bytes() != original:
             raise ValueError('Project changed during temporal inspection')

@@ -118,6 +118,14 @@ Within a repeated excerpt, sampled history is limited to the present repeat. At 
 
 ## Configuration reference
 
+For a recursive delayed result, the separate M11.2
+[`post_effects.feedback` stage](feedback-history-m11-2.md) follows the historical
+shutter. It reads an explicitly delayed prior **feedback result**, with exact
+reset boundaries, complete checkpoints and bounded reconstruction. The shutter
+above reads native source frames; enabling both keeps those two operations in
+that order. Only feedback `mix` accepts modulation; delay and resource limits
+remain fixed configuration.
+
 Numeric fields below all accept native DanceRudiment modulation in the usual range-based `modulations` list of a scoped stage. Stage `visual` numeric values are validated against these bounds. For `post_effects.temporal`, prefix targets with `temporal.` instead.
 
 | Setting | Default | Valid range | Meaning |

@@ -111,6 +111,25 @@ def test_full_quality_is_observably_different_and_retains_selected_output(native
     assert compare(native, quality='full')['render_quality']['enabled'] is False
 
 
+@pytest.mark.parametrize('quality', ['fast', 'full'])
+def test_native_feedback_is_reconstructed_independently_for_each_graph_projection(native, quality):
+    path, original = native
+    document = deepcopy(original)
+    document['post_effects'] = {'feedback': {'delay_frames': 3, 'mix': .6, 'reset': 'programme',
+                                           'checkpoint_interval': 4, 'max_checkpoints': 2}}
+    before = deepcopy(document), path.read_bytes()
+    for frame in (11, 4):
+        result = compare(native, document=document, frame=frame, quality=quality)
+        assert result['scope']['native_feedback'] is True
+        assert result['scope']['sequential_effects_excluded'] is False
+        for row, target in zip(result['images'], ('frame', 'mix', 'background')):
+            expected, context = reference(path, document, target, frame, quality)
+            assert row['node'] == target and pixels(row) == expected
+            assert result['clock']['source_seconds'] == context.source_seconds
+        assert not list((path.parent / 'owned').iterdir())
+    assert document == before[0] and path.read_bytes() == before[1]
+
+
 def test_chain_stage_metadata_and_processed_inputs_are_native_not_generated_id_parsing(native):
     path, document = native
     document['effect_graph']['nodes'] = [

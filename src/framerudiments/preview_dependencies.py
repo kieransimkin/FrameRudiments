@@ -57,9 +57,10 @@ def cache_namespace(project_file):
 class TemporalReach:
     """Engine-supplied read windows. Never accept these as browser edit hints.
 
-    Feedback reset frames may be supplied only by a verified engine adapter.
-    S5's streaming API still refuses stateful rendering; this models propagation
-    for S6 without pretending checkpoint execution already exists.
+    Feedback reset frames may be supplied only by a native engine adapter.
+    M11.2 derives native resets from the exact source clock. External S6 engines
+    retain programme-wide propagation because their intermediate resets are
+    not verified by an exported checkpoint contract.
     """
     mode: str = 'independent'
     past_frames: int = 0

@@ -1,0 +1,301 @@
+{
+  "schema": "framerudiments.feedback-history-fixture.v1",
+  "description": "Synthetic M11.2 delayed feedback. Independent literal recurrence over existing feedback-disabled native input frames; source-cycle boundaries are derived with Fraction arithmetic.",
+  "project": {
+    "schema": "framerudiments.project.v1",
+    "title": "M11.2 synthetic delayed feedback checkpoints",
+    "purpose": "visualiser",
+    "width": 192,
+    "height": 128,
+    "fps": 12,
+    "fps_reason": "Bounded synthetic delayed feedback and checkpoint reconstruction qualification",
+    "audio": {
+      "source": {
+        "$pin": "source.wav"
+      },
+      "sample_rate": 48000,
+      "start_sample": 12000,
+      "end_sample": 60000,
+      "repeats": 2,
+      "fade_seconds": 0
+    },
+    "clock": {
+      "bpm": 120,
+      "origin": 0.125,
+      "authority": "synthetic delayed feedback fixture",
+      "status": "synthetic"
+    },
+    "font": {
+      "$pin": "font.ttf"
+    },
+    "lyrics": {
+      "$pin": "lines.lrc"
+    },
+    "word_lyrics": {
+      "$pin": "words.lrc"
+    },
+    "cues": {
+      "$pin": "cues.lrc"
+    },
+    "background": {
+      "colour": "#121b2d"
+    },
+    "render_quality": {
+      "spatial_scale": 1,
+      "temporal_samples": 1,
+      "antialias": 0
+    },
+    "captions": {
+      "box": [
+        8,
+        101,
+        184,
+        116
+      ],
+      "font_size": 12,
+      "min_font_size": 10,
+      "colour": "#ffffff",
+      "stroke": 0,
+      "word_mode": "highlight"
+    },
+    "word_captions": {
+      "box": [
+        8,
+        116,
+        184,
+        128
+      ],
+      "font_size": 10,
+      "min_font_size": 8,
+      "colour": "#f7cf62",
+      "stroke": 0
+    },
+    "layers": [
+      {
+        "id": "amber",
+        "asset": {
+          "$pin": "amber.png"
+        },
+        "width": 43,
+        "center": [
+          59,
+          49
+        ],
+        "bounds": [
+          0,
+          0,
+          192,
+          128
+        ],
+        "motion": {
+          "kind": "named",
+          "pattern": "circle",
+          "rate": 0.7,
+          "repeat_clock": "continuous"
+        },
+        "mapping": {
+          "dx": 31,
+          "dy": 18,
+          "rotation": 16
+        }
+      },
+      {
+        "id": "cyan",
+        "asset": {
+          "$pin": "cyan.png"
+        },
+        "width": 46,
+        "center": [
+          132,
+          51
+        ],
+        "bounds": [
+          0,
+          0,
+          192,
+          128
+        ],
+        "motion": {
+          "kind": "recording",
+          "file": {
+            "$pin": "recording.json"
+          },
+          "axes": [
+            "accent",
+            "intensity"
+          ]
+        },
+        "mapping": {
+          "dx": 18,
+          "dy": 14
+        }
+      }
+    ],
+    "effect_graph": {
+      "nodes": [
+        {
+          "id": "background",
+          "type": "source"
+        },
+        {
+          "id": "layer:amber",
+          "type": "source"
+        },
+        {
+          "id": "layer:cyan",
+          "type": "source"
+        },
+        {
+          "id": "caption",
+          "type": "source"
+        },
+        {
+          "id": "word-caption",
+          "type": "source"
+        },
+        {
+          "id": "amber-opacity",
+          "type": "opacity",
+          "inputs": [
+            "layer:amber"
+          ],
+          "opacity": 0.9
+        },
+        {
+          "id": "output",
+          "type": "composite",
+          "inputs": [
+            "background",
+            "amber-opacity",
+            "layer:cyan",
+            "caption",
+            "word-caption"
+          ],
+          "mode": "over"
+        }
+      ],
+      "output": "output"
+    },
+    "effect_graph_controls": [
+      {
+        "id": "source-opacity",
+        "node": "amber-opacity",
+        "property": "opacity",
+        "motion": {
+          "kind": "named",
+          "pattern": "circle",
+          "rate": 0.75,
+          "repeat_clock": "source"
+        },
+        "axis": "x",
+        "range": [
+          0.4,
+          0.95
+        ]
+      }
+    ]
+  },
+  "source_text": {
+    "lines.lrc": "[00:00.250]Amber moves\n[00:00.500]Blue turns\n[00:00.900]\n",
+    "words.lrc": "[00:00.250]Amber\n[00:00.375]moves\n[00:00.500]Blue\n[00:00.575]turns\n[00:00.900]\n",
+    "cues.lrc": "[00:00.250][SECTION: warm]\n[00:00.500][SECTION: cool]\n"
+  },
+  "cases": [
+    {
+      "name": "programme_delay1",
+      "description": "One-frame continuous feedback across six-frame repeats; automatic checkpoints evict under a two-snapshot cap.",
+      "audio": {
+        "end_sample": 36000,
+        "repeats": 4
+      },
+      "quality": {},
+      "temporal": null,
+      "feedback": {
+        "checkpoint_interval": 4,
+        "max_checkpoints": 2,
+        "max_replay_frames": 64,
+        "max_state_bytes": 8388608,
+        "delay_frames": 1,
+        "mix": 0.72,
+        "reset": "programme"
+      },
+      "gallery_frames": [
+        0,
+        5,
+        6,
+        23
+      ],
+      "checkpoint_seed": 11,
+      "checkpoint_target": 15,
+      "eviction_seek": 3,
+      "cli": true
+    },
+    {
+      "name": "repeat_delay3",
+      "description": "Three-frame history ring and exact six-frame repeat resets; checkpoint restore must retain every pending delayed state.",
+      "audio": {
+        "end_sample": 36000,
+        "repeats": 4
+      },
+      "quality": {},
+      "temporal": null,
+      "feedback": {
+        "checkpoint_interval": 4,
+        "max_checkpoints": 2,
+        "max_replay_frames": 64,
+        "max_state_bytes": 8388608,
+        "delay_frames": 3,
+        "mix": 0.67,
+        "reset": "repeat"
+      },
+      "gallery_frames": [
+        5,
+        6,
+        9,
+        11
+      ],
+      "checkpoint_seed": 9,
+      "checkpoint_target": 11,
+      "eviction_seek": 3,
+      "cli": true
+    },
+    {
+      "name": "rational_subframes",
+      "description": "49/10-frame repeat resets, two-frame feedback delay, four native subframes and an independent existing historical shutter.",
+      "audio": {
+        "end_sample": 31600,
+        "repeats": 5
+      },
+      "quality": {
+        "temporal_samples": 4,
+        "antialias": 0.65,
+        "antialias_passes": 1
+      },
+      "temporal": {
+        "strength": 0.55,
+        "shutter_frames": 3,
+        "samples": 4,
+        "falloff": 1.2
+      },
+      "feedback": {
+        "checkpoint_interval": 4,
+        "max_checkpoints": 2,
+        "max_replay_frames": 64,
+        "max_state_bytes": 8388608,
+        "delay_frames": 2,
+        "mix": 0.63,
+        "reset": "repeat"
+      },
+      "gallery_frames": [
+        4,
+        5,
+        10,
+        24
+      ],
+      "checkpoint_seed": 12,
+      "checkpoint_target": 14,
+      "eviction_seek": 2,
+      "cli": true
+    }
+  ]
+}

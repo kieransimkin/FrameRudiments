@@ -485,6 +485,15 @@ class StatefulPreviewRenderer(NativePreviewRenderer):
             self.release_compositor()
             raise StatefulSeekUnavailable('native_runtime_unavailable') from None
 
+    def render_cancellable(self, frame, profile_id, cancelled, progress=None):
+        """Keep direct cancellable dispatch on the independently verified S6 path."""
+        from .preview_refinement_process import RefinementCancelled
+
+        try:
+            return self(frame, profile_id, cancelled=cancelled, progress=progress)
+        except ReplayCancelled as exc:
+            raise RefinementCancelled('superseded external feedback') from exc
+
     def release_compositor(self):
         self._thread()
         if self.replay is not None:

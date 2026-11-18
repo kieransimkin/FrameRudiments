@@ -77,9 +77,11 @@ For a conventional output frame:
 2. Repeat the composition at distinct subframe source-clock positions and
    integrate the samples in linear light.
 3. Optionally apply original-frame temporal history blur (if requested).
-4. Run any configured full-frame Butterchurn/projectM feedback **once** per
+4. Apply optional [M11.2 delayed native feedback](feedback-history-m11-2.md)
+   **once** per encoded frame, storing its pre-AA result in the bounded history.
+5. Run any configured full-frame Butterchurn/projectM feedback **once** per
    encoded frame; these engines are not sampled at 8× subframe FPS.
-5. Run final edge-aware raster AA (three passes), then emit QA stills/FFmpeg.
+6. Run final edge-aware raster AA (three passes), then emit QA stills/FFmpeg.
 
 The codec frame rate, audio, source hashes and event timestamps do not change.
 The plan/manifest records `render_quality` including its exact sample counts.

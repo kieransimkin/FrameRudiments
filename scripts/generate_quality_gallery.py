@@ -114,7 +114,14 @@ def _context(n):
 
 
 def _project():
-    return SimpleNamespace(base=Path("."), inputs=[], clock=SimpleNamespace(beat_at=lambda t: t * 2))
+    # The synthetic gallery covers one three-second source cycle. Declare the
+    # same 60 FPS/48 kHz sample ruler used by its contexts so the production
+    # shutter can enforce exact programme and repeat boundaries.
+    return SimpleNamespace(
+        base=Path("."), inputs=[], clock=SimpleNamespace(beat_at=lambda t: t * 2),
+        fps=60, sample_rate=48000, start_sample=0, end_sample=144000,
+        repeats=1, frame_count=180,
+    )
 
 
 @lru_cache(maxsize=1)

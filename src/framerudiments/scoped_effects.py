@@ -247,7 +247,7 @@ class CompositingEffects:
     """
 
     def __init__(self, project, config, context_at, *, valid_elements):
-        fields(config, {"all_elements", "elements", "frame", "temporal"}, "post_effects")
+        fields(config, {"all_elements", "elements", "frame", "temporal", "feedback"}, "post_effects")
         elements = config.get("elements", {})
         if not isinstance(elements, dict) or len(elements) > MAX_TARGETS:
             raise ValueError("post_effects.elements must be an object with <=256 targets")
@@ -270,6 +270,11 @@ class CompositingEffects:
         self.temporal = (
             TemporalShutter(project, config["temporal"], context_at) if "temporal" in config else None
         )
+        from .compositor_feedback import FeedbackSettings
+
+        self.feedback = FeedbackSettings(project, config['feedback'], context_at) if 'feedback' in config else None
+        # Feedback is an encoded-frame stage; it must not change the individual
+        # native sample's ordinary composition route merely by being present.
         self.enabled = bool(
             self.all_elements or self.frame or any(self.elements.values()) or self.temporal is not None
         )
@@ -281,6 +286,8 @@ class CompositingEffects:
         self.files = [ref for stage in stages for ref in stage.files]
         if self.temporal is not None:
             self.files.extend(self.temporal.files)
+        if self.feedback is not None:
+            self.files.extend(self.feedback.files)
         project.inputs.extend(self.files)
         self.evidence = dict(
             order="background, scene, layers, identity, caption/art; then frame; then GPU effects",
@@ -288,6 +295,7 @@ class CompositingEffects:
             elements={key: [stage.evidence for stage in stages] for key, stages in self.elements.items()},
             frame=[stage.evidence for stage in self.frame],
             temporal=self.temporal.evidence if self.temporal else None,
+            **({'feedback': self.feedback.evidence} if self.feedback else {}),
         )
         self.last_report = {}
 

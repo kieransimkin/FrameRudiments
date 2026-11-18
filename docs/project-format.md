@@ -142,6 +142,17 @@ Stages run before the optional full-frame Butterchurn/projectM `effects` chain.
 The original compositor pixel path remains unchanged when no post effects are
 configured.
 
+`post_effects.feedback` adds an explicit delayed native recurrence after source
+sampling and the optional historical shutter, before final output quality and
+external effects. It requires `delay_frames` (1–64), with optional `mix` (0–1,
+default `0.5`), `reset` (`"repeat"` or `"programme"`, default `"repeat"`),
+checkpoint cadence/count and reconstruction/state budgets. A native modulator
+may target `feedback.mix`. Missing pre-reset history uses the current native
+image unattenuated; otherwise its linear-light blend reads an earlier feedback
+output. See [M11.2 feedback history](feedback-history-m11-2.md) for the complete
+field table, exact reset semantics, actual checkpoint API and qualification.
+The existing same-frame effect graph continues to reject cycles.
+
 ## Bitmap and sprite-backed Rudiment renderers
 
 All existing renderer names still select vectors. The 52 new `sprite-*` names
@@ -224,3 +235,9 @@ resolved native plan, and `plan` includes its structural temporal contract.
 Shutter taps remain inside the same exact source repeat, including nonintegral
 frame boundaries and repeats shorter than the shutter window. True quality
 subframes continue to sample the existing programme grid.
+
+With M11.2 feedback enabled, the native temporal plan describes one recurrence
+input. The separate `feedback_plan` and CLI `feedback` fields describe the
+encoded frames reconstructed from a reset or retained checkpoint. Final output
+quality follows the recurrence, while stored feedback history stays before that
+finishing pass.

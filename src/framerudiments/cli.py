@@ -242,6 +242,9 @@ def main(argv=None):
             try:
                 summary = project.summary()
                 summary['temporal_schedule'] = compositor.temporal_contract()
+                feedback = compositor.feedback_contract()
+                if feedback is not None:
+                    summary['feedback'] = feedback
                 project.verify_inputs()
                 write_json(output, summary)
             finally:

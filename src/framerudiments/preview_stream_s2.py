@@ -353,9 +353,15 @@ class SeekStream:
             if callable(release):
                 release()
         except Exception as exc:
+            from .preview_replay import StatefulSeekUnavailable
+
             with self.condition:
-                self.foreground_cleanup_error = type(exc).__name__
-                self._event('render-error', frame=self.frame, error_type='ForegroundCleanupError')
+                if isinstance(exc, StatefulSeekUnavailable) and exc.reason_code in {
+                        'input_identity_changed', 'runtime_identity_changed', 'replay_mismatch'}:
+                    self._replay_unavailable(exc.reason_code, self.frame)
+                else:
+                    self.foreground_cleanup_error = type(exc).__name__
+                    self._event('render-error', frame=self.frame, error_type='ForegroundCleanupError')
         finally:
             with self.condition:
                 self.foreground_release_pending = False

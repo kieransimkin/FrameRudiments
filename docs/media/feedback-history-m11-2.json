@@ -1,0 +1,3637 @@
+{
+  "schema": "framerudiments.feedback-history-qualification.v1",
+  "passed": true,
+  "fixture_sha256": "baaaa5620f8dab581be3218768756f8668eafacbfc4bb948d4591005e09b13ce",
+  "implementation_sha256": {
+    "src/framerudiments/feedback_history.py": "20f46ad32105636d1cc4628d883cbea20be233550f5925d21ba0e8c9b85b4a10",
+    "src/framerudiments/compositor_feedback.py": "26804ef1d3b87d3c64cbf79988d0d9fc34c44ee2c5c4fe0526fea0cc9678f1ce",
+    "src/framerudiments/compositor.py": "3f97a674f4ea43c2214dbd8622eda9a2a94d1bb4af5c1599c58abb6d17077ca7",
+    "src/framerudiments/compositor_temporal.py": "f36c337d7361ebca44c292a3b22bc5985d8fdef988a546bb5e773ac95e4ee4d4",
+    "src/framerudiments/scoped_effects.py": "8bdf12a0099077126580f292945bf6e561cf2868ebccf52cdb322b7b46b5586e",
+    "src/framerudiments/quality_effects.py": "3de37f87bf21e99e5dda06d0e4cfad7db83eefa030a39f113ddbc3cd8a8a65e9",
+    "src/framerudiments/super_sampling.py": "aca2f2c73765c55e1ac7921282beff69d5acd75f91c6136c67857de41f662e2a",
+    "src/framerudiments/temporal_inspection.py": "2bf30f5beb356a5ca527cad6daf9b282b92140ef9b7c180853f45595d34c7e60",
+    "src/framerudiments/cli.py": "7499631a8fd7e4d27d076c1f0b4ec0fe4ef60aa13ced14bb38e067995333060d",
+    "integration/qualify_feedback_history_m11_2.py": "3cd07fbcc8e465a2af33bc52d359e4828f2972389e5bf8138413a7661a5f4770"
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "dancerudiments": "0.3.0",
+    "pillow": "13.0.0",
+    "ffmpeg": "ffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "scope": {
+    "independent_literal_delayed_recurrence": true,
+    "actual_native_compositor": true,
+    "actual_native_checkpoint_restore": true,
+    "actual_native_callback_counts": true,
+    "reference_uses_native_raster_and_linear_light_blend": true,
+    "actual_cli_inspection_plan_full_preflight_render": true,
+    "actual_encoded_comparison": true,
+    "checkpoint_transport": "immutable_in_memory_state_with_pinned_digest",
+    "metadata_json_is_restorable_state": false,
+    "sequential_external_engines": false,
+    "browser_interaction": false,
+    "gpu": false,
+    "physical_device": false,
+    "perceptual_approval": false
+  },
+  "cases": [
+    {
+      "name": "programme_delay1",
+      "frame_count": 24,
+      "feedback": {
+        "checkpoint_interval": 4,
+        "max_checkpoints": 2,
+        "max_replay_frames": 64,
+        "max_state_bytes": 8388608,
+        "delay_frames": 1,
+        "mix": 0.72,
+        "reset": "programme"
+      },
+      "quality_samples": 1,
+      "repeat_span_frames": [
+        6,
+        1
+      ],
+      "independent_native_comparisons": 24,
+      "nonsequential_native_comparisons": 28,
+      "nonsequential_order": [
+        10,
+        4,
+        23,
+        1,
+        16,
+        2,
+        17,
+        12,
+        22,
+        20,
+        6,
+        0,
+        7,
+        8,
+        3,
+        11,
+        5,
+        13,
+        14,
+        9,
+        19,
+        18,
+        21,
+        15,
+        23,
+        0,
+        12,
+        23
+      ],
+      "max_rgb8_error": 0,
+      "independent_rational_clock_max_abs_error": 4.440892098500626e-16,
+      "independent_source_clock_max_abs_error": 4.440892098500626e-16,
+      "checkpoints": [
+        {
+          "frame": 0,
+          "reset_frame": 0,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 0,
+            "target_frame": 0,
+            "reset_frame": 0,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 0,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              0
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 73728,
+            "completed": true
+          },
+          "pixel_sha256": "3149a139ebd9aeaf9a7b0f9163298cc7f4f946584e7248073506b8a83fe5f41b"
+        },
+        {
+          "frame": 1,
+          "reset_frame": 0,
+          "previous_feedback_frame": 0,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 1,
+            "target_frame": 1,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "90e65f5970be5ede3bd28e0ad16fdb22e2dc6d102d0ea4a43e4c92042be5fd49",
+            "steps": 1,
+            "history_refs": [
+              0
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 73728,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              1
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 147456,
+            "completed": true
+          },
+          "pixel_sha256": "c8bc359ec9450bda75165faf293b60746983f75d8ce328b97d27098b13305e4d"
+        },
+        {
+          "frame": 2,
+          "reset_frame": 0,
+          "previous_feedback_frame": 1,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 2,
+            "target_frame": 2,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "be9fdcfe9e3b4011d2e083c0987e87e63e19647e189289e591ddc289d4efd2cd",
+            "steps": 1,
+            "history_refs": [
+              1
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              2
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "d45c8cbefe97784d2ea2b8e7decef52dc8904052c34efb287b18ba7c22096c3f"
+        },
+        {
+          "frame": 3,
+          "reset_frame": 0,
+          "previous_feedback_frame": 2,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 3,
+            "target_frame": 3,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "bb3c28434a640e813657344823dc41dd58a32c0bf7e2bd86446a56c6d6584680",
+            "steps": 1,
+            "history_refs": [
+              2
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              3
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "9969e876bcf11a8ec4cc436f62f2711749e74662327a50d48a0dd1ca31ea7670"
+        },
+        {
+          "frame": 4,
+          "reset_frame": 0,
+          "previous_feedback_frame": 3,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 4,
+            "target_frame": 4,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "8c49c40de090ceccd1d2dc19f9b579ac4a61323da33ee587fbe9f3b35f7c94f9",
+            "steps": 1,
+            "history_refs": [
+              3
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              4
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "801ab3cf413e3a2441db94ca921008ff566824a95d8157c51b825d216f645028"
+        },
+        {
+          "frame": 5,
+          "reset_frame": 0,
+          "previous_feedback_frame": 4,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 5,
+            "target_frame": 5,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "a443f5c0565de37a88ce3f20f163219b3e94e5526b119bbdc6045035a01d0302",
+            "steps": 1,
+            "history_refs": [
+              4
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              5
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "cd29f71ae1dc9fb9f2f62dbcc5bd7443fe41b46f2a5a41fc0e9404d78896d1ec"
+        },
+        {
+          "frame": 6,
+          "reset_frame": 0,
+          "previous_feedback_frame": 5,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 6,
+            "target_frame": 6,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "9285c9c3aebddf81fbd725bb0acebaf0c5ce33f9141cb4e8f2001c3024771861",
+            "steps": 1,
+            "history_refs": [
+              5
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              6
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "2205a0395a516f8c35bfbaa36ef8d26cd79f3176abeddbb20e7a9a5d705e6d39"
+        },
+        {
+          "frame": 7,
+          "reset_frame": 0,
+          "previous_feedback_frame": 6,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 7,
+            "target_frame": 7,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "bd8516f85289c06e65bb11e9c906c260d7716ea3289c379a9bfeb352213bcc13",
+            "steps": 1,
+            "history_refs": [
+              6
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              7
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "e68505e10f89e77ad8873328beedd8cf770f3475073ed8db98fa2cf0a6641b31"
+        },
+        {
+          "frame": 8,
+          "reset_frame": 0,
+          "previous_feedback_frame": 7,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 8,
+            "target_frame": 8,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "7964ceda4096edd9e012512a016e1944723302617cbfb2ec2e1967fa628d0eac",
+            "steps": 1,
+            "history_refs": [
+              7
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              8
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "48de2411d074a8ac993462596d173bd201745688523f05553f155906d6544431"
+        },
+        {
+          "frame": 9,
+          "reset_frame": 0,
+          "previous_feedback_frame": 8,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 9,
+            "target_frame": 9,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "51bd790144baa5267a6845bada09028b2785a739aec8a0f68c1a894a506e5466",
+            "steps": 1,
+            "history_refs": [
+              8
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              9
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "3014c88e1b9032ac247546158d2620451cf70aa778da8dbe1e5074eafbc57f2a"
+        },
+        {
+          "frame": 10,
+          "reset_frame": 0,
+          "previous_feedback_frame": 9,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 10,
+            "target_frame": 10,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "9baf0c74ce6c836ace4608e78dffc55c0c427f180927eb9d590a141f560a9fb2",
+            "steps": 1,
+            "history_refs": [
+              9
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              10
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "52a1026e118b6b8263a1100a0e7e19a71b507d2d7191bf058db6c86693d35d8d"
+        },
+        {
+          "frame": 11,
+          "reset_frame": 0,
+          "previous_feedback_frame": 10,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 11,
+            "target_frame": 11,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "6f7fe92f15f71688a8bf0015c553922d3cff5ac0fb862946beba7ab2a2b3b819",
+            "steps": 1,
+            "history_refs": [
+              10
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              11
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "eba7ac304df91dccd7651e63b6b5d133df3a164ac761bea8f781b5fb408b7a16"
+        },
+        {
+          "frame": 12,
+          "reset_frame": 0,
+          "previous_feedback_frame": 11,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 12,
+            "target_frame": 12,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "05166b656ef620367ac520071e04edba0027971d04774296c9d66c15ff6c8846",
+            "steps": 1,
+            "history_refs": [
+              11
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              12
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "4a175ddeedd99f640bf3b1e905e5cd56b3ff7bf6e40c42ce8b0b4b163133cfae"
+        },
+        {
+          "frame": 13,
+          "reset_frame": 0,
+          "previous_feedback_frame": 12,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 13,
+            "target_frame": 13,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "e33b4e38ef160282cc66c193e503c688e7f4d1f27472301843fa9af45cce815e",
+            "steps": 1,
+            "history_refs": [
+              12
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              13
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "860b83361d7cf30705bcae774ffab83be1cb84f42829dda09e15c9e3f05509b2"
+        },
+        {
+          "frame": 14,
+          "reset_frame": 0,
+          "previous_feedback_frame": 13,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 14,
+            "target_frame": 14,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "a5b88b824280403d2a2b2762ae83313830c69b997e1792dfee4262a2e787643a",
+            "steps": 1,
+            "history_refs": [
+              13
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              14
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "cf404543a311208b94e276c255d3d72ff450a83e306fef71cc5f9f2ed260bdbd"
+        },
+        {
+          "frame": 15,
+          "reset_frame": 0,
+          "previous_feedback_frame": 14,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 15,
+            "target_frame": 15,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "06c5264db0f1be1f1289293d3b017644d6c359776905c576392b5a54a746276f",
+            "steps": 1,
+            "history_refs": [
+              14
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              15
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "6574592c2b015847bb8098c59a0ad842b598e5dcc7269731411b701366f07cc0"
+        },
+        {
+          "frame": 16,
+          "reset_frame": 0,
+          "previous_feedback_frame": 15,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 16,
+            "target_frame": 16,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "b895b77aaf1940109aaa7cf7985075b8bcca43ee1de405a9d3f780ca72d19903",
+            "steps": 1,
+            "history_refs": [
+              15
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              16
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "4646c0309952954bd3c97ace4fce62eaa26561a0bf2e756d6088c42caf76162d"
+        },
+        {
+          "frame": 17,
+          "reset_frame": 0,
+          "previous_feedback_frame": 16,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 17,
+            "target_frame": 17,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "b2c15cca267d4b21028f819ecd60b447965492f90672265531dc773177409db5",
+            "steps": 1,
+            "history_refs": [
+              16
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              17
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "b24e9ef42b9abc379f3a196fb2aa0aa4e9e360a39034c15c25ed7cfc301e3022"
+        },
+        {
+          "frame": 18,
+          "reset_frame": 0,
+          "previous_feedback_frame": 17,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 18,
+            "target_frame": 18,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "a6056d0aa29755148a002e6636ae977f901ec2938461ceb3150a7fc2fb874185",
+            "steps": 1,
+            "history_refs": [
+              17
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              18
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "26e2a8becff89124b0d5e67500766c90208d1746cf68e40c66451da02199b667"
+        },
+        {
+          "frame": 19,
+          "reset_frame": 0,
+          "previous_feedback_frame": 18,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 19,
+            "target_frame": 19,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "60b9dd99517e968938527acf0742826dd3370a017d3582e89509c2b0929e183c",
+            "steps": 1,
+            "history_refs": [
+              18
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              19
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "50021dc3ceeee51aa8ce6885200f1736c74fad5b43d2b5954d2c2905439c6a21"
+        },
+        {
+          "frame": 20,
+          "reset_frame": 0,
+          "previous_feedback_frame": 19,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 20,
+            "target_frame": 20,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "61efb760b2632aefe92cad6e342e1abf5e72e950fab88d4b66ffb327da03e091",
+            "steps": 1,
+            "history_refs": [
+              19
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              20
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "cdc7a2c30b52c4635778183b56294982acfdd757a58d8b6fe3765b99b4e3f329"
+        },
+        {
+          "frame": 21,
+          "reset_frame": 0,
+          "previous_feedback_frame": 20,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 21,
+            "target_frame": 21,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "61743a7478f21ec9f2ce2e8869fc0cb3a33794404832dcb6cf1279b3a74bebc9",
+            "steps": 1,
+            "history_refs": [
+              20
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              21
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "b7b48a8a596cb797d07ac0b509cd35e3b98015050e4e48107c56e89335ca4eea"
+        },
+        {
+          "frame": 22,
+          "reset_frame": 0,
+          "previous_feedback_frame": 21,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 22,
+            "target_frame": 22,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "5c798706116cf0a5c9d960dce7020d62953e56a0729c4df8e362b9e124950189",
+            "steps": 1,
+            "history_refs": [
+              21
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              22
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "376a1085150e017f5864983f7293be4d87c2e198cd2b6958b808499284c15009"
+        },
+        {
+          "frame": 23,
+          "reset_frame": 0,
+          "previous_feedback_frame": 22,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 23,
+            "target_frame": 23,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "44b75ef1715a09e4a0f6fa952bc7c52f7cd6b6b63c02a7c931fa2c7130033b63",
+            "steps": 1,
+            "history_refs": [
+              22
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 147456,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              23
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "0d5cb167886cb1c591ec73c8ae3982a55c105ce554f984d41affbeed86043074"
+        }
+      ],
+      "feedback_contract": {
+        "schema": "framerudiments.native-feedback.v1",
+        "identity": "6ae1e2ee138b5a5e5c027b0bd4254898fe5c49a23709ba61a500a9ccb0f50b7d",
+        "configuration_sha256": "5c7df9b25a4a0993e95e4173cfe2ce4167e3f6f23dac9061ef756ecc158f3de5",
+        "implementation_sha256": "4682922a0308c0c89af1b5f2e60641da745e39cc91dd098fc533bbba73deb8ed",
+        "runtime": {
+          "python": "3.12.14",
+          "implementation": "CPython",
+          "system": "Linux",
+          "machine": "x86_64",
+          "python_build": [
+            "main",
+            "Aug 25 2026 14:00:49"
+          ]
+        },
+        "config": {
+          "delay_frames": 1,
+          "mix": 0.72,
+          "reset": "programme",
+          "checkpoint_interval": 4,
+          "max_checkpoints": 2,
+          "max_replay_frames": 64,
+          "max_state_bytes": 8388608
+        },
+        "modulation_targets": [],
+        "initial_history": "current_native_frame_when_delayed_state_is_missing",
+        "blend": "linear_light_rgb8_current_and_delayed_feedback_output",
+        "stage": "after_native_subframes_and_shutter_before_final_quality_and_external_effects",
+        "source_clock": {
+          "fps": 12,
+          "frame_count": 24,
+          "sample_rate": 48000,
+          "start_sample": 12000,
+          "end_sample": 36000,
+          "repeats": 4
+        },
+        "repeat_span_frames": {
+          "numerator": 6,
+          "denominator": 1
+        },
+        "backend": {
+          "requested": "cpu",
+          "actual": "cpu"
+        },
+        "scope": {
+          "native_compositor": "pre_external_effects",
+          "checkpointed_state": "owned_rgb8_feedback_history",
+          "sequential_external_engine_checkpoints": false,
+          "gpu_state_serialization": false,
+          "trusted_checkpoint_payload_with_separately_pinned_digest": true,
+          "state_budget_excludes_native_sampling_rasters_renderer_caches_and_callback_scratch": true
+        }
+      },
+      "bounded_checkpoint_storage": {
+        "checkpoint_frames": [
+          23,
+          24
+        ],
+        "checkpoint_count": 2,
+        "checkpoint_evictions": 22,
+        "retained_state_bytes": 147456,
+        "working_reserve_bytes": 147456,
+        "limits": {
+          "checkpoint_interval": 4,
+          "max_checkpoints": 2,
+          "max_request_frames": 64,
+          "max_state_bytes": 8388608
+        }
+      },
+      "old_seek_reconstruction": {
+        "frame": 3,
+        "plan": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 0,
+          "target_frame": 3,
+          "reset_frame": 0,
+          "origin": "reset",
+          "checkpoint_sha256": null,
+          "steps": 4,
+          "history_refs": [
+            2
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 147456,
+          "working_bytes": 147456,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state"
+        },
+        "execution": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 0,
+          "target_frame": 3,
+          "reset_frame": 0,
+          "origin": "reset",
+          "checkpoint_sha256": null,
+          "steps": 4,
+          "history_refs": [
+            2
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 147456,
+          "working_bytes": 147456,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state",
+          "evaluated_frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "executed_steps": 4,
+          "peak_owned_payload_bytes": 294912,
+          "completed": true
+        },
+        "actual_native_sample_callbacks": 4,
+        "native_comparisons": 1,
+        "max_rgb8_error": 0
+      },
+      "original_inputs_unchanged": true,
+      "checkpoint_restore": {
+        "checkpoint": {
+          "schema": "framerudiments.delayed-feedback.v1.checkpoint",
+          "identity": "6ae1e2ee138b5a5e5c027b0bd4254898fe5c49a23709ba61a500a9ccb0f50b7d",
+          "configuration_sha256": "6020248c9227f043f9260e5d8525c827fe124f51cd358b7425961ede73a54450",
+          "next_frame": 12,
+          "reset_frame": 0,
+          "result_bytes": 73728,
+          "history_frames": [
+            11
+          ],
+          "payload_sha256": "1ad7ae2ebf9cffc0fcb4063686826a64be595ba4335c098e86df444de7f29b50",
+          "sha256": "05166b656ef620367ac520071e04edba0027971d04774296c9d66c15ff6c8846",
+          "payload_bytes": 73728,
+          "history": [
+            {
+              "frame": 11,
+              "sha256": "eba7ac304df91dccd7651e63b6b5d133df3a164ac761bea8f781b5fb408b7a16"
+            }
+          ],
+          "scope": "trusted_immutable_state_with_separately_pinned_checksum"
+        },
+        "checkpoint_sha256": "05166b656ef620367ac520071e04edba0027971d04774296c9d66c15ff6c8846",
+        "seed_frame": 11,
+        "target_frame": 15,
+        "plan": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 12,
+          "target_frame": 15,
+          "reset_frame": 0,
+          "origin": "checkpoint",
+          "checkpoint_sha256": "05166b656ef620367ac520071e04edba0027971d04774296c9d66c15ff6c8846",
+          "steps": 4,
+          "history_refs": [
+            14
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 73728,
+          "working_bytes": 147456,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state"
+        },
+        "complete_delay_ring_frames": [
+          11
+        ],
+        "admission_native_callbacks": 0,
+        "restored_native_sample_callbacks": 4,
+        "cold_native_sample_callbacks": 16,
+        "restored_execution": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 12,
+          "target_frame": 15,
+          "reset_frame": 0,
+          "origin": "checkpoint",
+          "checkpoint_sha256": "05166b656ef620367ac520071e04edba0027971d04774296c9d66c15ff6c8846",
+          "steps": 4,
+          "history_refs": [
+            14
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 73728,
+          "working_bytes": 147456,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state",
+          "evaluated_frames": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "executed_steps": 4,
+          "peak_owned_payload_bytes": 221184,
+          "completed": true
+        },
+        "cold_execution": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 0,
+          "target_frame": 15,
+          "reset_frame": 0,
+          "origin": "reset",
+          "checkpoint_sha256": null,
+          "steps": 16,
+          "history_refs": [
+            14
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 0,
+          "working_bytes": 147456,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state",
+          "evaluated_frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15
+          ],
+          "executed_steps": 16,
+          "peak_owned_payload_bytes": 294912,
+          "completed": true
+        },
+        "actual_native_work_reduced": true,
+        "checkpoint_unchanged": true,
+        "returned_image_does_not_mutate_checkpoint": true,
+        "native_comparisons": 3,
+        "max_rgb8_error": 0,
+        "checkpoint_transport": "immutable_in_memory_state_with_explicit_expected_sha256",
+        "metadata_json_is_restorable_state": false
+      },
+      "quality_switch": {
+        "frames": [
+          14,
+          15,
+          16
+        ],
+        "apply_quality": [
+          false,
+          true,
+          false
+        ],
+        "native_comparisons": 3,
+        "max_rgb8_error": 0,
+        "history_precedes_final_quality": true
+      },
+      "inspection": {
+        "command": "inspect-temporal",
+        "returncode": 0,
+        "requested_frames": [
+          0,
+          5,
+          6,
+          23,
+          0
+        ],
+        "source_sha256": "e010282080d4752648a4409f370787b21459bf96a3910cd3e58db51165cf6465",
+        "native_schedule_documents_match": true,
+        "feedback_plan_documents_match": true,
+        "pixels_rendered": false,
+        "feedback_contract": {
+          "schema": "framerudiments.native-feedback.v1",
+          "identity": "6ae1e2ee138b5a5e5c027b0bd4254898fe5c49a23709ba61a500a9ccb0f50b7d",
+          "configuration_sha256": "5c7df9b25a4a0993e95e4173cfe2ce4167e3f6f23dac9061ef756ecc158f3de5",
+          "implementation_sha256": "4682922a0308c0c89af1b5f2e60641da745e39cc91dd098fc533bbba73deb8ed",
+          "runtime": {
+            "python": "3.12.14",
+            "implementation": "CPython",
+            "system": "Linux",
+            "machine": "x86_64",
+            "python_build": [
+              "main",
+              "Aug 25 2026 14:00:49"
+            ]
+          },
+          "config": {
+            "delay_frames": 1,
+            "mix": 0.72,
+            "reset": "programme",
+            "checkpoint_interval": 4,
+            "max_checkpoints": 2,
+            "max_replay_frames": 64,
+            "max_state_bytes": 8388608
+          },
+          "modulation_targets": [],
+          "initial_history": "current_native_frame_when_delayed_state_is_missing",
+          "blend": "linear_light_rgb8_current_and_delayed_feedback_output",
+          "stage": "after_native_subframes_and_shutter_before_final_quality_and_external_effects",
+          "source_clock": {
+            "fps": 12,
+            "frame_count": 24,
+            "sample_rate": 48000,
+            "start_sample": 12000,
+            "end_sample": 36000,
+            "repeats": 4
+          },
+          "repeat_span_frames": {
+            "numerator": 6,
+            "denominator": 1
+          },
+          "backend": {
+            "requested": "cpu",
+            "actual": "cpu"
+          },
+          "scope": {
+            "native_compositor": "pre_external_effects",
+            "checkpointed_state": "owned_rgb8_feedback_history",
+            "sequential_external_engine_checkpoints": false,
+            "gpu_state_serialization": false,
+            "trusted_checkpoint_payload_with_separately_pinned_digest": true,
+            "state_budget_excludes_native_sampling_rasters_renderer_caches_and_callback_scratch": true
+          }
+        }
+      },
+      "cli": {
+        "commands": [
+          {
+            "command": "plan",
+            "returncode": 0,
+            "seconds": 0.278,
+            "frames": 24,
+            "state": "prepared; perceptual review pending"
+          },
+          {
+            "command": "preflight",
+            "returncode": 0,
+            "seconds": 0.871,
+            "frames": 24,
+            "state": "full preflight passed; no encoded video"
+          },
+          {
+            "command": "render",
+            "returncode": 0,
+            "seconds": 1.389,
+            "frames": 24,
+            "state": "technical-QA passed; creative and attended listening review pending"
+          }
+        ],
+        "full_preflight": {
+          "mode": "full",
+          "frames_rendered": 24,
+          "total_frames": 24,
+          "complete": true,
+          "sequential": true,
+          "note": "All project frames were composed."
+        },
+        "independent_encode_verification": {
+          "full_decode": "passed",
+          "decoded_timestamps": "CFR from zero; all frames checked",
+          "audio_duration_error_seconds": 0.0,
+          "mp4_atoms": [
+            "ftyp",
+            "moov",
+            "free",
+            "mdat"
+          ],
+          "listening_approved": false,
+          "platform_safe_zone_verified": false
+        },
+        "plan_and_composition_feedback_contract_match": true,
+        "reference": "independent delayed recurrence over native input frames, using the existing native encoder command",
+        "encoded_frames_per_video": 24,
+        "encoded_videos": 2,
+        "decoded_comparisons": 24,
+        "max_rgb8_error": 0,
+        "source_start_sample": 12000,
+        "source_end_sample_exclusive": 36000,
+        "sample_rate": 48000,
+        "repeats": 4,
+        "video_sha256": "f94947c3541ea0a2c708ffbfae359fb854fa16fea85ff2e73740d2aaeecb29df",
+        "decoded_reference_sha256": [
+          "a5e35b849471817ce079aca6e2d94f8716b10e58879dffe080bd86c25114f544",
+          "33fa1d001bbcb5d26d96448e792caec6e9459b83e39d26a5fa1590cd097eb47f",
+          "6c7cf91a7c439e8e2df90214becace0869040aef55c24a9f2fcc7306adb4348e",
+          "18ffeee5f1e83d175f2319140d8e07461800ed9ef0c7be050334f99620769e45",
+          "48f814433fb479e0944d0a3f050b82507f94ed538437c9a05e399e1bafc4f6ed",
+          "74fbef520fca202d4104658f2aeb97bb2a566cb2d72b01e83c90cea5a9b682b9",
+          "0243cbaf29bfde965430c69845c3b0b52d8f90c170b45f6e0789fbca5104e5be",
+          "8159844e40f52a5a38d65e810dc9d3cd72b93492628f2468f21cf9e669b0ded8",
+          "7f7298c476be5d642d47245f703d0c8ae09c7e1ea5176d0013d660eb3bba6ecc",
+          "f94a936db7013bff9ec3db60a96603c733979f76394a9b27cc75f69795267032",
+          "4d9a2e1bf9dd94251a3696a2349b71efb7d1f7ea613c7fa6ffc18540dcd632eb",
+          "56a678b89daf88c87be81e83e9b54367bde6c7eb2260682cc4852b3b706f2be3",
+          "cab82aa8c533ae29ef0b8bacd25456c8071aaae5f7969d4b94c04750758a9674",
+          "b4aa5d7083f51117c6a9a7e4b1d22f13772cdf579ebd010f79cc6cd523459927",
+          "6124d32c4b66b482fc4bb37463af76fec3b643a53aa4d976bfa4ede4dbb98c28",
+          "7147ff3982a4cbec253c1f8f9d15a746401d78966417fe0fd8720271581dadff",
+          "47622f5defa9fced8c1d6a418d41f17d3616b47abd76f125536a16cd9f131d9b",
+          "0e4461484e173a4f95fb2446dd662b0c6c4cd05c32fa316a157a18778f2afc0b",
+          "dfab2dfae045802e05ab1a0d1485388870d411467b1f002fcad17bc0cc4137dc",
+          "bb19912752a4b6fa2fa8851efeccd895257287da7fbeafc237b7ba75366a1ff5",
+          "b3e804deac55387a95b4052f81ca8f7ff895cbd653863d23437eb1fc537310b2",
+          "b69f6de8afa9bc62547f5d4ab8a43892b7caee6c2ae38fc827324ebe92a77f99",
+          "d5791eb7ef47a5e4357a0b5ba47131b9ec59cd2a9767b3388636eb0c2af2951e",
+          "c6d504d713bd55dbd7d512ef88ab854ecb56880294d3fcd48e25c20f52b45924"
+        ],
+        "perceptual_approval": false
+      }
+    },
+    {
+      "name": "repeat_delay3",
+      "frame_count": 24,
+      "feedback": {
+        "checkpoint_interval": 4,
+        "max_checkpoints": 2,
+        "max_replay_frames": 64,
+        "max_state_bytes": 8388608,
+        "delay_frames": 3,
+        "mix": 0.67,
+        "reset": "repeat"
+      },
+      "quality_samples": 1,
+      "repeat_span_frames": [
+        6,
+        1
+      ],
+      "independent_native_comparisons": 24,
+      "nonsequential_native_comparisons": 28,
+      "nonsequential_order": [
+        10,
+        4,
+        23,
+        1,
+        16,
+        2,
+        17,
+        12,
+        22,
+        20,
+        6,
+        0,
+        7,
+        8,
+        3,
+        11,
+        5,
+        13,
+        14,
+        9,
+        19,
+        18,
+        21,
+        15,
+        23,
+        0,
+        12,
+        23
+      ],
+      "max_rgb8_error": 0,
+      "independent_rational_clock_max_abs_error": 4.440892098500626e-16,
+      "independent_source_clock_max_abs_error": 4.440892098500626e-16,
+      "checkpoints": [
+        {
+          "frame": 0,
+          "reset_frame": 0,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 0,
+            "target_frame": 0,
+            "reset_frame": 0,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 0,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              0
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 73728,
+            "completed": true
+          },
+          "pixel_sha256": "3149a139ebd9aeaf9a7b0f9163298cc7f4f946584e7248073506b8a83fe5f41b"
+        },
+        {
+          "frame": 1,
+          "reset_frame": 0,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 1,
+            "target_frame": 1,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "4b006a170e1809977203536bb0bf7f03aff8fd8d487900d3cdfca78a6eb1f964",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 73728,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              1
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 147456,
+            "completed": true
+          },
+          "pixel_sha256": "8e632e3cfaa9fb547c79c7441dc76f41397afbe253d19489df89d230e3da533e"
+        },
+        {
+          "frame": 2,
+          "reset_frame": 0,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 2,
+            "target_frame": 2,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "16f9db310ebb44cfbea6a088ec4f864ff4fb2aaa54a884cd90cc32671fe97134",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              2
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "48ab8eea2266614836b755534c2a2c00be74a4e6986a7fe7ebc23dae8dff12b1"
+        },
+        {
+          "frame": 3,
+          "reset_frame": 0,
+          "previous_feedback_frame": 0,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 3,
+            "target_frame": 3,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "895cbd5486303e77d5451acf8133d012054e77acbc1180f1ab8e5a59d58592f5",
+            "steps": 1,
+            "history_refs": [
+              0
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              3
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "4dd9972042c90b8d4284a727b54b8d7ef6b7e4be4478b6f5135125d0406ad19f"
+        },
+        {
+          "frame": 4,
+          "reset_frame": 0,
+          "previous_feedback_frame": 1,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 4,
+            "target_frame": 4,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "784ba4bc91c20134d2d2e5bbb2cea7e5916a954644a60c8ccb4941e80ab5067c",
+            "steps": 1,
+            "history_refs": [
+              1
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              4
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "ccdd3490185327350db83b0cca5920db2b536eb3e86f1d831784c0d4a8a8982d"
+        },
+        {
+          "frame": 5,
+          "reset_frame": 0,
+          "previous_feedback_frame": 2,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 5,
+            "target_frame": 5,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "eb277f0fbcb7d3f483e72461bdc50dc616417fdb8e5f75588445e65aedcd9d10",
+            "steps": 1,
+            "history_refs": [
+              2
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              5
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "916b140e57a0751e6f24f5dec260450dc6b7990763ac689935a797438c7d3b55"
+        },
+        {
+          "frame": 6,
+          "reset_frame": 6,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 6,
+            "target_frame": 6,
+            "reset_frame": 6,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              6
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "0df900490f1c542cef489c72771f225f636d46c77174677ccbe29d5e6dbb3f82"
+        },
+        {
+          "frame": 7,
+          "reset_frame": 6,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 7,
+            "target_frame": 7,
+            "reset_frame": 6,
+            "origin": "live",
+            "checkpoint_sha256": "b31e2f8c7e9c96094a2f39a17b8df7830cd5c2d2cadbe939a5b83ef244b3e900",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              7
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "a7c5c2d3d63ce34a32df13f42d20a88374b7bb04f6cfa80a1750ec9b5554bf35"
+        },
+        {
+          "frame": 8,
+          "reset_frame": 6,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 8,
+            "target_frame": 8,
+            "reset_frame": 6,
+            "origin": "live",
+            "checkpoint_sha256": "f0b722552fc3c1461528d71cfd3a3f893325adc5fa6b2c4bbb1fb5421eb8b096",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              8
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "713088a8996577492fcdf34e65471c7c60c1b72944595eac50c1ee1e40668e9e"
+        },
+        {
+          "frame": 9,
+          "reset_frame": 6,
+          "previous_feedback_frame": 6,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 9,
+            "target_frame": 9,
+            "reset_frame": 6,
+            "origin": "live",
+            "checkpoint_sha256": "d84d75b2e846c7d155e5b2b4a8a0df6122ef81cdc47838598b60a8e590241cfb",
+            "steps": 1,
+            "history_refs": [
+              6
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              9
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "aa6f0544bf7a4ccdb028886ad9c6ddaa3c38090c7f2e7dc7f3a4f8a12b095ff9"
+        },
+        {
+          "frame": 10,
+          "reset_frame": 6,
+          "previous_feedback_frame": 7,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 10,
+            "target_frame": 10,
+            "reset_frame": 6,
+            "origin": "live",
+            "checkpoint_sha256": "1d9dbb362f110dab27c036d8d58def1c085c9bca0c992c7f1f145c8d96a1dcee",
+            "steps": 1,
+            "history_refs": [
+              7
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              10
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "55eec66cd2b8f7289e46a36090ce2b14f926b1be83861abaa51063504d6f68c4"
+        },
+        {
+          "frame": 11,
+          "reset_frame": 6,
+          "previous_feedback_frame": 8,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 11,
+            "target_frame": 11,
+            "reset_frame": 6,
+            "origin": "live",
+            "checkpoint_sha256": "7bad24137ef902fe5bf8d9348f11018c811bcc57075e4f1be5172331029f8de0",
+            "steps": 1,
+            "history_refs": [
+              8
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              11
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "b50c673791c506cc269a097030fcdfee45c2250de5d9663cc0a67bdc5642009e"
+        },
+        {
+          "frame": 12,
+          "reset_frame": 12,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 12,
+            "target_frame": 12,
+            "reset_frame": 12,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              12
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "763afb6dac6000fff2f742b084f91485fbef9c9f9ddef2ee0fa8f55bc7bdbf02"
+        },
+        {
+          "frame": 13,
+          "reset_frame": 12,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 13,
+            "target_frame": 13,
+            "reset_frame": 12,
+            "origin": "live",
+            "checkpoint_sha256": "32d1a57864fed5b494a8f3df64f435ba421066eba23a52130f724c8a6a35f6dc",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              13
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "c80ca698636d3e444b35d2d728bf1fb83cb4e8db2c00d84c4085ffb2115d3631"
+        },
+        {
+          "frame": 14,
+          "reset_frame": 12,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 14,
+            "target_frame": 14,
+            "reset_frame": 12,
+            "origin": "live",
+            "checkpoint_sha256": "971a15f5b239894d447b4ad7d80bd0747fe4dff4910de274ed2f97c9fa6d10d2",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              14
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "088193e8c68f67ce79442bdadfd9779d3595b58f9e6bd7567cedf87ce92482d3"
+        },
+        {
+          "frame": 15,
+          "reset_frame": 12,
+          "previous_feedback_frame": 12,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 15,
+            "target_frame": 15,
+            "reset_frame": 12,
+            "origin": "live",
+            "checkpoint_sha256": "24fa141fd98b46c078b3f0a5df4d8c5abc32beec5ab0f2fb5b19c84f33726ad8",
+            "steps": 1,
+            "history_refs": [
+              12
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              15
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "e3183ca3243c81deb384d72cc8ad828ceb952b422abb919351e862472b7a0983"
+        },
+        {
+          "frame": 16,
+          "reset_frame": 12,
+          "previous_feedback_frame": 13,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 16,
+            "target_frame": 16,
+            "reset_frame": 12,
+            "origin": "live",
+            "checkpoint_sha256": "34a35938614cac9fb588b2eff91637332f08cd0e753bfb03339c6a5725335895",
+            "steps": 1,
+            "history_refs": [
+              13
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              16
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "fe65e8cf0e336bb7c9af70c9ae8db128980f3bef45f46121a08cad0ccc4a3474"
+        },
+        {
+          "frame": 17,
+          "reset_frame": 12,
+          "previous_feedback_frame": 14,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 17,
+            "target_frame": 17,
+            "reset_frame": 12,
+            "origin": "live",
+            "checkpoint_sha256": "a5264a34abdba1d3b60cc02581c7e14894f5c290b07836cc12557f437568273e",
+            "steps": 1,
+            "history_refs": [
+              14
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              17
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "ea457fc17f09d4c049aa39c1ebfa664fad2b7a95f1099ee17e634765322dba10"
+        },
+        {
+          "frame": 18,
+          "reset_frame": 18,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 18,
+            "target_frame": 18,
+            "reset_frame": 18,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              18
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "ec871f60c7bf1ee7dacee88273473ce574f706eea911d66e42f3e3161c136ad5"
+        },
+        {
+          "frame": 19,
+          "reset_frame": 18,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 19,
+            "target_frame": 19,
+            "reset_frame": 18,
+            "origin": "live",
+            "checkpoint_sha256": "02c871e06e3d00457427ea1a836ca6c44b2391e5cf144858ee8e7f372db201e3",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              19
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "214e0702c892838835a10b42fdd70c71324df1f457509326a5367ba7e2d2a51f"
+        },
+        {
+          "frame": 20,
+          "reset_frame": 18,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 20,
+            "target_frame": 20,
+            "reset_frame": 18,
+            "origin": "live",
+            "checkpoint_sha256": "4619ef2f5ebb3fbe3856683ec1921607d08cee32c67b28498c244069f5790f4a",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              20
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "5ed10500cb6cb2a65606d99a5a057c214b1aa6f2baf8709068b22b9fbd26c8d3"
+        },
+        {
+          "frame": 21,
+          "reset_frame": 18,
+          "previous_feedback_frame": 18,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 21,
+            "target_frame": 21,
+            "reset_frame": 18,
+            "origin": "live",
+            "checkpoint_sha256": "fef2239e79d1bb86bc6050eff2add1025c7068567aed2d7168ba1ce411759415",
+            "steps": 1,
+            "history_refs": [
+              18
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              21
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "6dc70968a9dc7e2f175f2296207cd0ca92214a910802067f8b2584365018f23f"
+        },
+        {
+          "frame": 22,
+          "reset_frame": 18,
+          "previous_feedback_frame": 19,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 22,
+            "target_frame": 22,
+            "reset_frame": 18,
+            "origin": "live",
+            "checkpoint_sha256": "57ca2229e6a20b48b6c51300e93788c9e1f79670b01593bdd68490772444be9a",
+            "steps": 1,
+            "history_refs": [
+              19
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              22
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "84b8f36b71c96a7648492717757d7d9fafadb706aabb93f1db112cb61515e008"
+        },
+        {
+          "frame": 23,
+          "reset_frame": 18,
+          "previous_feedback_frame": 20,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 23,
+            "target_frame": 23,
+            "reset_frame": 18,
+            "origin": "live",
+            "checkpoint_sha256": "3bacbd1e9157a860ad10a8c0472fa2bd9c94905498e9bf39f64e9527858d8fb4",
+            "steps": 1,
+            "history_refs": [
+              20
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 294912,
+            "working_bytes": 294912,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              23
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 368640,
+            "completed": true
+          },
+          "pixel_sha256": "e3d067fc59eb4b4c22f921a5bdc73fd032b3e7f866526a3c888894a5359646c4"
+        }
+      ],
+      "feedback_contract": {
+        "schema": "framerudiments.native-feedback.v1",
+        "identity": "6720fd1913289d16d7604b2afca342055216e55ed44bf66493a48a586898c9f8",
+        "configuration_sha256": "b4f095c4ba781a27a18bdc1ae77481858c69c51412b510542f4d878bc9ad31c6",
+        "implementation_sha256": "4682922a0308c0c89af1b5f2e60641da745e39cc91dd098fc533bbba73deb8ed",
+        "runtime": {
+          "python": "3.12.14",
+          "implementation": "CPython",
+          "system": "Linux",
+          "machine": "x86_64",
+          "python_build": [
+            "main",
+            "Aug 25 2026 14:00:49"
+          ]
+        },
+        "config": {
+          "delay_frames": 3,
+          "mix": 0.67,
+          "reset": "repeat",
+          "checkpoint_interval": 4,
+          "max_checkpoints": 2,
+          "max_replay_frames": 64,
+          "max_state_bytes": 8388608
+        },
+        "modulation_targets": [],
+        "initial_history": "current_native_frame_when_delayed_state_is_missing",
+        "blend": "linear_light_rgb8_current_and_delayed_feedback_output",
+        "stage": "after_native_subframes_and_shutter_before_final_quality_and_external_effects",
+        "source_clock": {
+          "fps": 12,
+          "frame_count": 24,
+          "sample_rate": 48000,
+          "start_sample": 12000,
+          "end_sample": 36000,
+          "repeats": 4
+        },
+        "repeat_span_frames": {
+          "numerator": 6,
+          "denominator": 1
+        },
+        "backend": {
+          "requested": "cpu",
+          "actual": "cpu"
+        },
+        "scope": {
+          "native_compositor": "pre_external_effects",
+          "checkpointed_state": "owned_rgb8_feedback_history",
+          "sequential_external_engine_checkpoints": false,
+          "gpu_state_serialization": false,
+          "trusted_checkpoint_payload_with_separately_pinned_digest": true,
+          "state_budget_excludes_native_sampling_rasters_renderer_caches_and_callback_scratch": true
+        }
+      },
+      "bounded_checkpoint_storage": {
+        "checkpoint_frames": [
+          23,
+          24
+        ],
+        "checkpoint_count": 2,
+        "checkpoint_evictions": 22,
+        "retained_state_bytes": 294912,
+        "working_reserve_bytes": 294912,
+        "limits": {
+          "checkpoint_interval": 4,
+          "max_checkpoints": 2,
+          "max_request_frames": 64,
+          "max_state_bytes": 8388608
+        }
+      },
+      "old_seek_reconstruction": {
+        "frame": 3,
+        "plan": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 0,
+          "target_frame": 3,
+          "reset_frame": 0,
+          "origin": "reset",
+          "checkpoint_sha256": null,
+          "steps": 4,
+          "history_refs": [
+            0
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 294912,
+          "working_bytes": 294912,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state"
+        },
+        "execution": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 0,
+          "target_frame": 3,
+          "reset_frame": 0,
+          "origin": "reset",
+          "checkpoint_sha256": null,
+          "steps": 4,
+          "history_refs": [
+            0
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 294912,
+          "working_bytes": 294912,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state",
+          "evaluated_frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "executed_steps": 4,
+          "peak_owned_payload_bytes": 589824,
+          "completed": true
+        },
+        "actual_native_sample_callbacks": 4,
+        "native_comparisons": 1,
+        "max_rgb8_error": 0
+      },
+      "original_inputs_unchanged": true,
+      "checkpoint_restore": {
+        "checkpoint": {
+          "schema": "framerudiments.delayed-feedback.v1.checkpoint",
+          "identity": "6720fd1913289d16d7604b2afca342055216e55ed44bf66493a48a586898c9f8",
+          "configuration_sha256": "f621024c7b8973d4a5cf56201d48e964a7f71129e273cfa2f4394a290a1bb0c3",
+          "next_frame": 10,
+          "reset_frame": 6,
+          "result_bytes": 73728,
+          "history_frames": [
+            7,
+            8,
+            9
+          ],
+          "payload_sha256": "0a4c6d4d83e61b116783e06d1923ff34e77a2a51ae92c06111945144de836e4a",
+          "sha256": "1d9dbb362f110dab27c036d8d58def1c085c9bca0c992c7f1f145c8d96a1dcee",
+          "payload_bytes": 221184,
+          "history": [
+            {
+              "frame": 7,
+              "sha256": "a7c5c2d3d63ce34a32df13f42d20a88374b7bb04f6cfa80a1750ec9b5554bf35"
+            },
+            {
+              "frame": 8,
+              "sha256": "713088a8996577492fcdf34e65471c7c60c1b72944595eac50c1ee1e40668e9e"
+            },
+            {
+              "frame": 9,
+              "sha256": "aa6f0544bf7a4ccdb028886ad9c6ddaa3c38090c7f2e7dc7f3a4f8a12b095ff9"
+            }
+          ],
+          "scope": "trusted_immutable_state_with_separately_pinned_checksum"
+        },
+        "checkpoint_sha256": "1d9dbb362f110dab27c036d8d58def1c085c9bca0c992c7f1f145c8d96a1dcee",
+        "seed_frame": 9,
+        "target_frame": 11,
+        "plan": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 10,
+          "target_frame": 11,
+          "reset_frame": 6,
+          "origin": "checkpoint",
+          "checkpoint_sha256": "1d9dbb362f110dab27c036d8d58def1c085c9bca0c992c7f1f145c8d96a1dcee",
+          "steps": 2,
+          "history_refs": [
+            8
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 221184,
+          "working_bytes": 294912,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state"
+        },
+        "complete_delay_ring_frames": [
+          7,
+          8,
+          9
+        ],
+        "admission_native_callbacks": 0,
+        "restored_native_sample_callbacks": 2,
+        "cold_native_sample_callbacks": 6,
+        "restored_execution": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 10,
+          "target_frame": 11,
+          "reset_frame": 6,
+          "origin": "checkpoint",
+          "checkpoint_sha256": "1d9dbb362f110dab27c036d8d58def1c085c9bca0c992c7f1f145c8d96a1dcee",
+          "steps": 2,
+          "history_refs": [
+            8
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 221184,
+          "working_bytes": 294912,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state",
+          "evaluated_frames": [
+            10,
+            11
+          ],
+          "executed_steps": 2,
+          "peak_owned_payload_bytes": 368640,
+          "completed": true
+        },
+        "cold_execution": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 6,
+          "target_frame": 11,
+          "reset_frame": 6,
+          "origin": "reset",
+          "checkpoint_sha256": null,
+          "steps": 6,
+          "history_refs": [
+            8
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 0,
+          "working_bytes": 294912,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state",
+          "evaluated_frames": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "executed_steps": 6,
+          "peak_owned_payload_bytes": 368640,
+          "completed": true
+        },
+        "actual_native_work_reduced": true,
+        "checkpoint_unchanged": true,
+        "returned_image_does_not_mutate_checkpoint": true,
+        "native_comparisons": 3,
+        "max_rgb8_error": 0,
+        "checkpoint_transport": "immutable_in_memory_state_with_explicit_expected_sha256",
+        "metadata_json_is_restorable_state": false
+      },
+      "quality_switch": {
+        "frames": [
+          10,
+          11,
+          12
+        ],
+        "apply_quality": [
+          false,
+          true,
+          false
+        ],
+        "native_comparisons": 3,
+        "max_rgb8_error": 0,
+        "history_precedes_final_quality": true
+      },
+      "inspection": {
+        "command": "inspect-temporal",
+        "returncode": 0,
+        "requested_frames": [
+          5,
+          6,
+          9,
+          11,
+          5
+        ],
+        "source_sha256": "0e472a4136272c62695e48d51ccafaa457a7bfc97d3eee5ec9b451ae165bb692",
+        "native_schedule_documents_match": true,
+        "feedback_plan_documents_match": true,
+        "pixels_rendered": false,
+        "feedback_contract": {
+          "schema": "framerudiments.native-feedback.v1",
+          "identity": "6720fd1913289d16d7604b2afca342055216e55ed44bf66493a48a586898c9f8",
+          "configuration_sha256": "b4f095c4ba781a27a18bdc1ae77481858c69c51412b510542f4d878bc9ad31c6",
+          "implementation_sha256": "4682922a0308c0c89af1b5f2e60641da745e39cc91dd098fc533bbba73deb8ed",
+          "runtime": {
+            "python": "3.12.14",
+            "implementation": "CPython",
+            "system": "Linux",
+            "machine": "x86_64",
+            "python_build": [
+              "main",
+              "Aug 25 2026 14:00:49"
+            ]
+          },
+          "config": {
+            "delay_frames": 3,
+            "mix": 0.67,
+            "reset": "repeat",
+            "checkpoint_interval": 4,
+            "max_checkpoints": 2,
+            "max_replay_frames": 64,
+            "max_state_bytes": 8388608
+          },
+          "modulation_targets": [],
+          "initial_history": "current_native_frame_when_delayed_state_is_missing",
+          "blend": "linear_light_rgb8_current_and_delayed_feedback_output",
+          "stage": "after_native_subframes_and_shutter_before_final_quality_and_external_effects",
+          "source_clock": {
+            "fps": 12,
+            "frame_count": 24,
+            "sample_rate": 48000,
+            "start_sample": 12000,
+            "end_sample": 36000,
+            "repeats": 4
+          },
+          "repeat_span_frames": {
+            "numerator": 6,
+            "denominator": 1
+          },
+          "backend": {
+            "requested": "cpu",
+            "actual": "cpu"
+          },
+          "scope": {
+            "native_compositor": "pre_external_effects",
+            "checkpointed_state": "owned_rgb8_feedback_history",
+            "sequential_external_engine_checkpoints": false,
+            "gpu_state_serialization": false,
+            "trusted_checkpoint_payload_with_separately_pinned_digest": true,
+            "state_budget_excludes_native_sampling_rasters_renderer_caches_and_callback_scratch": true
+          }
+        }
+      },
+      "cli": {
+        "commands": [
+          {
+            "command": "plan",
+            "returncode": 0,
+            "seconds": 0.476,
+            "frames": 24,
+            "state": "prepared; perceptual review pending"
+          },
+          {
+            "command": "preflight",
+            "returncode": 0,
+            "seconds": 0.665,
+            "frames": 24,
+            "state": "full preflight passed; no encoded video"
+          },
+          {
+            "command": "render",
+            "returncode": 0,
+            "seconds": 1.201,
+            "frames": 24,
+            "state": "technical-QA passed; creative and attended listening review pending"
+          }
+        ],
+        "full_preflight": {
+          "mode": "full",
+          "frames_rendered": 24,
+          "total_frames": 24,
+          "complete": true,
+          "sequential": true,
+          "note": "All project frames were composed."
+        },
+        "independent_encode_verification": {
+          "full_decode": "passed",
+          "decoded_timestamps": "CFR from zero; all frames checked",
+          "audio_duration_error_seconds": 0.0,
+          "mp4_atoms": [
+            "ftyp",
+            "moov",
+            "free",
+            "mdat"
+          ],
+          "listening_approved": false,
+          "platform_safe_zone_verified": false
+        },
+        "plan_and_composition_feedback_contract_match": true,
+        "reference": "independent delayed recurrence over native input frames, using the existing native encoder command",
+        "encoded_frames_per_video": 24,
+        "encoded_videos": 2,
+        "decoded_comparisons": 24,
+        "max_rgb8_error": 0,
+        "source_start_sample": 12000,
+        "source_end_sample_exclusive": 36000,
+        "sample_rate": 48000,
+        "repeats": 4,
+        "video_sha256": "e11ead1436038904821734f5d7a0debb7bed367f5ad8bc49ecc70125ea0e2285",
+        "decoded_reference_sha256": [
+          "a5e35b849471817ce079aca6e2d94f8716b10e58879dffe080bd86c25114f544",
+          "c905af5644f283dfb7a01257435d0e446bfc72b8738be4ab75ccbd4e74a56a63",
+          "9a8b2f3b257e99ccd15092884bf4546382687e6d247f730261e63594a885f9ba",
+          "63fed1100c4628f7ee3e57023cee1b6f7fa4d2dedccf7f6ba4aefb9673981236",
+          "c4d104e4f9f8e4cf94deabf518b81b747a0229d79bbaa00f344193e323712b19",
+          "550b1b086481b7f4d2ed292af21918a090956077c2631a58bd2d869212130449",
+          "b390196b2f66160699b5ea51893d0a96fab1ade2dc1e758996af71d839215192",
+          "6c234a7ec8e10e7dea3e3af3a29f76471497c1b47db0aefa1218c57bc3301234",
+          "a47dbc592b807af60e2a5be62b7274435f842ae3145142243de57a8ed18234a8",
+          "038e1439c74d63adf8bb3e7956c3bd914690ffb42a1c7571633c66417408ce8a",
+          "a587afe587b10e2e37553c73b9195726b9256e8f8c2591f7630102e45038b579",
+          "2d4d50bb0cf01d147dff923820e30231a91ac86e01440b3bde176f6401fda464",
+          "ff38d36713f9ef1b53ffb44435a25e62d22776d962630d1a4a03b7f6df898bda",
+          "7381d04436ee0bf6395448ab3f6a4b16ec73e2ac6fc013854c6d0d095272dc51",
+          "c199fb01e0252fc89ae3ed4b09e7ce246f883905cee4f75aadadf83147e5d4b8",
+          "8d700c415029c3e53c157dbd4b1f48ba4f8b2583ad46e903160ab088c7d73323",
+          "2154f9fb3c0720379222db01b04159955cd12cc233b5d99005b9cf844b9403df",
+          "aefa3393087627216f30fb6fc63181a83cc0bb749fc3cc97552819f0b5e0736d",
+          "c733d53e18dd7649d8bee0a09c3f5473f0404b8cc4b1ba2ef06f33d01e489b6a",
+          "78e9db39b22a0a04530a606bc5958bdc7795287c5f40242ca1a6395a0fbf3184",
+          "ffdbb96734247426d114582365bb2618782d70b5d3c43d656c29b0f9cb621bf3",
+          "7d4dea382fd2061ca537db2d5e60a9bae7d43fcc8080d8f571f3f7a72e1d245c",
+          "7fc1ad3ecfa6d5f513f4b0a1f13cef97adbc95666deab4191df8946281f3434d",
+          "191d8c09194ced0e926c67381adda0df6d522f7dd356b79f2d19776385538274"
+        ],
+        "perceptual_approval": false
+      }
+    },
+    {
+      "name": "rational_subframes",
+      "frame_count": 25,
+      "feedback": {
+        "checkpoint_interval": 4,
+        "max_checkpoints": 2,
+        "max_replay_frames": 64,
+        "max_state_bytes": 8388608,
+        "delay_frames": 2,
+        "mix": 0.63,
+        "reset": "repeat"
+      },
+      "quality_samples": 4,
+      "repeat_span_frames": [
+        49,
+        10
+      ],
+      "independent_native_comparisons": 25,
+      "nonsequential_native_comparisons": 29,
+      "nonsequential_order": [
+        10,
+        12,
+        17,
+        4,
+        1,
+        16,
+        2,
+        23,
+        22,
+        3,
+        20,
+        6,
+        0,
+        24,
+        8,
+        7,
+        11,
+        5,
+        13,
+        14,
+        9,
+        19,
+        18,
+        21,
+        15,
+        24,
+        0,
+        12,
+        24
+      ],
+      "max_rgb8_error": 0,
+      "independent_rational_clock_max_abs_error": 4.440892098500626e-16,
+      "independent_source_clock_max_abs_error": 4.440892098500626e-16,
+      "checkpoints": [
+        {
+          "frame": 0,
+          "reset_frame": 0,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 0,
+            "target_frame": 0,
+            "reset_frame": 0,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 0,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              0
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 73728,
+            "completed": true
+          },
+          "pixel_sha256": "848e2d32321ca1a9c97c508367e7cddb8673cf19f7bde6abbbf10ba416ef2326"
+        },
+        {
+          "frame": 1,
+          "reset_frame": 0,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 1,
+            "target_frame": 1,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "a9c62240e9642eb10d065fd32a93c1ae03d2bf1378f856349e942006f3d5db45",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 73728,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              1
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 147456,
+            "completed": true
+          },
+          "pixel_sha256": "a0100162f6a09f7fd7bd67299ff181427ed8d2946297374f9cab20c3e6f5314b"
+        },
+        {
+          "frame": 2,
+          "reset_frame": 0,
+          "previous_feedback_frame": 0,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 2,
+            "target_frame": 2,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "f7bae279200adba6f26344a7c89f11fef934d558510c3511ee1b2ec6c1d6dc55",
+            "steps": 1,
+            "history_refs": [
+              0
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              2
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "c87e6c418133bace20f94ffc8df7723bd16897fd6c14d63c9d6be20ff4e35f8b"
+        },
+        {
+          "frame": 3,
+          "reset_frame": 0,
+          "previous_feedback_frame": 1,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 3,
+            "target_frame": 3,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "53f292330a5a02a858ace40b40e92e7505bd7a1f0dbb5843ce21a0abae3e720e",
+            "steps": 1,
+            "history_refs": [
+              1
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              3
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "d6959b144c7ffc660f2f4854f372386ff6d0b065ef215cc11bd306811b28e088"
+        },
+        {
+          "frame": 4,
+          "reset_frame": 0,
+          "previous_feedback_frame": 2,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 4,
+            "target_frame": 4,
+            "reset_frame": 0,
+            "origin": "live",
+            "checkpoint_sha256": "0ea392105f4b12fe1551ed0665b01fd3926db949a3ee6b6df7413f5de33b41f7",
+            "steps": 1,
+            "history_refs": [
+              2
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              4
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "02292e450e20dce2cf0cac7b4afcbd67785a0da014f1567aa72172cf86a0575a"
+        },
+        {
+          "frame": 5,
+          "reset_frame": 5,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 5,
+            "target_frame": 5,
+            "reset_frame": 5,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              5
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "947944f8b48229377c642030accf6b024a56668241930ee720dd9187342c8aa1"
+        },
+        {
+          "frame": 6,
+          "reset_frame": 5,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 6,
+            "target_frame": 6,
+            "reset_frame": 5,
+            "origin": "live",
+            "checkpoint_sha256": "163681b34ea067e15954952ab9336c3186b50ec175ecf5e973d2fa17df81a3e5",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              6
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "a950975da9e6035d9a8e31f438d5188eb52ceaa493b9663c949a73a193b81431"
+        },
+        {
+          "frame": 7,
+          "reset_frame": 5,
+          "previous_feedback_frame": 5,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 7,
+            "target_frame": 7,
+            "reset_frame": 5,
+            "origin": "live",
+            "checkpoint_sha256": "cbae10b32111959840dd1dd54f81367308ea0521ba4eeab4e68a68c717b0b60a",
+            "steps": 1,
+            "history_refs": [
+              5
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              7
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "c200d070db4168f3ddb6b0ba4187130f6e2888b5e788b8e2ff73b99b6dd893e5"
+        },
+        {
+          "frame": 8,
+          "reset_frame": 5,
+          "previous_feedback_frame": 6,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 8,
+            "target_frame": 8,
+            "reset_frame": 5,
+            "origin": "live",
+            "checkpoint_sha256": "070771d532eaea82afd62f5ce502fe09a3dc94ea9b9d313851c61d2993278435",
+            "steps": 1,
+            "history_refs": [
+              6
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              8
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "f802e159d9d08fc945116eddbcb549f5300f1c2f0cf653acd6fa77729ca81860"
+        },
+        {
+          "frame": 9,
+          "reset_frame": 5,
+          "previous_feedback_frame": 7,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 9,
+            "target_frame": 9,
+            "reset_frame": 5,
+            "origin": "live",
+            "checkpoint_sha256": "92cc7c05ef1429470582fb0898b498fb2a7a255213685b0eaa51ffed10364700",
+            "steps": 1,
+            "history_refs": [
+              7
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              9
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "2d2991510251e5da9e84504f84dafd6f3df1c9f5cb542b980d0587ae20c197eb"
+        },
+        {
+          "frame": 10,
+          "reset_frame": 10,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 10,
+            "target_frame": 10,
+            "reset_frame": 10,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              10
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "031eeb6b343dbcc83a87476f65f8a4a320f183f82605b2ce7f9ea90b8eca5dbb"
+        },
+        {
+          "frame": 11,
+          "reset_frame": 10,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 11,
+            "target_frame": 11,
+            "reset_frame": 10,
+            "origin": "live",
+            "checkpoint_sha256": "dc1a0dfc92a579a33cdc46f951cf08e87c50eeaeb47294b391fa585ef7cbffe4",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              11
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "9820a768032406c0bfe162d1aab2c7069f68806a6a27bb1f55f7ea2fb1b3dcfc"
+        },
+        {
+          "frame": 12,
+          "reset_frame": 10,
+          "previous_feedback_frame": 10,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 12,
+            "target_frame": 12,
+            "reset_frame": 10,
+            "origin": "live",
+            "checkpoint_sha256": "aa1ab21807c40b864c59ff8fe6c9cedf200451a1d86b2a702c96a2b9f90d3e02",
+            "steps": 1,
+            "history_refs": [
+              10
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              12
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "4a0d3e73ee28e0169ef6c994c3b4164985eb9ffaf4c2b95ba5e1c93de8b5be10"
+        },
+        {
+          "frame": 13,
+          "reset_frame": 10,
+          "previous_feedback_frame": 11,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 13,
+            "target_frame": 13,
+            "reset_frame": 10,
+            "origin": "live",
+            "checkpoint_sha256": "3e991f37ba3c81b352a875d4f1748921e20fdfb2e90e6b0b4cc0f1817e966033",
+            "steps": 1,
+            "history_refs": [
+              11
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              13
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "8bbd3fd34f3d8aeb4d6709e860c2da987384abe4737cca9f85081460326b0b8e"
+        },
+        {
+          "frame": 14,
+          "reset_frame": 10,
+          "previous_feedback_frame": 12,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 14,
+            "target_frame": 14,
+            "reset_frame": 10,
+            "origin": "live",
+            "checkpoint_sha256": "9407cf00953cbdd1b288387adfbc75a592eeb9619ce3a22f3f9bd011aac11ae5",
+            "steps": 1,
+            "history_refs": [
+              12
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              14
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "8333463ddcebd96e6e448a1ad6256eab6850e3a35f6113580f3ea79b05b39180"
+        },
+        {
+          "frame": 15,
+          "reset_frame": 15,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 15,
+            "target_frame": 15,
+            "reset_frame": 15,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              15
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "f093e1552ba33ebc574be2ba684403beeefe9fc9cbcd9afa1fdfc943864b8583"
+        },
+        {
+          "frame": 16,
+          "reset_frame": 15,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 16,
+            "target_frame": 16,
+            "reset_frame": 15,
+            "origin": "live",
+            "checkpoint_sha256": "cc1b14dec87916c67562fc8e4be04da829f9d10a3d94a1f049a2454af664ace4",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              16
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "be149d0e9119e54a79975fc0ae3161b2e8f6d7d809bc48b3a940ab18781dbaa4"
+        },
+        {
+          "frame": 17,
+          "reset_frame": 15,
+          "previous_feedback_frame": 15,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 17,
+            "target_frame": 17,
+            "reset_frame": 15,
+            "origin": "live",
+            "checkpoint_sha256": "fe9f37bfd27aa8f31243e89e3f9ad269c8d51e4efb2969ea344b82bfa7bb7863",
+            "steps": 1,
+            "history_refs": [
+              15
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              17
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "39afad244878d528ddb68916707e3e59cd8c11276074dbfaa9fc99aaa006d4b5"
+        },
+        {
+          "frame": 18,
+          "reset_frame": 15,
+          "previous_feedback_frame": 16,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 18,
+            "target_frame": 18,
+            "reset_frame": 15,
+            "origin": "live",
+            "checkpoint_sha256": "af8776fe63eb9bbda12a1fbaba07c206a924af9b5cd2de7678f1c3b6e5bfc9f6",
+            "steps": 1,
+            "history_refs": [
+              16
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              18
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "f96a31763543692e7db432cb310a025abfa0232cf0667082a967c030ea1f76a2"
+        },
+        {
+          "frame": 19,
+          "reset_frame": 15,
+          "previous_feedback_frame": 17,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 19,
+            "target_frame": 19,
+            "reset_frame": 15,
+            "origin": "live",
+            "checkpoint_sha256": "426a3215f5727f1cdf568a537a38c6b682cab102d9b3a30d53413dfb0a3baefa",
+            "steps": 1,
+            "history_refs": [
+              17
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              19
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "ed52e0d9d3b68284a0498d87c8f2d71f79e9fb01c69cc4cc133d5dea228c7977"
+        },
+        {
+          "frame": 20,
+          "reset_frame": 20,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 20,
+            "target_frame": 20,
+            "reset_frame": 20,
+            "origin": "reset",
+            "checkpoint_sha256": null,
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              20
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "479178a50be1ceba5b0af85b121d473ff9f397629692b0758d6185f6e3aa239f"
+        },
+        {
+          "frame": 21,
+          "reset_frame": 20,
+          "previous_feedback_frame": null,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 21,
+            "target_frame": 21,
+            "reset_frame": 20,
+            "origin": "live",
+            "checkpoint_sha256": "efc00d63cb0e41475d5f69264810f842c9bc7b2f88032daafd39850dbdb69644",
+            "steps": 1,
+            "history_refs": [
+              null
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              21
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "478d9cafe948e4cd168fcc27c031fb29f9ef115065055829da7e3f2f9b4f7738"
+        },
+        {
+          "frame": 22,
+          "reset_frame": 20,
+          "previous_feedback_frame": 20,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 22,
+            "target_frame": 22,
+            "reset_frame": 20,
+            "origin": "live",
+            "checkpoint_sha256": "e3e699031c7af6ccda74aa58c1d842d3d4a8588829f946f160228699f39a23f1",
+            "steps": 1,
+            "history_refs": [
+              20
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 147456,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              22
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 221184,
+            "completed": true
+          },
+          "pixel_sha256": "8c95fafea9ddb01e60983f00e3b52823665e50fede3f5d67676633dd6ee5e5ea"
+        },
+        {
+          "frame": 23,
+          "reset_frame": 20,
+          "previous_feedback_frame": 21,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 23,
+            "target_frame": 23,
+            "reset_frame": 20,
+            "origin": "live",
+            "checkpoint_sha256": "3d28f8329ba90aac690dcf7603f245e4ff39504a25cff2edf60162f5fa06392d",
+            "steps": 1,
+            "history_refs": [
+              21
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              23
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "02793c68852d55d0c943ab6b5744c53672c8f48013385ff0e19f8d23c3632bce"
+        },
+        {
+          "frame": 24,
+          "reset_frame": 20,
+          "previous_feedback_frame": 22,
+          "execution": {
+            "schema": "framerudiments.delayed-feedback.v1.plan",
+            "start_frame": 24,
+            "target_frame": 24,
+            "reset_frame": 20,
+            "origin": "live",
+            "checkpoint_sha256": "18bfd3f121d9b9a1a349d3134015c18ecb0147f06c6971ba1e363704ea3e3dd4",
+            "steps": 1,
+            "history_refs": [
+              22
+            ],
+            "history_rule": "frame minus each declared delay; missing before exact reset",
+            "retained_state_bytes": 221184,
+            "working_bytes": 221184,
+            "max_state_bytes": 8388608,
+            "max_request_frames": 64,
+            "scope": "native_immutable_delayed_results_not_external_engine_state",
+            "evaluated_frames": [
+              24
+            ],
+            "executed_steps": 1,
+            "peak_owned_payload_bytes": 294912,
+            "completed": true
+          },
+          "pixel_sha256": "aba07e038bb1d7c4745dae24b488dc481da40316760df94c356471e5278715f4"
+        }
+      ],
+      "feedback_contract": {
+        "schema": "framerudiments.native-feedback.v1",
+        "identity": "dad790cda54555bf4063dfed5e7d944455bdbcdda922a7d49920a2cccc7ff15d",
+        "configuration_sha256": "1ba07400106233a045e4561da456ab802fa6e99bf6ce26f0edcaaeaaa797fab9",
+        "implementation_sha256": "4682922a0308c0c89af1b5f2e60641da745e39cc91dd098fc533bbba73deb8ed",
+        "runtime": {
+          "python": "3.12.14",
+          "implementation": "CPython",
+          "system": "Linux",
+          "machine": "x86_64",
+          "python_build": [
+            "main",
+            "Aug 25 2026 14:00:49"
+          ]
+        },
+        "config": {
+          "delay_frames": 2,
+          "mix": 0.63,
+          "reset": "repeat",
+          "checkpoint_interval": 4,
+          "max_checkpoints": 2,
+          "max_replay_frames": 64,
+          "max_state_bytes": 8388608
+        },
+        "modulation_targets": [],
+        "initial_history": "current_native_frame_when_delayed_state_is_missing",
+        "blend": "linear_light_rgb8_current_and_delayed_feedback_output",
+        "stage": "after_native_subframes_and_shutter_before_final_quality_and_external_effects",
+        "source_clock": {
+          "fps": 12,
+          "frame_count": 25,
+          "sample_rate": 48000,
+          "start_sample": 12000,
+          "end_sample": 31600,
+          "repeats": 5
+        },
+        "repeat_span_frames": {
+          "numerator": 49,
+          "denominator": 10
+        },
+        "backend": {
+          "requested": "cpu",
+          "actual": "cpu"
+        },
+        "scope": {
+          "native_compositor": "pre_external_effects",
+          "checkpointed_state": "owned_rgb8_feedback_history",
+          "sequential_external_engine_checkpoints": false,
+          "gpu_state_serialization": false,
+          "trusted_checkpoint_payload_with_separately_pinned_digest": true,
+          "state_budget_excludes_native_sampling_rasters_renderer_caches_and_callback_scratch": true
+        }
+      },
+      "bounded_checkpoint_storage": {
+        "checkpoint_frames": [
+          24,
+          25
+        ],
+        "checkpoint_count": 2,
+        "checkpoint_evictions": 23,
+        "retained_state_bytes": 221184,
+        "working_reserve_bytes": 221184,
+        "limits": {
+          "checkpoint_interval": 4,
+          "max_checkpoints": 2,
+          "max_request_frames": 64,
+          "max_state_bytes": 8388608
+        }
+      },
+      "old_seek_reconstruction": {
+        "frame": 2,
+        "plan": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 0,
+          "target_frame": 2,
+          "reset_frame": 0,
+          "origin": "reset",
+          "checkpoint_sha256": null,
+          "steps": 3,
+          "history_refs": [
+            0
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 221184,
+          "working_bytes": 221184,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state"
+        },
+        "execution": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 0,
+          "target_frame": 2,
+          "reset_frame": 0,
+          "origin": "reset",
+          "checkpoint_sha256": null,
+          "steps": 3,
+          "history_refs": [
+            0
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 221184,
+          "working_bytes": 221184,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state",
+          "evaluated_frames": [
+            0,
+            1,
+            2
+          ],
+          "executed_steps": 3,
+          "peak_owned_payload_bytes": 442368,
+          "completed": true
+        },
+        "actual_native_sample_callbacks": 24,
+        "native_comparisons": 1,
+        "max_rgb8_error": 0
+      },
+      "original_inputs_unchanged": true,
+      "checkpoint_restore": {
+        "checkpoint": {
+          "schema": "framerudiments.delayed-feedback.v1.checkpoint",
+          "identity": "dad790cda54555bf4063dfed5e7d944455bdbcdda922a7d49920a2cccc7ff15d",
+          "configuration_sha256": "420254cdd1586355a8fd033387472bd317e87e20456334516290a00b32dff4d0",
+          "next_frame": 13,
+          "reset_frame": 10,
+          "result_bytes": 73728,
+          "history_frames": [
+            11,
+            12
+          ],
+          "payload_sha256": "e788effa47217c5136efef3805d3bece2500acc52819126c2c95e3bc2d22c0be",
+          "sha256": "3e991f37ba3c81b352a875d4f1748921e20fdfb2e90e6b0b4cc0f1817e966033",
+          "payload_bytes": 147456,
+          "history": [
+            {
+              "frame": 11,
+              "sha256": "57edd0c2bccbf797cfd935b9bc4b9cdfcc946d97a0e7db5800659dd68aec1a74"
+            },
+            {
+              "frame": 12,
+              "sha256": "25beeb401c84efe39e0c7e5a99c6dd09806484b130554644fc868bf5fbb4d9ac"
+            }
+          ],
+          "scope": "trusted_immutable_state_with_separately_pinned_checksum"
+        },
+        "checkpoint_sha256": "3e991f37ba3c81b352a875d4f1748921e20fdfb2e90e6b0b4cc0f1817e966033",
+        "seed_frame": 12,
+        "target_frame": 14,
+        "plan": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 13,
+          "target_frame": 14,
+          "reset_frame": 10,
+          "origin": "checkpoint",
+          "checkpoint_sha256": "3e991f37ba3c81b352a875d4f1748921e20fdfb2e90e6b0b4cc0f1817e966033",
+          "steps": 2,
+          "history_refs": [
+            12
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 147456,
+          "working_bytes": 221184,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state"
+        },
+        "complete_delay_ring_frames": [
+          11,
+          12
+        ],
+        "admission_native_callbacks": 0,
+        "restored_native_sample_callbacks": 32,
+        "cold_native_sample_callbacks": 56,
+        "restored_execution": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 13,
+          "target_frame": 14,
+          "reset_frame": 10,
+          "origin": "checkpoint",
+          "checkpoint_sha256": "3e991f37ba3c81b352a875d4f1748921e20fdfb2e90e6b0b4cc0f1817e966033",
+          "steps": 2,
+          "history_refs": [
+            12
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 147456,
+          "working_bytes": 221184,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state",
+          "evaluated_frames": [
+            13,
+            14
+          ],
+          "executed_steps": 2,
+          "peak_owned_payload_bytes": 294912,
+          "completed": true
+        },
+        "cold_execution": {
+          "schema": "framerudiments.delayed-feedback.v1.plan",
+          "start_frame": 10,
+          "target_frame": 14,
+          "reset_frame": 10,
+          "origin": "reset",
+          "checkpoint_sha256": null,
+          "steps": 5,
+          "history_refs": [
+            12
+          ],
+          "history_rule": "frame minus each declared delay; missing before exact reset",
+          "retained_state_bytes": 0,
+          "working_bytes": 221184,
+          "max_state_bytes": 8388608,
+          "max_request_frames": 64,
+          "scope": "native_immutable_delayed_results_not_external_engine_state",
+          "evaluated_frames": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "executed_steps": 5,
+          "peak_owned_payload_bytes": 221184,
+          "completed": true
+        },
+        "actual_native_work_reduced": true,
+        "checkpoint_unchanged": true,
+        "returned_image_does_not_mutate_checkpoint": true,
+        "native_comparisons": 3,
+        "max_rgb8_error": 0,
+        "checkpoint_transport": "immutable_in_memory_state_with_explicit_expected_sha256",
+        "metadata_json_is_restorable_state": false
+      },
+      "quality_switch": {
+        "frames": [
+          13,
+          14,
+          15
+        ],
+        "apply_quality": [
+          false,
+          true,
+          false
+        ],
+        "native_comparisons": 3,
+        "max_rgb8_error": 0,
+        "history_precedes_final_quality": true
+      },
+      "inspection": {
+        "command": "inspect-temporal",
+        "returncode": 0,
+        "requested_frames": [
+          4,
+          5,
+          10,
+          24,
+          4
+        ],
+        "source_sha256": "5c9105f7a8393ab69b747e2a6dedb0dec994bcfaf94a0d17db884a90d2feb9c0",
+        "native_schedule_documents_match": true,
+        "feedback_plan_documents_match": true,
+        "pixels_rendered": false,
+        "feedback_contract": {
+          "schema": "framerudiments.native-feedback.v1",
+          "identity": "dad790cda54555bf4063dfed5e7d944455bdbcdda922a7d49920a2cccc7ff15d",
+          "configuration_sha256": "1ba07400106233a045e4561da456ab802fa6e99bf6ce26f0edcaaeaaa797fab9",
+          "implementation_sha256": "4682922a0308c0c89af1b5f2e60641da745e39cc91dd098fc533bbba73deb8ed",
+          "runtime": {
+            "python": "3.12.14",
+            "implementation": "CPython",
+            "system": "Linux",
+            "machine": "x86_64",
+            "python_build": [
+              "main",
+              "Aug 25 2026 14:00:49"
+            ]
+          },
+          "config": {
+            "delay_frames": 2,
+            "mix": 0.63,
+            "reset": "repeat",
+            "checkpoint_interval": 4,
+            "max_checkpoints": 2,
+            "max_replay_frames": 64,
+            "max_state_bytes": 8388608
+          },
+          "modulation_targets": [],
+          "initial_history": "current_native_frame_when_delayed_state_is_missing",
+          "blend": "linear_light_rgb8_current_and_delayed_feedback_output",
+          "stage": "after_native_subframes_and_shutter_before_final_quality_and_external_effects",
+          "source_clock": {
+            "fps": 12,
+            "frame_count": 25,
+            "sample_rate": 48000,
+            "start_sample": 12000,
+            "end_sample": 31600,
+            "repeats": 5
+          },
+          "repeat_span_frames": {
+            "numerator": 49,
+            "denominator": 10
+          },
+          "backend": {
+            "requested": "cpu",
+            "actual": "cpu"
+          },
+          "scope": {
+            "native_compositor": "pre_external_effects",
+            "checkpointed_state": "owned_rgb8_feedback_history",
+            "sequential_external_engine_checkpoints": false,
+            "gpu_state_serialization": false,
+            "trusted_checkpoint_payload_with_separately_pinned_digest": true,
+            "state_budget_excludes_native_sampling_rasters_renderer_caches_and_callback_scratch": true
+          }
+        }
+      },
+      "cli": {
+        "commands": [
+          {
+            "command": "plan",
+            "returncode": 0,
+            "seconds": 0.197,
+            "frames": 25,
+            "state": "prepared; perceptual review pending"
+          },
+          {
+            "command": "preflight",
+            "returncode": 0,
+            "seconds": 1.317,
+            "frames": 25,
+            "state": "full preflight passed; no encoded video"
+          },
+          {
+            "command": "render",
+            "returncode": 0,
+            "seconds": 1.97,
+            "frames": 25,
+            "state": "technical-QA passed; creative and attended listening review pending"
+          }
+        ],
+        "full_preflight": {
+          "mode": "full",
+          "frames_rendered": 25,
+          "total_frames": 25,
+          "complete": true,
+          "sequential": true,
+          "note": "All project frames were composed."
+        },
+        "independent_encode_verification": {
+          "full_decode": "passed",
+          "decoded_timestamps": "CFR from zero; all frames checked",
+          "audio_duration_error_seconds": -0.0006666666666665932,
+          "mp4_atoms": [
+            "ftyp",
+            "moov",
+            "free",
+            "mdat"
+          ],
+          "listening_approved": false,
+          "platform_safe_zone_verified": false
+        },
+        "plan_and_composition_feedback_contract_match": true,
+        "reference": "independent delayed recurrence over native input frames, using the existing native encoder command",
+        "encoded_frames_per_video": 25,
+        "encoded_videos": 2,
+        "decoded_comparisons": 25,
+        "max_rgb8_error": 0,
+        "source_start_sample": 12000,
+        "source_end_sample_exclusive": 31600,
+        "sample_rate": 48000,
+        "repeats": 5,
+        "video_sha256": "6382d78aac652f92ed15fc34a2515364e7a64463ad5754aa033ba931d159dfc4",
+        "decoded_reference_sha256": [
+          "091fac7894c11309977dc9509858c768804f616b209817e79f22c01784b8e81e",
+          "755734d51d4409da14a86e8a2094c190a0fed164e8a23aa4d859ab6a15a9b307",
+          "df78b8f2637f23257540a1ef1271e2bda0202d1c85789a5cd862bbdb807f69bc",
+          "3bbbdf73774bc8d04f455d6862c0a273b15e6e88394cbc753e5883ba329129f0",
+          "9082946ea9f35ba682788760c126cdb97071e593258799d1912da9b6e6096df4",
+          "a53a12c86e326a2dc0f73816b9268784e63ef29698fb7360ada342b0b2ede731",
+          "815b0c9ffe4e0f2887c9b39fedf5dbcb36ca378517ef56174e5357112fb08b66",
+          "421b226bdba9578a2ecb7b18a40e28d0e61c8bb7139131a3eb88e3fedc9fd402",
+          "f588cb3f38a7a91df0f369efbbc5308b7c48b6a02539bf0dda0c1d53f205c0a1",
+          "f83aeac00ad44ca1a866370dc9f0f240e14a9b8aae92351dbfc57ad9a56d8ecd",
+          "1e2023120881373b1fa73b134472b30f77f3d064923dd39c86ffac2039381bdb",
+          "7bb1ae1ae6f18c4d30b5d814e77d591684aa4af5ffad2d027e15e1b24370c108",
+          "5104b8a823615944a3b5fe2bdb58191013e04bf051274b5f0c9538734dfc3fa6",
+          "d97cbcb2e4d7aadf52837fdf7373b5862337d165ae18835c53febfde62025a8f",
+          "d27d6d1057a87fd96d668da71e4278d00e9464337f8549a9a0dc6caf7c19cf98",
+          "9ada64e0376f19f3e495b1ac5f87b93a2af84f3f97bca1a6b2d741b8cc5e85cf",
+          "5db79cd795b4a160a75d4e7d6c01e62f1b14aa5bc7ed68013e5729868445c9d1",
+          "45ecc0f386340b7caec32008068f824617e56e32f2f20f967ecc889863301d3e",
+          "ead2b45a3bc06ba6849cd74a6d5cecddd4976b52dd85cae363a7e88124ab5ff3",
+          "bf92accfd8d9b95821dcdb562371b9209f1ca8091a2f1457e74250e9151a6574",
+          "832b8a8bd4e74f3a20f6b449dfbd8798438618590bff42fda1f500b6f11bd7cf",
+          "c24e5f58fe0cd6069d0e67b33eeb0a150b7021f9bdb56e029355529bd2843506",
+          "f4f6c4cb9f4edfc03ef9aca9ff9f10e83f21a959e3340cef4abafd5a658bef7f",
+          "eb86f7feadc15a7f974bfee24e1f49ee242b3370a1e5ad1c66bb138491b1ab63",
+          "ff4d8fb82366cec7aaa5d977938666899e2b500f7a353654994a0795e526ca3d"
+        ],
+        "perceptual_approval": false
+      }
+    }
+  ],
+  "source_sha256": {
+    "amber.png": "4008d1ab902e98771e1f48499fa301a8cf6ab56714dc85a0ff6176390bbd2010",
+    "cues.lrc": "6869d33c2e72a35df67105c0242320916ef80d00589f04c3417147f94a14ecf1",
+    "cyan.png": "c441c7aab870bf1718ea898e892961e3e1e28f8df8da716297326eeb4b9fc53c",
+    "font.ttf": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e",
+    "lines.lrc": "9e52b3257fc7e194a8be048f4a11144593e778f407d4411b5b3b59c3deb5b93b",
+    "recording.json": "8d86129415fad1744f8749310a6c1422e7764d0d69debc48cf8eeee4d8fb4bea",
+    "source.wav": "e67e1ced8a907e9093289c2fc9a7345f6f7b2797f4ccd43ca7dd4a20ac777944",
+    "words.lrc": "6c44a982685fe5d9379a2ea34198d53e4ad7a236c44e2e79eef32b3cd06323b6"
+  },
+  "contact_sheet_sha256": "dbf862c292e7da0f0bd36969d69634eb2dfcca7531e991618fe8b52e76961423",
+  "owned_temporary_tree_removed": true,
+  "original_projects_and_sources_unchanged": true,
+  "seconds": 19.212
+}

@@ -18,6 +18,20 @@ profiles. The [implementation plan](docs/seekable-adaptive-streaming-plan.md)
 keeps external-engine, physical-device and perceptual acceptance explicit.
 Source/audio clocks and production rendering are unchanged.
 
+M11.2 adds [delayed native feedback, bounded checkpoints and random-access reconstruction](docs/feedback-history-m11-2.md).
+Opt-in `post_effects.feedback` blends a native frame with an explicitly delayed
+previous feedback result in linear light. History advances once per encoded
+frame, after subframe integration and the historical shutter. Exact repeat or
+programme resets, immutable complete-history checkpoints and explicit work and
+memory budgets make sequential, shuffled and restored requests agree. Adaptive
+preview uses authored Q5 and reports reconstruction progress; pausing releases
+the compositor while retaining one bounded checkpoint. Read-only inspection
+reports both the native source plan and feedback reconstruction. Actual native
+and CLI-encoded fixtures measure pixel agreement and reduced checkpoint work.
+This is an unreleased implementation candidate; candidate platform/GPU CI and
+device/perceptual acceptance retain their own gates. M11.3 temporal effects are
+the next planned major milestone.
+
 M11.1 adds [exact temporal dependencies and deterministic native scheduling](docs/temporal-scheduling-m11-1.md).
 The compositor executes one bounded dependency plan for native subframes,
 historical shutter samples and final output. Shared samples run once, ordered
@@ -27,8 +41,8 @@ rendering; Python callers can request bounded past/current/future complete
 frames through `Compositor.sample_frames`. Exact repeat boundaries prevent
 shutter history from leaking across short source cycles. Native/CLI fixtures
 qualify ordinary, short-repeat and fractional-boundary output. This is an
-unreleased implementation candidate; checkpointed feedback is M11.2 and
-exact-candidate platform/GPU CI retains its own acceptance gates.
+unreleased implementation candidate, extended by M11.2 feedback reconstruction
+above; exact-candidate platform/GPU CI retains its own acceptance gates.
 
 M10.5 adds [complete draft history and JSON round-trip qualification](docs/authoring-roundtrip-m10-5.md).
 The UI and integration runner now share immutable history and export modules.

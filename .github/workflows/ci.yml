@@ -112,6 +112,16 @@ jobs:
           name: temporal-schedule-${{ matrix.os }}
           path: temporal-schedule-qualification/
           if-no-files-found: error
+      - name: Qualify native delayed feedback and checkpoint reconstruction
+        if: matrix.python == '3.13'
+        run: python integration/qualify_feedback_history_m11_2.py --output feedback-history-qualification
+      - name: Upload native feedback checkpoint evidence
+        if: matrix.python == '3.13'
+        uses: actions/upload-artifact@v6
+        with:
+          name: feedback-history-${{ matrix.os }}
+          path: feedback-history-qualification/
+          if-no-files-found: error
       - run: python -m build
       - run: python -m twine check --strict dist/*
 
