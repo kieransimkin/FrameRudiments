@@ -2,7 +2,7 @@
 
 M10.3 extends **Effect DAG** with forms generated from the native effect and
 motion registries. Select a node, edit a typed parameter and apply it. Python
-validates the proposed project before the browser creates one undo entry.
+validates a changed proposal before the browser creates one undo entry.
 The same inspector adds, edits, removes and reorders native motion bindings.
 This is an unreleased implementation candidate in the consolidated roadmap.
 
@@ -175,5 +175,9 @@ This Windows correctness fallback adds large-media disk I/O; exact-candidate
 Windows CI and host performance remain to be observed.
 
 [M10.4 supplies transition comparisons and scrub-safe frame evaluation with a
-quality/performance switch](authoring-preview-m10-4.md). The next planned major
-authoring milestone is **M10.5: round-trip JSON fixture and undo/redo tests**.
+quality/performance switch](authoring-preview-m10-4.md).
+[M10.5 adds complete immutable history and JSON/native round-trip qualification](authoring-roundtrip-m10-5.md).
+Accepted equal proposals now settle the inspector without adding an undo entry
+or clearing redo. Each real history change has a new revision, including undo
+followed by redo to the same stored snapshot. The next consolidated milestone is
+**M11.1: temporal dependency declarations and deterministic scheduling**.

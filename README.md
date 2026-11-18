@@ -18,6 +18,17 @@ profiles. The [implementation plan](docs/seekable-adaptive-streaming-plan.md)
 keeps external-engine, physical-device and perceptual acceptance explicit.
 Source/audio clocks and production rendering are unchanged.
 
+M10.5 adds [complete draft history and JSON round-trip qualification](docs/authoring-roundtrip-m10-5.md).
+The UI and integration runner now share immutable history and export modules.
+Undo/redo restores the complete project, sidecars, dirty flags and cue format;
+equal edits retain the redo branch, and each real history change retires older
+asynchronous work. Export captures a complete draft before hashing, avoids known
+pinned-input filename collisions and writes deterministic valid ZIP entries.
+A checked-in synthetic fixture drives actual native HTTP edits, export/reopen,
+native frame comparisons and CLI rendering through the existing authoring CI.
+This is an unreleased implementation candidate; exact-candidate CI and browser
+interaction retain their own acceptance gates.
+
 M10.4 adds [transition comparisons and scrub-safe native previews](docs/authoring-preview-m10-4.md).
 Select a transition or expanded chain stage in **Effect DAG** to compare its
 **From / Result / To** images at one authoritative frame. **Fast / Authored**
@@ -35,7 +46,7 @@ M10.3 adds [generated parameter and DanceNotion control editors](docs/authoring-
 to **Effect DAG**. Native metadata supplies typed forms for all fourteen graph
 kinds, existing gradient/spectral paths, transition timing and chain components.
 The same inspector adds, edits and reorders native motion bindings. Python
-validates each proposal before one undo entry is created; original sources and
+validates each changed proposal before one undo entry is created; original sources and
 clocks stay pinned. The cross-language qualifier exports actual editor changes
 through the native HTTP API and compares 88 rendered frames across 22 synthetic
 cases. This is an unreleased implementation candidate; browser interaction and

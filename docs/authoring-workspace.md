@@ -68,7 +68,13 @@ editable timing contracts in `docs/timing-editing.md` of its upstream project.
 - **Presets:** Style presets are copied into a selected Rudiment layer without
   changing its native DanceRudiments `motion` or pinned StemLab recording.
 - **Undo/redo:** Up to 100 complete reversible draft operations, in browser
-  memory only. Nothing is automatically pushed to GitHub or published.
+  memory only. [M10.5](authoring-roundtrip-m10-5.md) shares an immutable history
+  core across the UI and qualification tests: each entry includes the complete
+  project, timing sidecars and dirty flags. An unchanged edit preserves redo;
+  a new edit after undo clears it. Every real change, undo and redo has a fresh
+  revision, so an old asynchronous response cannot become current again after
+  undo/redo returns to the same stored snapshot. Nothing is automatically
+  pushed to GitHub or published.
 - **Preview:** A local `Compositor` renders the requested integer output frame.
   [M10.4](authoring-preview-m10-4.md) adds **From / Result / To** comparisons for
   a selected transition or expanded chain stage, a shared coalesced request
@@ -137,10 +143,22 @@ unavailable check leaves the draft editable and can be retried.
 current executable `effect_graph` is serialized in `project.json`; reusable
 visualiser-routing presets deliberately exclude the DAG and pinned assets. Every newly
 written sidecar is hashed using browser WebCrypto SHA-256, with its hash stored
-in the new project ref. Unedited font, image, audio, model and recording file
+in the new project ref. Export captures the complete draft before hashing and
+is cancelled if its authoring revision changes. It accepts only finite plain
+JSON, retaining valid JSON fields and sidecar-reference metadata; native schema
+validation remains authoritative. Unedited font, image, audio, model and recording file
 references retain their original SHA-256. No original master/source bytes are
 included. Extract the ZIP **into the original project directory** to preserve
 relative pinned paths; do not overwrite sources automatically.
+
+Generated sidecar names avoid every admitted source-pin basename, ignoring
+case and accepting either path separator. For example, an original
+`authoring-lines.lrc` makes the edited export `authoring-lines-2.lrc`. If a
+source pin conflicts with the fixed `project.json` or `AUTHORING-README.txt`
+entry, export refuses explicitly. These checks protect known pins; they do not
+inventory unrelated files on disk. Unedited CD CUE data keeps its original
+reference. Editing it requires explicit conversion to valid structural LRC
+cues. ZIP entries use the deterministic, valid date 1980-01-01.
 
 Run the normal `framerudiments plan`, `preflight` and `render` commands against
 that exported project. Preview success does not imply approved encoded output,
@@ -171,6 +189,18 @@ preview controller through HTTP and compares 312 transition images and two
 normal previews against independent native renders. It checks repeated and
 out-of-order frames, Fast/Authored quality, motion clocks and coalesced scrubbing.
 Pillow decodes the returned PNGs; browser paint/layout remains unobserved.
+The [M10.5 qualifier](authoring-roundtrip-m10-5.md) runs the production history
+and exporter against a checked-in JSON fixture with independent expected
+states. Its 17 checkpoints reopen through the native session parser and
+re-export, producing 306 exact checkpoint frame comparisons. The final mixed
+draft also passes native CLI plan, full preflight and three encoded renders,
+with 24 full-programme native comparisons and 48 decoded frame comparisons.
+History tests cover full undo/redo, unchanged edits, branches, the 100-entry
+bound and stale responses after a return to an earlier snapshot. The bounded
+qualification-only ZIP extractor has adversarial tests for unsafe names,
+duplicate entries, CRC damage, size limits and protected inputs. External
+sequential visualiser execution, browser interaction, GPU/device acceptance
+and perceptual approval remain separate gates.
 
 The first release uses the shared component's editable **cue-shaped timing
 marker** for keyframes, because its published v0.4.0 `TimingKind` supports only

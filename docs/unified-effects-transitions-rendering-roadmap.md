@@ -203,7 +203,13 @@ All external shader/model/media sources must be pinned or versioned, constrained
   TypeScript previews match 312 independent transition images plus two normal
   frames; browser paint and exact-candidate CI remain separate gates.
 - **M10.5** Round-trip JSON fixture and undo/redo tests.
-  Next planned major authoring milestone.
+  Implementation candidate: [complete history and native round trips](authoring-roundtrip-m10-5.md).
+  Shared immutable history/export modules preserve complete snapshots, source
+  pins and clocks; history revisions fence async work even after undo/redo returns
+  to an older snapshot. Equal edits preserve redo, exports avoid admitted input
+  collisions, and checked-in independent fixture states qualify mixed edits,
+  ZIP extraction, native reload/re-export and CLI-rendered output. Exact-candidate
+  CI and browser/device acceptance remain separate gates.
 - **M10.S — seekable adaptive real-time streaming preview (S0–S7 candidates).**
   [Dedicated S0–S7 implementation plan](seekable-adaptive-streaming-plan.md):
   [S0 clock/quality/telemetry contracts](preview-stream-s0-contract.md) and
@@ -226,6 +232,7 @@ All external shader/model/media sources must be pinned or versioned, constrained
 
 ### M11 — Temporal engine, media and CI showcases
 - **M11.1** Temporal dependency declarations (past/future frame indexing) and deterministic scheduling.
+  Next planned major milestone after the M10 authoring implementation candidates.
 - **M11.2** Feedback history with explicit delay, checkpoints and bounds; random-access reconstruction.
 - **M11.3** Motion echoes, directional blur, slit-scan and time-remapping effects.
 - **M11.4** Video input/output adapters with rational timebase handling.

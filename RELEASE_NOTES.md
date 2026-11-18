@@ -1,3 +1,29 @@
+# FrameRudiments M10.5 round-trip candidate (unreleased)
+
+- Share complete immutable history and export modules between the authoring UI
+  and fixture qualification. Retain 100 undo operations, preserve redo for equal
+  edits, detach accepted proposals from caller aliases and restore every project,
+  sidecar, dirty-flag and cue-format value on navigation.
+- Use a fresh history identity for real edits, undo and redo. Fence graph checks,
+  native proposals, graph gestures, one-shot previews, asynchronous preset loads
+  and exports against that revision, including undo followed by redo to the same
+  stored snapshot. Retire the revision during layout cleanup on unmount.
+- Settle accepted no-op native proposals without leaving the inspector busy or
+  manufacturing an undo entry. Unchanged timing gestures do not mark sidecars dirty.
+- Capture all export inputs before asynchronous hashing. Preserve complete valid
+  JSON, reject values that serialization would omit or alter, retain sidecar ref
+  metadata, and choose deterministic filenames that avoid known pinned inputs.
+  Reject source conflicts with required bundle entries. Keep CD CUE conversion
+  explicit and write valid fixed 1980-01-01 ZIP dates.
+- Add a checked-in fixture with independent expected states, real native HTTP
+  proposals, complete undo/redo and branch exports, fresh native session reopens,
+  pixel comparisons and CLI plan/preflight/render qualification. Check ZIP paths,
+  records, CRCs, bounds and source immutability before extracting fixture bundles.
+- Extend authoring CI and source-package checks. Browser paint/layout, physical
+  GPU acceptance and exact-candidate CI remain distinct from local qualification.
+  See [the M10.5 guide](docs/authoring-roundtrip-m10-5.md). M11.1 temporal dependency
+  declarations and deterministic scheduling are next in the consolidated roadmap.
+
 # FrameRudiments M10.4 preview candidate (unreleased)
 
 - Compare a selected native transition or expanded chain stage as From, Result
@@ -22,7 +48,6 @@
   cleanup before asserting capacity. Production semaphore behavior is unchanged.
   Browser paint/layout, exact-candidate CI and production visual acceptance need
   their own observed evidence. See [the M10.4 guide](docs/authoring-preview-m10-4.md).
-  M10.5 round-trip JSON fixture and undo/redo tests are next.
 
 # FrameRudiments M10.3 authoring candidate (unreleased)
 

@@ -172,6 +172,8 @@ frames. React structure and async controller tests do not establish browser
 interaction, browser decode/paint, painted layout, physical GPU behaviour or
 perceptual approval. Exact-candidate platform/GPU CI remains separate evidence.
 
-The next planned milestone is **M10.5 — Round-trip JSON fixture and undo/redo
-tests**, including verification of exported source bindings and clear diagnostic
-behaviour across those operations.
+[M10.5 supplies complete history and JSON/native round-trip qualification](authoring-roundtrip-m10-5.md).
+It also passes a fresh history revision through the preview controller, so undo
+followed by redo cannot revive an obsolete request for the same stored snapshot.
+The next planned milestone is **M11.1 — temporal dependency declarations and
+deterministic scheduling** in the consolidated roadmap.

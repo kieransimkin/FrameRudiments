@@ -1,9 +1,11 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {TimelineSequence, type TimelineLane, type TimelineBeatClock, type TimingEvent} from 'react-timeline-sequence';
-import {type Document, type Sidecars, type TimedItem, type TimingKind, CUE_TYPES,
-  editTiming, expandTiming, layerKeyframes, normalizedKeys, projectTiming, renameCue, serializeLrc,
+import {type Document, type TimedItem, type TimingKind, CUE_TYPES,
+  editTiming, expandTiming, layerKeyframes, normalizedKeys, projectTiming, renameCue,
   stylePreset, withKeyframe, withLayerRoute, withPreset, withStageInjection, graphPreset, withGraphPreset} from './model.ts';
-import {sha256, zipEntries} from './archive.ts';
+import {createAuthoringHistory,commitAuthoring,undoAuthoring,redoAuthoring,
+  type AuthoringSnapshot,type AuthoringHistory} from './authoringHistory.ts';
+import {buildAuthoringExport} from './authoringExport.ts';
 import {EffectGraphEditor, type GraphValidationDisplay} from './EffectGraphEditor.tsx';
 import {GraphValidationFence, readGraphValidation, type GraphValidationReport} from './graphValidation.ts';
 import {StreamPreview} from './StreamPreview.tsx';
@@ -16,9 +18,7 @@ import {withInitialEffectGraph, withEffectNode, withEffectSource, withEffectConn
 
 interface Session { project:Document; lines:TimedItem[]; words:TimedItem[]; cues:TimedItem[];
   cueFormat:'lrc'|'cue'; beatTimeline?:Document|null; audioAvailable:boolean; notes:string[]; }
-interface Snapshot { project:Document; sidecars:Sidecars; dirty:Record<'lines'|'words'|'cues',boolean>; }
-interface History {current:Snapshot; past:Snapshot[]; future:Snapshot[]}
-interface CheckedGraph {snapshot:Snapshot; display:GraphValidationDisplay; report?:GraphValidationReport;}
+interface CheckedGraph {revision:AuthoringHistory; display:GraphValidationDisplay; report?:GraphValidationReport;}
 const fmt=(n:number)=>Number(n).toFixed(3);
 
 function download(bytes:BlobPart, filename:string, mime:string) {
@@ -52,7 +52,12 @@ function beatModel(session:Session|null):TimelineBeatClock|null {
 }
 export function App() {
  const [session,setSession]=useState<Session|null>(null);
- const [history,setHistory]=useState<History|null>(null);
+ const [history,setHistory]=useState<AuthoringHistory|null>(null);
+ const historyRef=useRef<AuthoringHistory|null>(null);
+ useLayoutEffect(()=>()=>{historyRef.current=null;},[]);
+ // Advance the revision synchronously with an accepted operation. Async
+ // proposals cannot overtake queued React updates or revive after undo/redo.
+ const publishHistory=(next:AuthoringHistory)=>{historyRef.current=next;setHistory(next);};
  const [error,setError]=useState('');
  const [info,setInfo]=useState('');
  const [time,setTime]=useState(0);
@@ -74,11 +79,10 @@ export function App() {
  const [editValue,setEditValue]=useState(.5);
  const current=history?.current;
  const project=current?.project;
- const currentRef=useRef<Snapshot|undefined>(current);currentRef.current=current;
- const validationFence=useRef(new GraphValidationFence<Snapshot>());
+ const validationFence=useRef(new GraphValidationFence<AuthoringHistory>());
  const graphPresent=project?.effect_graph!==undefined;
  const graphStatus:GraphValidationDisplay=!graphPresent?{phase:'none',message:'Create a graph to enable native connection checks.'}:
-   checkedGraph&&checkedGraph.snapshot===current?checkedGraph.display:{phase:'checking',message:'Waiting for native validation of this draft.'};
+   checkedGraph&&checkedGraph.revision===history?checkedGraph.display:{phase:'checking',message:'Waiting for native validation of this draft.'};
  const graphReady=!!project&&(!graphPresent||graphStatus.phase==='valid');
  const graphReadyRef=useRef(graphReady);graphReadyRef.current=graphReady;
  const duration=project?projectTiming(project).duration:0;
@@ -92,10 +96,10 @@ export function App() {
 
  useEffect(()=>{
    const fence=validationFence.current;
-   if(!current||!project||!graphPresent){fence.cancel();return;}
-   const ticket=fence.begin(current),controller=new AbortController();let timeout:ReturnType<typeof setTimeout>|undefined;
+   if(!history||!current||!project||!graphPresent){fence.cancel();return;}
+   const ticket=fence.begin(history),controller=new AbortController();let timeout:ReturnType<typeof setTimeout>|undefined;
    const update=(display:GraphValidationDisplay,report?:GraphValidationReport)=>{
-     if(fence.current(ticket)&&currentRef.current===current)setCheckedGraph({snapshot:current,display,report});
+     if(fence.current(ticket)&&historyRef.current===history)setCheckedGraph({revision:history,display,report});
    };
    update({phase:'checking',message:'Checking all nodes, named sources and control bindings. No frame is rendered.'});
    const job=setTimeout(async()=>{
@@ -121,14 +125,14 @@ export function App() {
      }finally{if(timeout)clearTimeout(timeout);}
    },180);
    return ()=>{clearTimeout(job);if(timeout)clearTimeout(timeout);fence.cancel();controller.abort();};
- },[current,project,graphPresent,streamSidecars,validationRetry]);
+ },[history,current,project,graphPresent,streamSidecars,validationRetry]);
 
  useEffect(()=>{
    let alive=true;
    fetch('/api/project').then(async r=>{if(!r.ok)throw Error(`Server returned ${r.status}`);return await r.json() as Session;})
    .then(value=>{if(!alive)return;setSession(value);
-      setHistory({past:[],future:[],current:{project:value.project,sidecars:{lines:value.lines,words:value.words,cues:value.cues,cueFormat:value.cueFormat},
-        dirty:{lines:false,words:false,cues:false}}});
+      publishHistory(createAuthoringHistory({project:value.project,sidecars:{lines:value.lines,words:value.words,cues:value.cues,cueFormat:value.cueFormat},
+        dirty:{lines:false,words:false,cues:false}}));
       setSelected(`layer:${value.project.layers?.[0]?.id||''}`);
    }).catch(e=>{if(alive)setError(`Unable to load project: ${message(e)}`);});
    return ()=>{alive=false;};
@@ -139,30 +143,30 @@ export function App() {
    return ()=>URL.revokeObjectURL(url);
  },[localAudio,session?.audioAvailable]);
 
- const commit=(change:(s:Snapshot)=>Snapshot)=>{
-   setHistory(previous=>{if(!previous)return previous;
-      try{const updated=change(previous.current);setError('');
-        return {current:updated,past:[...previous.past,previous.current].slice(-100),future:[]};
-      }catch(exc){setError(message(exc));return previous;}
-   });
+ const commit=(change:(s:AuthoringSnapshot)=>AuthoringSnapshot,expectedRevision?:object):boolean=>{
+   const previous=historyRef.current;if(!previous)return false;
+   try{
+     const result=commitAuthoring(previous,change,expectedRevision);
+     if(result.disposition==='stale'){
+       setError('The draft changed before this edit could be applied. Try it again.');return false;
+     }
+     publishHistory(result.history);setError('');return true;
+   }catch(exc){setError(message(exc));return false;}
  };
  const commitNativeGraph=(nextProject:Document,revision:object):boolean=>{
-   if(currentRef.current!==revision)return false;
-   setHistory(previous=>{
-     // Do not add a no-op undo entry when a queued edit overtakes the proposal.
-     if(!previous||previous.current!==revision)return previous;
-     return {current:{...previous.current,project:nextProject},past:[...previous.past,previous.current].slice(-100),future:[]};
-   });
-   setError('');return true;
+   if(historyRef.current!==revision)return false;
+   return commit(snapshot=>({...snapshot,project:nextProject}),revision);
  };
- const undo=()=>setHistory(previous=>!previous?.past.length?previous:{
-   current:previous.past[previous.past.length-1],past:previous.past.slice(0,-1),future:[previous.current,...previous.future]});
- const redo=()=>setHistory(previous=>!previous?.future.length?previous:{
-   current:previous.future[0],past:[...previous.past,previous.current],future:previous.future.slice(1)});
+ const undo=()=>{if(historyRef.current)publishHistory(undoAuthoring(historyRef.current));};
+ const redo=()=>{if(historyRef.current)publishHistory(redoAuthoring(historyRef.current));};
 
  const onTimingEdit=(kind:TimingKind,item:TimingEvent)=>{
    const key=kind==='line'?'lines':kind==='word'?'words':'cues';
-   commit(s=>({...s,sidecars:{...s.sidecars,[key]:editTiming(s.sidecars[key],item,s.project,kind)},dirty:{...s.dirty,[key]:true}}));
+   commit(s=>{
+     const rows=editTiming(s.sidecars[key],item,s.project,kind);
+     if(JSON.stringify(rows)===JSON.stringify(s.sidecars[key]))return s;
+     return {...s,sidecars:{...s.sidecars,[key]:rows},dirty:{...s.dirty,[key]:true}};
+   });
  };
  const onKeyEdit=(target:string,prop:string,at:number,item:TimingEvent)=>commit(s=>{
    const currentKey=layerKeyframes(s.project).find(x=>x.target===target&&x.property===prop)?.keys.find(x=>x.time===at);
@@ -222,8 +226,11 @@ export function App() {
    const item=expandTiming(current.sidecars.cues,project).find(x=>x.id===selectedTiming.id);
    if(!item)return;
    const label=renameCue(item.label,cueType,cueTitle);
-   commit(s=>({...s,sidecars:{...s.sidecars,cues:editTiming(s.sidecars.cues,{...item,label},s.project,'cue'),cueFormat:'lrc'},
-     dirty:{...s.dirty,cues:true}}));
+   commit(s=>{
+     const cues=editTiming(s.sidecars.cues,{...item,label},s.project,'cue');
+     if(s.sidecars.cueFormat==='lrc'&&JSON.stringify(cues)===JSON.stringify(s.sidecars.cues))return s;
+     return {...s,sidecars:{...s.sidecars,cues,cueFormat:'lrc'},dirty:{...s.dirty,cues:true}};
+   });
  };
  const saveStyle=()=>{
    const layer=project?.layers?.find((row:Document)=>`layer:${row.id}`===selected);
@@ -231,9 +238,9 @@ export function App() {
    try{download(JSON.stringify(stylePreset(layer),null,2),'framerudiments-style-preset.json','application/json');}catch(e){setError(message(e));}
  };
  const loadStyle=async()=>{
-   if(!presetFile)return;
-   try{const preset=JSON.parse(await presetFile.text());commit(s=>({...s,project:withPreset(s.project,selected,preset)}));}
-   catch(e){setError(message(e));}
+   const revision=historyRef.current;if(!presetFile||!revision)return;
+   try{const preset=JSON.parse(await presetFile.text());commit(s=>({...s,project:withPreset(s.project,selected,preset)}),revision);}
+   catch(e){if(historyRef.current===revision)setError(message(e));}
  };
  const saveGraph=()=>{
    if(!project)return;
@@ -242,31 +249,20 @@ export function App() {
    catch(e){setError(message(e));}
  };
  const loadGraph=async()=>{
-   if(!graphFile)return;
+   const revision=historyRef.current;if(!graphFile||!revision)return;
    try{const preset=JSON.parse(await graphFile.text());
-     commit(s=>({...s,project:withGraphPreset(s.project,preset)}));
-   }catch(e){setError(message(e));}
+     commit(s=>({...s,project:withGraphPreset(s.project,preset)}),revision);
+   }catch(e){if(historyRef.current===revision)setError(message(e));}
  };
  const exportWork=async()=>{
-   if(!project||!current)return;
+   if(!project||!current||!history)return;
    if(!graphReady)return setError('Wait for a successful native graph check before exporting this draft.');
+   const isCurrent=()=>historyRef.current===history&&graphReadyRef.current;
    try{
-    const updated=structuredClone(project),rows:Record<string,string>={};
-    for(const [kind,field] of [['lines','lyrics'],['words','word_lyrics'],['cues','cues']] as const){
-      if(!current.dirty[kind])continue;
-      const file=`authoring-${kind}.lrc`,value=serializeLrc(current.sidecars[kind]);
-      rows[file]=value;
-      updated[field]={path:file,sha256:await sha256(value)};
-    }
-    if(currentRef.current!==current||!graphReadyRef.current)throw Error('The draft changed during export. Wait for its graph check, then export again.');
-    rows['project.json']=JSON.stringify(updated,null,2)+'\n';
-    rows['AUTHORING-README.txt']='FrameRudiments authoring bundle\nExtract these files into the ORIGINAL project directory.\n'+
-      'Do not move or modify the existing SHA-pinned master, fonts, models or recordings.\n'+
-      'Run framerudiments plan and preflight before rendering.\n'+
-      'Original project files have not been modified by the authoring preview server.\n';
-    const bytes=zipEntries(rows);
+    const {bytes}=await buildAuthoringExport(current,{isCurrent});
+    if(!isCurrent())throw Error('The draft changed during export. Wait for its graph check, then export again.');
     download(bytes as BlobPart,'framerudiments-authoring-export.zip','application/zip');setInfo('Exported a portable project + edited sidecar bundle');
-   }catch(e){setError(message(e));}
+   }catch(e){if(historyRef.current)setError(message(e));}
  };
  const selectedLayer=project?.layers?.find((l:Document)=>`layer:${l.id}`===selected);
  const route=project?.visualiser_routing?.elements?.[selected];
@@ -287,7 +283,7 @@ export function App() {
       <button className={graphView?'selected':''} aria-pressed={graphView} onClick={()=>setGraphView(true)}>Effect DAG</button>
       </div><FramePreviewControls frame={desiredFrame} lastFrame={lastFrame} fps={fps} quality={quality}
         showQuality={graphView||!streaming} onFrame={frame=>setTime(frame/fps)} onQuality={setQuality}/></div>
-    {graphView?<div className="fr-fx-preview"><EffectGraphEditor project={project} revision={current} sidecars={streamSidecars}
+    {graphView?<div className="fr-fx-preview"><EffectGraphEditor project={project} revision={history!} sidecars={streamSidecars}
       preview={{frame:desiredFrame,quality,enabled:graphReady,blockedMessage:graphStatus.message}}
       onNativeEdit={commitNativeGraph} validation={graphStatus} onValidate={()=>setValidationRetry(value=>value+1)}
       onInit={()=>commit(s=>({...s,project:withInitialEffectGraph(s.project)}))}
@@ -300,7 +296,7 @@ export function App() {
      <div className="fr-preview">{!graphReady?<div className="fr-canvas fr-fx-preview-blocked" role="status"><strong>{graphStatus.phase==='checking'?'Checking graph before preview':'Preview is waiting for a valid graph'}</strong>
        <p>{graphStatus.message}</p>{graphStatus.phase!=='checking'&&<button onClick={()=>setValidationRetry(value=>value+1)}>Retry native graph check</button>}</div>:streaming
        ?<StreamPreview project={project} sidecars={streamSidecars} time={time} fps={fps} duration={duration}/>
-       :<NativeFramePreview project={project} revision={current!} sidecars={streamSidecars} frame={desiredFrame} quality={quality}/>}</div>}
+       :<NativeFramePreview project={project} revision={history!} sidecars={streamSidecars} frame={desiredFrame} quality={quality}/>}</div>}
     <div className="fr-transport-extra">{!graphView&&<label><input type="checkbox" checked={streaming} onChange={e=>setStreaming(e.target.checked)}/> Adaptive cache preview (Q0–Q5)</label>}
       <label>Exact excerpt audio <input type="file" accept="audio/*,.wav,.mp3,.flac,.m4a,.ogg"
       onChange={e=>setLocalAudio(e.target.files?.[0]??null)}/></label>

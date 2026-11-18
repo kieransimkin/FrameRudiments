@@ -1,0 +1,4316 @@
+{
+  "schema": "framerudiments.authoring-roundtrip-qualification.v1",
+  "passed": true,
+  "fixture_sha256": "7a2f59d15b66ccef2723c25e83f4008dc30a49be958ca96319966a4dcbe99e7e",
+  "runtime": {
+    "python": "3.12.14",
+    "node": "v24.22.1",
+    "dancerudiments": "0.3.0",
+    "pillow": "13.0.0",
+    "ffmpeg": "ffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "implementation_sha256": {
+    "authoring/src/authoringHistory.ts": "b55d15212750da83a5216a59a7b16e573106a0f9fc13ee2d8793897182cbc1a2",
+    "authoring/src/authoringExport.ts": "9c081b9906f83b586f394a049fa093f890ddabfc07c935dfc5493b8352b007cc",
+    "authoring/src/archive.ts": "15cbbf50c7caec3658f897939600317ae78334d4efbd8cb1e05697208b4259e9",
+    "authoring/src/model.ts": "eb5c87bdabaecfd412c007ad559d2cd0fe2f51ba769a043b7af12ce35444c9d1",
+    "authoring/integration/authoringRoundtrip.ts": "b37cf8c6af15c0649541420ed4812613a77997c8479da693ad61c74585d5a90c",
+    "integration/qualify_authoring_roundtrip_m10_5.py": "49d790576da341e1b4eb748fb7bd975a5673bc0b0021fb663b4f769d13463376"
+  },
+  "scope": {
+    "actual_shared_typescript_model_history_export": true,
+    "actual_same_origin_http": true,
+    "actual_export_zip": true,
+    "bounded_safe_extraction": true,
+    "native_project_and_session_reopen": true,
+    "independent_native_compositor": true,
+    "named_and_recorded_native_motion": true,
+    "native_cli_plan_preflight_render": true,
+    "actual_encoded_frame_comparison": true,
+    "routing_and_stage_injection": "retained configuration and native compositor admission only",
+    "sequential_external_engines": false,
+    "browser_interaction": false,
+    "gpu": false,
+    "physical_device": false,
+    "perceptual_approval": false
+  },
+  "frames": [
+    0,
+    2,
+    5,
+    9,
+    12,
+    14,
+    17,
+    21,
+    5
+  ],
+  "cases": [
+    {
+      "name": "mixed_lrc",
+      "validations": 11,
+      "native_edits": 2,
+      "rejected_stale_responses": 2,
+      "assertions": {
+        "input_preserved": true,
+        "full_undo_export_identity": true,
+        "full_redo_export_identity": true,
+        "undo_steps": 10,
+        "redo_steps": 10,
+        "noop_preserved_redo": true,
+        "branch_cleared_redo": true,
+        "stale_proposal_rejected": true,
+        "history_bound": 100,
+        "bound_commits": 105,
+        "bound_undo_steps": 100,
+        "bound_export_identity": true
+      },
+      "dispositions": [
+        {
+          "index": 0,
+          "kind": "graph_connection",
+          "disposition": "committed"
+        },
+        {
+          "index": 1,
+          "kind": "graph_inputs",
+          "disposition": "committed"
+        },
+        {
+          "index": 2,
+          "kind": "native",
+          "disposition": "committed"
+        },
+        {
+          "index": 3,
+          "kind": "native",
+          "disposition": "committed"
+        },
+        {
+          "index": 4,
+          "kind": "timing",
+          "disposition": "committed"
+        },
+        {
+          "index": 5,
+          "kind": "timing",
+          "disposition": "committed"
+        },
+        {
+          "index": 6,
+          "kind": "timing",
+          "disposition": "committed"
+        },
+        {
+          "index": 7,
+          "kind": "timing",
+          "disposition": "committed"
+        },
+        {
+          "index": 8,
+          "kind": "keyframe",
+          "disposition": "committed"
+        },
+        {
+          "index": 9,
+          "kind": "keyframe",
+          "disposition": "committed"
+        },
+        {
+          "index": 10,
+          "kind": "undo",
+          "disposition": "navigated"
+        },
+        {
+          "index": 11,
+          "kind": "noop",
+          "disposition": "unchanged"
+        },
+        {
+          "index": 12,
+          "kind": "redo",
+          "disposition": "navigated"
+        },
+        {
+          "index": 13,
+          "kind": "undo",
+          "disposition": "navigated"
+        },
+        {
+          "index": 14,
+          "kind": "keyframe",
+          "disposition": "committed"
+        },
+        {
+          "index": 15,
+          "kind": "redo",
+          "disposition": "unchanged"
+        }
+      ],
+      "checkpoints": [
+        {
+          "name": "initial",
+          "state": "initial",
+          "past": 0,
+          "future": 0,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": false
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "33bb0b5e0a007f75d08d9b239175ce06d51eb37109b8b81e98d94b7dc503347c",
+            "bytes": 7052,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6507,
+                "sha256": "9a8f9274f8a2489ea9793b442ab14be37296410d62208a57845912e2d6d57422"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "33bb0b5e0a007f75d08d9b239175ce06d51eb37109b8b81e98d94b7dc503347c",
+            "bytes": 7052,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6507,
+                "sha256": "9a8f9274f8a2489ea9793b442ab14be37296410d62208a57845912e2d6d57422"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "graph",
+          "state": "graph",
+          "past": 2,
+          "future": 0,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": false
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "e4fb1e951fcef0ae293cfde51ea30248568349fbb1f00a0533d6e5ce9a9280b9",
+            "bytes": 7052,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6507,
+                "sha256": "2f67fd4f67ff5090bb454185d71a8f1d8b8018975027ca6f1496388fcf0c15c2"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "e4fb1e951fcef0ae293cfde51ea30248568349fbb1f00a0533d6e5ce9a9280b9",
+            "bytes": 7052,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6507,
+                "sha256": "2f67fd4f67ff5090bb454185d71a8f1d8b8018975027ca6f1496388fcf0c15c2"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "0681b8625ed72d7b4ba4fd609e8504927c2ac0ae6afb6979b51792a883fb0d66",
+            "9a59b8812a90ffd65242af328cff498bd27e61135939ba0f11d3189f9aa71f0a",
+            "5b52ddffa610675e94185b5fd8efe638b44096a89c1a78c0ce1acfeb4bf7aa08",
+            "2b4abe69a218abfc1aec2cf83b4e4629e7d0892a05b13c944b8ac01fcdb6740b",
+            "0681b8625ed72d7b4ba4fd609e8504927c2ac0ae6afb6979b51792a883fb0d66",
+            "9a59b8812a90ffd65242af328cff498bd27e61135939ba0f11d3189f9aa71f0a",
+            "5b52ddffa610675e94185b5fd8efe638b44096a89c1a78c0ce1acfeb4bf7aa08",
+            "2b4abe69a218abfc1aec2cf83b4e4629e7d0892a05b13c944b8ac01fcdb6740b",
+            "5b52ddffa610675e94185b5fd8efe638b44096a89c1a78c0ce1acfeb4bf7aa08"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "native",
+          "state": "native",
+          "past": 4,
+          "future": 0,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": false
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "6173f1976643c3924f78bdca07cd2ec5f854d45fb38b965253b8eef582c91cc8",
+            "bytes": 7416,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6871,
+                "sha256": "fe106faa5d3ef92d892fdee25d3f0d7fecdd54571e3d93cf910464d74d711cfa"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "6173f1976643c3924f78bdca07cd2ec5f854d45fb38b965253b8eef582c91cc8",
+            "bytes": 7416,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6871,
+                "sha256": "fe106faa5d3ef92d892fdee25d3f0d7fecdd54571e3d93cf910464d74d711cfa"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "9703dc48588615e3d1056b1c57e082b94a83293f1dc646c4bdc95c2e34b5cc5e",
+            "cd66409576c2a7a68d06b8539ff63febdb0655716d906f90eb2c52ab0576242a",
+            "1155dfbc20c88edd4fc04b2ce203a67afcede7f586e803fa0d344236302e2aef",
+            "d56af656023b31278a6332ec9a16433b38a2a302ddad52c6b498cbf54da582f2",
+            "49bd7753a944eddcebd101791f02c89c0826465e6cbd0c71cff8ad3475ad7fc5",
+            "22f3d4994dd0b8abf23b0793d90485dd37b866f95fa40db1eef33dfa48efdd87",
+            "f039d24430b15628e154e17f2c5cdd674fabc224c179b588020e281892226bf7",
+            "0b3777e7e7ea4b2fd093ffbf400b8efcbf0674945deb97a9b69b647c8e3854ac",
+            "1155dfbc20c88edd4fc04b2ce203a67afcede7f586e803fa0d344236302e2aef"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9501040547460761
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342919
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8418648347168368
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9118357115095671
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831632
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342918
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.7494768814657081
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "sidecars",
+          "state": "sidecars",
+          "past": 8,
+          "future": 0,
+          "dirty": {
+            "lines": true,
+            "words": true,
+            "cues": true
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "6d6a10792a4f4cc50a1bb66c6a264b0627f476132e6859034f1a32fa6b17c249",
+            "bytes": 7949,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "authoring-cues.lrc",
+                "bytes": 52,
+                "sha256": "888ec969646cb54c811cdf4f1bd51f39f073d89104a803053ae4454a0d050584"
+              },
+              {
+                "name": "authoring-lines-2.lrc",
+                "bytes": 58,
+                "sha256": "d7915ff56e727e24e67c4610690bda07bc310b3c15ff502a683b41a953a5ee96"
+              },
+              {
+                "name": "authoring-words.lrc",
+                "bytes": 80,
+                "sha256": "60b7cab99b5f54805c35712eddc318006149b77245f9337b72a62adb1abe2444"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6870,
+                "sha256": "6c8070548b405e8d47645d3f9f388dd981b44244f49266ef790f011b55410de6"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "d93b35f3bdf132465390f6bc0255e2f61ea43c86b2ca24dccb4b02e03fb1ce3c",
+            "bytes": 7415,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6870,
+                "sha256": "6c8070548b405e8d47645d3f9f388dd981b44244f49266ef790f011b55410de6"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "4f2a9722da8fc08319266971e75ea2e9c4c080259f6fee8f2169c16cbb10cc89",
+            "6720489b29696b27811b0b84a36240eb8f86dfd8db26b15b3451a13cfdd57377",
+            "439b9fc2b0b4e37b6327acf6f1889e60de80fd455a4b9f772255cd66ef0b00c3",
+            "d56af656023b31278a6332ec9a16433b38a2a302ddad52c6b498cbf54da582f2",
+            "bc5276b13720e2be12f35d69a9607adbcb3771afe6b493fff89fe966fe7d614b",
+            "59cd0df7fe8812b97db059bb53ead16738ad9bebe54c7d40ff944c5080424bf8",
+            "2d8d6062d2284c44bc6ed50d82e05e2ce425fde267399e6d4f5402c85a4097df",
+            "0b3777e7e7ea4b2fd093ffbf400b8efcbf0674945deb97a9b69b647c8e3854ac",
+            "439b9fc2b0b4e37b6327acf6f1889e60de80fd455a4b9f772255cd66ef0b00c3"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9501040547460761
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342919
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8418648347168368
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9118357115095671
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831632
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342918
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.7494768814657081
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "keyframes",
+          "state": "keyframes",
+          "past": 10,
+          "future": 0,
+          "dirty": {
+            "lines": true,
+            "words": true,
+            "cues": true
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "7a5fb8f211018c5d4ba6f3bd88b8d80f8866eacc6a8061b268f5ac2a90bf5c31",
+            "bytes": 8241,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "authoring-cues.lrc",
+                "bytes": 52,
+                "sha256": "888ec969646cb54c811cdf4f1bd51f39f073d89104a803053ae4454a0d050584"
+              },
+              {
+                "name": "authoring-lines-2.lrc",
+                "bytes": 58,
+                "sha256": "d7915ff56e727e24e67c4610690bda07bc310b3c15ff502a683b41a953a5ee96"
+              },
+              {
+                "name": "authoring-words.lrc",
+                "bytes": 80,
+                "sha256": "60b7cab99b5f54805c35712eddc318006149b77245f9337b72a62adb1abe2444"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7162,
+                "sha256": "d9be477bf793e39386e887792f561e655ced5d88798df965c36fc2c0cb5204fc"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "005efc0981d2683a354eb757b7cc386f92ffae4542400327f7a66d4e5235e362",
+            "bytes": 7707,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7162,
+                "sha256": "d9be477bf793e39386e887792f561e655ced5d88798df965c36fc2c0cb5204fc"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "fa6693f7ec9bb148f004cb339ae243aef435a8b693095196a2f45671387dd3b1",
+            "d24d407f7cdc6e1f3876b09ed3d3fc0b1288fd0fd5d9f9ab7dde331ae8404e8a",
+            "5142e369f6967ed0f00d32d68ace4d0250caae745822ce677433d278b124dc29",
+            "e9322ec4a6ea2970a8db429593a87ac5a6426730dbbefbadf3baeeba3f154835",
+            "b9076a2e2e3e97b2e1ec8c19775f92456ecb1393f57bb3212369ace9ad730d32",
+            "08836e5f3427ac29b97e24a95a4f4e783b89eb0832dc1ac2e8dfcf7236452775",
+            "3e8fef509c777b8361ab8b99402c9d5b4548557c5d699fec52200ec71f817828",
+            "a053c5c48f4c1b4ff2a0129034fc77f7494d05ad32fd32a7409f8cb4140e645f",
+            "5142e369f6967ed0f00d32d68ace4d0250caae745822ce677433d278b124dc29"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9501040547460761
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342919
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8418648347168368
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9118357115095671
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831632
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342918
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.7494768814657081
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "undo_keyframe",
+          "state": "first_keyframe",
+          "past": 9,
+          "future": 1,
+          "dirty": {
+            "lines": true,
+            "words": true,
+            "cues": true
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "7c69eae829af356c11ba1f89d6a0b44c0bca57568869901c28c2854a954713ff",
+            "bytes": 8130,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "authoring-cues.lrc",
+                "bytes": 52,
+                "sha256": "888ec969646cb54c811cdf4f1bd51f39f073d89104a803053ae4454a0d050584"
+              },
+              {
+                "name": "authoring-lines-2.lrc",
+                "bytes": 58,
+                "sha256": "d7915ff56e727e24e67c4610690bda07bc310b3c15ff502a683b41a953a5ee96"
+              },
+              {
+                "name": "authoring-words.lrc",
+                "bytes": 80,
+                "sha256": "60b7cab99b5f54805c35712eddc318006149b77245f9337b72a62adb1abe2444"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7051,
+                "sha256": "367a95303ebda57b111ec479e48810ce124d8fbf87eb9d2ca075d35716039aa0"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "16ac342448531e5de11edc10fe77fa9834d978e8d0cd69bd903caa39710ea6fd",
+            "bytes": 7596,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7051,
+                "sha256": "367a95303ebda57b111ec479e48810ce124d8fbf87eb9d2ca075d35716039aa0"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "fa6693f7ec9bb148f004cb339ae243aef435a8b693095196a2f45671387dd3b1",
+            "54b8a095bffa040814ca71d4c6a6fcb822f521be8844c49a1a6b32a9dfbf15f4",
+            "4a0feb2c265331242143751cf4ae57270d80988cafc84658a61d262670d55fa2",
+            "ebb9e576ad24d77dc3f93af7221aa1ac7fdc3cade71a69367583066c5410089a",
+            "02affe40525dac640dffb3e4a1f1008f4798de64be892be5d8349e6abbd9ad38",
+            "d4cee4017af7019275beb600e61004fbc71ba0b8f336ebf097213026ab38dba2",
+            "f440cb0bb0765c78dea3becf14f73d5b9ff16034bcaaca812cce342c64bc94ee",
+            "2e12601d4a4ee2821f0098438cd37542f6a6fdc108eb8f12bc007d3e1f073680",
+            "4a0feb2c265331242143751cf4ae57270d80988cafc84658a61d262670d55fa2"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9501040547460761
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342919
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8418648347168368
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9118357115095671
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831632
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342918
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.7494768814657081
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "redo_keyframe",
+          "state": "keyframes",
+          "past": 10,
+          "future": 0,
+          "dirty": {
+            "lines": true,
+            "words": true,
+            "cues": true
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "7a5fb8f211018c5d4ba6f3bd88b8d80f8866eacc6a8061b268f5ac2a90bf5c31",
+            "bytes": 8241,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "authoring-cues.lrc",
+                "bytes": 52,
+                "sha256": "888ec969646cb54c811cdf4f1bd51f39f073d89104a803053ae4454a0d050584"
+              },
+              {
+                "name": "authoring-lines-2.lrc",
+                "bytes": 58,
+                "sha256": "d7915ff56e727e24e67c4610690bda07bc310b3c15ff502a683b41a953a5ee96"
+              },
+              {
+                "name": "authoring-words.lrc",
+                "bytes": 80,
+                "sha256": "60b7cab99b5f54805c35712eddc318006149b77245f9337b72a62adb1abe2444"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7162,
+                "sha256": "d9be477bf793e39386e887792f561e655ced5d88798df965c36fc2c0cb5204fc"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "005efc0981d2683a354eb757b7cc386f92ffae4542400327f7a66d4e5235e362",
+            "bytes": 7707,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7162,
+                "sha256": "d9be477bf793e39386e887792f561e655ced5d88798df965c36fc2c0cb5204fc"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "fa6693f7ec9bb148f004cb339ae243aef435a8b693095196a2f45671387dd3b1",
+            "d24d407f7cdc6e1f3876b09ed3d3fc0b1288fd0fd5d9f9ab7dde331ae8404e8a",
+            "5142e369f6967ed0f00d32d68ace4d0250caae745822ce677433d278b124dc29",
+            "e9322ec4a6ea2970a8db429593a87ac5a6426730dbbefbadf3baeeba3f154835",
+            "b9076a2e2e3e97b2e1ec8c19775f92456ecb1393f57bb3212369ace9ad730d32",
+            "08836e5f3427ac29b97e24a95a4f4e783b89eb0832dc1ac2e8dfcf7236452775",
+            "3e8fef509c777b8361ab8b99402c9d5b4548557c5d699fec52200ec71f817828",
+            "a053c5c48f4c1b4ff2a0129034fc77f7494d05ad32fd32a7409f8cb4140e645f",
+            "5142e369f6967ed0f00d32d68ace4d0250caae745822ce677433d278b124dc29"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9501040547460761
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342919
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8418648347168368
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9118357115095671
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831632
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342918
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.7494768814657081
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "branch",
+          "state": "branch",
+          "past": 10,
+          "future": 0,
+          "dirty": {
+            "lines": true,
+            "words": true,
+            "cues": true
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "7e515e6c2c3eb87171cef6669c20b3066b4f40e292411008018bfa7d70630ee4",
+            "bytes": 8234,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "authoring-cues.lrc",
+                "bytes": 52,
+                "sha256": "888ec969646cb54c811cdf4f1bd51f39f073d89104a803053ae4454a0d050584"
+              },
+              {
+                "name": "authoring-lines-2.lrc",
+                "bytes": 58,
+                "sha256": "d7915ff56e727e24e67c4610690bda07bc310b3c15ff502a683b41a953a5ee96"
+              },
+              {
+                "name": "authoring-words.lrc",
+                "bytes": 80,
+                "sha256": "60b7cab99b5f54805c35712eddc318006149b77245f9337b72a62adb1abe2444"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7155,
+                "sha256": "21a8e8792b12b77f3da2227437f4a26c64ef761afff9a6d93feaad25a014abbc"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "3ba1fc42fa13db9e46a0cef7e2a28e999ee6cd3542f0befdce85a28bd769c5ed",
+            "bytes": 7700,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7155,
+                "sha256": "21a8e8792b12b77f3da2227437f4a26c64ef761afff9a6d93feaad25a014abbc"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "fa6693f7ec9bb148f004cb339ae243aef435a8b693095196a2f45671387dd3b1",
+            "cef46d8d035c06bf793a7987d70b635b12e2b8063ec0f5d49af763b7e75dd4ab",
+            "5ee23a275e54bd458017f0ba31b1313fd2d743b75d7ffe2d08778cb6c9bf4da5",
+            "22af3a3a075dd9627970badae3ad483f6772267790f36b00640357629cc016b5",
+            "3c159c6f783c8b6a8265db0c749bbd98cc03066178a1cb45a69ed35b454591ab",
+            "16d1e2f73cbf79a0fff94030a291725839932c31335617278963d7f7bb7faa89",
+            "2e5c0aee1f0e136c622347307fbdb153be452f3bbdf61128155ced127c456964",
+            "d07aee7e3e450a69d2ed719cefdb0ef7ff227c68f9e36a0dcfc0f0d054855357",
+            "5ee23a275e54bd458017f0ba31b1313fd2d743b75d7ffe2d08778cb6c9bf4da5"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9501040547460761
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342919
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8418648347168368
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9118357115095671
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831632
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342918
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.7494768814657081
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "branch_redo",
+          "state": "branch",
+          "past": 10,
+          "future": 0,
+          "dirty": {
+            "lines": true,
+            "words": true,
+            "cues": true
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "7e515e6c2c3eb87171cef6669c20b3066b4f40e292411008018bfa7d70630ee4",
+            "bytes": 8234,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "authoring-cues.lrc",
+                "bytes": 52,
+                "sha256": "888ec969646cb54c811cdf4f1bd51f39f073d89104a803053ae4454a0d050584"
+              },
+              {
+                "name": "authoring-lines-2.lrc",
+                "bytes": 58,
+                "sha256": "d7915ff56e727e24e67c4610690bda07bc310b3c15ff502a683b41a953a5ee96"
+              },
+              {
+                "name": "authoring-words.lrc",
+                "bytes": 80,
+                "sha256": "60b7cab99b5f54805c35712eddc318006149b77245f9337b72a62adb1abe2444"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7155,
+                "sha256": "21a8e8792b12b77f3da2227437f4a26c64ef761afff9a6d93feaad25a014abbc"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "3ba1fc42fa13db9e46a0cef7e2a28e999ee6cd3542f0befdce85a28bd769c5ed",
+            "bytes": 7700,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7155,
+                "sha256": "21a8e8792b12b77f3da2227437f4a26c64ef761afff9a6d93feaad25a014abbc"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "fa6693f7ec9bb148f004cb339ae243aef435a8b693095196a2f45671387dd3b1",
+            "cef46d8d035c06bf793a7987d70b635b12e2b8063ec0f5d49af763b7e75dd4ab",
+            "5ee23a275e54bd458017f0ba31b1313fd2d743b75d7ffe2d08778cb6c9bf4da5",
+            "22af3a3a075dd9627970badae3ad483f6772267790f36b00640357629cc016b5",
+            "3c159c6f783c8b6a8265db0c749bbd98cc03066178a1cb45a69ed35b454591ab",
+            "16d1e2f73cbf79a0fff94030a291725839932c31335617278963d7f7bb7faa89",
+            "2e5c0aee1f0e136c622347307fbdb153be452f3bbdf61128155ced127c456964",
+            "d07aee7e3e450a69d2ed719cefdb0ef7ff227c68f9e36a0dcfc0f0d054855357",
+            "5ee23a275e54bd458017f0ba31b1313fd2d743b75d7ffe2d08778cb6c9bf4da5"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9501040547460761
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342919
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8418648347168368
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9118357115095671
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831632
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342918
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.7494768814657081
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "full_undo",
+          "state": "initial",
+          "past": 0,
+          "future": 10,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": false
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "33bb0b5e0a007f75d08d9b239175ce06d51eb37109b8b81e98d94b7dc503347c",
+            "bytes": 7052,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6507,
+                "sha256": "9a8f9274f8a2489ea9793b442ab14be37296410d62208a57845912e2d6d57422"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "33bb0b5e0a007f75d08d9b239175ce06d51eb37109b8b81e98d94b7dc503347c",
+            "bytes": 7052,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6507,
+                "sha256": "9a8f9274f8a2489ea9793b442ab14be37296410d62208a57845912e2d6d57422"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "full_redo",
+          "state": "branch",
+          "past": 10,
+          "future": 0,
+          "dirty": {
+            "lines": true,
+            "words": true,
+            "cues": true
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "7e515e6c2c3eb87171cef6669c20b3066b4f40e292411008018bfa7d70630ee4",
+            "bytes": 8234,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "authoring-cues.lrc",
+                "bytes": 52,
+                "sha256": "888ec969646cb54c811cdf4f1bd51f39f073d89104a803053ae4454a0d050584"
+              },
+              {
+                "name": "authoring-lines-2.lrc",
+                "bytes": 58,
+                "sha256": "d7915ff56e727e24e67c4610690bda07bc310b3c15ff502a683b41a953a5ee96"
+              },
+              {
+                "name": "authoring-words.lrc",
+                "bytes": 80,
+                "sha256": "60b7cab99b5f54805c35712eddc318006149b77245f9337b72a62adb1abe2444"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7155,
+                "sha256": "21a8e8792b12b77f3da2227437f4a26c64ef761afff9a6d93feaad25a014abbc"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "3ba1fc42fa13db9e46a0cef7e2a28e999ee6cd3542f0befdce85a28bd769c5ed",
+            "bytes": 7700,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7155,
+                "sha256": "21a8e8792b12b77f3da2227437f4a26c64ef761afff9a6d93feaad25a014abbc"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "fa6693f7ec9bb148f004cb339ae243aef435a8b693095196a2f45671387dd3b1",
+            "cef46d8d035c06bf793a7987d70b635b12e2b8063ec0f5d49af763b7e75dd4ab",
+            "5ee23a275e54bd458017f0ba31b1313fd2d743b75d7ffe2d08778cb6c9bf4da5",
+            "22af3a3a075dd9627970badae3ad483f6772267790f36b00640357629cc016b5",
+            "3c159c6f783c8b6a8265db0c749bbd98cc03066178a1cb45a69ed35b454591ab",
+            "16d1e2f73cbf79a0fff94030a291725839932c31335617278963d7f7bb7faa89",
+            "2e5c0aee1f0e136c622347307fbdb153be452f3bbdf61128155ced127c456964",
+            "d07aee7e3e450a69d2ed719cefdb0ef7ff227c68f9e36a0dcfc0f0d054855357",
+            "5ee23a275e54bd458017f0ba31b1313fd2d743b75d7ffe2d08778cb6c9bf4da5"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9501040547460761
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342919
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8418648347168368
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.9118357115095671
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831632
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6505231185342918
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.7494768814657081
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5581351652831631
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        }
+      ],
+      "named_and_recorded_source_clocks_repeat": true,
+      "continuous_native_control_advances_across_repeat": true,
+      "cli": {
+        "commands": [
+          {
+            "command": "plan",
+            "returncode": 0,
+            "seconds": 0.163,
+            "frames": 24,
+            "state": "prepared; perceptual review pending"
+          },
+          {
+            "command": "preflight",
+            "returncode": 0,
+            "seconds": 0.646,
+            "frames": 24,
+            "state": "full preflight passed; no encoded video"
+          },
+          {
+            "input": "exported",
+            "command": "render",
+            "returncode": 0,
+            "seconds": 1.064,
+            "frames": 24,
+            "state": "technical-QA passed; creative and attended listening review pending"
+          },
+          {
+            "input": "reference",
+            "command": "render",
+            "returncode": 0,
+            "seconds": 1.086,
+            "frames": 24,
+            "state": "technical-QA passed; creative and attended listening review pending"
+          },
+          {
+            "input": "reexported",
+            "command": "render",
+            "returncode": 0,
+            "seconds": 1.111,
+            "frames": 24,
+            "state": "technical-QA passed; creative and attended listening review pending"
+          }
+        ],
+        "full_preflight": {
+          "mode": "full",
+          "frames_rendered": 24,
+          "total_frames": 24,
+          "complete": true,
+          "sequential": true,
+          "note": "All project frames were composed."
+        },
+        "native_programme_frames": 24,
+        "native_max_rgb8_error": 0,
+        "encoded_frames_per_video": 24,
+        "encoded_videos": 3,
+        "decoded_comparisons": 48,
+        "decoded_max_rgb8_error": 0,
+        "encoded_reference": "separate public CLI render of the independent literal expected project",
+        "pixel_hashes": [
+          "a980753a040ab41a45717977e0070efbcfc3a27771641205075896e756a242cb",
+          "e3f9481b093f79803db2679cc2c4eb38d727e63387481c9cd01d08d1fad2ee3c",
+          "cf294418eb79d2fd10cf82cacc6427c83b22553d44786712c341c4af768faa0e",
+          "8212e280e8b4770a4eedfbe560e0f5e4afdae62125da69a4170d4d76236d14c6",
+          "3ccfcc43d5e876edf196add00bb38c1131191f5aac6afbfeeeae0093eac6f1b9",
+          "4072079acca93c2a8645936b6d3f266eb3cca15d31884de345c0dd8ca9894567",
+          "c036d8a5f0a9b5b90fa52bca633a9d80e8168de74189cf791eaf85a83763c64c",
+          "bd31717e32a1b21d0d6668e32ef0ceb67100df17bbc231ec2e19bfbba484324b",
+          "3bdfacae181772f0730891b5fa593ac06bd016edbd10915b607d4fcca815451b",
+          "2d1569b6f79083cd3fec86c176dab8a68c13f62c25a41391613096619272d785",
+          "983e02bf46e7f525c45369bc9897585dc869c7ef71354b88816962f54ce978a3",
+          "40b5792254f049953c50ec343dc140c1359c4f4bbc17165a66af61a3c0bff0c6",
+          "16df7123344c43d8e0eec0fe9b30d285fc79347968f7671a78a03515474c80f3",
+          "176fb5ad4667464c7a2ef622c6dba7d18961616f2d43a5d73c7374f438d7efbe",
+          "d90761c6f6252b964cab500d4f70b0c3d5998b72236c788c82ca394c03c4af7d",
+          "ec9073862093b5d56f4a495369ba7aecb1255c2c18ed37ae669458e0c6362e96",
+          "1f1f188032ef1a701a5a99b64aa74ae78bc3ab577fcde3dea1ce2ba4fe427c9c",
+          "d6f8e3e2791f2c47e835e8710a060511bd000dff350d22751fa520e17e12e1be",
+          "1b329a73a2c16e8b431491741c348018815a2f3c491341a6d17597d3d53d6cc6",
+          "51304b14f7d9a168db3144589f54bc3d771ffc0b8941a1beb09985f4783ee340",
+          "c9420aa31860a15377983c8180e2f1b0bca5541fc6590471c81d8adb71a92c8c",
+          "3051fa2336e92f783f8b941e7a8876a0051d90a8ba62d72af6f750405037bde0",
+          "49d66025f23477d274a6113800982dc3c8e2cd13d8b74c074344854dd722456d",
+          "0798be105a8a30208d1cda0951c6553411a25665e2c9b01ff55ef894d92285a3"
+        ],
+        "video_sha256": "ec90351d3b49dbc9465eb6efd39d46498ee531c91511545ac80194279204670e",
+        "source_start_sample": 12000,
+        "source_end_sample_exclusive": 60000,
+        "sample_rate": 48000,
+        "repeats": 2,
+        "perceptual_approval": false
+      }
+    },
+    {
+      "name": "cue_routing",
+      "validations": 6,
+      "native_edits": 0,
+      "rejected_stale_responses": 0,
+      "assertions": {
+        "input_preserved": true,
+        "full_undo_export_identity": true,
+        "full_redo_export_identity": true,
+        "undo_steps": 4,
+        "redo_steps": 4,
+        "noop_preserved_redo": true,
+        "branch_cleared_redo": true,
+        "stale_proposal_rejected": true,
+        "history_bound": 100,
+        "bound_commits": 105,
+        "bound_undo_steps": 100,
+        "bound_export_identity": true
+      },
+      "dispositions": [
+        {
+          "index": 0,
+          "kind": "route",
+          "disposition": "committed"
+        },
+        {
+          "index": 1,
+          "kind": "injection",
+          "disposition": "committed"
+        },
+        {
+          "index": 2,
+          "kind": "timing",
+          "disposition": "committed"
+        },
+        {
+          "index": 3,
+          "kind": "timing",
+          "disposition": "committed"
+        }
+      ],
+      "checkpoints": [
+        {
+          "name": "initial",
+          "state": "initial",
+          "past": 0,
+          "future": 0,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": false
+          },
+          "cue_format": "cue",
+          "archive": {
+            "archive_sha256": "88cdec50e91c65850e66704954eaa585a4cc04cd40f24a7b1600de7120130107",
+            "bytes": 7341,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6796,
+                "sha256": "5e9e3fc5c3324fdcdf1ed9bb1a3c62c1a7c3b65d6496677f0d9bc07ac8a06084"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "88cdec50e91c65850e66704954eaa585a4cc04cd40f24a7b1600de7120130107",
+            "bytes": 7341,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6796,
+                "sha256": "5e9e3fc5c3324fdcdf1ed9bb1a3c62c1a7c3b65d6496677f0d9bc07ac8a06084"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "routing",
+          "state": "routing",
+          "past": 1,
+          "future": 0,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": false
+          },
+          "cue_format": "cue",
+          "archive": {
+            "archive_sha256": "29906de6b0f9f60b606a5e9b7853e1c4962309d2f85e46c178f5da7511c5cc0c",
+            "bytes": 7615,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7070,
+                "sha256": "d5f2835c6222946b91e82ac0ed288789a2fb328b787574339804303239dfd68d"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "29906de6b0f9f60b606a5e9b7853e1c4962309d2f85e46c178f5da7511c5cc0c",
+            "bytes": 7615,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7070,
+                "sha256": "d5f2835c6222946b91e82ac0ed288789a2fb328b787574339804303239dfd68d"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "injection",
+          "state": "injection",
+          "past": 2,
+          "future": 0,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": false
+          },
+          "cue_format": "cue",
+          "archive": {
+            "archive_sha256": "106b28eaf31b9e5962976daa7b26a54c703a9f1756e32feb22d88f07135815e8",
+            "bytes": 7754,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7209,
+                "sha256": "bf74f7ff4c2c090baf8f9ebeafd5849a7ccc31f245446ec79c0a63ee7bced28b"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "106b28eaf31b9e5962976daa7b26a54c703a9f1756e32feb22d88f07135815e8",
+            "bytes": 7754,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7209,
+                "sha256": "bf74f7ff4c2c090baf8f9ebeafd5849a7ccc31f245446ec79c0a63ee7bced28b"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "cue_converted",
+          "state": "cue_converted",
+          "past": 4,
+          "future": 0,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": true
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "7b8cb10eea51b28ab5b11a01f22456ca73500e3e9f4391954062b6f6a75485f5",
+            "bytes": 7913,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "authoring-cues.lrc",
+                "bytes": 51,
+                "sha256": "b9c19c7f859f0ca286bf88c128bcd44ae6f168935064f3fae3914b399b4746e1"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7205,
+                "sha256": "222ba959422f3f28716c4bdc29352cf18779cf8cbca713509cbddc9294c67142"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "594aa7c183d4ba9853a378a8d5e31fc3c7922b3dfa2265e2c43d5f07386ca011",
+            "bytes": 7750,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7205,
+                "sha256": "222ba959422f3f28716c4bdc29352cf18779cf8cbca713509cbddc9294c67142"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "full_undo",
+          "state": "initial",
+          "past": 0,
+          "future": 4,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": false
+          },
+          "cue_format": "cue",
+          "archive": {
+            "archive_sha256": "88cdec50e91c65850e66704954eaa585a4cc04cd40f24a7b1600de7120130107",
+            "bytes": 7341,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6796,
+                "sha256": "5e9e3fc5c3324fdcdf1ed9bb1a3c62c1a7c3b65d6496677f0d9bc07ac8a06084"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "88cdec50e91c65850e66704954eaa585a4cc04cd40f24a7b1600de7120130107",
+            "bytes": 7341,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 6796,
+                "sha256": "5e9e3fc5c3324fdcdf1ed9bb1a3c62c1a7c3b65d6496677f0d9bc07ac8a06084"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        },
+        {
+          "name": "full_redo",
+          "state": "cue_converted",
+          "past": 4,
+          "future": 0,
+          "dirty": {
+            "lines": false,
+            "words": false,
+            "cues": true
+          },
+          "cue_format": "lrc",
+          "archive": {
+            "archive_sha256": "7b8cb10eea51b28ab5b11a01f22456ca73500e3e9f4391954062b6f6a75485f5",
+            "bytes": 7913,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "authoring-cues.lrc",
+                "bytes": 51,
+                "sha256": "b9c19c7f859f0ca286bf88c128bcd44ae6f168935064f3fae3914b399b4746e1"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7205,
+                "sha256": "222ba959422f3f28716c4bdc29352cf18779cf8cbca713509cbddc9294c67142"
+              }
+            ]
+          },
+          "reexport_archive": {
+            "archive_sha256": "594aa7c183d4ba9853a378a8d5e31fc3c7922b3dfa2265e2c43d5f07386ca011",
+            "bytes": 7750,
+            "entries": [
+              {
+                "name": "AUTHORING-README.txt",
+                "bytes": 307,
+                "sha256": "8f5c34ac96a4472fdc46acd1d7a4cf1b91f25ce98534c7eabe7d3db1f5540245"
+              },
+              {
+                "name": "project.json",
+                "bytes": 7205,
+                "sha256": "222ba959422f3f28716c4bdc29352cf18779cf8cbca713509cbddc9294c67142"
+              }
+            ]
+          },
+          "native_validation": true,
+          "semantic_reopen_identity": true,
+          "native_reopened_timing_semantics": true,
+          "original_source_bytes_unchanged": true,
+          "native_compared_frames": 18,
+          "max_rgb8_error": 0,
+          "frame_sha256": [
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "0beb1344e75b0d6244735ed4cc7e8402909cb0ceebfa40756d707637110af9f0",
+            "d1a0fe0e3ef4a7fc651ca70a29b11039291645745015348111a2e1d05d4c8594",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13",
+            "5f7e9e68eaf04ee13a1789e069444d53ce98127ba129417fa59954f61561a63c",
+            "a090d71b65c18ce6de6d6552cefdee6a955b29afc8943b23e14ad892a5a4ef13"
+          ],
+          "clocks": [
+            {
+              "frame": 0,
+              "source_seconds": 0.25,
+              "beat": 0.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 2,
+              "source_seconds": 0.4166666666666667,
+              "beat": 0.5833333333333334,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 9,
+              "source_seconds": 1.0,
+              "beat": 1.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 12,
+              "source_seconds": 0.25,
+              "beat": 2.25,
+              "source_beat": 0.25
+            },
+            {
+              "frame": 14,
+              "source_seconds": 0.4166666666666667,
+              "beat": 2.5833333333333335,
+              "source_beat": 0.5833333333333334
+            },
+            {
+              "frame": 17,
+              "source_seconds": 0.6666666666666666,
+              "beat": 3.083333333333333,
+              "source_beat": 1.0833333333333333
+            },
+            {
+              "frame": 21,
+              "source_seconds": 1.0,
+              "beat": 3.75,
+              "source_beat": 1.75
+            },
+            {
+              "frame": 5,
+              "source_seconds": 0.6666666666666666,
+              "beat": 1.0833333333333333,
+              "source_beat": 1.0833333333333333
+            }
+          ],
+          "native_control_values": [
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.8309698831278216
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.1970588235295
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087276
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.228431372549
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.6956708580912725
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.33823529411775
+              }
+            ],
+            [
+              {
+                "node": "red-dim",
+                "property": "opacity",
+                "value": 0.5043291419087275
+              },
+              {
+                "node": "sequence::stage::finish",
+                "property": "progress",
+                "value": 0.2754901960785
+              }
+            ]
+          ],
+          "rational_clock_formula_max_abs_error": 4.440892098500626e-16,
+          "nonsequential_repeated_frame_identical": true
+        }
+      ],
+      "named_and_recorded_source_clocks_repeat": true
+    }
+  ],
+  "http_requests": 38,
+  "source_sha256": {
+    "art/blue.png": "8585d3c42e4e3443ff59f90ab1ed16351b2024ed88064bf3cf37d04d965e60ef",
+    "art/mask.png": "3533343d9c71e372d189f710d8f5b5eb22bf041e481bcf2d08e7a31b6a801c3c",
+    "art/red.png": "f682e5be76be726124112e133265594cf75766734a41d1e46f92d4c3a5589347",
+    "authoring-lines.lrc": "0a4e5dd0ea5882875f81588c28505301a5c1890c8dbba8f2f51331729d9f0d2a",
+    "captions/words.lrc": "582671a4254c6b02da84ffc4e01614a77574c940609536d3dd675a1e9b9eb031",
+    "fonts/font.ttf": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e",
+    "motion/recording.json": "264eea1a781b873d985c508dbe7f49259ce59d633225f8373612ca7b6dc1d891",
+    "source.wav": "751704ee7a8549959e44a701b955ed16c4ec666379ae1cd8fddee7e2bfca0f70",
+    "structure/sections.cue": "492d684afcb9621da80fd1fa11e461853655d0ead473a5ac681dbae8f1c7c430",
+    "structure/sections.lrc": "642857978bf1b03f476d4f7b8f7153658c59b0d86a24ade283a1ea4203641a91"
+  },
+  "contact_sheet_sha256": "fcc9e90cca5e1cf43b4a99435c4325e721cc353eb2fb0c6abcb2a3eb6622971a",
+  "owned_temporary_tree_removed": true,
+  "native_http_temporary_trees_removed": true,
+  "original_projects_and_sources_unchanged": true,
+  "seconds": 16.597
+}

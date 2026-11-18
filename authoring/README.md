@@ -12,6 +12,38 @@ validate the result with the existing FrameRudiments `plan` / `preflight`
 commands. The one-shot preview omits GPU feedback; the opt-in adaptive stream
 uses the verified S6 replay route below.
 
+## M10.5 round-trip JSON and complete undo/redo
+
+The app and native qualifier now share the same immutable history and ZIP
+export code. **Undo / Redo** restores the complete project, all timing sidecars,
+dirty flags and cue format, retaining up to **100 changed operations**. Equal
+edits keep the redo branch and revision intact; a new changed edit after Undo
+clears that branch. An accepted unchanged native parameter also releases its
+pending form without adding an undo entry.
+
+Every real edit, Undo and Redo creates a new history revision for graph checks,
+native proposals, previews, asynchronous preset reads and export. Returning to
+the same snapshot cannot revive an earlier response. History remains in browser
+memory; M10.5 adds no autosave or project ZIP-import interface.
+
+Export captures a detached draft before hashing edited UTF-8 LRC sidecars. It
+preserves source bindings, clocks and unrelated JSON, rejects nonfinite or
+otherwise lossy project JSON, avoids known pinned sidecar basenames, and uses a
+valid deterministic ZIP date. CD CUE stays pinned until explicitly converted to
+valid LRC section labels. Extract the bundle beside the original source layout,
+retain the original project JSON, and validate the exported project normally.
+
+The recorded native qualifier checks **17 history checkpoints**, including fresh
+native reopen and reexport, against independent expected projects: **306 exact
+native frame comparisons**, another **24-frame native programme comparison**,
+and **48 decoded-frame comparisons** across three actual CLI renders. Original
+source bytes remain unchanged. See the [M10.5 guide](../docs/authoring-roundtrip-m10-5.md)
+for the fixture, diagnostics, commands and receipt. Browser paint, physical GPU
+behaviour, sequential external engines and perceptual approval remain separate;
+exact-candidate platform/GPU CI retains its own gates. The next consolidated
+roadmap milestone is **M11.1: temporal dependency declarations (past/future frame
+indexing) and deterministic scheduling**.
+
 ## M10.4 transition preview and exact-frame inspection
 
 Select a transition in **Effect DAG** to compare its native **From / Result / To**

@@ -28,6 +28,9 @@ REQUIRED_SOURCE = (
     "integration/qualify_graph_preview_m10_4.py", "authoring/integration/graphPreviewRoundtrip.ts",
     "authoring/src/graphPreview.ts", "authoring/src/NativeFramePreview.tsx",
     "authoring/src/native-frame-preview.css",
+    "integration/qualify_authoring_roundtrip_m10_5.py", "integration/fixtures/authoring_roundtrip_m10_5.json",
+    "authoring/integration/authoringRoundtrip.ts", "authoring/src/authoringHistory.ts",
+    "authoring/src/authoringExport.ts",
     "authoring/integration/graphRoundtrip.ts", "authoring/src/graphEditor.ts", "authoring/src/archive.ts",
     "src/framerudiments/visualiser_assets/butterchurn-cleanup.mjs",
 )

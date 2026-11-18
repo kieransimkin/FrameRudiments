@@ -373,7 +373,9 @@ export function GraphParameterEditor({project,revision,node,sidecars=EMPTY_SIDEC
      const proposed=fence.acceptEdit(value,ticket,project,operation);
      if(!proposed)throw Error('The native edit did not match this draft and selection.');
      if(currentRef.current!==context||!applyRef.current?.(proposed,revision))throw Error('The draft changed before this proposal could be applied. Retry from the current inspector.');
-     // The parent atomically commits a new snapshot; its render retires this panel.
+     // An accepted no-op keeps the same history/context, so explicitly release
+     // its pending form instead of waiting for a new snapshot to retire it.
+     if(currentRef.current===context&&fence.current(ticket))setEdit(null);
    }catch(error){update('error',controller.signal.aborted?'The native proposal timed out. Your draft is unchanged.':`${errorText(error)} Your draft is unchanged.`);}
    finally{clearTimeout(timer);if(editRequest.current===controller)editRequest.current=null;}})();
  };

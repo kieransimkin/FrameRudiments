@@ -1,0 +1,168 @@
+{
+  "schema": "framerudiments.authoring-roundtrip-fixture.v1",
+  "description": "Synthetic source-window and repeat fixture. $pin objects are replaced with hashes of locally generated inputs. Expected states contain independently authored literal changes, not replayed editor operations.",
+  "frames": [0, 2, 5, 9, 12, 14, 17, 21, 5],
+  "export_paths": {"lines": "authoring-lines-2.lrc", "words": "authoring-words.lrc", "cues": "authoring-cues.lrc"},
+  "sidecar_files": {
+    "authoring-lines.lrc": "[00:00.250]Amber moves\n[00:00.750]Blue drifts\n[00:01.200]\n",
+    "captions/words.lrc": "[00:00.250]Amber\n[00:00.500]moves\n[00:00.750]Blue\n[00:01.000]drifts\n[00:01.200]\n",
+    "structure/sections.lrc": "[00:00.250][SECTION: warm]\n[00:00.750][SECTION: cool]\n",
+    "structure/sections.cue": "FILE \"source.wav\" WAVE\n  TRACK 01 AUDIO\n    TITLE \"Warm section\"\n    INDEX 01 00:00:30\n  TRACK 02 AUDIO\n    TITLE \"Cool section\"\n    INDEX 01 00:00:60\n"
+  },
+  "project": {
+    "schema": "framerudiments.project.v1",
+    "title": "M10.5 synthetic authoring round-trip",
+    "purpose": "visualiser",
+    "width": 192,
+    "height": 128,
+    "fps": 12,
+    "fps_reason": "Bounded synthetic JSON/history/native-CLI qualification",
+    "audio": {
+      "source": {"$pin": "source.wav"},
+      "sample_rate": 48000,
+      "start_sample": 12000,
+      "end_sample": 60000,
+      "repeats": 2,
+      "fade_seconds": 0
+    },
+    "clock": {"bpm": 120, "origin": 0.125, "authority": "synthetic fixture", "status": "synthetic"},
+    "font": {"$pin": "fonts/font.ttf"},
+    "lyrics": {"$pin": "authoring-lines.lrc"},
+    "word_lyrics": {"$pin": "captions/words.lrc"},
+    "cues": {"$pin": "structure/sections.lrc"},
+    "background": {"colour": "#121b2d"},
+    "render_quality": {"enabled": false},
+    "captions": {"box": [8, 97, 184, 115], "font_size": 12, "min_font_size": 10, "colour": "#f5f7ff", "panel": "#121b2d", "stroke": 0, "word_mode": "highlight"},
+    "word_captions": {"box": [8, 115, 184, 128], "font_size": 10, "min_font_size": 8, "colour": "#f7cf62", "panel": "#121b2d", "stroke": 0},
+    "stem_sources": {
+      "saved-intensity": {"kind": "recording", "file": {"$pin": "motion/recording.json"}}
+    },
+    "layers": [
+      {"id": "red", "asset": {"$pin": "art/red.png"}, "width": 192, "center": [96, 64], "bounds": [0, 0, 192, 128], "motion": {"kind": "named", "pattern": "circle", "rate": 0.75, "repeat_clock": "source"}, "mapping": {"dx": 4, "dy": 3}},
+      {"id": "blue", "asset": {"$pin": "art/blue.png"}, "width": 192, "center": [96, 64], "bounds": [0, 0, 192, 128], "motion": {"kind": "recording", "file": {"$pin": "motion/recording.json"}, "axes": ["accent", "intensity"]}, "mapping": {"dx": 4, "dy": 2}},
+      {"id": "mask", "asset": {"$pin": "art/mask.png"}, "width": 192, "center": [96, 64], "bounds": [0, 0, 192, 128]}
+    ],
+    "effect_graph": {
+      "nodes": [
+        {"id": "background", "type": "source"},
+        {"id": "layer:red", "type": "source"},
+        {"id": "layer:blue", "type": "source"},
+        {"id": "layer:mask", "type": "source"},
+        {"id": "caption", "type": "source"},
+        {"id": "word-caption", "type": "source"},
+        {"id": "red-dim", "type": "opacity", "inputs": ["layer:red"], "opacity": 0.78},
+        {"id": "red-fork", "type": "filter", "inputs": ["layer:red"], "filter_type": "blur", "filter_radius": 0.5},
+        {"id": "masked", "type": "matte", "inputs": ["red-dim", "layer:mask"], "matte_channel": "alpha", "mask_combine": "multiply"},
+        {"id": "merged", "type": "composite", "inputs": ["red-fork", "layer:blue"], "mode": "over"},
+        {"id": "sequence", "type": "transition_chain", "inputs": ["masked", "merged", "layer:blue"],
+          "input_effects": [[{"id": "dim", "type": "opacity", "opacity": 0.85}], [], [{"id": "soft", "type": "filter", "filter_type": "blur", "filter_radius": 0.75}]],
+          "stages": [{"id": "reveal", "transition_style": "wipe", "progress": 0.3, "direction": "right", "feather": 0.15}, {"id": "finish", "transition_style": "dissolve", "progress": 0.2}]},
+        {"id": "output", "type": "composite", "inputs": ["background", "sequence", "caption", "word-caption"], "mode": "over"}
+      ],
+      "output": "output"
+    },
+    "effect_graph_controls": [
+      {"id": "named-source", "node": "red-dim", "property": "opacity", "motion": {"kind": "named", "pattern": "circle", "rate": 0.75, "phase_beats": 0.125, "repeat_clock": "source"}, "axis": "x", "range": [0.35, 0.85]},
+      {"id": "recorded-source", "node": "sequence::stage::finish", "property": "progress", "motion": {"kind": "recording", "file": {"$pin": "motion/recording.json"}}, "axis": "intensity", "range": [0.15, 0.65]}
+    ]
+  },
+  "cases": [
+    {
+      "name": "mixed_lrc",
+      "cli": true,
+      "project_changes": [],
+      "operations": [
+        {"kind": "graph_connection", "target": "merged", "index": 1, "source": "red-dim"},
+        {"kind": "graph_inputs", "target": "masked", "inputs": ["layer:blue", "layer:mask"], "checkpoint": "graph"},
+        {"kind": "native", "node": "sequence::stage::reveal", "operation": {"kind": "set_parameter", "property": "progress", "value": 0.7}},
+        {"kind": "native", "node": "red-dim", "operation": {"kind": "put_binding", "property": "opacity", "motion": {"kind": "named", "pattern": "circle"}, "motion_settings": {"rate": 0.75, "phase_beats": 0.125, "repeat_clock": "continuous"}, "settings": {"id": "named-continuous", "axis": "y", "range": [0.05, 0.15], "combine": "add"}}, "checkpoint": "native"},
+        {"kind": "timing", "field": "lines", "id": "item-0@1", "start": 1.125, "label": "Amber turns"},
+        {"kind": "timing", "field": "words", "id": "word-0@1", "start": 1.125, "label": "Amber"},
+        {"kind": "timing", "field": "words", "id": "word-1@1", "start": 1.25, "label": "turns"},
+        {"kind": "timing", "field": "cues", "id": "item-0@1", "start": 1.25, "label": "[ENTRY: turn]", "cueFormat": "lrc", "checkpoint": "sidecars"},
+        {"kind": "keyframe", "target": "layer:red", "property": "opacity", "key": {"time": 0, "value": 0.6}},
+        {"kind": "keyframe", "target": "layer:red", "property": "opacity", "key": {"time": 0.75, "value": 0.95, "ease": "smoothstep"}, "checkpoint": "keyframes"},
+        {"kind": "undo", "checkpoint": "undo_keyframe"},
+        {"kind": "noop"},
+        {"kind": "redo", "checkpoint": "redo_keyframe"},
+        {"kind": "undo"},
+        {"kind": "keyframe", "target": "layer:red", "property": "opacity", "key": {"time": 0.5, "value": 0.85, "ease": "hold"}, "checkpoint": "branch"},
+        {"kind": "redo", "checkpoint": "branch_redo"}
+      ],
+      "expected_states": {
+        "graph": {"from": "initial", "changes": [
+          {"path": ["project", "effect_graph", "nodes", 9, "inputs"], "value": ["red-fork", "red-dim"]},
+          {"path": ["project", "effect_graph", "nodes", 8, "inputs"], "value": ["layer:blue", "layer:mask"]}
+        ]},
+        "native": {"from": "graph", "changes": [
+          {"path": ["project", "effect_graph", "nodes", 10, "stages", 0, "progress"], "value": 0.7},
+          {"path": ["project", "effect_graph_controls", 2], "value": {"node": "red-dim", "property": "opacity", "motion": {"kind": "named", "pattern": "circle", "rate": 0.75, "phase_beats": 0.125, "repeat_clock": "continuous"}, "id": "named-continuous", "axis": "y", "range": [0.05, 0.15], "combine": "add"}}
+        ]},
+        "sidecars": {"from": "native", "changes": [
+          {"path": ["sidecars", "lines", 0], "value": {"id": "item-0", "start": 0.375, "label": "Amber turns"}},
+          {"path": ["sidecars", "words", 0], "value": {"id": "word-0", "start": 0.375, "label": "Amber"}},
+          {"path": ["sidecars", "words", 1], "value": {"id": "word-1", "start": 0.5, "label": "turns"}},
+          {"path": ["sidecars", "cues", 0], "value": {"id": "item-0", "start": 0.5, "label": "[ENTRY: turn]"}},
+          {"path": ["dirty"], "value": {"lines": true, "words": true, "cues": true}}
+        ]},
+        "first_keyframe": {"from": "sidecars", "changes": [
+          {"path": ["project", "layer_animations"], "value": {"layer:red": {"opacity": {"keys": [{"time": 0, "value": 0.6}]}}}}
+        ]},
+        "keyframes": {"from": "first_keyframe", "changes": [
+          {"path": ["project", "layer_animations", "layer:red", "opacity", "keys"], "value": [{"time": 0, "value": 0.6}, {"time": 0.75, "value": 0.95, "ease": "smoothstep"}]}
+        ]},
+        "branch": {"from": "first_keyframe", "changes": [
+          {"path": ["project", "layer_animations", "layer:red", "opacity", "keys"], "value": [{"time": 0, "value": 0.6}, {"time": 0.5, "value": 0.85, "ease": "hold"}]}
+        ]}
+      },
+      "checkpoints": [
+        {"name": "initial", "state": "initial", "past": 0, "future": 0},
+        {"name": "graph", "state": "graph", "past": 2, "future": 0},
+        {"name": "native", "state": "native", "past": 4, "future": 0},
+        {"name": "sidecars", "state": "sidecars", "past": 8, "future": 0},
+        {"name": "keyframes", "state": "keyframes", "past": 10, "future": 0},
+        {"name": "undo_keyframe", "state": "first_keyframe", "past": 9, "future": 1},
+        {"name": "redo_keyframe", "state": "keyframes", "past": 10, "future": 0},
+        {"name": "branch", "state": "branch", "past": 10, "future": 0},
+        {"name": "branch_redo", "state": "branch", "past": 10, "future": 0},
+        {"name": "full_undo", "state": "initial", "past": 0, "future": 10},
+        {"name": "full_redo", "state": "branch", "past": 10, "future": 0}
+      ]
+    },
+    {
+      "name": "cue_routing",
+      "cli": false,
+      "project_changes": [
+        {"path": ["cues"], "value": {"$pin": "structure/sections.cue"}},
+        {"path": ["effects"], "value": [{"id": "first", "engine": "butterchurn", "preset": "feedback", "input_mix": 0.65, "seed": 7}, {"id": "second", "engine": "projectm", "preset": "kaleidoscope", "input_mix": 0.4, "seed": 11}]}
+      ],
+      "operations": [
+        {"kind": "route", "target": "layer:red", "feed": "first_pips", "overlay": true, "durationPips": 24, "checkpoint": "routing"},
+        {"kind": "injection", "target": "layer:red", "before": 1, "enabled": true, "checkpoint": "injection"},
+        {"kind": "timing", "field": "cues", "id": "item-0@1", "start": 1.25, "label": "[SECTION: warm]", "cueFormat": "lrc"},
+        {"kind": "timing", "field": "cues", "id": "item-1@1", "start": 1.625, "label": "[DROP: cool]", "cueFormat": "lrc", "checkpoint": "cue_converted"}
+      ],
+      "expected_states": {
+        "routing": {"from": "initial", "changes": [
+          {"path": ["project", "visualiser_routing"], "value": {"default": {"feed": "continuous", "overlay": false}, "elements": {"layer:red": {"feed": {"mode": "first_pips", "duration_pips": 24}, "overlay": true}}}}
+        ]},
+        "injection": {"from": "routing", "changes": [
+          {"path": ["project", "visualiser_stage_injections"], "value": [{"before": 1, "elements": ["layer:red"], "opacity": 1}]}
+        ]},
+        "cue_converted": {"from": "injection", "changes": [
+          {"path": ["sidecars", "cues"], "value": [{"id": "item-0", "start": 0.5, "label": "[SECTION: warm]"}, {"id": "item-1", "start": 0.875, "label": "[DROP: cool]"}]},
+          {"path": ["sidecars", "cueFormat"], "value": "lrc"},
+          {"path": ["dirty", "cues"], "value": true}
+        ]}
+      },
+      "checkpoints": [
+        {"name": "initial", "state": "initial", "past": 0, "future": 0},
+        {"name": "routing", "state": "routing", "past": 1, "future": 0},
+        {"name": "injection", "state": "injection", "past": 2, "future": 0},
+        {"name": "cue_converted", "state": "cue_converted", "past": 4, "future": 0},
+        {"name": "full_undo", "state": "initial", "past": 0, "future": 4},
+        {"name": "full_redo", "state": "cue_converted", "past": 4, "future": 0}
+      ]
+    }
+  ]
+}

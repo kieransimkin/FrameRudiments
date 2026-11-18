@@ -23,12 +23,14 @@ export function zipEntries(rows: Record<string,string>): Uint8Array {
      name.split('/').includes('..') || !/^[\w\-./]+$/.test(name))throw Error('Unsafe archive entry');
   const nameBytes=enc.encode(name),content=enc.encode(rows[name]);
   if(content.length>4*1024*1024)throw Error('Archive sidecar exceeds 4 MiB');
-  const checksum=crc32(content),flags=0x0800,method=0;
-  const header=[...p32(0x04034b50),...p16(20),...p16(flags),...p16(method),...p16(0),...p16(0),
+  // A fixed valid DOS date (1980-01-01) keeps byte-identical exports while
+  // avoiding the invalid month/day zero emitted by the original writer.
+  const checksum=crc32(content),flags=0x0800,method=0,dosDate=0x21;
+  const header=[...p32(0x04034b50),...p16(20),...p16(flags),...p16(method),...p16(0),...p16(dosDate),
     ...p32(checksum),...p32(content.length),...p32(content.length),...p16(nameBytes.length),...p16(0)];
   const localHead=Uint8Array.from([...header,...nameBytes]);
   local.push(localHead,content);
-  const centralHeader=Uint8Array.from([...p32(0x02014b50),...p16(20),...p16(20),...p16(flags),...p16(method),...p16(0),...p16(0),
+  const centralHeader=Uint8Array.from([...p32(0x02014b50),...p16(20),...p16(20),...p16(flags),...p16(method),...p16(0),...p16(dosDate),
     ...p32(checksum),...p32(content.length),...p32(content.length),...p16(nameBytes.length),...p16(0),
     ...p16(0),...p16(0),...p16(0),...p32(0),...p32(offset),...nameBytes]);
   central.push(centralHeader);
