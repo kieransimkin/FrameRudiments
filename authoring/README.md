@@ -24,6 +24,26 @@ clock is never driven by this worker. See the [S4 worker contract and tests](../
 Q5 uses the authored quality settings, but remains preview evidence rather than
 production or perceptual approval.
 
+## S7 measurements and report export
+
+The streaming panel distinguishes the requested frame from the currently shown
+image and its cached quality. Set any whole-number target from **15 to 120 FPS**;
+the accepted target appears separately while a change is pending. This target
+controls preview effort and does not change the source timeline or project FPS.
+
+Inspect fresh-render and decoded-image rates, p50/p95 service and queue latency,
+current Q5 coverage, PNG cache usage and refinement progress. Expand measurement
+details for seek processing, first-ready/decode timings and server-process CPU
+and current memory. Unavailable measurements remain explicit; a decoded-image
+acknowledgement does not certify physical display refresh.
+
+**Download measurement report** saves a bounded, content-free JSON receipt with
+source/implementation hashes and scoped observations. It excludes the session
+token, source paths, private text and frame pixels, and leaves production and
+perceptual approval separate. Polls and exports are fenced to the current
+session and invalidation epoch. See the [S7 measurement and native profiling
+contract](../docs/preview-qualification-s7.md).
+
 ## Verified temporal and feedback seeking
 
 S6 uses native bounded history for temporal shutters and an isolated authored-Q5

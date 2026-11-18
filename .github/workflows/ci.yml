@@ -108,6 +108,9 @@ jobs:
   effect-graph-parity:
     uses: ./.github/workflows/effect-graph-gpu.yml
 
+  preview-stream-qualification:
+    uses: ./.github/workflows/preview-stream-qualification.yml
+
   visualiser-acceptance:
     runs-on: ubuntu-24.04
     timeout-minutes: 25

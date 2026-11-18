@@ -157,10 +157,13 @@ class RefinementSupervisor:
                         s._bind_replay_identity(renderer)
                         outcome = s.cache.publish(ticket, png, settings_sha256=s._settings(ticket))
                         if outcome in ('stale', 'quota_rejected'):
+                            s.observations.counters['quota_rejections'] += int(outcome == 'quota_rejected')
+                            s.observations.counters['stale_results'] += int(outcome == 'stale')
                             self.state = 'stale' if outcome == 'stale' else 'quota_blocked'
                             self._report(force=True)
                             continue
                         self.completed += 1
+                        s.observations.rendered(render_ms=0, queue_ms=0, origin='refinement')
                         self.candidate = None
                         # Off-screen upgrades never move the visible cursor.
                         if frame == s.frame and not s.playing:

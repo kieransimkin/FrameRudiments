@@ -679,9 +679,27 @@ class PreviewFrameCache:
             if not self._validate_identity(db):
                 raise CacheIdentityError('cache revision was changed by another owner')
             frames = db.execute('SELECT COUNT(*) FROM frames').fetchone()[0]
+            q5_frames = db.execute('''SELECT COUNT(*) FROM frames f JOIN segments s ON s.id=f.segment_id
+                WHERE f.quality_rank=5 AND f.generation=s.generation''').fetchone()[0]
             occupied = self._disk_bytes(db)
             generations = [r[0] for r in db.execute('SELECT generation FROM segments ORDER BY first_frame')]
-            return {'schema': CACHE_SCHEMA, 'frames': frames, 'disk_bytes': occupied,
+            return {'schema': CACHE_SCHEMA, 'frames': frames, 'q5_frames': q5_frames, 'disk_bytes': occupied,
                     'ram_bytes': self._ram_size, 'max_bytes': self.max_bytes,
                     'min_free_bytes': self.min_free_bytes,
                     'generations': generations, **self._stats}
+
+    def qualification_segments(self):
+        """Export bounded section fingerprints; names, media and paths are omitted."""
+        with self._guard, closing(self._connect()) as db:
+            db.execute('BEGIN')
+            try:
+                if not self._validate_identity(db):
+                    raise CacheIdentityError('cache revision was changed by another owner')
+                rows = db.execute('SELECT * FROM segments ORDER BY first_frame LIMIT 2049').fetchall()
+                if len(rows) > 2048:
+                    raise CacheIdentityError('qualification section bound exceeded')
+                return [dict(start_frame=row['first_frame'], end_frame_exclusive=row['end_frame'],
+                             generation=row['generation'], dependency_sha256=self._pipeline_identity(db, row))
+                        for row in rows]
+            finally:
+                db.execute('ROLLBACK')

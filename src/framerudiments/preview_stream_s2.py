@@ -26,6 +26,7 @@ from .preview_seek_support import seek_status, temporal_reach
 from .preview_adaptive import AdaptiveController
 from .preview_quality import RENDERER_ABI as ADAPTIVE_ABI, PinnedInputGuard, profile_capabilities
 from .preview_replay import StatefulSeekUnavailable
+from .preview_qualification import StreamQualification
 from .preview_stream_contract import (
     _integer, canonical_digest, project_fingerprint, quality_profiles,
     requested_target_fps, section_segments,
@@ -58,7 +59,7 @@ class SeekStream:
 
     def __init__(self, cache, renderer, frame_count, target_fps=30, telemetry=None,
                  *, capabilities=None, verifier=None, clock=monotonic, refinement_factory=None,
-                 stateful=None):
+                 stateful=None, qualification_identity=None, acknowledgement_source='client_decode_ack'):
         _integer(frame_count, 'frame_count', 1, 10_000_000)
         _integer(target_fps, 'target_fps', 15, 120)
         self.cache, self.renderer = cache, renderer
@@ -90,6 +91,8 @@ class SeekStream:
         self.foreground_release_pending = False
         self.foreground_cleanup_error = None
         self.refinement = None
+        self.observations = StreamQualification(cache, frame_count, target_fps, clock=clock,
+            identity=qualification_identity, acknowledgement_source=acknowledgement_source)
         if refinement_factory is not None:
             if self.controller is None or not capabilities[5]['supported']:
                 raise ValueError('Refinement requires an eligible adaptive Q5 renderer')
@@ -99,6 +102,7 @@ class SeekStream:
         self.worker.start()
 
     def _event(self, kind, **properties):
+        self.observations.event(kind, self.cursor_seq, properties)
         self.event_seq += 1
         self.events.append(dict(schema=SCHEMA, id=self.event_seq, type=kind,
                                 cursor_seq=self.cursor_seq, **properties))
@@ -120,7 +124,7 @@ class SeekStream:
                     request_age_ms=max(0, (self.clock()-self.request_at)*1000),
                     url='/api/stream/frame?' + params)
 
-    def status(self, state='active'):
+    def status(self, state='active', *, refresh_qualification=False):
         return dict(schema=SCHEMA, session=self.token, state=state,
                     cursor_seq=self.cursor_seq, frame=self.frame,
                     target_fps=self.target_fps, playing=self.playing, stopped_frame=self.last_stop,
@@ -129,7 +133,13 @@ class SeekStream:
                     adaptive=self.controller.snapshot() if self.controller else None,
                     capabilities=self.capabilities, invalidation=self.invalidation,
                     stateful=self.stateful,
+                    qualification=self.observations.snapshot(refresh=refresh_qualification),
                     refinement=self.refinement.snapshot() if self.refinement else dict(enabled=False))
+
+    def qualification(self):
+        """A detached bounded receipt; no session token, project text or paths."""
+        with self.condition:
+            return self.observations.snapshot(full=True, refresh=True)
 
     def _settings(self, ticket):
         """Identical settings identity for foreground and background Q5 CAS."""
@@ -168,6 +178,7 @@ class SeekStream:
                 raise ValueError('Pinned source changed; reopen a verified project') from None
 
     def command(self, name, *, sequence, frame=None, target_fps=None):
+        received_at = self.clock()
         if name not in ('seek', 'advance', 'play', 'pause', 'stop', 'target_fps'):
             raise ValueError('unknown stream command')
         _integer(sequence, 'client sequence', 0, _MAX_SEQ)
@@ -185,6 +196,9 @@ class SeekStream:
             if sequence <= self.cursor_seq:
                 return self.status('out_of_order')
             self._verify_inputs()
+            self.observations.command(sequence, self.frame if frame is None else frame, name,
+                received_at=received_at, coalesced=self.pending is not None, target_fps=target_fps,
+                profile=self.controller.profile_id if self.controller else 'Q0')
             self.cursor_seq = sequence
             self.request_at = self.clock()
             if frame is not None:
@@ -211,8 +225,10 @@ class SeekStream:
                                  'requested_frame': self.frame, 'last_reason': self.replay_revoked}
                 self._event('stateful-seek-unavailable', frame=self.frame,
                             reason=self.replay_revoked, stateful=self.stateful)
+                self.observations.command_ack(name, received_at)
                 return self.status('stateful_seek_unavailable')
             cached = self.cache.get(self.frame)
+            self.observations.lookup(cached is not None)
             if cached is not None:
                 if self.controller:
                     self.controller.hit()
@@ -225,6 +241,7 @@ class SeekStream:
                 self.pending = (self.frame, sequence, self.clock(),
                                 self.controller.epoch if self.controller else 0)
                 self.condition.notify_all()
+            self.observations.command_ack(name, received_at)
             return self.status('accepted')
 
     def since(self, last=0, timeout=3):
@@ -255,6 +272,7 @@ class SeekStream:
             self.acks.append(identity)
             repeated = frame == self.last_presented_frame
             self.last_presented_frame = frame
+            self.observations.acknowledged(repeated=repeated)
             refined = any(e['type'] == 'frame-ready' and e['cursor_seq'] == sequence
                           and e.get('image_sha256') == digest and e.get('origin') == 'refinement'
                           for e in self.events)
@@ -410,6 +428,7 @@ class SeekStream:
                 with self.condition:
                     if (self.closed or self.cursor_seq != sequence or self.frame != frame
                             or self.replay_revoked is not None):
+                        self.observations.counters['stale_results'] += 1
                         continue
                     self._verify_inputs()
                     self._bind_replay_identity(self.renderer)
@@ -417,7 +436,9 @@ class SeekStream:
                     duration_ms, queue_ms = max(0, (self.clock()-started)*1000), max(0, (started-queued)*1000)
                     if outcome in ('stale', 'quota_rejected'):
                         self._event('overload', frame=frame, reason=outcome)
+                        self.observations.counters['stale_results'] += int(outcome == 'stale')
                         continue
+                    self.observations.rendered(render_ms=duration_ms, queue_ms=queue_ms)
                     decision = (self.controller.observe(duration_ms, queue_ms=queue_ms,
                                 setup_ms=min(duration_ms, max(0, getattr(self.renderer, "last_setup_ms", 0))),
                                 epoch=epoch, profile_id=profile_id)
@@ -478,7 +499,8 @@ class PreviewStreamAPI:
 
     def __init__(self, project_file, validate_draft, render_one, *, telemetry=None,
                  cache_root=None, project_loader=None, adaptive_renderer_factory=None, refinement_factory=None,
-                 stateful_renderer_factory=None, stateful_guard_factory=None):
+                 stateful_renderer_factory=None, stateful_guard_factory=None,
+                 acknowledgement_source='client_decode_ack', cache_limits=None):
         self.path = Path(project_file).resolve()
         self.validate = validate_draft
         self.render = render_one
@@ -488,6 +510,15 @@ class PreviewStreamAPI:
         self.refinement_factory = refinement_factory
         self.stateful_renderer_factory = stateful_renderer_factory
         self.stateful_guard_factory = stateful_guard_factory
+        if acknowledgement_source not in ('client_decode_ack', 'harness_png_decode'):
+            raise ValueError('unsupported acknowledgement source')
+        self.acknowledgement_source = acknowledgement_source
+        self.cache_limits = dict(max_bytes=512*1024**2, min_free_bytes=16*1024**2, ram_bytes=16*1024**2)
+        if cache_limits is not None:
+            if not isinstance(cache_limits, dict) or set(cache_limits) - set(self.cache_limits):
+                raise ValueError('unknown preview cache limits')
+            for key, value in cache_limits.items():
+                self.cache_limits[key] = _integer(value, key, 1 if key == 'max_bytes' else 0, 64*1024**3)
         self.root = Path(cache_root) if cache_root else (Path.home()/'.cache'/'framerudiments'/'stream-s2')
         self.lock = RLock()
         self.active = None
@@ -597,7 +628,7 @@ class PreviewStreamAPI:
                 self.active.close()
                 if not self.active.retired:
                     raise RuntimeError('Previous render is retiring; retry stream start')
-            limits = dict(max_bytes=512*1024**2, min_free_bytes=16*1024**2, ram_bytes=16*1024**2)
+            limits = self.cache_limits
             profiles = quality_profiles(candidate if adaptive else original)
             if adaptive:
                 # Stable per-workspace storage; per-section closures, not a new
@@ -640,7 +671,10 @@ class PreviewStreamAPI:
                     return factory(spec)
             stream = SeekStream(cache, renderer, original.frame_count, target_fps=max(15,target),
                                 telemetry=self.telemetry, capabilities=capabilities, verifier=guard,
-                                refinement_factory=refinement_factory, stateful=stateful)
+                                refinement_factory=refinement_factory, stateful=stateful,
+                                acknowledgement_source=self.acknowledgement_source,
+                                qualification_identity=dict(project_sha256=project_hash,
+                                    pipeline_sha256=pipeline, implementation_sha256=implementation))
             self.active = stream
             if stream.invalidation is not None:
                 stream.invalidation = {**stream.invalidation, 'cancelled_jobs': self._cancelled_jobs}
@@ -702,7 +736,7 @@ def _uint(value, maximum=_MAX_SEQ):
 def get_route(handler):
     """Handle only S2 paths, leaving all existing GET routes untouched."""
     target = urlsplit(handler.path).path
-    if target not in ('/api/stream/events','/api/stream/frame','/api/stream/status'):
+    if target not in ('/api/stream/events','/api/stream/frame','/api/stream/status','/api/stream/qualification'):
         return False
     try:
         if handler.headers.get('Origin') and not handler._origin_ok():
@@ -710,13 +744,19 @@ def get_route(handler):
             return True
         if len(urlsplit(handler.path).query)>512:
             raise ValueError('query too long')
-        q = parse_qs(urlsplit(handler.path).query, max_num_fields=5)
+        q = parse_qs(urlsplit(handler.path).query, max_num_fields=5, keep_blank_values=True)
         stream = handler.server.stream_api.get(_get_one(q,'session'))
-        if target == '/api/stream/status':
+        if target in ('/api/stream/status', '/api/stream/qualification'):
             if set(q) != {'session'}:
                 raise ValueError('invalid status query')
             with stream.condition:
-                handler._json(200,stream.status())
+                if target == '/api/stream/qualification':
+                    if stream.closed:
+                        raise ValueError('stream closed')
+                    handler._json(200, dict(session=stream.token, cursor_seq=stream.cursor_seq,
+                                           frame=stream.frame, qualification=stream.qualification()))
+                else:
+                    handler._json(200,stream.status(refresh_qualification=True))
             return True
         if target == '/api/stream/frame':
             if set(q) != {'session','frame','generation','sha256'}:

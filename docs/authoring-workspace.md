@@ -86,6 +86,27 @@ budget cannot provide verified output. Cached pixels remain preview evidence;
 production rendering and the one-shot `/api/preview` behavior are unchanged.
 See the [remaining implementation/qualification plan](seekable-adaptive-streaming-plan.md).
 
+[S7 measurements](preview-qualification-s7.md) distinguish the requested frame
+from the image actually shown, including its cached quality and origin. The
+target control accepts every whole-number rate from 15 through 120 FPS and
+shows the server-accepted target separately from a pending change. It does not
+change the source clock, project FPS or production settings.
+
+The independently scrolling measurement panel reports fresh-render and
+decoded-image acknowledgement rates, p50/p95 foreground service and queue
+latency, current indexed Q5 coverage, PNG cache use and cache/refinement
+operations. Expanded details separate seek command processing, first server
+frame readiness and first decode acknowledgement. CPU time and current memory
+are scoped to the preview server process; child and GPU memory are not implied.
+
+**Download measurement report** saves the current session's bounded JSON
+receipt. Source/implementation digests, current section generations and safe
+invalidation/quality history are retained. Tokens, paths, private text and image
+pixels are excluded. Session replacement or invalidation aborts stale polls
+and exports. Neither the report nor a successful preview grants physical
+display, encoded-output or perceptual approval. The S7 native profiling CLI and
+CI gallery provide separate synthetic load/seek evidence.
+
 Source lyric/cue timestamps are converted to/from the output excerpt's display
 ruler without modifying the approved source audio clock. Repeat cycles share
 one authoritative source-timed sidecar edit; the editor does not materialise
@@ -114,7 +135,9 @@ correct song analysis, acceptable GPU effects or platform compliance.
 local-only static/audio APIs, and refusal to read arbitrary new project refs.
 The UI's Node tests exercise repeated excerpts, LRC parsing/export, cue naming,
 keyframes, native effect-graph/port structure and nonmutating edits, presets,
-hashes and valid ZIP headers. The
+hashes and valid ZIP headers. Streaming tests cover the full 15–120 FPS target
+range, current/stale frame labels, session/invalidation fencing, numeric
+measurement validation and bounded content-free report projection. The
 `.github/workflows/authoring.yml` matrix tests Python 3.11/3.13 on both
 Windows/Ubuntu and builds the React UI with the released timeline dependency.
 

@@ -1,6 +1,6 @@
 # FrameRudiments
 
-**Streaming S0–S6 implementation candidates:** opt-in local streaming now combines
+**Streaming S0–S7 implementation candidates:** opt-in local streaming now combines
 [adaptive native rendering](docs/preview-stream-s3.md), [paused Q5 refinement](docs/preview-stream-s4.md),
 [whole-section invalidation](docs/preview-stream-s5.md) and
 [verified temporal/feedback seeking](docs/preview-stateful-seek-s6.md).
@@ -9,10 +9,15 @@ pipelines use authored Q5 with bounded frame-zero replay and independent exact
 pixel verification. Missing runtimes, exceeded budgets or nonrepeatable resets
 report `stateful_seek_unavailable`. Cached frames remain preview evidence.
 
-The [implementation plan](docs/seekable-adaptive-streaming-plan.md) tracks the
-remaining S7 profiling and release qualification. The one-shot renderer and
-production pipeline retain their existing behavior; source/audio clocks are
-unchanged.
+[S7 measurements and native profiling](docs/preview-qualification-s7.md) add
+15–120 FPS target control, current cached-quality/Q5-coverage indicators,
+separate render/decode rates, scoped resource observations and a content-free
+JSON export. A native seek/edit/refinement gallery runs through the existing CI
+and release validation route, including Windows/Linux CPU and software-EGL GPU
+profiles. The [implementation plan](docs/seekable-adaptive-streaming-plan.md)
+keeps external-engine, physical-device and perceptual acceptance explicit.
+The one-shot renderer and production pipeline retain their existing behavior;
+source/audio clocks are unchanged.
 
 M10.1 adds a [visual executable effect-graph node/port editor](docs/authoring-workspace.md)
 to the existing React timeline workspace. The editor preserves native timing,

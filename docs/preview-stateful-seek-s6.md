@@ -159,6 +159,9 @@ Run the affected checks through `scripts/Invoke-Tests.ps1`, then authoring tests
 typecheck/build and Ruff. The delivery receipt records which gates actually ran
 and any host limitation. Exact-head Windows/Linux CI, real feedback-engine
 parity, physical GPU qualification, long-project memory/latency profiling and
-encoded-output/perceptual approval remain distinct. S7 owns the broader
-profiling/gallery/release milestone. No source files, package versions, release
+encoded-output/perceptual approval remain distinct. The
+[S7 profiling/gallery contract](preview-qualification-s7.md) adds bounded session
+observations, native seek/edit/resource galleries and reusable CI release gates.
+Its measurements do not approve external feedback-engine determinism. No source
+files, package versions, release
 tags or external publishing destinations are changed by preview use.

@@ -34,10 +34,17 @@ def project_file(directory, engine):
     Image.new('RGBA', (16, 16), (230, 65, 20, 255)).save(sprite)
     if engine == 'projectm':
         preset = directory / 'deterministic.milk'
+        # The pinned native engine's legacy VideoEcho path applies randomly
+        # initialized hue even when fShader=0 and echo alpha=0. A reviewed
+        # MilkDrop2 composite reads retained feedback directly and excludes
+        # that random diffuse term; the warp/source/decay path stays native.
         preset.write_text(
+            'MILKDROP_PRESET_VERSION=201\nPSVERSION_WARP=0\nPSVERSION_COMP=2\n'
             '[preset00]\nfDecay=0.94\nfGammaAdj=1\nfWaveAlpha=0\nfShader=0\nmv_a=0\n'
             'ob_size=0\nib_size=0\nwarp=0\nzoom=1\nfZoomExponent=1\nrot=0\nsx=1\nsy=1\n'
-            'dx=0\ndy=0\nfVideoEchoAlpha=0\n', encoding='utf-8')
+            'dx=0\ndy=0\nfVideoEchoAlpha=0\n'
+            'comp_1=`shader_body\ncomp_2=`{\n'
+            'comp_3=`ret = tex2D(sampler_main, uv).xyz;\ncomp_4=`}\n', encoding='utf-8')
     else:
         preset = directory / 'deterministic.json'
         preset.write_text(json.dumps({

@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.30 — 17 November 2026
+**Version:** 1.31 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -182,7 +182,7 @@ All external shader/model/media sources must be pinned or versioned, constrained
 - **M10.3** Automatically generated parameter and DanceNotion control editors.
 - **M10.4** Transition previews and scrub-safe frame evaluation with quality/performance switch.
 - **M10.5** Round-trip JSON fixture and undo/redo tests.
-- **M10.S — seekable adaptive real-time streaming preview (S0–S6 candidates, S7 planned).**
+- **M10.S — seekable adaptive real-time streaming preview (S0–S7 candidates).**
   [Dedicated S0–S7 implementation plan](seekable-adaptive-streaming-plan.md):
   [S0 clock/quality/telemetry contracts](preview-stream-s0-contract.md) and
   [S1 persistent monotonic frame storage](preview-frame-cache-s1.md) define
@@ -196,8 +196,10 @@ All external shader/model/media sources must be pinned or versioned, constrained
   bounded-history reconstruction and authored-Q5 feedback prefix replay with
   independent reset/parity checks. It retains bounded verification receipts,
   not serialized engine checkpoints. Exact-head native-engine/platform CI
-  qualification remains open; S7 covers broader profiling, galleries and
-  release readiness. M11.1–M11.2 retain the wider temporal-engine scope.
+  qualification remains open. [S7 measurement and profiling](preview-qualification-s7.md)
+  supplies bounded session receipts, native load/seek galleries and CPU/software-EGL
+  CI profiling through the existing release-validation dependency.
+  M11.1–M11.2 retain the wider temporal-engine scope.
 - **Exit:** editor exports a valid project that matches CLI-rendered output.
 
 ### M11 — Temporal engine, media and CI showcases

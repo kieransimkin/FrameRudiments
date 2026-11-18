@@ -18,7 +18,14 @@ const page={setRequestInterception:async()=>{},on:()=>{},setContent:async()=>{},
 function browser(){ return {connected:true, newPage:async()=>page,version:async()=>'double-browser',
  close:async function(){log({event:'browser.close'});closed=true;this.connected=false;
  if(process.env.SCOPE_TEST_FAILURE==='close')throw Error('injected close failure');}}; }
-exports.defaultArgs = options => { log({event:'defaultArgs', options}); return ['--user-data-dir='+options.userDataDir,...options.args]; };
+// Pinned Puppeteer25 defaultArgs is async. A synchronous double concealed a
+// real native-launch failure by accepting an unresolved Promise as argv.
+exports.defaultArgs = async options => {
+ log({event:'defaultArgs', options});
+ await new Promise(resolve=>setImmediate(resolve));
+ if(process.env.SCOPE_TEST_FAILURE==='defaultArgs')throw Error('injected defaultArgs failure');
+ return ['--user-data-dir='+options.userDataDir,...options.args];
+};
 exports.connect = async options => { log({event:'connect', options});
  if(process.env.SCOPE_TEST_FAILURE==='connect')throw Error('injected connect failure');return browser(); };
 exports.launch = async options => { log({event:'launch', options}); return browser(); };
@@ -27,7 +34,8 @@ const launcherMock = `
 const fs = require('node:fs');
 const log = item => fs.appendFileSync(process.env.SCOPE_TEST_LOG, JSON.stringify(item)+'\\n');
 exports.CDP_WEBSOCKET_ENDPOINT_REGEX=/DevTools listening on (.*)/;
-exports.launch=options=>{const {env,...safeOptions}=options;
+exports.launch=options=>{if(!Array.isArray(options.args))throw Error('scoped launch requires a resolved argument array');
+ const {env,...safeOptions}=options;
  log({event:'scoped.launch', options:safeOptions, inherited:env?.SCOPE_TEST_LOG===process.env.SCOPE_TEST_LOG});return {
  waitForLineOutput:async(_regex,timeout)=>{log({event:'endpoint',timeout});
  if(process.env.SCOPE_TEST_FAILURE==='endpoint')throw Error('injected endpoint failure');return 'ws://owned-test-double';},
@@ -93,6 +101,16 @@ test('S6 browser stays in owned scope and closes both browser and process', asyn
     ['browser.close','process.close'])
   assert.equal(messages.at(-1).cleanup.owned_process_closed,true)
   assert.ok(Object.values(messages.at(-1).cleanup).every(Boolean))
+})
+
+test('S7 rejected async launch arguments remove the owned profile before any process starts',async()=>{
+  const {code,calls,messages}=await exercise(true,'defaultArgs')
+  assert.equal(code,1)
+  assert.ok(messages.some(message=>message.error?.includes('injected defaultArgs failure')))
+  assert.equal(calls.some(call=>call.event==='scoped.launch'),false)
+  assert.equal(calls.some(call=>call.event==='connect'),false)
+  assert.equal(calls.some(call=>call.event.endsWith('.close')),false)
+  assert.equal(messages.at(-1).cleanup.owned_profile_removed,true)
 })
 
 for (const failure of ['endpoint','connect']) {

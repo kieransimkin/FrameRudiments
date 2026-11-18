@@ -25,7 +25,7 @@ try {
         // using the pinned runtime's public lower-level launcher instead.
         const {launch, CDP_WEBSOCKET_ENDPOINT_REGEX} = require('@puppeteer/browsers');
         scopedProcess = launch({executablePath: message.browser, env: process.env,
-          args: puppeteer.defaultArgs({headless: true, userDataDir: profile,
+          args: await puppeteer.defaultArgs({headless: true, userDataDir: profile,
             args: [...browserArgs, '--remote-debugging-port=0']}),
           detached: false, handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false});
         const browserWSEndpoint = await scopedProcess.waitForLineOutput(CDP_WEBSOCKET_ENDPOINT_REGEX, 60000);

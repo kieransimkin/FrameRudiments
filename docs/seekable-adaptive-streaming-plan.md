@@ -1,6 +1,6 @@
 # Seekable adaptive streaming preview and monotonic frame cache — implementation plan
 
-**Status:** S0–S6 implementation candidates; S7 remains planned.
+**Status:** S0–S7 implementation candidates; acceptance is recorded per runtime and exact source revision.
 Exact-head CI, external-engine and physical-device qualification remain separate;
 see [S6 supported paths and verification limits](preview-stateful-seek-s6.md).
 **Owner:** FrameRudiments authoring/runtime.
@@ -410,8 +410,27 @@ nonrepeatable resets, missing runtimes and exceeded budgets remain visibly
 
 Foreground and refinement use isolated process scopes, runtime/input guards,
 latest-intent cancellation, parent-only generation-fenced admission and explicit
-replay UI progress. Native external parity, Windows/physical-device acceptance
-and broader S7 latency/memory profiling remain qualification gates.
+replay UI progress. Native external parity and Windows/physical-device acceptance
+remain qualification gates. S7 below supplies the broader latency/memory
+profiling route and records its measured runtime scope.
+
+### S7 implementation candidate — observations and native qualification
+
+[S7 measurements, profiling and CI gates](preview-qualification-s7.md) complete
+the authoring measurement/export controls and native load/seek gallery. Each
+session owns bounded timing/rate windows, current cache coverage, quality and
+invalidation histories, exact identity hashes and explicitly scoped server
+resources. Downloads omit source text, paths, pixels and session tokens.
+
+The reusable profiler drives the native stream/cache/refinement route with
+generated pinned fixtures, compares Q5 pixels with the production compositor,
+exercises random/latest-intent seeks and edit retention, and labels injected
+service/cache/allocation pressure separately. Its controller matrix covers
+24/30/60/120 FPS and 5/12/30/70 ms costs. The existing main CI/release-validation
+workflow calls Windows/Linux CPU and strict software-EGL profiling jobs and
+uploads the JSON/HTML evidence. Physical GPU, external feedback, encoded-output
+and human approval remain independent gates; local measurements do not claim
+these approvals.
 
 ## Test and performance matrix
 
