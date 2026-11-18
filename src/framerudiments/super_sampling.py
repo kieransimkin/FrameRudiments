@@ -13,7 +13,6 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
-from .quality_effects import linear_shutter_composite
 
 
 # These are physical pixel dimensions, not amplitudes, tempo or the number of
@@ -302,16 +301,11 @@ def _virtual_project(original, factor):
     return virtual
 
 
-def temporal_supersample(compositor, frame):
-    """Integrate true source-clock subframes into an ordinary output frame.
-
-    Works at random-access frames, including word/cue events and variable BPM.
-    The optional projectM/Butterchurn engines remain at their native *output*
-    frame rate and are never invoked multiple times per encoded frame.
-    """
+def temporal_compositor(compositor):
+    """Construct/reuse the private native sample grid without changing sources."""
     factor = compositor.output_quality.time_samples
-    if factor == 1:
-        raise ValueError("Temporal supersampling called with one sample")
+    if factor <= 1:
+        raise ValueError("Temporal supersampling requires more than one sample")
     virtual = getattr(compositor, "_temporal_virtual", None)
     if virtual is None:
         from .compositor import Compositor
@@ -352,51 +346,11 @@ def temporal_supersample(compositor, frame):
         virtual = Compositor(project, scene=scene_adapter, renderers=compositor.renderers,
                              _shared_effect_graph_gpu=compositor.effect_graph_gpu)
         compositor._temporal_virtual = virtual
-    images = []
-    route_averages = {}
-    route_keys = (
-        compositor.visualiser_routing.available
-        if getattr(compositor, "visualiser_routing", None) is not None
-        else ()
-    )
-    for j in range(factor):
-        sample, _ = virtual.frame(
-            min(frame * factor + j, virtual.project.frame_count - 1), apply_quality=False
-        )
-        images.append(sample)
-        if route_keys:
-            parts = dict(virtual._route_parts)
-            for key in route_keys:
-                value = parts.get(key)
-                if value is None:
-                    value = Image.new("RGBA", sample.size)
-                value = value.convert("RGBa")
-                route_averages[key] = (
-                    value if j == 0 else Image.blend(route_averages[key], value, 1 / (j + 1))
-                )
-    if route_keys:
-        compositor._route_parts = [(key, route_averages[key].convert("RGBA")) for key in route_keys]
-    # Source samples are genuinely different instants in the virtual clock.
-    combined = linear_shutter_composite(images, [1] * factor, strength=1)
-    compositor.extents.update(virtual.extents)
-    for word, status in virtual.text_states.items():
-        output_status = deepcopy(status)
-        if "first_frame" in output_status:
-            output_status["first_frame"] = output_status["first_frame"] // factor
-        compositor.text_states.setdefault(word, output_status)
-    compositor.post_pipeline.last_report = deepcopy(virtual.post_pipeline.last_report)
-    reports = deepcopy(virtual.frame_reports())
-    for report in reports.values():
-        if isinstance(report, dict) and "frame" in report:
-            report["subframe_index"] = report["frame"]
-            report["frame"] = frame
-    compositor._supersampled_reports = reports
-    # The original public compositor must expose the virtual layers'
-    # reports, not just its own frame_reports() wrapper.
-    for layer in getattr(compositor, "layers", ()):
-        if hasattr(layer, "frame_report"):
-            layer.frame_report = deepcopy(reports.get(layer.id))
-    indicator = getattr(compositor, "word_indicator", None)
-    if indicator is not None:
-        indicator.frame_report = deepcopy(reports.get("word-indicator"))
-    return combined, compositor.context(frame)
+    return virtual
+
+
+def temporal_supersample(compositor, frame):
+    """Execute the declared native subframe schedule and combine in linear light."""
+    from .compositor_temporal import render_supersampled_frame
+
+    return render_supersampled_frame(compositor, frame)

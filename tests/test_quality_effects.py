@@ -94,7 +94,9 @@ def _fake_context(n, *, reset_at=None):
 
 
 def _fake_project():
-    return SimpleNamespace(base=Path("."), clock=SimpleNamespace(beat_at=lambda t: 2 * t), inputs=[])
+    return SimpleNamespace(base=Path("."), clock=SimpleNamespace(beat_at=lambda t: 2 * t), inputs=[],
+                           fps=60, sample_rate=48000, start_sample=0, end_sample=24000,
+                           repeats=20, frame_count=600)
 
 
 def test_history_plan_never_reads_future_or_previous_repeat():

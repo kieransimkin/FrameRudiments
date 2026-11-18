@@ -1,0 +1,61 @@
+{
+  "schema": "framerudiments.temporal-schedule-fixture.v1",
+  "description": "Synthetic native scheduling qualification. Source-window/reset and subframe expectations are independently derived with rational arithmetic; no production dependency planner is used by the pixel oracle.",
+  "project": {
+    "schema": "framerudiments.project.v1",
+    "title": "M11.1 synthetic temporal dependencies",
+    "purpose": "visualiser",
+    "width": 192,
+    "height": 128,
+    "fps": 12,
+    "fps_reason": "Bounded synthetic past/future and rational subframe qualification",
+    "audio": {
+      "source": {"$pin": "source.wav"},
+      "sample_rate": 48000,
+      "start_sample": 12000,
+      "end_sample": 60000,
+      "repeats": 2,
+      "fade_seconds": 0
+    },
+    "clock": {"bpm": 120, "origin": 0.125, "authority": "synthetic scheduling fixture", "status": "synthetic"},
+    "font": {"$pin": "font.ttf"},
+    "lyrics": {"$pin": "lines.lrc"},
+    "word_lyrics": {"$pin": "words.lrc"},
+    "cues": {"$pin": "cues.lrc"},
+    "background": {"colour": "#121b2d"},
+    "render_quality": {"spatial_scale": 1, "temporal_samples": 1, "antialias": 0},
+    "captions": {"box": [8, 101, 184, 116], "font_size": 12, "min_font_size": 10, "colour": "#ffffff", "stroke": 0, "word_mode": "highlight"},
+    "word_captions": {"box": [8, 116, 184, 128], "font_size": 10, "min_font_size": 8, "colour": "#f7cf62", "stroke": 0},
+    "layers": [
+      {"id": "amber", "asset": {"$pin": "amber.png"}, "width": 43, "center": [59, 49], "bounds": [0, 0, 192, 128], "motion": {"kind": "named", "pattern": "circle", "rate": 0.7, "repeat_clock": "continuous"}, "mapping": {"dx": 31, "dy": 18, "rotation": 16}},
+      {"id": "cyan", "asset": {"$pin": "cyan.png"}, "width": 46, "center": [132, 51], "bounds": [0, 0, 192, 128], "motion": {"kind": "recording", "file": {"$pin": "recording.json"}, "axes": ["accent", "intensity"]}, "mapping": {"dx": 18, "dy": 14}}
+    ],
+    "effect_graph": {
+      "nodes": [
+        {"id": "background", "type": "source"},
+        {"id": "layer:amber", "type": "source"},
+        {"id": "layer:cyan", "type": "source"},
+        {"id": "caption", "type": "source"},
+        {"id": "word-caption", "type": "source"},
+        {"id": "amber-opacity", "type": "opacity", "inputs": ["layer:amber"], "opacity": 0.9},
+        {"id": "output", "type": "composite", "inputs": ["background", "amber-opacity", "layer:cyan", "caption", "word-caption"], "mode": "over"}
+      ],
+      "output": "output"
+    },
+    "effect_graph_controls": [
+      {"id": "source-opacity", "node": "amber-opacity", "property": "opacity", "motion": {"kind": "named", "pattern": "circle", "rate": 0.75, "repeat_clock": "source"}, "axis": "x", "range": [0.4, 0.95]}
+    ]
+  },
+  "source_text": {
+    "lines.lrc": "[00:00.250]Amber moves\n[00:00.500]Blue turns\n[00:00.900]\n",
+    "words.lrc": "[00:00.250]Amber\n[00:00.375]moves\n[00:00.500]Blue\n[00:00.575]turns\n[00:00.900]\n",
+    "cues.lrc": "[00:00.250][SECTION: warm]\n[00:00.500][SECTION: cool]\n"
+  },
+  "cases": [
+    {"name": "ordinary", "description": "No history or quality subframes; current-frame compatibility.", "audio": {}, "quality": {}, "temporal": null, "gallery_frames": [0, 6, 23], "cli": false},
+    {"name": "short_repeat", "description": "Six-frame source repeats, shorter than the eight-frame shutter; prior complete cycles must never leak into a reset.", "audio": {"end_sample": 36000, "repeats": 4}, "quality": {}, "temporal": {"strength": 1, "shutter_frames": 8, "samples": 9, "falloff": 0.7}, "gallery_frames": [5, 6, 7], "cli": true},
+    {"name": "rational_subframes", "description": "49/10-frame repeats and four subframes; repeated final subframe references retain their weights while their source task executes once.", "audio": {"end_sample": 31600, "repeats": 5}, "quality": {"temporal_samples": 4, "antialias": 0.65, "antialias_passes": 1}, "temporal": {"strength": 0.8, "shutter_frames": 5.4, "samples": 7, "falloff": 1.2}, "gallery_frames": [4, 5, 24], "cli": true}
+  ],
+  "future_sampling": {"anchor": 2, "offsets": [-2, 0, 2, 2, 5], "boundary": "clamp", "repeat_local": false},
+  "generic_graph": {"frames": [0, 2, 5, 23], "history_future_offsets": [-2, 0, 2], "fractional_future": [1, 2], "sample_step": [1, 2]}
+}

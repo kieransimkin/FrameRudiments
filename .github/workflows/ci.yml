@@ -102,6 +102,16 @@ jobs:
           --junitxml=test-results.xml
       - name: No skipped rendering checks
         run: python -c "import xml.etree.ElementTree as E; r=E.parse('test-results.xml'); assert not r.findall('.//skipped')"
+      - name: Qualify native temporal scheduling and independent encoded output
+        if: matrix.python == '3.13'
+        run: python integration/qualify_temporal_schedule_m11_1.py --output temporal-schedule-qualification
+      - name: Upload native temporal scheduling evidence
+        if: matrix.python == '3.13'
+        uses: actions/upload-artifact@v6
+        with:
+          name: temporal-schedule-${{ matrix.os }}
+          path: temporal-schedule-qualification/
+          if-no-files-found: error
       - run: python -m build
       - run: python -m twine check --strict dist/*
 

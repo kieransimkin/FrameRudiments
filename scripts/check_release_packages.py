@@ -31,6 +31,7 @@ REQUIRED_SOURCE = (
     "integration/qualify_authoring_roundtrip_m10_5.py", "integration/fixtures/authoring_roundtrip_m10_5.json",
     "authoring/integration/authoringRoundtrip.ts", "authoring/src/authoringHistory.ts",
     "authoring/src/authoringExport.ts",
+    "integration/qualify_temporal_schedule_m11_1.py", "integration/fixtures/temporal_schedule_m11_1.json",
     "authoring/integration/graphRoundtrip.ts", "authoring/src/graphEditor.ts", "authoring/src/archive.ts",
     "src/framerudiments/visualiser_assets/butterchurn-cleanup.mjs",
 )

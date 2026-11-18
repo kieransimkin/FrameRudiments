@@ -38,6 +38,12 @@ and no unrecorded acoustic events are invented.
 
 See [spatiotemporal configuration and limits](spatiotemporal-supersampling.md).
 
+The [M11.1 temporal scheduler](temporal-scheduling-m11-1.md) declares and executes
+the native sampling work. `inspect-temporal` reports exact sample addresses and
+dependency order without drawing. Historical shutter taps use exact repeat
+identity, including excerpts shorter than the shutter window; an earlier whole
+repeat cannot contribute merely because its wrapped source timestamp matches.
+
 ## Three different effects, not interchangeable methods
 
 | Method | Where | What it does | What it does **not** do |

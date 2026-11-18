@@ -230,7 +230,7 @@ listening approval or artistic approval. The existing authoring CI workflow
 runs the fixture route and uploads its evidence for the candidate; platform and
 required GPU jobs retain their own acceptance results.
 
-The next milestone in the consolidated roadmap is **M11.1 — Temporal dependency
-declarations (past/future frame indexing) and deterministic scheduling**. M10.5
-provides an authoring-to-native-CLI qualification candidate; the wider temporal
-engine and subsequent checkpoint/reconstruction work remain separate milestones.
+The successor in the consolidated roadmap is the
+[M11.1 temporal dependency and deterministic scheduling candidate](temporal-scheduling-m11-1.md).
+M10.5 provides an authoring-to-native-CLI qualification candidate; delayed
+feedback, checkpoints and random-access reconstruction remain M11.2.

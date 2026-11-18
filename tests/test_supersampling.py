@@ -1,6 +1,7 @@
 """True high-res glyph/vector rerasterisation and subframe source-clock QA."""
 
 from pathlib import Path
+from fractions import Fraction
 from types import SimpleNamespace
 
 from PIL import Image, ImageDraw, ImageFont
@@ -144,7 +145,7 @@ def test_true_subframes_are_not_repeated_integer_frames(monkeypatch):
     monkeypatch.setattr(compositor_mod, "Compositor", Fake)
     outer = SimpleNamespace(
         output_quality=OutputQuality({"spatial_scale": 1}),
-        project=SimpleNamespace(),
+        project=SimpleNamespace(fps=60, frame_count=13, duration=Fraction(100, 480), width=60, height=36),
         effect_graph_gpu=None,
         scene=None,
         renderers=None,
@@ -152,6 +153,7 @@ def test_true_subframes_are_not_repeated_integer_frames(monkeypatch):
         text_states={},
         post_pipeline=SimpleNamespace(last_report={}),
         layers=[SimpleNamespace(id="marker", frame_report=None)],
+        frame_reports=lambda: {},
         context=lambda f: SimpleNamespace(frame=f),
     )
     result, ctx = super_sampling.temporal_supersample(outer, 1)

@@ -9,8 +9,9 @@ roadmap, where [M10.2 is connection authoring](authoring-graph-m10-2.md) and
 [M10.3 supplies generated parameter and DanceNotion control editing](authoring-controls-m10-3.md).
 [M10.4 adds native transition comparisons and scrub-safe previews](authoring-preview-m10-4.md).
 [M10.5 adds complete history and JSON/native round-trip qualification](authoring-roundtrip-m10-5.md).
-The consolidated roadmap's M11.1 temporal dependency declarations and deterministic
-scheduling are next. The original
+[M11.1 adds exact temporal dependencies and native scheduling](temporal-scheduling-m11-1.md).
+The consolidated roadmap's M11.2 delayed feedback, checkpoints and random-access
+reconstruction are next. The original
 future port-format and backend requirements below are not claims about the
 currently executable RGBA8 graph.
 

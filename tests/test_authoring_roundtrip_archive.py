@@ -52,10 +52,14 @@ def test_extract_preserves_existing_relative_pins_and_checks_every_hash(tmp_path
     'nested\\sidecar.lrc', 'authoring-lines.lrc/child', 'unexpected.txt',
 ])
 def test_unsafe_entry_names_fail_before_any_write(tmp_path, name):
-    data = archive([(name, b'hostile')])
+    # ZipInfo normalizes native separators, including backslashes on Windows.
+    # Use its stored name in the manifest so this fixture reaches filename
+    # admission on every platform rather than an earlier manifest mismatch.
+    entry = zipfile.ZipInfo(name)
+    data = archive([(entry, b'hostile')])
     with pytest.raises(ValueError, match='archive_unsafe_entry'):
         QUALIFIER.safe_extract_archive(data, tmp_path,
-            expected_names=['AUTHORING-README.txt', 'project.json', name])
+            expected_names=['AUTHORING-README.txt', 'project.json', entry.filename])
     assert not list(tmp_path.iterdir())
 
 

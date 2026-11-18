@@ -5,8 +5,8 @@ Shutter blur uses *observed encoded frames* from the current source cycle;
 no optical flow, speculative subframe motion or future pixels are invented.
 """
 
-from copy import deepcopy
 from functools import lru_cache
+from fractions import Fraction
 import math
 
 from PIL import Image, ImageChops, ImageFilter, ImageOps
@@ -225,6 +225,7 @@ class TemporalShutter:
             sampling="observed prior encoded frames; linear-light shutter blend; no interpolation",
         )
         self.context_at = context_at
+        self.project = project
 
     def parameters(self, context):
         values = dict(self.base)
@@ -243,22 +244,23 @@ class TemporalShutter:
         return values, reports
 
     def plan(self, context):
+        from .temporal_schedule import TemporalDependency
+
         params, reports = self.parameters(context)
         count = round(params["samples"])
         span = params["shutter_frames"]
-        candidates = {context.frame}
+        offsets = {0}
         if params["strength"] and span >= 1:
-            for j in range(1, count):
-                lag = round(j * span / (count - 1))
-                n = context.frame - lag
-                if lag <= 0 or n < 0:
-                    continue
-                # Crossfades at repeated source excerpts are deliberately forbidden.
-                sample = self.context_at(n)
-                if sample.source_seconds > context.source_seconds + 1e-9:
-                    continue
-                candidates.add(n)
-        indices = sorted(candidates)
+            offsets.update(-round(j * span / (count - 1)) for j in range(1, count))
+        project = self.project
+        repeat_span = Fraction((project.end_sample - project.start_sample) * project.fps,
+                               project.sample_rate)
+        # A source-time comparison cannot detect a lag spanning an entire short
+        # repeat. Compare exact programme cycle identity before sampling pixels.
+        refs = TemporalDependency('native_frame', tuple(sorted(offsets)),
+            boundary='drop', repeat_local=True).resolve(context.frame,
+                last_frame=project.frame_count - 1, repeat_span=repeat_span)
+        indices = [int(ref.frame) for ref in refs]
         weights = [math.exp(-params["falloff"] * (context.frame - idx) / max(1, span)) for idx in indices]
         return indices, weights, params, reports
 
@@ -267,31 +269,7 @@ class TemporalShutter:
 
 
 def render_temporal_frame(compositor, frame):
-    """Recompose past frames without feedback or time-dependent cache state."""
-    temporal = compositor.post_pipeline.temporal
-    context = compositor.context(frame)
-    indices, weights, settings, reports = temporal.plan(context)
-    old_extents, old_texts = deepcopy(compositor.extents), deepcopy(compositor.text_states)
-    sampled = []
-    compositor._temporal_sampling = True
-    try:
-        for idx in indices:
-            compositor.extents = deepcopy(old_extents)
-            compositor.text_states = deepcopy(old_texts)
-            image, _ = compositor.frame(idx)
-            sampled.append(image)
-        current_extents, current_texts = compositor.extents, compositor.text_states
-    except BaseException:
-        compositor.extents, compositor.text_states = old_extents, old_texts
-        raise
-    finally:
-        compositor._temporal_sampling = False
-    compositor.extents, compositor.text_states = current_extents, current_texts
-    compositor.post_pipeline.last_report["temporal"] = dict(
-        parameters=settings,
-        modulations=reports,
-        source_frames=indices,
-        weights=weights,
-        source_seconds=context.source_seconds,
-    )
-    return temporal.combine(sampled, weights, settings["strength"]), context
+    """Execute the complete bounded native temporal schedule, before final AA."""
+    from .compositor_temporal import render_scheduled_frame
+
+    return render_scheduled_frame(compositor, frame, apply_quality=False)

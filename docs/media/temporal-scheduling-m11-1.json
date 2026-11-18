@@ -1,0 +1,3993 @@
+{
+  "schema": "framerudiments.temporal-schedule-qualification.v1",
+  "passed": true,
+  "fixture_sha256": "f5861e4d5a27467556d2d46a208867d99f0d0db1eb88ea21e06aa0b14161de70",
+  "runtime": {
+    "python": "3.12.14",
+    "dancerudiments": "0.3.0",
+    "pillow": "13.0.0",
+    "ffmpeg": "ffmpeg version 7.1.5-0+deb13u1 Copyright (c) 2000-2026 the FFmpeg developers"
+  },
+  "implementation_sha256": {
+    "src/framerudiments/temporal_schedule.py": "c7d8f5ae364d621bac86a97671927be0b6b76308b99d1a39deae2c7bd2e7b929",
+    "src/framerudiments/compositor_temporal.py": "bcbe604ae49991ead5a951628eb797aa45d3421d116c5477f9df1bf9813c4645",
+    "src/framerudiments/compositor.py": "e21140ed36b2d89aee82c01235bb9f9b082e6b8870aceedc3aa3e3c3ac5c908b",
+    "src/framerudiments/quality_effects.py": "3de37f87bf21e99e5dda06d0e4cfad7db83eefa030a39f113ddbc3cd8a8a65e9",
+    "src/framerudiments/super_sampling.py": "9a5266ad65b70f378182db2d7232f1488371c63750b64f3ae994313922475045",
+    "integration/qualify_temporal_schedule_m11_1.py": "961e56ac4da0db563c63cce0532975e44c06b13247088096759f4dd5a82883a4"
+  },
+  "scope": {
+    "independent_rational_dependency_oracle": true,
+    "actual_native_compositor": true,
+    "actual_future_sampling_api": true,
+    "actual_generic_future_fork_graph": true,
+    "actual_cli_plan_full_preflight_render": true,
+    "actual_encoded_comparison": true,
+    "reference_uses_native_raster_and_linear_light_blend": true,
+    "feedback_checkpoints": false,
+    "sequential_external_engines": false,
+    "browser_interaction": false,
+    "gpu": false,
+    "physical_device": false,
+    "perceptual_approval": false
+  },
+  "cases": [
+    {
+      "name": "ordinary",
+      "frame_count": 24,
+      "repeat_span_frames": [
+        12,
+        1
+      ],
+      "quality_samples": 1,
+      "checkpoints": [
+        {
+          "frame": 0,
+          "history_frames": [
+            0
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ]
+          ],
+          "schedule_digest": "8144cd73ec37c7e74b0e846d0df9e9fed2ad485b9c01ba162e4033c968d4a731",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "3149a139ebd9aeaf9a7b0f9163298cc7f4f946584e7248073506b8a83fe5f41b"
+        },
+        {
+          "frame": 1,
+          "history_frames": [
+            1
+          ],
+          "native_source_coordinates": [
+            [
+              1,
+              1
+            ]
+          ],
+          "schedule_digest": "5f11c1314d4256b0fcb14371e94e7425603612a2dd128762475f859f7ab6d052",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "8e632e3cfaa9fb547c79c7441dc76f41397afbe253d19489df89d230e3da533e"
+        },
+        {
+          "frame": 2,
+          "history_frames": [
+            2
+          ],
+          "native_source_coordinates": [
+            [
+              2,
+              1
+            ]
+          ],
+          "schedule_digest": "87ac40095f7fd99c3b03e3b82cdd26264a820dc6f91914cc394937d8d6071d5f",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "48ab8eea2266614836b755534c2a2c00be74a4e6986a7fe7ebc23dae8dff12b1"
+        },
+        {
+          "frame": 3,
+          "history_frames": [
+            3
+          ],
+          "native_source_coordinates": [
+            [
+              3,
+              1
+            ]
+          ],
+          "schedule_digest": "2d27e1f00f68e7d7a42a59735e387e7665c0faef827383c365f8aec0b7b416c4",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "b4c03b4aa14f087c4fca9bd39e431c599bcb83ebc0f7dd1902a0093cdef42275"
+        },
+        {
+          "frame": 4,
+          "history_frames": [
+            4
+          ],
+          "native_source_coordinates": [
+            [
+              4,
+              1
+            ]
+          ],
+          "schedule_digest": "6c7b17b229093aee4913d8fa791033213c71ed99ffff49c61d2caa982a99aa74",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "398f9bebd43dc8015ff5e94b17052f63ce76b174b4b5bc66f4939b01ebfc776c"
+        },
+        {
+          "frame": 5,
+          "history_frames": [
+            5
+          ],
+          "native_source_coordinates": [
+            [
+              5,
+              1
+            ]
+          ],
+          "schedule_digest": "3e2aa8d17dc522ce75f434e8af997d6766f3c4cfa6c57caadbecf1e04c3b397f",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "497b1cd9d46d0ac6e713a3638303b036cdde773b5b4746e98a7b13c4efd6ea81"
+        },
+        {
+          "frame": 6,
+          "history_frames": [
+            6
+          ],
+          "native_source_coordinates": [
+            [
+              6,
+              1
+            ]
+          ],
+          "schedule_digest": "ed6f5a39363cd5c82b202fc0550177d2a236d2e5bcc2b9d71596aa1c57704e3d",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "a1498ca45ed2617f705573418ea11e5acd3a1ca8a07915d897df79df6b5f4a30"
+        },
+        {
+          "frame": 7,
+          "history_frames": [
+            7
+          ],
+          "native_source_coordinates": [
+            [
+              7,
+              1
+            ]
+          ],
+          "schedule_digest": "264a2b5a6b5952ccdf62b759ac5ad01247cd5d8b73ac67903bf8162ff94df8d3",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "77ac3a0ec6951508802b8a81fe82cca1270eaaa881bf2ff2bf2836d43e523e96"
+        },
+        {
+          "frame": 8,
+          "history_frames": [
+            8
+          ],
+          "native_source_coordinates": [
+            [
+              8,
+              1
+            ]
+          ],
+          "schedule_digest": "010273839364eaae08080740c6053ad3958c91669116fd17de89980df2355cb0",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "8fc341ef8a2e796eb13b2a3c140082a0399f7e9ebb062a648e4d6ec9350d6539"
+        },
+        {
+          "frame": 9,
+          "history_frames": [
+            9
+          ],
+          "native_source_coordinates": [
+            [
+              9,
+              1
+            ]
+          ],
+          "schedule_digest": "009ab03fb38f4115712ccb0d5a52239ce101945fc5927c424c7dd3a322de73d6",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "8f09ef80a550418d596e09403fd2cb96a879b1b6bdef5a9f0cfc8e53c2125127"
+        },
+        {
+          "frame": 10,
+          "history_frames": [
+            10
+          ],
+          "native_source_coordinates": [
+            [
+              10,
+              1
+            ]
+          ],
+          "schedule_digest": "a27cc33c04cc90ee956ec1d6f54fbdc2e4ad94241085a9ab35dec38c574f423a",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "e68499b38b4408b2a0d6405ca5b96d6ce35bdd440889b156047ab6080bf5e0a7"
+        },
+        {
+          "frame": 11,
+          "history_frames": [
+            11
+          ],
+          "native_source_coordinates": [
+            [
+              11,
+              1
+            ]
+          ],
+          "schedule_digest": "0649fcc4100ee8be1077cbfa9c973f28427231f9228caa6e4d63b7375f7b9e4d",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "0472bd5d568050afd4b7475d8e2ecb73d989627a708e64708d25dac9dc5c3950"
+        },
+        {
+          "frame": 12,
+          "history_frames": [
+            12
+          ],
+          "native_source_coordinates": [
+            [
+              12,
+              1
+            ]
+          ],
+          "schedule_digest": "90f03093909ff94371885d048a3a7cda799b9950ec2f6ebfb7442b57beae9933",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "763afb6dac6000fff2f742b084f91485fbef9c9f9ddef2ee0fa8f55bc7bdbf02"
+        },
+        {
+          "frame": 13,
+          "history_frames": [
+            13
+          ],
+          "native_source_coordinates": [
+            [
+              13,
+              1
+            ]
+          ],
+          "schedule_digest": "a37f40bd36e3943b75deba34ae26185c389e17f6ed3db7335fcb9ef378b5e5b8",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "c80ca698636d3e444b35d2d728bf1fb83cb4e8db2c00d84c4085ffb2115d3631"
+        },
+        {
+          "frame": 14,
+          "history_frames": [
+            14
+          ],
+          "native_source_coordinates": [
+            [
+              14,
+              1
+            ]
+          ],
+          "schedule_digest": "d929b6b957a93255bef1d5e934989c06bb695e584c618f1907f7bd96d6e7bdf3",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "088193e8c68f67ce79442bdadfd9779d3595b58f9e6bd7567cedf87ce92482d3"
+        },
+        {
+          "frame": 15,
+          "history_frames": [
+            15
+          ],
+          "native_source_coordinates": [
+            [
+              15,
+              1
+            ]
+          ],
+          "schedule_digest": "21463e046eb9f750be1276128c233c6eccf75673d41a815faee31e0747f7b2cb",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "6f381fe9abecaf0f480e1d7daa020c3d053bcb622c66f2974f04ffc6a031b4f1"
+        },
+        {
+          "frame": 16,
+          "history_frames": [
+            16
+          ],
+          "native_source_coordinates": [
+            [
+              16,
+              1
+            ]
+          ],
+          "schedule_digest": "96fe13e11fdae4b226ab6c9593059c260482fdceae52753cde3639d9b913b4d2",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "a16a9393809217d42b572dc5139da2517285e87c406a264f379fb99f6f1637fe"
+        },
+        {
+          "frame": 17,
+          "history_frames": [
+            17
+          ],
+          "native_source_coordinates": [
+            [
+              17,
+              1
+            ]
+          ],
+          "schedule_digest": "a64510536961ffa171e02cbff7d5f7c434021279b85fb65164bc8bd25ea7ac0f",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "d7caba9dd5ab1b603c0e6453f2c51ca380c1707d67c47a3cf940713556ed6462"
+        },
+        {
+          "frame": 18,
+          "history_frames": [
+            18
+          ],
+          "native_source_coordinates": [
+            [
+              18,
+              1
+            ]
+          ],
+          "schedule_digest": "194946ec2794b0063e1f38f500902370526df7bea4f9a55794f21f15d38b7c23",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "06151a15b4f4aabca6a94f918754b8d21d51550b1882ecc99d620d462305474d"
+        },
+        {
+          "frame": 19,
+          "history_frames": [
+            19
+          ],
+          "native_source_coordinates": [
+            [
+              19,
+              1
+            ]
+          ],
+          "schedule_digest": "3bb378c6673f8506b9b29e91ca18cc53f752c85229b26e9429cf85d150bbd103",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "9d823e47ff44198be60fe5ecbcdf220448ac49e310e245dd6b90a157666c5b3b"
+        },
+        {
+          "frame": 20,
+          "history_frames": [
+            20
+          ],
+          "native_source_coordinates": [
+            [
+              20,
+              1
+            ]
+          ],
+          "schedule_digest": "e86e56f5302c4c7942c824a737b5b4b19be9c55599bd10aba505cf01e0df21b7",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "eb284a64f22d7052beea94b0fd9f73ceab9152652ae4815b91b3e590a9dbe570"
+        },
+        {
+          "frame": 21,
+          "history_frames": [
+            21
+          ],
+          "native_source_coordinates": [
+            [
+              21,
+              1
+            ]
+          ],
+          "schedule_digest": "7e37ebfe9885185e9b9fb7fe20ca452a91d2bb370e7a846edfc3dec48571f1ae",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "6ac44e902d8efd14225a03886d14fe4d972b5e86c6dbe478a13013f64b112b09"
+        },
+        {
+          "frame": 22,
+          "history_frames": [
+            22
+          ],
+          "native_source_coordinates": [
+            [
+              22,
+              1
+            ]
+          ],
+          "schedule_digest": "1d2f8703351c89aefb881c439b99db99addab3854b33455f01b3ab77b4e5fb70",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "2a8adbd5694251de0b44d4dc124435940c1d686b8e00fe99c361c31f8817de39"
+        },
+        {
+          "frame": 23,
+          "history_frames": [
+            23
+          ],
+          "native_source_coordinates": [
+            [
+              23,
+              1
+            ]
+          ],
+          "schedule_digest": "7ca41d660772b9fc95a09009456fef18022e7ef8656b534bddd6281422408596",
+          "tasks": 3,
+          "executed_tasks": 3,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "a7572a7b8cf7910d3c1630c4c3015771cdae8e53370d142dc9d2376078452812"
+        }
+      ],
+      "independent_native_comparisons": 24,
+      "nonsequential_native_comparisons": 28,
+      "nonsequential_order": [
+        11,
+        17,
+        0,
+        14,
+        19,
+        1,
+        21,
+        4,
+        9,
+        16,
+        7,
+        22,
+        2,
+        3,
+        8,
+        18,
+        20,
+        5,
+        13,
+        12,
+        23,
+        15,
+        10,
+        6,
+        23,
+        0,
+        12,
+        23
+      ],
+      "max_rgb8_error": 0,
+      "independent_rational_clock_max_abs_error": 8.881784197001252e-16,
+      "independent_rational_subframe_clock_max_abs_error": 8.881784197001252e-16,
+      "temporal_contract": {
+        "schema": "framerudiments.compositor-temporal.v1",
+        "coordinate": "exact_encoded_frame_position",
+        "source_clock": {
+          "fps": 12,
+          "frame_count": 24,
+          "sample_rate": 48000,
+          "start_sample": 12000,
+          "end_sample_exclusive": 60000,
+          "repeats": 2,
+          "repeat_span_frames": {
+            "numerator": 12,
+            "denominator": 1
+          }
+        },
+        "source_audio_sha256": "e67e1ced8a907e9093289c2fc9a7345f6f7b2797f4ccd43ca7dd4a20ac777944",
+        "max_reach": {
+          "past_frames": 0,
+          "future_frames": 0,
+          "future_subframe": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        "sample_factor": 1,
+        "sample_step": {
+          "numerator": 1,
+          "denominator": 1
+        },
+        "repeat_policy": "shutter taps stay in exact half-open source cycles; subframes sample the programme grid",
+        "limits": {
+          "native_tasks": 128,
+          "native_edges": 256,
+          "native_live_results": 24,
+          "native_retained_raster_bytes": 536870912,
+          "batch_samples": 64,
+          "batch_rgb_result_bytes": 268435456
+        },
+        "scope": {
+          "native_compositor": "pre_external_effects",
+          "sequential_external_engines": false,
+          "configured_external_effects": false,
+          "persistent_pixel_cache": false,
+          "feedback_checkpoints": false,
+          "pixel_cache_scope": "scheduler_owned_inter_call_frame_results",
+          "raster_budget_excludes_existing_renderer_caches": true,
+          "raster_budget_excludes_callback_private_scratch_and_gpu_allocations": true
+        }
+      },
+      "exact_source_coordinates": true,
+      "original_inputs_unchanged": true,
+      "inspection": {
+        "command": "inspect-temporal",
+        "returncode": 0,
+        "requested_frames": [
+          0,
+          6,
+          23,
+          0
+        ],
+        "source_sha256": "a2cda0a1c89654a3f09435589bb8b32bf66fecac7c1d5a8b0d9745bd5660e1a7",
+        "schedule_digests": [
+          "8144cd73ec37c7e74b0e846d0df9e9fed2ad485b9c01ba162e4033c968d4a731",
+          "ed6f5a39363cd5c82b202fc0550177d2a236d2e5bcc2b9d71596aa1c57704e3d",
+          "7ca41d660772b9fc95a09009456fef18022e7ef8656b534bddd6281422408596",
+          "8144cd73ec37c7e74b0e846d0df9e9fed2ad485b9c01ba162e4033c968d4a731"
+        ],
+        "native_schedule_documents_match": true,
+        "pixels_rendered": false
+      },
+      "generic_future_graph": {
+        "declarations": [
+          {
+            "source_stage": "native",
+            "offsets": [
+              {
+                "numerator": -2,
+                "denominator": 1
+              },
+              {
+                "numerator": 0,
+                "denominator": 1
+              },
+              {
+                "numerator": 2,
+                "denominator": 1
+              }
+            ],
+            "past": {
+              "numerator": 2,
+              "denominator": 1
+            },
+            "future": {
+              "numerator": 2,
+              "denominator": 1
+            },
+            "boundary": "clamp",
+            "repeat_local": false
+          },
+          {
+            "source_stage": "native",
+            "offsets": [
+              {
+                "numerator": 1,
+                "denominator": 2
+              }
+            ],
+            "past": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "future": {
+              "numerator": 1,
+              "denominator": 2
+            },
+            "boundary": "clamp",
+            "repeat_local": false
+          }
+        ],
+        "domain": {
+          "last_frame": 23,
+          "sample_step": [
+            1,
+            2
+          ]
+        },
+        "schedule": {
+          "schema": "framerudiments.temporal-schedule.v1",
+          "coordinate": "exact_encoded_frame_position",
+          "scope": "dependency_schedule_not_pixel_or_cache_identity",
+          "tasks": [
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 0,
+                  "denominator": 1
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 2,
+                  "denominator": 1
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "past-future",
+                "frame": {
+                  "numerator": 0,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 0,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 0,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 1,
+                  "denominator": 2
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "future-fork",
+                "frame": {
+                  "numerator": 0,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "output",
+                "frame": {
+                  "numerator": 0,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "past-future",
+                  "frame": {
+                    "numerator": 0,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "future-fork",
+                  "frame": {
+                    "numerator": 0,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "past-future",
+                  "frame": {
+                    "numerator": 0,
+                    "denominator": 1
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 4,
+                  "denominator": 1
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "past-future",
+                "frame": {
+                  "numerator": 2,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 0,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 4,
+                    "denominator": 1
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 5,
+                  "denominator": 2
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "future-fork",
+                "frame": {
+                  "numerator": 2,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 5,
+                    "denominator": 2
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "output",
+                "frame": {
+                  "numerator": 2,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "past-future",
+                  "frame": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "future-fork",
+                  "frame": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "past-future",
+                  "frame": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 3,
+                  "denominator": 1
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 5,
+                  "denominator": 1
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 7,
+                  "denominator": 1
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "past-future",
+                "frame": {
+                  "numerator": 5,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 3,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 5,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 7,
+                    "denominator": 1
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 11,
+                  "denominator": 2
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "future-fork",
+                "frame": {
+                  "numerator": 5,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 11,
+                    "denominator": 2
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "output",
+                "frame": {
+                  "numerator": 5,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "past-future",
+                  "frame": {
+                    "numerator": 5,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "future-fork",
+                  "frame": {
+                    "numerator": 5,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "past-future",
+                  "frame": {
+                    "numerator": 5,
+                    "denominator": 1
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 21,
+                  "denominator": 1
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "native",
+                "frame": {
+                  "numerator": 23,
+                  "denominator": 1
+                }
+              },
+              "inputs": []
+            },
+            {
+              "ref": {
+                "stage": "past-future",
+                "frame": {
+                  "numerator": 23,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 21,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 23,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 23,
+                    "denominator": 1
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "future-fork",
+                "frame": {
+                  "numerator": 23,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "native",
+                  "frame": {
+                    "numerator": 23,
+                    "denominator": 1
+                  }
+                }
+              ]
+            },
+            {
+              "ref": {
+                "stage": "output",
+                "frame": {
+                  "numerator": 23,
+                  "denominator": 1
+                }
+              },
+              "inputs": [
+                {
+                  "stage": "past-future",
+                  "frame": {
+                    "numerator": 23,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "future-fork",
+                  "frame": {
+                    "numerator": 23,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "stage": "past-future",
+                  "frame": {
+                    "numerator": 23,
+                    "denominator": 1
+                  }
+                }
+              ]
+            }
+          ],
+          "outputs": [
+            {
+              "stage": "output",
+              "frame": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "output",
+              "frame": {
+                "numerator": 2,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "output",
+              "frame": {
+                "numerator": 5,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "output",
+              "frame": {
+                "numerator": 23,
+                "denominator": 1
+              }
+            }
+          ],
+          "source_refs": [
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 0,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 1,
+                "denominator": 2
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 2,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 5,
+                "denominator": 2
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 3,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 4,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 5,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 11,
+                "denominator": 2
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 7,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 21,
+                "denominator": 1
+              }
+            },
+            {
+              "stage": "native",
+              "frame": {
+                "numerator": 23,
+                "denominator": 1
+              }
+            }
+          ],
+          "task_count": 23,
+          "edge_count": 28,
+          "peak_live_results": 6,
+          "limits": {
+            "tasks": 4096,
+            "edges": 65536,
+            "live_results": 256
+          }
+        },
+        "schedule_digest": "5c105b7e57e47efc93a81947796d4506100575eed276b6ce19b7520d5d78735f",
+        "permuted_declarations_identical": true,
+        "reversed_request_pixels_identical": true,
+        "requested_frames": [
+          0,
+          2,
+          5,
+          23
+        ],
+        "tasks": 23,
+        "unique_native_source_evaluations": 11,
+        "shared_sources_evaluated_once": true,
+        "native_comparisons": 8,
+        "max_rgb8_error": 0
+      }
+    },
+    {
+      "name": "short_repeat",
+      "frame_count": 24,
+      "repeat_span_frames": [
+        6,
+        1
+      ],
+      "quality_samples": 1,
+      "checkpoints": [
+        {
+          "frame": 0,
+          "history_frames": [
+            0
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ]
+          ],
+          "schedule_digest": "2b442b829bbd760ddaabf93967803a09d5d743d5c39a869fa93bb67ce99e3bae",
+          "tasks": 4,
+          "executed_tasks": 4,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "3149a139ebd9aeaf9a7b0f9163298cc7f4f946584e7248073506b8a83fe5f41b"
+        },
+        {
+          "frame": 1,
+          "history_frames": [
+            0,
+            1
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ]
+          ],
+          "schedule_digest": "4c16ec3479aadd28db496a773b45fb0705ba0e0f339bc54a17393c08322081bc",
+          "tasks": 6,
+          "executed_tasks": 6,
+          "native_source_evaluations": 2,
+          "peak_live_results": 3,
+          "pixel_sha256": "68757cd415b484b2266927e3e940d8b219bef30014685c7ee629a55e460bede6"
+        },
+        {
+          "frame": 2,
+          "history_frames": [
+            0,
+            1,
+            2
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              1
+            ]
+          ],
+          "schedule_digest": "0e6cf5bc896e5003214822351117edf36a7e0654789fccae4e02e8687c5d5aa6",
+          "tasks": 8,
+          "executed_tasks": 8,
+          "native_source_evaluations": 3,
+          "peak_live_results": 4,
+          "pixel_sha256": "930b23d196b445ef0ad813991ead846fd1b55ddc3310a5ec79f3abcdcc14bb6a"
+        },
+        {
+          "frame": 3,
+          "history_frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              3,
+              1
+            ]
+          ],
+          "schedule_digest": "1ea8bcb9f11ae82160b895f9c8ac4e5ebd0c8b67e6e09901404b82d2413a9d15",
+          "tasks": 10,
+          "executed_tasks": 10,
+          "native_source_evaluations": 4,
+          "peak_live_results": 5,
+          "pixel_sha256": "94c7129f759c7eeb8b1d7c1ba443c0d4ca773fda14388aed5e5caa655e09ef2b"
+        },
+        {
+          "frame": 4,
+          "history_frames": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              3,
+              1
+            ],
+            [
+              4,
+              1
+            ]
+          ],
+          "schedule_digest": "e902320116ea8f1a932ff8d0630a00c9170a86ec42fa0e131a687a873124ac09",
+          "tasks": 12,
+          "executed_tasks": 12,
+          "native_source_evaluations": 5,
+          "peak_live_results": 6,
+          "pixel_sha256": "a5684a14c53c995882afb5fb43a5f9c6c07e2c7169a542a6a72a9a6c6669773e"
+        },
+        {
+          "frame": 5,
+          "history_frames": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              3,
+              1
+            ],
+            [
+              4,
+              1
+            ],
+            [
+              5,
+              1
+            ]
+          ],
+          "schedule_digest": "82d3cd24631cd2d0df4e617ad5a8273871ec9f5cce9b8b64d1189c281ad3a9df",
+          "tasks": 14,
+          "executed_tasks": 14,
+          "native_source_evaluations": 6,
+          "peak_live_results": 7,
+          "pixel_sha256": "8cd6a814976ed3cbbba819cb0e39c53d7858ea97d6260c2e2780929be3b563cf"
+        },
+        {
+          "frame": 6,
+          "history_frames": [
+            6
+          ],
+          "native_source_coordinates": [
+            [
+              6,
+              1
+            ]
+          ],
+          "schedule_digest": "8ef9df5486100dedce719b87d13cd3d6db6fe42f1d8fe5b8c51f0651e8d5725b",
+          "tasks": 4,
+          "executed_tasks": 4,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "0df900490f1c542cef489c72771f225f636d46c77174677ccbe29d5e6dbb3f82"
+        },
+        {
+          "frame": 7,
+          "history_frames": [
+            6,
+            7
+          ],
+          "native_source_coordinates": [
+            [
+              6,
+              1
+            ],
+            [
+              7,
+              1
+            ]
+          ],
+          "schedule_digest": "5f9852dd94e1e5a86610a1ac104f26bfccc5d7552e118086a53e9635d2c2265b",
+          "tasks": 6,
+          "executed_tasks": 6,
+          "native_source_evaluations": 2,
+          "peak_live_results": 3,
+          "pixel_sha256": "e5b97e6833fb8245cbfdf020c695f2a08bea2255ebf6e5ea7702fc129243c9ff"
+        },
+        {
+          "frame": 8,
+          "history_frames": [
+            6,
+            7,
+            8
+          ],
+          "native_source_coordinates": [
+            [
+              6,
+              1
+            ],
+            [
+              7,
+              1
+            ],
+            [
+              8,
+              1
+            ]
+          ],
+          "schedule_digest": "1dc1286bcc807910400736e5310542807cdff93383e992e617844640d9b84e22",
+          "tasks": 8,
+          "executed_tasks": 8,
+          "native_source_evaluations": 3,
+          "peak_live_results": 4,
+          "pixel_sha256": "5345c7fc6378f179b1519d66c328cc5806dd938f8bcb7334f72f52d51d8d9f21"
+        },
+        {
+          "frame": 9,
+          "history_frames": [
+            6,
+            7,
+            8,
+            9
+          ],
+          "native_source_coordinates": [
+            [
+              6,
+              1
+            ],
+            [
+              7,
+              1
+            ],
+            [
+              8,
+              1
+            ],
+            [
+              9,
+              1
+            ]
+          ],
+          "schedule_digest": "aea376f00237451bd03ea48eb19f385ecac6151a4805e9061798f70fd4a7d7ca",
+          "tasks": 10,
+          "executed_tasks": 10,
+          "native_source_evaluations": 4,
+          "peak_live_results": 5,
+          "pixel_sha256": "6c05575c3155dbe73312d8b77bbb315257ce03899df53d86298d972898e1e770"
+        },
+        {
+          "frame": 10,
+          "history_frames": [
+            6,
+            7,
+            8,
+            9,
+            10
+          ],
+          "native_source_coordinates": [
+            [
+              6,
+              1
+            ],
+            [
+              7,
+              1
+            ],
+            [
+              8,
+              1
+            ],
+            [
+              9,
+              1
+            ],
+            [
+              10,
+              1
+            ]
+          ],
+          "schedule_digest": "a9e631e0cc7766a015d30e70bf6a0b571bbeaece5dbaedb783d3ea1de1a24215",
+          "tasks": 12,
+          "executed_tasks": 12,
+          "native_source_evaluations": 5,
+          "peak_live_results": 6,
+          "pixel_sha256": "d47cfd13b86427ee2cdc39d79ea7dd418ddd67d21a2276683a8cea1b68bdc951"
+        },
+        {
+          "frame": 11,
+          "history_frames": [
+            6,
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "native_source_coordinates": [
+            [
+              6,
+              1
+            ],
+            [
+              7,
+              1
+            ],
+            [
+              8,
+              1
+            ],
+            [
+              9,
+              1
+            ],
+            [
+              10,
+              1
+            ],
+            [
+              11,
+              1
+            ]
+          ],
+          "schedule_digest": "79d7cd6fffa9ac9c842cd71bc81532e244bf6954fb42199e703153c840f712f3",
+          "tasks": 14,
+          "executed_tasks": 14,
+          "native_source_evaluations": 6,
+          "peak_live_results": 7,
+          "pixel_sha256": "62b649873442bbc5d32da912b7c5324191c12d6c6b8d6233b338adccc5f1f228"
+        },
+        {
+          "frame": 12,
+          "history_frames": [
+            12
+          ],
+          "native_source_coordinates": [
+            [
+              12,
+              1
+            ]
+          ],
+          "schedule_digest": "d157a8c6133378ac7b816e7e445546cd6c8f3380bdad9d25bab41d8a5ac4d28b",
+          "tasks": 4,
+          "executed_tasks": 4,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "763afb6dac6000fff2f742b084f91485fbef9c9f9ddef2ee0fa8f55bc7bdbf02"
+        },
+        {
+          "frame": 13,
+          "history_frames": [
+            12,
+            13
+          ],
+          "native_source_coordinates": [
+            [
+              12,
+              1
+            ],
+            [
+              13,
+              1
+            ]
+          ],
+          "schedule_digest": "f8a4311d897f3457b88bfef3f3fe7cc733d7cee32f4b435a49cc7268fdc9203b",
+          "tasks": 6,
+          "executed_tasks": 6,
+          "native_source_evaluations": 2,
+          "peak_live_results": 3,
+          "pixel_sha256": "84468e13c50fb58905dc42fb32ccc83a69b70ce437415657cf16955afb28ba36"
+        },
+        {
+          "frame": 14,
+          "history_frames": [
+            12,
+            13,
+            14
+          ],
+          "native_source_coordinates": [
+            [
+              12,
+              1
+            ],
+            [
+              13,
+              1
+            ],
+            [
+              14,
+              1
+            ]
+          ],
+          "schedule_digest": "d58ed38bad9079e664128889fe36cf6586ecd2ed5730ce8b92a240a8971d96d1",
+          "tasks": 8,
+          "executed_tasks": 8,
+          "native_source_evaluations": 3,
+          "peak_live_results": 4,
+          "pixel_sha256": "001509e74c5473e9f34fec52ee13b518be475775945c2a6de8f685e6af77ad45"
+        },
+        {
+          "frame": 15,
+          "history_frames": [
+            12,
+            13,
+            14,
+            15
+          ],
+          "native_source_coordinates": [
+            [
+              12,
+              1
+            ],
+            [
+              13,
+              1
+            ],
+            [
+              14,
+              1
+            ],
+            [
+              15,
+              1
+            ]
+          ],
+          "schedule_digest": "94f64b6e897709c46692c9df2d6338844ce91e89de812787e4f5f53ef821b5af",
+          "tasks": 10,
+          "executed_tasks": 10,
+          "native_source_evaluations": 4,
+          "peak_live_results": 5,
+          "pixel_sha256": "ee8d1d1f60a04d08289a1c678cdbb88e13e82fc2abbb2baf4e77e808dfa18e4d"
+        },
+        {
+          "frame": 16,
+          "history_frames": [
+            12,
+            13,
+            14,
+            15,
+            16
+          ],
+          "native_source_coordinates": [
+            [
+              12,
+              1
+            ],
+            [
+              13,
+              1
+            ],
+            [
+              14,
+              1
+            ],
+            [
+              15,
+              1
+            ],
+            [
+              16,
+              1
+            ]
+          ],
+          "schedule_digest": "500044c7912164051e04b1a40dc75b74710da027e52c64e22b9d4af68097f9b4",
+          "tasks": 12,
+          "executed_tasks": 12,
+          "native_source_evaluations": 5,
+          "peak_live_results": 6,
+          "pixel_sha256": "6fe90c370910b38ea7f1bfbdb1844dd68c73cbb740bea34d8f7fcfad9636d3ab"
+        },
+        {
+          "frame": 17,
+          "history_frames": [
+            12,
+            13,
+            14,
+            15,
+            16,
+            17
+          ],
+          "native_source_coordinates": [
+            [
+              12,
+              1
+            ],
+            [
+              13,
+              1
+            ],
+            [
+              14,
+              1
+            ],
+            [
+              15,
+              1
+            ],
+            [
+              16,
+              1
+            ],
+            [
+              17,
+              1
+            ]
+          ],
+          "schedule_digest": "c74e676326153d4f6cb0651c066a3e03a0cd523c9d540ed5cb7dc9da36050db5",
+          "tasks": 14,
+          "executed_tasks": 14,
+          "native_source_evaluations": 6,
+          "peak_live_results": 7,
+          "pixel_sha256": "e534f85362cea3da6808b997efa1d7defc6143f7593b2bd4dcfe2dce35ccef90"
+        },
+        {
+          "frame": 18,
+          "history_frames": [
+            18
+          ],
+          "native_source_coordinates": [
+            [
+              18,
+              1
+            ]
+          ],
+          "schedule_digest": "329836ab66475e343ac0261df247ced2778b8a1ff603ede1f915f329d2b09307",
+          "tasks": 4,
+          "executed_tasks": 4,
+          "native_source_evaluations": 1,
+          "peak_live_results": 2,
+          "pixel_sha256": "ec871f60c7bf1ee7dacee88273473ce574f706eea911d66e42f3e3161c136ad5"
+        },
+        {
+          "frame": 19,
+          "history_frames": [
+            18,
+            19
+          ],
+          "native_source_coordinates": [
+            [
+              18,
+              1
+            ],
+            [
+              19,
+              1
+            ]
+          ],
+          "schedule_digest": "4c19024c4e0450df8268251722e28a2d7cd2ce02caeda20d6df0a323b126c9a4",
+          "tasks": 6,
+          "executed_tasks": 6,
+          "native_source_evaluations": 2,
+          "peak_live_results": 3,
+          "pixel_sha256": "7a125b8c828a837a0aa4c547ac625561131fcc4ba179f43b25838a91c2a51ed9"
+        },
+        {
+          "frame": 20,
+          "history_frames": [
+            18,
+            19,
+            20
+          ],
+          "native_source_coordinates": [
+            [
+              18,
+              1
+            ],
+            [
+              19,
+              1
+            ],
+            [
+              20,
+              1
+            ]
+          ],
+          "schedule_digest": "8d7f89f61d1cf993d79c0d18e06f3988f310e690325210ea54790d03774d5274",
+          "tasks": 8,
+          "executed_tasks": 8,
+          "native_source_evaluations": 3,
+          "peak_live_results": 4,
+          "pixel_sha256": "d0c00c734595bc262bb8e967f90d9a579d333522d6dee05de26829b09ba1f6b3"
+        },
+        {
+          "frame": 21,
+          "history_frames": [
+            18,
+            19,
+            20,
+            21
+          ],
+          "native_source_coordinates": [
+            [
+              18,
+              1
+            ],
+            [
+              19,
+              1
+            ],
+            [
+              20,
+              1
+            ],
+            [
+              21,
+              1
+            ]
+          ],
+          "schedule_digest": "01587432668a05ad25ce654f56533f30d554a3123a345b3fd24810f0b55d9b47",
+          "tasks": 10,
+          "executed_tasks": 10,
+          "native_source_evaluations": 4,
+          "peak_live_results": 5,
+          "pixel_sha256": "b850f3b72d5812ed984716fcce086db8c9652b6df7ab1a6b2b0235409f164364"
+        },
+        {
+          "frame": 22,
+          "history_frames": [
+            18,
+            19,
+            20,
+            21,
+            22
+          ],
+          "native_source_coordinates": [
+            [
+              18,
+              1
+            ],
+            [
+              19,
+              1
+            ],
+            [
+              20,
+              1
+            ],
+            [
+              21,
+              1
+            ],
+            [
+              22,
+              1
+            ]
+          ],
+          "schedule_digest": "723144c0c27375458defa5f8a3130e68d25724c7bb6e1d93a0555323df64ecd6",
+          "tasks": 12,
+          "executed_tasks": 12,
+          "native_source_evaluations": 5,
+          "peak_live_results": 6,
+          "pixel_sha256": "e7e58aaf39cf515e88915d67f58ba429bb9e8311022115ffc3de6f3377a03722"
+        },
+        {
+          "frame": 23,
+          "history_frames": [
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "native_source_coordinates": [
+            [
+              18,
+              1
+            ],
+            [
+              19,
+              1
+            ],
+            [
+              20,
+              1
+            ],
+            [
+              21,
+              1
+            ],
+            [
+              22,
+              1
+            ],
+            [
+              23,
+              1
+            ]
+          ],
+          "schedule_digest": "f3f129c69f5f86d5b276bd0f4acea711795926e8734bc866d4aaaee34a4e003c",
+          "tasks": 14,
+          "executed_tasks": 14,
+          "native_source_evaluations": 6,
+          "peak_live_results": 7,
+          "pixel_sha256": "f67d5b747e0b0beb0dddcc470c1b3c65113dff8d49bdc772b2b1c8690ce3d339"
+        }
+      ],
+      "independent_native_comparisons": 24,
+      "nonsequential_native_comparisons": 28,
+      "nonsequential_order": [
+        11,
+        17,
+        0,
+        14,
+        19,
+        1,
+        21,
+        4,
+        9,
+        16,
+        7,
+        22,
+        2,
+        3,
+        8,
+        18,
+        20,
+        5,
+        13,
+        12,
+        23,
+        15,
+        10,
+        6,
+        23,
+        0,
+        12,
+        23
+      ],
+      "max_rgb8_error": 0,
+      "independent_rational_clock_max_abs_error": 4.440892098500626e-16,
+      "independent_rational_subframe_clock_max_abs_error": 4.440892098500626e-16,
+      "temporal_contract": {
+        "schema": "framerudiments.compositor-temporal.v1",
+        "coordinate": "exact_encoded_frame_position",
+        "source_clock": {
+          "fps": 12,
+          "frame_count": 24,
+          "sample_rate": 48000,
+          "start_sample": 12000,
+          "end_sample_exclusive": 36000,
+          "repeats": 4,
+          "repeat_span_frames": {
+            "numerator": 6,
+            "denominator": 1
+          }
+        },
+        "source_audio_sha256": "e67e1ced8a907e9093289c2fc9a7345f6f7b2797f4ccd43ca7dd4a20ac777944",
+        "max_reach": {
+          "past_frames": 8,
+          "future_frames": 0,
+          "future_subframe": {
+            "numerator": 0,
+            "denominator": 1
+          }
+        },
+        "sample_factor": 1,
+        "sample_step": {
+          "numerator": 1,
+          "denominator": 1
+        },
+        "repeat_policy": "shutter taps stay in exact half-open source cycles; subframes sample the programme grid",
+        "limits": {
+          "native_tasks": 128,
+          "native_edges": 256,
+          "native_live_results": 24,
+          "native_retained_raster_bytes": 536870912,
+          "batch_samples": 64,
+          "batch_rgb_result_bytes": 268435456
+        },
+        "scope": {
+          "native_compositor": "pre_external_effects",
+          "sequential_external_engines": false,
+          "configured_external_effects": false,
+          "persistent_pixel_cache": false,
+          "feedback_checkpoints": false,
+          "pixel_cache_scope": "scheduler_owned_inter_call_frame_results",
+          "raster_budget_excludes_existing_renderer_caches": true,
+          "raster_budget_excludes_callback_private_scratch_and_gpu_allocations": true
+        }
+      },
+      "exact_source_coordinates": true,
+      "original_inputs_unchanged": true,
+      "inspection": {
+        "command": "inspect-temporal",
+        "returncode": 0,
+        "requested_frames": [
+          5,
+          6,
+          7,
+          5
+        ],
+        "source_sha256": "5c3b6caa3c8db2443d7ec90f73fc63ce81bf35b69c50abb6f01283025861a694",
+        "schedule_digests": [
+          "82d3cd24631cd2d0df4e617ad5a8273871ec9f5cce9b8b64d1189c281ad3a9df",
+          "8ef9df5486100dedce719b87d13cd3d6db6fe42f1d8fe5b8c51f0651e8d5725b",
+          "5f9852dd94e1e5a86610a1ac104f26bfccc5d7552e118086a53e9635d2c2265b",
+          "82d3cd24631cd2d0df4e617ad5a8273871ec9f5cce9b8b64d1189c281ad3a9df"
+        ],
+        "native_schedule_documents_match": true,
+        "pixels_rendered": false
+      },
+      "repeat_reset_regression": {
+        "frame": 6,
+        "correct_history_frames": [
+          6
+        ],
+        "former_source_time_comparison_frames": [
+          0,
+          6
+        ],
+        "wrong_previous_cycle_pixels_differ": true
+      },
+      "future_sampling": {
+        "requested_anchor": 2,
+        "offsets": [
+          -2,
+          0,
+          2,
+          2,
+          5
+        ],
+        "returned_frames": [
+          0,
+          2,
+          4,
+          4,
+          7
+        ],
+        "future_frames_observed": true,
+        "native_comparisons": 7,
+        "max_rgb8_error": 0,
+        "duplicate_results_detached": true,
+        "repeat_local_frames": [
+          6,
+          7
+        ]
+      },
+      "cli": {
+        "commands": [
+          {
+            "command": "plan",
+            "returncode": 0,
+            "seconds": 0.19,
+            "frames": 24,
+            "state": "prepared; perceptual review pending"
+          },
+          {
+            "command": "preflight",
+            "returncode": 0,
+            "seconds": 0.518,
+            "frames": 24,
+            "state": "full preflight passed; no encoded video"
+          },
+          {
+            "command": "render",
+            "returncode": 0,
+            "seconds": 1.121,
+            "frames": 24,
+            "state": "technical-QA passed; creative and attended listening review pending"
+          }
+        ],
+        "full_preflight": {
+          "mode": "full",
+          "frames_rendered": 24,
+          "total_frames": 24,
+          "complete": true,
+          "sequential": true,
+          "note": "All project frames were composed."
+        },
+        "independent_encode_verification": {
+          "full_decode": "passed",
+          "decoded_timestamps": "CFR from zero; all frames checked",
+          "audio_duration_error_seconds": 0.0,
+          "mp4_atoms": [
+            "ftyp",
+            "moov",
+            "free",
+            "mdat"
+          ],
+          "listening_approved": false,
+          "platform_safe_zone_verified": false
+        },
+        "plan_and_composition_temporal_contract_match": true,
+        "reference": "independently selected native source samples, encoded with the existing native encoder command",
+        "encoded_frames_per_video": 24,
+        "encoded_videos": 2,
+        "decoded_comparisons": 24,
+        "max_rgb8_error": 0,
+        "source_start_sample": 12000,
+        "source_end_sample_exclusive": 36000,
+        "sample_rate": 48000,
+        "repeats": 4,
+        "video_sha256": "355868b47aa5b863690ddf5fccbb837de305dd9644e56a2a8cd9432b7947f9fa",
+        "decoded_reference_sha256": [
+          "a5e35b849471817ce079aca6e2d94f8716b10e58879dffe080bd86c25114f544",
+          "d1c62a91beffd5a53b4abd6216b0975f21d09a88257540a9c02e450c109f9f79",
+          "fa9b1401455868785bb4e8578367953640e4cc15a5681f5d17b0bbe5c14cd95e",
+          "846b75aee77cfb9cdf580ea44cf564dba95dd3e558462bda975ea85d0876b5b8",
+          "18cbac5bde2102ba81b0f442973f1501785cdd95d81b8415597303d159d277de",
+          "2dfaf5913fb883fd0a5370923110e796b4043716427b822c9ce5a07d0a8c3208",
+          "b390196b2f66160699b5ea51893d0a96fab1ade2dc1e758996af71d839215192",
+          "761680335b14f623760b4782457ab1b69ddc2d273cfde45dee8189c37fa186b1",
+          "0b037afa588dae4a2e08a0a871758ce27bb052760e5a00eeed3499c032f43d10",
+          "dcfdbdb38444ff5eeebec3da31aa31830edb27ebfe724846159f4b41b66132ca",
+          "81c026a78b0d146328f15e83a65ccc049ce0236a48462a7e72047ac370b8429c",
+          "2169d20cf00093147323086534131d62d93c9bf20979d6abd9cfe235cc65e044",
+          "ff38d36713f9ef1b53ffb44435a25e62d22776d962630d1a4a03b7f6df898bda",
+          "5d8195757e2f509d73edda8b262ea4aa03a1093aed1cdfd6f9518b3fe7983a7c",
+          "d3dcc1df4ba1eb40db75e4c727751680b72915db3234fa501dc0219be1bb71d5",
+          "7d5f602aa967d58a4164920555b5470c2959c579b190f22f87ca8191c23c2318",
+          "a67bed5bc8cfd5b38f5d8e9f7c08d0a84637ec0446c3d7af04379e802c17d438",
+          "5a7f6e332f9ee726f0e46ed307cf2454e6d546156c7d4de3682b1c231fa7f4f9",
+          "c733d53e18dd7649d8bee0a09c3f5473f0404b8cc4b1ba2ef06f33d01e489b6a",
+          "c4cd251f045386bfa388a23bbc5a4cfdd2baa7cfbcd487af9ee560f47f6250a4",
+          "3bad8919750c4746d0c471893ce3927c95f7af97d4b976993afeef5ed0f83683",
+          "92fce6fd048271f724bb1c3f937b133484e33f217bafb81087c5157c8c1f9716",
+          "2981a0bd090c105f0440774ea63b5869443c811e927a4ff7c989b4b23253443a",
+          "6310b905a4b2e84fc5700cf2060db436a814859614911004216207369f571f40"
+        ],
+        "perceptual_approval": false
+      }
+    },
+    {
+      "name": "rational_subframes",
+      "frame_count": 25,
+      "repeat_span_frames": [
+        49,
+        10
+      ],
+      "quality_samples": 4,
+      "checkpoints": [
+        {
+          "frame": 0,
+          "history_frames": [
+            0
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ]
+          ],
+          "schedule_digest": "d8ffec606021c9d17e394b7e7a26675645e1b43cdc868fcca71d8bf7a3b56af3",
+          "tasks": 7,
+          "executed_tasks": 7,
+          "native_source_evaluations": 4,
+          "peak_live_results": 5,
+          "pixel_sha256": "848e2d32321ca1a9c97c508367e7cddb8673cf19f7bde6abbbf10ba416ef2326"
+        },
+        {
+          "frame": 1,
+          "history_frames": [
+            0,
+            1
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              5,
+              4
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              7,
+              4
+            ]
+          ],
+          "schedule_digest": "0fe6e44292154885095f80c8f03f9bc583a13c03a7f01a508f175b9d693b41b2",
+          "tasks": 12,
+          "executed_tasks": 12,
+          "native_source_evaluations": 8,
+          "peak_live_results": 6,
+          "pixel_sha256": "fb8896ae4e2f27ae9aab2e672069936a5bb5e35472dd12b8273f3ae4181e1a36"
+        },
+        {
+          "frame": 2,
+          "history_frames": [
+            0,
+            1,
+            2
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              5,
+              4
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              7,
+              4
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              9,
+              4
+            ],
+            [
+              5,
+              2
+            ],
+            [
+              11,
+              4
+            ]
+          ],
+          "schedule_digest": "99316db31dd2877c9ef4ce442ccaad1eb5862dfb02d7431750cdfc13a65535b3",
+          "tasks": 17,
+          "executed_tasks": 17,
+          "native_source_evaluations": 12,
+          "peak_live_results": 7,
+          "pixel_sha256": "0268c04aff52ae05847e55697009168e07eeaf261f4f395d622e5d43e19bdd6d"
+        },
+        {
+          "frame": 3,
+          "history_frames": [
+            0,
+            1,
+            2,
+            3
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              5,
+              4
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              7,
+              4
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              9,
+              4
+            ],
+            [
+              5,
+              2
+            ],
+            [
+              11,
+              4
+            ],
+            [
+              3,
+              1
+            ],
+            [
+              13,
+              4
+            ],
+            [
+              7,
+              2
+            ],
+            [
+              15,
+              4
+            ]
+          ],
+          "schedule_digest": "1f230d52f31f8701ee3d132d08775479d3d4fe9c35e428c61bdc7a32339b1e21",
+          "tasks": 22,
+          "executed_tasks": 22,
+          "native_source_evaluations": 16,
+          "peak_live_results": 8,
+          "pixel_sha256": "59228e7ff735085a99d0bc6a0801c64b458493b3b056574a6d48d8b7254d4257"
+        },
+        {
+          "frame": 4,
+          "history_frames": [
+            0,
+            1,
+            2,
+            3,
+            4
+          ],
+          "native_source_coordinates": [
+            [
+              0,
+              1
+            ],
+            [
+              1,
+              4
+            ],
+            [
+              1,
+              2
+            ],
+            [
+              3,
+              4
+            ],
+            [
+              1,
+              1
+            ],
+            [
+              5,
+              4
+            ],
+            [
+              3,
+              2
+            ],
+            [
+              7,
+              4
+            ],
+            [
+              2,
+              1
+            ],
+            [
+              9,
+              4
+            ],
+            [
+              5,
+              2
+            ],
+            [
+              11,
+              4
+            ],
+            [
+              3,
+              1
+            ],
+            [
+              13,
+              4
+            ],
+            [
+              7,
+              2
+            ],
+            [
+              15,
+              4
+            ],
+            [
+              4,
+              1
+            ],
+            [
+              17,
+              4
+            ],
+            [
+              9,
+              2
+            ],
+            [
+              19,
+              4
+            ]
+          ],
+          "schedule_digest": "6e78d03fde7b0faec71d18ee42f9e08966731e67d5837424b2079e1c630d7dd2",
+          "tasks": 27,
+          "executed_tasks": 27,
+          "native_source_evaluations": 20,
+          "peak_live_results": 9,
+          "pixel_sha256": "330cf6fe3773cd7db56fd933c9be3fba91b376f5e08f9463774998654fe0b735"
+        },
+        {
+          "frame": 5,
+          "history_frames": [
+            5
+          ],
+          "native_source_coordinates": [
+            [
+              5,
+              1
+            ],
+            [
+              21,
+              4
+            ],
+            [
+              11,
+              2
+            ],
+            [
+              23,
+              4
+            ]
+          ],
+          "schedule_digest": "3aa4bbdead76748209e9ec415c1ad2c6ddf4a3dc88f08b4d60d22ffaebbff916",
+          "tasks": 7,
+          "executed_tasks": 7,
+          "native_source_evaluations": 4,
+          "peak_live_results": 5,
+          "pixel_sha256": "947944f8b48229377c642030accf6b024a56668241930ee720dd9187342c8aa1"
+        },
+        {
+          "frame": 6,
+          "history_frames": [
+            5,
+            6
+          ],
+          "native_source_coordinates": [
+            [
+              5,
+              1
+            ],
+            [
+              21,
+              4
+            ],
+            [
+              11,
+              2
+            ],
+            [
+              23,
+              4
+            ],
+            [
+              6,
+              1
+            ],
+            [
+              25,
+              4
+            ],
+            [
+              13,
+              2
+            ],
+            [
+              27,
+              4
+            ]
+          ],
+          "schedule_digest": "9b01f252b6e3d1d15b7e245204c0fa889748c4ea81bb58bcc5d527bd86bafaa9",
+          "tasks": 12,
+          "executed_tasks": 12,
+          "native_source_evaluations": 8,
+          "peak_live_results": 6,
+          "pixel_sha256": "586a52407d639f3132c4178c549e2b1c660c96193e474083e0fedde48888f5a6"
+        },
+        {
+          "frame": 7,
+          "history_frames": [
+            5,
+            6,
+            7
+          ],
+          "native_source_coordinates": [
+            [
+              5,
+              1
+            ],
+            [
+              21,
+              4
+            ],
+            [
+              11,
+              2
+            ],
+            [
+              23,
+              4
+            ],
+            [
+              6,
+              1
+            ],
+            [
+              25,
+              4
+            ],
+            [
+              13,
+              2
+            ],
+            [
+              27,
+              4
+            ],
+            [
+              7,
+              1
+            ],
+            [
+              29,
+              4
+            ],
+            [
+              15,
+              2
+            ],
+            [
+              31,
+              4
+            ]
+          ],
+          "schedule_digest": "7b956fa433b78e01c6ffa54bfaa58530bae9d4466f347a93948b46d80a6c13cc",
+          "tasks": 17,
+          "executed_tasks": 17,
+          "native_source_evaluations": 12,
+          "peak_live_results": 7,
+          "pixel_sha256": "d449a9fcca5da83cb7e0a352db5a74528fb9de62bffcc1246b44c664b007b5c9"
+        },
+        {
+          "frame": 8,
+          "history_frames": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "native_source_coordinates": [
+            [
+              5,
+              1
+            ],
+            [
+              21,
+              4
+            ],
+            [
+              11,
+              2
+            ],
+            [
+              23,
+              4
+            ],
+            [
+              6,
+              1
+            ],
+            [
+              25,
+              4
+            ],
+            [
+              13,
+              2
+            ],
+            [
+              27,
+              4
+            ],
+            [
+              7,
+              1
+            ],
+            [
+              29,
+              4
+            ],
+            [
+              15,
+              2
+            ],
+            [
+              31,
+              4
+            ],
+            [
+              8,
+              1
+            ],
+            [
+              33,
+              4
+            ],
+            [
+              17,
+              2
+            ],
+            [
+              35,
+              4
+            ]
+          ],
+          "schedule_digest": "99d324ecebcc10ea5f7450d7c7d513a13920941f5b3d56934429d5e4b84a5088",
+          "tasks": 22,
+          "executed_tasks": 22,
+          "native_source_evaluations": 16,
+          "peak_live_results": 8,
+          "pixel_sha256": "2a23e1d6c631b55a48b5c77f707e3535818e7adaba6e31d58562e03755426777"
+        },
+        {
+          "frame": 9,
+          "history_frames": [
+            5,
+            6,
+            7,
+            8,
+            9
+          ],
+          "native_source_coordinates": [
+            [
+              5,
+              1
+            ],
+            [
+              21,
+              4
+            ],
+            [
+              11,
+              2
+            ],
+            [
+              23,
+              4
+            ],
+            [
+              6,
+              1
+            ],
+            [
+              25,
+              4
+            ],
+            [
+              13,
+              2
+            ],
+            [
+              27,
+              4
+            ],
+            [
+              7,
+              1
+            ],
+            [
+              29,
+              4
+            ],
+            [
+              15,
+              2
+            ],
+            [
+              31,
+              4
+            ],
+            [
+              8,
+              1
+            ],
+            [
+              33,
+              4
+            ],
+            [
+              17,
+              2
+            ],
+            [
+              35,
+              4
+            ],
+            [
+              9,
+              1
+            ],
+            [
+              37,
+              4
+            ],
+            [
+              19,
+              2
+            ],
+            [
+              39,
+              4
+            ]
+          ],
+          "schedule_digest": "d08ef0e0311c73d20aae2dedd628cb9f3f33fd7ba35f4655f9491137791bb9b4",
+          "tasks": 27,
+          "executed_tasks": 27,
+          "native_source_evaluations": 20,
+          "peak_live_results": 9,
+          "pixel_sha256": "e6843a6f6e93fde5543e528b7d59708c388e974331e860efc60f4f5de55ed946"
+        },
+        {
+          "frame": 10,
+          "history_frames": [
+            10
+          ],
+          "native_source_coordinates": [
+            [
+              10,
+              1
+            ],
+            [
+              41,
+              4
+            ],
+            [
+              21,
+              2
+            ],
+            [
+              43,
+              4
+            ]
+          ],
+          "schedule_digest": "942c7081d2e2e3d2fd693710a79a1b91276efdd60fbc160f4c061dd6dc3429c4",
+          "tasks": 7,
+          "executed_tasks": 7,
+          "native_source_evaluations": 4,
+          "peak_live_results": 5,
+          "pixel_sha256": "031eeb6b343dbcc83a87476f65f8a4a320f183f82605b2ce7f9ea90b8eca5dbb"
+        },
+        {
+          "frame": 11,
+          "history_frames": [
+            10,
+            11
+          ],
+          "native_source_coordinates": [
+            [
+              10,
+              1
+            ],
+            [
+              41,
+              4
+            ],
+            [
+              21,
+              2
+            ],
+            [
+              43,
+              4
+            ],
+            [
+              11,
+              1
+            ],
+            [
+              45,
+              4
+            ],
+            [
+              23,
+              2
+            ],
+            [
+              47,
+              4
+            ]
+          ],
+          "schedule_digest": "1fcade16da6f750e5aad27ec0292354d755dbd80b5fd3ff7c09b8e7a4341d1f1",
+          "tasks": 12,
+          "executed_tasks": 12,
+          "native_source_evaluations": 8,
+          "peak_live_results": 6,
+          "pixel_sha256": "26e82d6f519d69ea3f06b6eca903fbee4799680326405de5c267bde5537c7538"
+        },
+        {
+          "frame": 12,
+          "history_frames": [
+            10,
+            11,
+            12
+          ],
+          "native_source_coordinates": [
+            [
+              10,
+              1
+            ],
+            [
+              41,
+              4
+            ],
+            [
+              21,
+              2
+            ],
+            [
+              43,
+              4
+            ],
+            [
+              11,
+              1
+            ],
+            [
+              45,
+              4
+            ],
+            [
+              23,
+              2
+            ],
+            [
+              47,
+              4
+            ],
+            [
+              12,
+              1
+            ],
+            [
+              49,
+              4
+            ],
+            [
+              25,
+              2
+            ],
+            [
+              51,
+              4
+            ]
+          ],
+          "schedule_digest": "2948afcc8e63b8c468f23656c776e987020582810f750ccdaf3f832976893b73",
+          "tasks": 17,
+          "executed_tasks": 17,
+          "native_source_evaluations": 12,
+          "peak_live_results": 7,
+          "pixel_sha256": "f2970f36af9488c25d71b9e35d31e1504af1dbdc33fcfbda8f2de9f569cf342e"
+        },
+        {
+          "frame": 13,
+          "history_frames": [
+            10,
+            11,
+            12,
+            13
+          ],
+          "native_source_coordinates": [
+            [
+              10,
+              1
+            ],
+            [
+              41,
+              4
+            ],
+            [
+              21,
+              2
+            ],
+            [
+              43,
+              4
+            ],
+            [
+              11,
+              1
+            ],
+            [
+              45,
+              4
+            ],
+            [
+              23,
+              2
+            ],
+            [
+              47,
+              4
+            ],
+            [
+              12,
+              1
+            ],
+            [
+              49,
+              4
+            ],
+            [
+              25,
+              2
+            ],
+            [
+              51,
+              4
+            ],
+            [
+              13,
+              1
+            ],
+            [
+              53,
+              4
+            ],
+            [
+              27,
+              2
+            ],
+            [
+              55,
+              4
+            ]
+          ],
+          "schedule_digest": "40e6e51c58c2c274f5c969c22b81afc3fac318a96766fc063776e19b8ef4cb4b",
+          "tasks": 22,
+          "executed_tasks": 22,
+          "native_source_evaluations": 16,
+          "peak_live_results": 8,
+          "pixel_sha256": "b98bdb46915b4b6eab538e53587fe0d44f10160954c8f850607e18e55dbd4c9e"
+        },
+        {
+          "frame": 14,
+          "history_frames": [
+            10,
+            11,
+            12,
+            13,
+            14
+          ],
+          "native_source_coordinates": [
+            [
+              10,
+              1
+            ],
+            [
+              41,
+              4
+            ],
+            [
+              21,
+              2
+            ],
+            [
+              43,
+              4
+            ],
+            [
+              11,
+              1
+            ],
+            [
+              45,
+              4
+            ],
+            [
+              23,
+              2
+            ],
+            [
+              47,
+              4
+            ],
+            [
+              12,
+              1
+            ],
+            [
+              49,
+              4
+            ],
+            [
+              25,
+              2
+            ],
+            [
+              51,
+              4
+            ],
+            [
+              13,
+              1
+            ],
+            [
+              53,
+              4
+            ],
+            [
+              27,
+              2
+            ],
+            [
+              55,
+              4
+            ],
+            [
+              14,
+              1
+            ],
+            [
+              57,
+              4
+            ],
+            [
+              29,
+              2
+            ],
+            [
+              59,
+              4
+            ]
+          ],
+          "schedule_digest": "ba598cdda8f3500653a4648a3c7354ccccd4d27f70f4ca320ce16c6e64b9fbcf",
+          "tasks": 27,
+          "executed_tasks": 27,
+          "native_source_evaluations": 20,
+          "peak_live_results": 9,
+          "pixel_sha256": "31bbf4470588a62370219d556ca1b0263075f5962881d7b4bad535070a527129"
+        },
+        {
+          "frame": 15,
+          "history_frames": [
+            15
+          ],
+          "native_source_coordinates": [
+            [
+              15,
+              1
+            ],
+            [
+              61,
+              4
+            ],
+            [
+              31,
+              2
+            ],
+            [
+              63,
+              4
+            ]
+          ],
+          "schedule_digest": "ee57d995cbf105b9d465914eff017c23d7bc4af40a72714ad7edc10d216d4657",
+          "tasks": 7,
+          "executed_tasks": 7,
+          "native_source_evaluations": 4,
+          "peak_live_results": 5,
+          "pixel_sha256": "f093e1552ba33ebc574be2ba684403beeefe9fc9cbcd9afa1fdfc943864b8583"
+        },
+        {
+          "frame": 16,
+          "history_frames": [
+            15,
+            16
+          ],
+          "native_source_coordinates": [
+            [
+              15,
+              1
+            ],
+            [
+              61,
+              4
+            ],
+            [
+              31,
+              2
+            ],
+            [
+              63,
+              4
+            ],
+            [
+              16,
+              1
+            ],
+            [
+              65,
+              4
+            ],
+            [
+              33,
+              2
+            ],
+            [
+              67,
+              4
+            ]
+          ],
+          "schedule_digest": "0ba8b41054ac6055d6706700d458b72174273fae3233ecfa68b18a92029a6d44",
+          "tasks": 12,
+          "executed_tasks": 12,
+          "native_source_evaluations": 8,
+          "peak_live_results": 6,
+          "pixel_sha256": "2741ab04a66a1196634f6153e9dcc8385bd96048806240146750eecd4b198fcd"
+        },
+        {
+          "frame": 17,
+          "history_frames": [
+            15,
+            16,
+            17
+          ],
+          "native_source_coordinates": [
+            [
+              15,
+              1
+            ],
+            [
+              61,
+              4
+            ],
+            [
+              31,
+              2
+            ],
+            [
+              63,
+              4
+            ],
+            [
+              16,
+              1
+            ],
+            [
+              65,
+              4
+            ],
+            [
+              33,
+              2
+            ],
+            [
+              67,
+              4
+            ],
+            [
+              17,
+              1
+            ],
+            [
+              69,
+              4
+            ],
+            [
+              35,
+              2
+            ],
+            [
+              71,
+              4
+            ]
+          ],
+          "schedule_digest": "ba0b364fdf2ecde782987d21268b6534debc007ca37bffbce86fee9086852f3a",
+          "tasks": 17,
+          "executed_tasks": 17,
+          "native_source_evaluations": 12,
+          "peak_live_results": 7,
+          "pixel_sha256": "6c9aa85250d3cf23a28367571c3cbf90db328aacfc22b7ced711e146d0bc4635"
+        },
+        {
+          "frame": 18,
+          "history_frames": [
+            15,
+            16,
+            17,
+            18
+          ],
+          "native_source_coordinates": [
+            [
+              15,
+              1
+            ],
+            [
+              61,
+              4
+            ],
+            [
+              31,
+              2
+            ],
+            [
+              63,
+              4
+            ],
+            [
+              16,
+              1
+            ],
+            [
+              65,
+              4
+            ],
+            [
+              33,
+              2
+            ],
+            [
+              67,
+              4
+            ],
+            [
+              17,
+              1
+            ],
+            [
+              69,
+              4
+            ],
+            [
+              35,
+              2
+            ],
+            [
+              71,
+              4
+            ],
+            [
+              18,
+              1
+            ],
+            [
+              73,
+              4
+            ],
+            [
+              37,
+              2
+            ],
+            [
+              75,
+              4
+            ]
+          ],
+          "schedule_digest": "40f458271a738ae3e3e65986b1fc7f6d8b3ffe36a2b8295112ef9e6051530c2e",
+          "tasks": 22,
+          "executed_tasks": 22,
+          "native_source_evaluations": 16,
+          "peak_live_results": 8,
+          "pixel_sha256": "264ee6fbcefe26998f2a7a7a220cb8ad3640a48c04192b66387faa187eda2e70"
+        },
+        {
+          "frame": 19,
+          "history_frames": [
+            15,
+            16,
+            17,
+            18,
+            19
+          ],
+          "native_source_coordinates": [
+            [
+              15,
+              1
+            ],
+            [
+              61,
+              4
+            ],
+            [
+              31,
+              2
+            ],
+            [
+              63,
+              4
+            ],
+            [
+              16,
+              1
+            ],
+            [
+              65,
+              4
+            ],
+            [
+              33,
+              2
+            ],
+            [
+              67,
+              4
+            ],
+            [
+              17,
+              1
+            ],
+            [
+              69,
+              4
+            ],
+            [
+              35,
+              2
+            ],
+            [
+              71,
+              4
+            ],
+            [
+              18,
+              1
+            ],
+            [
+              73,
+              4
+            ],
+            [
+              37,
+              2
+            ],
+            [
+              75,
+              4
+            ],
+            [
+              19,
+              1
+            ],
+            [
+              77,
+              4
+            ],
+            [
+              39,
+              2
+            ],
+            [
+              79,
+              4
+            ]
+          ],
+          "schedule_digest": "2fe5c3fbead06bf318067027cc99d4562af8dfa058574ef60e087f09b2074dae",
+          "tasks": 27,
+          "executed_tasks": 27,
+          "native_source_evaluations": 20,
+          "peak_live_results": 9,
+          "pixel_sha256": "b93d809345b764b23633f0f2740c1236ccff81ca31b22c3ebf8763fc00d4daf3"
+        },
+        {
+          "frame": 20,
+          "history_frames": [
+            20
+          ],
+          "native_source_coordinates": [
+            [
+              20,
+              1
+            ],
+            [
+              81,
+              4
+            ],
+            [
+              41,
+              2
+            ],
+            [
+              83,
+              4
+            ]
+          ],
+          "schedule_digest": "47467b810c0724c21c394811315b8a30f4cfc9715a2764934d4da366101566c1",
+          "tasks": 7,
+          "executed_tasks": 7,
+          "native_source_evaluations": 4,
+          "peak_live_results": 5,
+          "pixel_sha256": "479178a50be1ceba5b0af85b121d473ff9f397629692b0758d6185f6e3aa239f"
+        },
+        {
+          "frame": 21,
+          "history_frames": [
+            20,
+            21
+          ],
+          "native_source_coordinates": [
+            [
+              20,
+              1
+            ],
+            [
+              81,
+              4
+            ],
+            [
+              41,
+              2
+            ],
+            [
+              83,
+              4
+            ],
+            [
+              21,
+              1
+            ],
+            [
+              85,
+              4
+            ],
+            [
+              43,
+              2
+            ],
+            [
+              87,
+              4
+            ]
+          ],
+          "schedule_digest": "06c895c913da1ee56efd7e8fa6591d65eecdba7cc95983167309c6863dc23690",
+          "tasks": 12,
+          "executed_tasks": 12,
+          "native_source_evaluations": 8,
+          "peak_live_results": 6,
+          "pixel_sha256": "eefd0bdc456191aa45cf164d5d853ff0aa517b07c5affccf4555f4a1f4c8f498"
+        },
+        {
+          "frame": 22,
+          "history_frames": [
+            20,
+            21,
+            22
+          ],
+          "native_source_coordinates": [
+            [
+              20,
+              1
+            ],
+            [
+              81,
+              4
+            ],
+            [
+              41,
+              2
+            ],
+            [
+              83,
+              4
+            ],
+            [
+              21,
+              1
+            ],
+            [
+              85,
+              4
+            ],
+            [
+              43,
+              2
+            ],
+            [
+              87,
+              4
+            ],
+            [
+              22,
+              1
+            ],
+            [
+              89,
+              4
+            ],
+            [
+              45,
+              2
+            ],
+            [
+              91,
+              4
+            ]
+          ],
+          "schedule_digest": "71e780d61a45cb6b2c280727251b23827b16281fbd1a535501f2e0abd7c26210",
+          "tasks": 17,
+          "executed_tasks": 17,
+          "native_source_evaluations": 12,
+          "peak_live_results": 7,
+          "pixel_sha256": "c9978fd0ba1cda11ce4a4c5294e88a1e36f1d3193e6f2a62e947935e028bd528"
+        },
+        {
+          "frame": 23,
+          "history_frames": [
+            20,
+            21,
+            22,
+            23
+          ],
+          "native_source_coordinates": [
+            [
+              20,
+              1
+            ],
+            [
+              81,
+              4
+            ],
+            [
+              41,
+              2
+            ],
+            [
+              83,
+              4
+            ],
+            [
+              21,
+              1
+            ],
+            [
+              85,
+              4
+            ],
+            [
+              43,
+              2
+            ],
+            [
+              87,
+              4
+            ],
+            [
+              22,
+              1
+            ],
+            [
+              89,
+              4
+            ],
+            [
+              45,
+              2
+            ],
+            [
+              91,
+              4
+            ],
+            [
+              23,
+              1
+            ],
+            [
+              93,
+              4
+            ],
+            [
+              47,
+              2
+            ],
+            [
+              95,
+              4
+            ]
+          ],
+          "schedule_digest": "8f6d7bf9032c50b7c9368e06280d23e153be167f259d27f3150716f5832d4308",
+          "tasks": 22,
+          "executed_tasks": 22,
+          "native_source_evaluations": 16,
+          "peak_live_results": 8,
+          "pixel_sha256": "4f82e8e29bd03513ae13b6b8a1edc920b2ff7a8f5aa324b679dceaebfc5ebcf6"
+        },
+        {
+          "frame": 24,
+          "history_frames": [
+            20,
+            21,
+            22,
+            23,
+            24
+          ],
+          "native_source_coordinates": [
+            [
+              20,
+              1
+            ],
+            [
+              81,
+              4
+            ],
+            [
+              41,
+              2
+            ],
+            [
+              83,
+              4
+            ],
+            [
+              21,
+              1
+            ],
+            [
+              85,
+              4
+            ],
+            [
+              43,
+              2
+            ],
+            [
+              87,
+              4
+            ],
+            [
+              22,
+              1
+            ],
+            [
+              89,
+              4
+            ],
+            [
+              45,
+              2
+            ],
+            [
+              91,
+              4
+            ],
+            [
+              23,
+              1
+            ],
+            [
+              93,
+              4
+            ],
+            [
+              47,
+              2
+            ],
+            [
+              95,
+              4
+            ],
+            [
+              24,
+              1
+            ],
+            [
+              97,
+              4
+            ]
+          ],
+          "schedule_digest": "24bc0db34a3631ccbbf47ee45539b38b1541465593a714e0ec56289fdac6d366",
+          "tasks": 25,
+          "executed_tasks": 25,
+          "native_source_evaluations": 18,
+          "peak_live_results": 8,
+          "pixel_sha256": "2bc10cff340e71406b76656c3dc33c238a0059eb4f2856b753f93c6460790b4e"
+        }
+      ],
+      "independent_native_comparisons": 25,
+      "nonsequential_native_comparisons": 29,
+      "nonsequential_order": [
+        9,
+        1,
+        0,
+        20,
+        14,
+        18,
+        8,
+        3,
+        16,
+        4,
+        11,
+        17,
+        22,
+        23,
+        2,
+        7,
+        19,
+        21,
+        5,
+        13,
+        12,
+        24,
+        15,
+        10,
+        6,
+        24,
+        0,
+        12,
+        24
+      ],
+      "max_rgb8_error": 0,
+      "independent_rational_clock_max_abs_error": 4.440892098500626e-16,
+      "independent_rational_subframe_clock_max_abs_error": 8.881784197001252e-16,
+      "temporal_contract": {
+        "schema": "framerudiments.compositor-temporal.v1",
+        "coordinate": "exact_encoded_frame_position",
+        "source_clock": {
+          "fps": 12,
+          "frame_count": 25,
+          "sample_rate": 48000,
+          "start_sample": 12000,
+          "end_sample_exclusive": 31600,
+          "repeats": 5,
+          "repeat_span_frames": {
+            "numerator": 49,
+            "denominator": 10
+          }
+        },
+        "source_audio_sha256": "e67e1ced8a907e9093289c2fc9a7345f6f7b2797f4ccd43ca7dd4a20ac777944",
+        "max_reach": {
+          "past_frames": 8,
+          "future_frames": 1,
+          "future_subframe": {
+            "numerator": 3,
+            "denominator": 4
+          }
+        },
+        "sample_factor": 4,
+        "sample_step": {
+          "numerator": 1,
+          "denominator": 4
+        },
+        "repeat_policy": "shutter taps stay in exact half-open source cycles; subframes sample the programme grid",
+        "limits": {
+          "native_tasks": 128,
+          "native_edges": 256,
+          "native_live_results": 24,
+          "native_retained_raster_bytes": 536870912,
+          "batch_samples": 64,
+          "batch_rgb_result_bytes": 268435456
+        },
+        "scope": {
+          "native_compositor": "pre_external_effects",
+          "sequential_external_engines": false,
+          "configured_external_effects": false,
+          "persistent_pixel_cache": false,
+          "feedback_checkpoints": false,
+          "pixel_cache_scope": "scheduler_owned_inter_call_frame_results",
+          "raster_budget_excludes_existing_renderer_caches": true,
+          "raster_budget_excludes_callback_private_scratch_and_gpu_allocations": true
+        }
+      },
+      "exact_source_coordinates": true,
+      "original_inputs_unchanged": true,
+      "inspection": {
+        "command": "inspect-temporal",
+        "returncode": 0,
+        "requested_frames": [
+          4,
+          5,
+          24,
+          4
+        ],
+        "source_sha256": "a7a50a0202d383f350ae6fe438e790bd0bbf7a9586db2f5efec7edf1319fc436",
+        "schedule_digests": [
+          "6e78d03fde7b0faec71d18ee42f9e08966731e67d5837424b2079e1c630d7dd2",
+          "3aa4bbdead76748209e9ec415c1ad2c6ddf4a3dc88f08b4d60d22ffaebbff916",
+          "24bc0db34a3631ccbbf47ee45539b38b1541465593a714e0ec56289fdac6d366",
+          "6e78d03fde7b0faec71d18ee42f9e08966731e67d5837424b2079e1c630d7dd2"
+        ],
+        "native_schedule_documents_match": true,
+        "pixels_rendered": false
+      },
+      "cli": {
+        "commands": [
+          {
+            "command": "plan",
+            "returncode": 0,
+            "seconds": 0.147,
+            "frames": 25,
+            "state": "prepared; perceptual review pending"
+          },
+          {
+            "command": "preflight",
+            "returncode": 0,
+            "seconds": 1.083,
+            "frames": 25,
+            "state": "full preflight passed; no encoded video"
+          },
+          {
+            "command": "render",
+            "returncode": 0,
+            "seconds": 1.557,
+            "frames": 25,
+            "state": "technical-QA passed; creative and attended listening review pending"
+          }
+        ],
+        "full_preflight": {
+          "mode": "full",
+          "frames_rendered": 25,
+          "total_frames": 25,
+          "complete": true,
+          "sequential": true,
+          "note": "All project frames were composed."
+        },
+        "independent_encode_verification": {
+          "full_decode": "passed",
+          "decoded_timestamps": "CFR from zero; all frames checked",
+          "audio_duration_error_seconds": -0.0006666666666665932,
+          "mp4_atoms": [
+            "ftyp",
+            "moov",
+            "free",
+            "mdat"
+          ],
+          "listening_approved": false,
+          "platform_safe_zone_verified": false
+        },
+        "plan_and_composition_temporal_contract_match": true,
+        "reference": "independently selected native source samples, encoded with the existing native encoder command",
+        "encoded_frames_per_video": 25,
+        "encoded_videos": 2,
+        "decoded_comparisons": 25,
+        "max_rgb8_error": 0,
+        "source_start_sample": 12000,
+        "source_end_sample_exclusive": 31600,
+        "sample_rate": 48000,
+        "repeats": 5,
+        "video_sha256": "897b45f910449409d4aca4d7ce33f8567887294e492129a7ee44e331d3a0b24f",
+        "decoded_reference_sha256": [
+          "091fac7894c11309977dc9509858c768804f616b209817e79f22c01784b8e81e",
+          "1ffd83e9b1ae44a3a064ac53a7b2527adc05d6de365b765977e0afd94bc2f80c",
+          "8915b14aaf918d3f494cdb3318316ccc082f089fd82b64e7b7a68aceb5251779",
+          "a39bb362b2b814a5d75e75d395b1453e0df1e05018c53f2bf90f03e4ad92582d",
+          "a54495ce3b895b88195730ddd67eadc473d3e5abe74ebf4a585583c32bc6edd8",
+          "a53a12c86e326a2dc0f73816b9268784e63ef29698fb7360ada342b0b2ede731",
+          "f3f4ed2de51805ff1b25cbfdccf364a60e8e80b05915b594a8ea7c555fa21005",
+          "3b7bf8c46006e035bf8f5e5c710a9d838981e9c1a2cdc0ef796b55371aaedb67",
+          "0637e53a5ea69be1d81221971788f6efbfa3484264eeac7a324641c66679a74c",
+          "fdacf7290bd83542d5e42b1608c15407b8152ffa94190ac732d73d63aaa066d4",
+          "1e2023120881373b1fa73b134472b30f77f3d064923dd39c86ffac2039381bdb",
+          "bdcd20211dc70458eaf68ca3eb48934108d25ba4ef1fe83dccdc8e7e7a6aa48c",
+          "4736be5baa1732ba3ce645d838132f69a50a3703e91673a17b4eaab4f5b5e79f",
+          "39593b1e60c6aa3d8312bf52ae902b2cec2a6d2e8fd9957dbfe0fcbc9f12e969",
+          "c26b5b59ef8826c8c4434543696e48e31b4639064ef98cf1599a22412dff5a37",
+          "9ada64e0376f19f3e495b1ac5f87b93a2af84f3f97bca1a6b2d741b8cc5e85cf",
+          "1ecfa1cdfc5138dcab94a07de56d8bbfb7be0c8cdf324c63eeccc39b86a04991",
+          "689c8feb73a5ec04b1ec46685a3a43aa45323c54760bd7671ab36de100f30978",
+          "0b4498477765d186bfb7fda15e5cb49fa16b118900aa2ce5a369ace348fcc29d",
+          "0d81fa9691088ef4e2799bb4ed47e53155e3dd16e4907a7358da516b5a19758b",
+          "832b8a8bd4e74f3a20f6b449dfbd8798438618590bff42fda1f500b6f11bd7cf",
+          "0cbffd92e70242a2df4c6ff981291258ff4322c207b9cdca8414d1b06158b237",
+          "3068111650258c5b478300b735a6a4e2f6e7213bfc7f362f0a32982004fa9852",
+          "6cd31f5801729cebe5e0fe4cdc47cbdd8b923a3409da7c3d621c7ed6b3052acd",
+          "93b981118e5889479ce1d67e649a78e8451431630be30cd5b8f389a9839b61c6"
+        ],
+        "perceptual_approval": false
+      }
+    }
+  ],
+  "source_sha256": {
+    "amber.png": "4008d1ab902e98771e1f48499fa301a8cf6ab56714dc85a0ff6176390bbd2010",
+    "cues.lrc": "6869d33c2e72a35df67105c0242320916ef80d00589f04c3417147f94a14ecf1",
+    "cyan.png": "c441c7aab870bf1718ea898e892961e3e1e28f8df8da716297326eeb4b9fc53c",
+    "font.ttf": "57f73e11f51999432bf7ab22ce55b6f945d5eca1bf824404cfa9ec2e3718c84e",
+    "lines.lrc": "9e52b3257fc7e194a8be048f4a11144593e778f407d4411b5b3b59c3deb5b93b",
+    "recording.json": "9e03e0e7fa73131212311b602adbe2f947388047f7317e4c51a4e426174a65f4",
+    "source.wav": "e67e1ced8a907e9093289c2fc9a7345f6f7b2797f4ccd43ca7dd4a20ac777944",
+    "words.lrc": "6c44a982685fe5d9379a2ea34198d53e4ad7a236c44e2e79eef32b3cd06323b6"
+  },
+  "contact_sheet_sha256": "ce0cfea6339b996b5e1be60060abdca52db5c9009e1319cba2b02c370f77acd5",
+  "owned_temporary_tree_removed": true,
+  "original_projects_and_sources_unchanged": true,
+  "seconds": 9.419
+}

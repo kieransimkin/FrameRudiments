@@ -1,6 +1,4 @@
 """Server-owned seek capabilities and native temporal dependency windows."""
-from math import ceil
-
 from .preview_dependencies import TemporalReach
 
 
@@ -9,12 +7,15 @@ def temporal_reach(document):
     if document.get('effects'):
         # There is no native checkpoint export or proved mid-project reset.
         return TemporalReach('feedback')
-    post = document.get('post_effects', {})
-    if isinstance(post, dict) and 'temporal' in post:
-        from .quality_effects import TemporalShutter
-        # Modulations can reach the full native bound even when the base span
-        # is smaller. Conservative across repeats; never miss a read boundary.
-        return TemporalReach('bounded', past_frames=ceil(TemporalShutter._RANGES['shutter_frames'][1]))
+    if document:
+        from .compositor_temporal import temporal_read_bounds
+
+        # The engine owns both shutter history and fractional forward reads.
+        # A whole-frame closure rounds a nonzero subframe reach upward; it can
+        # invalidate extra boundary frames but cannot omit a real source read.
+        past, future = temporal_read_bounds(document)
+        if past or future:
+            return TemporalReach('bounded', past_frames=past, future_frames=future)
     return TemporalReach()
 
 
@@ -27,7 +28,10 @@ def seek_status(document):
                     max_prefix_frames=1800, max_request_frames=3600,
                     last_reason=None, checkpoint_restore=False,
                     cache_scope='current_stream_qualification', production_equivalent=False)
-    return dict(enabled=reach.mode == 'bounded',
-                mode='bounded_history' if reach.mode == 'bounded' else 'independent',
+    # Forward samples within one encoded frame require dependency coverage but
+    # do not turn the existing seek UI into a feedback/history reconstruction.
+    history = reach.mode == 'bounded' and reach.past_frames > 0
+    return dict(enabled=history,
+                mode='bounded_history' if history else 'independent',
                 phase='ready', past_frames=reach.past_frames, future_frames=reach.future_frames,
                 checkpoint_restore=False, production_equivalent=False)

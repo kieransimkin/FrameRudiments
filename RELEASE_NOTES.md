@@ -1,3 +1,32 @@
+# FrameRudiments M11.1 temporal scheduling candidate (unreleased)
+
+- Declare exact signed temporal offsets and sample grids with immutable frame
+  references. Validate explicit programme/repeat boundary policies, complete
+  dependency graphs, cycles and bounded task/edge/live-result counts before
+  callbacks. Canonical dependency order preserves ordered repeated input ports
+  and evaluates shared sources once per invocation.
+- Execute the production native compositor through the declared subframe,
+  supersample, history-shutter and final-output stages. Retain native source
+  clocks, motion, recording, text, routing and final-quality semantics. Release
+  scheduler-owned transient results on completion and failure.
+- Correct the historical shutter at short repeated excerpts: exact half-open
+  repeat identity excludes a prior whole cycle even when its wrapped source
+  timestamp equals the current timestamp.
+- Add `Compositor.temporal_plan`, `temporal_contract` and bounded detached
+  `sample_frames` results. Add read-only `inspect-temporal` CLI output, native
+  contract metadata in `plan`, and last-executed schedule evidence. A schedule
+  digest identifies dependencies and order; it is not a source/pixel cache key.
+- Derive conservative preview invalidation reach from native history and
+  forward subframe sampling. Add independent rational/native pixel fixtures,
+  shuffled requests, actual CLI preflight/render and reference-encoded pixel
+  comparisons to the existing Windows/Linux CI and source-package checks.
+- Repair the inherited archive-admission fixture's Windows separator handling:
+  expected names now use the stored ZIP entry metadata, preserving the strict
+  unsafe-entry rejection and no-write assertions on every platform.
+- See [the M11.1 guide](docs/temporal-scheduling-m11-1.md). Delayed feedback,
+  checkpoints and random-access reconstruction remain M11.2. Candidate CI,
+  external-engine, physical-GPU and perceptual acceptance remain distinct.
+
 # FrameRudiments M10.5 round-trip candidate (unreleased)
 
 - Share complete immutable history and export modules between the authoring UI
@@ -21,8 +50,8 @@
   records, CRCs, bounds and source immutability before extracting fixture bundles.
 - Extend authoring CI and source-package checks. Browser paint/layout, physical
   GPU acceptance and exact-candidate CI remain distinct from local qualification.
-  See [the M10.5 guide](docs/authoring-roundtrip-m10-5.md). M11.1 temporal dependency
-  declarations and deterministic scheduling are next in the consolidated roadmap.
+  See [the M10.5 guide](docs/authoring-roundtrip-m10-5.md). Its successor is the
+  M11.1 temporal dependency and deterministic scheduling candidate above.
 
 # FrameRudiments M10.4 preview candidate (unreleased)
 

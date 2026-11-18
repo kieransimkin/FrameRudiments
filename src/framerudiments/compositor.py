@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from functools import lru_cache
 import gc
+from copy import deepcopy
 import math
 
 from PIL import Image, ImageColor, ImageDraw, ImageFont, ImageOps
@@ -387,6 +388,8 @@ class Compositor:
             targets.add("word-caption")
         if self.word_indicator:
             targets.add("word-indicator")
+        # Bound captured RGBA route sets before temporal sample work allocates.
+        self._temporal_route_count = len(targets)
         matte_sources = {
             spec["composite"]["matte"]["source"]
             for spec in self.effect_specs
@@ -644,17 +647,29 @@ class Compositor:
             image = self.output_quality.apply(image)
         return image, context
 
+    def temporal_contract(self):
+        """Inspect native temporal work without rendering pixels or external engines."""
+        from .compositor_temporal import temporal_contract
+        return temporal_contract(self.project)
+
+    def temporal_plan(self, frame):
+        """Return the exact immutable task plan consumed by ``frame``."""
+        from .compositor_temporal import temporal_plan
+        return temporal_plan(self, frame)
+
+    def sample_frames(self, anchor, offsets, *, boundary='error', repeat_local=True,
+                      apply_quality=True):
+        """Sample bounded signed integer past/future native frames, in tap order."""
+        from .compositor_temporal import sample_frames
+        return sample_frames(self, anchor, offsets, boundary=boundary,
+            repeat_local=repeat_local, apply_quality=apply_quality)
+
     def frame(self, frame, *, apply_quality=True):
-        if self.post_pipeline.temporal is not None and not getattr(self, "_temporal_sampling", False):
-            from .quality_effects import render_temporal_frame
+        from .compositor_temporal import render_scheduled_frame
+        return render_scheduled_frame(self, frame, apply_quality=apply_quality)
 
-            image, context = render_temporal_frame(self, frame)
-            return self._final_output(image, context, apply_quality)
-        if self.output_quality.time_samples > 1:
-            from .super_sampling import temporal_supersample
-
-            image, context = temporal_supersample(self, frame)
-            return self._final_output(image, context, apply_quality)
+    def _native_frame(self, frame, *, apply_quality=False):
+        """One native sample; only the temporal scheduler calls this draw path."""
         ctx = self.context(frame)
         if (
             self.post_pipeline.enabled
@@ -756,6 +771,8 @@ class Compositor:
     def evidence(self):
         virtual = getattr(self, "_temporal_virtual", None)
         return dict(
+            temporal_schedule={"contract": self.temporal_contract(),
+                "last_execution": deepcopy(getattr(self, "_last_temporal_schedule", None))},
             transformed_alpha_extents=self.extents,
             text_states=self.text_states,
             render_quality=self.output_quality.evidence,

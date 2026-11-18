@@ -82,6 +82,13 @@ def main(argv=None):
     plan = commands.add_parser("plan", help="Validate pinned inputs and export the frame ledger")
     plan.add_argument("project")
     plan.add_argument("--output", required=True)
+    temporal = commands.add_parser(
+        "inspect-temporal", help="Inspect exact native frame dependencies without rendering pixels"
+    )
+    temporal.add_argument("project")
+    temporal.add_argument("--frame", type=int, action="append", required=True,
+                          help="Encoded frame to inspect; repeat up to 64 times")
+    temporal.add_argument("--output", help="New JSON report; defaults to standard output")
     for name in ("preflight", "render"):
         item = commands.add_parser(name)
         item.add_argument("project")
@@ -208,6 +215,22 @@ def main(argv=None):
 
             print(json.dumps(inspect_isf(args.shader, expected_sha256=args.expect_sha256),
                              indent=2, allow_nan=False))
+        elif args.command == "inspect-temporal":
+            from .temporal_inspection import inspect_temporal, write_inspection
+
+            if args.output:
+                output = __import__("pathlib").Path(args.output)
+                if output.exists() or output.is_symlink():
+                    raise ValueError("Temporal inspection output already exists")
+                from .preview_stream_profile import temporary_preflight
+
+                temporary_preflight(output.parent)
+            result = inspect_temporal(args.project, args.frame)
+            if args.output:
+                write_inspection(args.output, result)
+                print(args.output)
+            else:
+                print(json.dumps(result, indent=2, allow_nan=False))
         elif args.command == "plan":
             output = __import__("pathlib").Path(args.output)
             if output.exists():
@@ -215,8 +238,14 @@ def main(argv=None):
             project = Project.load(args.project)
             from .compositor import Compositor
 
-            Compositor(project)
-            write_json(output, project.summary())
+            compositor = Compositor(project)
+            try:
+                summary = project.summary()
+                summary['temporal_schedule'] = compositor.temporal_contract()
+                project.verify_inputs()
+                write_json(output, summary)
+            finally:
+                compositor.close()
             print(output)
         else:
             runner = preflight if args.command == "preflight" else render

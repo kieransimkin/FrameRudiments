@@ -18,6 +18,18 @@ profiles. The [implementation plan](docs/seekable-adaptive-streaming-plan.md)
 keeps external-engine, physical-device and perceptual acceptance explicit.
 Source/audio clocks and production rendering are unchanged.
 
+M11.1 adds [exact temporal dependencies and deterministic native scheduling](docs/temporal-scheduling-m11-1.md).
+The compositor executes one bounded dependency plan for native subframes,
+historical shutter samples and final output. Shared samples run once, ordered
+input weights remain intact, and random frame requests use the same source
+clock as sequential rendering. `inspect-temporal` exposes that plan without
+rendering; Python callers can request bounded past/current/future complete
+frames through `Compositor.sample_frames`. Exact repeat boundaries prevent
+shutter history from leaking across short source cycles. Native/CLI fixtures
+qualify ordinary, short-repeat and fractional-boundary output. This is an
+unreleased implementation candidate; checkpointed feedback is M11.2 and
+exact-candidate platform/GPU CI retains its own acceptance gates.
+
 M10.5 adds [complete draft history and JSON round-trip qualification](docs/authoring-roundtrip-m10-5.md).
 The UI and integration runner now share immutable history and export modules.
 Undo/redo restores the complete project, sidecars, dirty flags and cue format;

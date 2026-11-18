@@ -49,7 +49,16 @@ These are deliberately different from the older **temporal history shutter**,
 which combines *previous encoded frames* (and may be enabled independently).
 When both are enabled, each source frame in the historical shutter is computed
 from distinct subframes before the historical blend. At repeat boundaries, the
-original shutter still prevents history leaking from a previous excerpt.
+historical shutter prevents history leaking from a previous excerpt by exact
+half-open repeat identity, including excerpts shorter than its sampling window.
+
+[M11.1 temporal scheduling](temporal-scheduling-m11-1.md) represents each native
+sample as an exact rational position on the encoded-frame ruler. The same
+bounded plan is inspectable and executed by `Compositor.frame`. At the final
+programme boundary, clamped repeated sample ports retain their blend weights
+while their shared native source task executes once. Subframe sampling uses the
+existing programme grid, which can cross an internal repeat boundary; the
+history shutter's encoded-frame taps remain local to their source cycle.
 
 Word-indicator motion and particle timing use the same source timestamp ledger;
 their authored frame durations are scaled with the internal sampling rate so

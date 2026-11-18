@@ -232,8 +232,18 @@ All external shader/model/media sources must be pinned or versioned, constrained
 
 ### M11 — Temporal engine, media and CI showcases
 - **M11.1** Temporal dependency declarations (past/future frame indexing) and deterministic scheduling.
-  Next planned major milestone after the M10 authoring implementation candidates.
+  Implementation candidate: [exact native scheduling](temporal-scheduling-m11-1.md).
+  Immutable rational references and explicit boundary policies build bounded,
+  canonical dependency plans. The production compositor executes these plans
+  for native subframes, historical shutter samples and final output; shared
+  sources execute once and repeated input weights are preserved. Exact source
+  cycle identity corrects short-repeat history leakage. Native inspection and
+  bounded signed complete-frame sampling expose the same scheduler. Independent
+  rational/native fixtures compare sequential, shuffled and actual CLI-encoded
+  output. Exact-candidate platform/GPU CI and device/perceptual acceptance remain
+  separate gates.
 - **M11.2** Feedback history with explicit delay, checkpoints and bounds; random-access reconstruction.
+  Next planned major milestone after the M11.1 implementation candidate.
 - **M11.3** Motion echoes, directional blur, slit-scan and time-remapping effects.
 - **M11.4** Video input/output adapters with rational timebase handling.
 - **M11.5** CI-published side-by-side gallery: music-driven Kandi Boom ⇄ visualiser, mattes and spectral transitions.

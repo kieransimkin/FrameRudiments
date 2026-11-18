@@ -216,3 +216,11 @@ and linked video are captured renderer output; the diagram is explanatory.
 ## High-quality anti-aliasing and motion blur
 
 The new `visual.antialias` and `visual.motion_blur` controls can be applied to individual elements or the finished frame and modulated with native DanceRudiments. `post_effects.temporal` separately integrates observed past encoded frames with a bounded historical shutter; see [quality effects](quality-effects.md) for safe settings, constraints, and the CI gallery.
+
+[M11.1 temporal scheduling](temporal-scheduling-m11-1.md) derives exact native
+sample dependencies from these existing fields and `render_quality`. It adds
+no project JSON field or alternative clock. `inspect-temporal` reports the
+resolved native plan, and `plan` includes its structural temporal contract.
+Shutter taps remain inside the same exact source repeat, including nonintegral
+frame boundaries and repeats shorter than the shutter window. True quality
+subframes continue to sample the existing programme grid.
