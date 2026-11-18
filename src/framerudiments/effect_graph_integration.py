@@ -71,6 +71,10 @@ def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str
         # the source identity and its transparent alpha rather than raising.
         if source_id not in sources:
             sources[source_id] = Image.new('RGBA', frame.size)
+    if vision_sources is not None and getattr(vision_sources, 'element_masks', None):
+        # M14.3 masks affect only declared isolated graph inputs. They do NOT
+        # retrospectively remove pixels already present in `frame`.
+        sources = vision_sources.mask_elements(sources, context.frame)
     values = controls.values(context, graph) if controls is not None else {}
     if getattr(graph, 'layer_style_ids', ()):
         report = {}

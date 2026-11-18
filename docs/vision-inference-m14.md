@@ -231,3 +231,92 @@ projection, model input edits and the Windows absolute-path rejection fix.
 The M14 CI workflow runs the tests across Windows/Linux Python 3.11/3.13;
 real native ONNX and full production acceptance are separate from mock-worker
 and pixel regressions.
+
+## M14.3 — frame batching, isolated element masks and explicit device qualification
+
+M14.3 adds `vision_batch_m14.py`, a strictly opt-in **offline batch worker**. It
+accepts a bounded sequence of SHA-256-pinned M14.1 request manifests for **one
+model, one tensor topology and one preprocessing profile**, sorted by exact
+encoded frame number. No frame is inferred from another frame's nominal time;
+flow still requires its explicitly pinned prior image. The existing M14.2
+`vision_sources` cache remains CPU-based, with independent per-request keys.
+Batch output is a separate, fully verified artifact and **is not silently
+inserted into that CPU cache**.
+
+```json
+{
+  "schema": "framerudiments.vision-batch.v1",
+  "provider": "CPUExecutionProvider",
+  "batch_size": 4,
+  "timeout_seconds": 120,
+  "gpu_mem_limit_mib": 512,
+  "parity": {"max_abs": 0.02, "mean_abs": 0.005},
+  "items": [
+    {"frame": 0, "request": {"path": "requests/frame-0.json", "sha256": "<64 hex>"}},
+    {"frame": 1, "request": {"path": "requests/frame-1.json", "sha256": "<64 hex>"}}
+  ]
+}
+```
+
+Run `framerudiments-vision inspect-batch ./batch.json`, then
+`framerudiments-vision infer-batch ./batch.json --output ./result`.
+To prepopulate M14.2 graph sources from a **CPU** batch, run
+`framerudiments-vision seed-graph-batch ./project.json ./batch.json ./result`.
+The import checks that every frame actually belongs to the project, verifies
+the runtime and all source pins, then installs independently sealed cache
+entries without re-running the model. All newly written entries are rolled
+back if publication fails. GPU outputs cannot be imported into the CPU cache.
+The optional `providers` command displays installed providers, but *presence is
+not qualification*. An output directory is created **only after** an isolated
+worker completes, every predicted tensor and checksum is independently verified,
+and the inputs are rechecked. A failure/timeout removes staging data. Existing
+output directories are never overwritten. Per-frame artifacts include
+`estimate.npy`, `preview.png`, and `receipt.json`, with one top-level
+`batch.json` recording exact frames, model hash, provider assignments, the
+actual run grouping and numerical parity evidence.
+
+**Real batching:** A model declaring dynamic `N` supports batches of 1–8
+frames; ONNX models with fixed `N=1` instead run frames serially **within one
+retained inference session**. The receipt distinguishes `dynamic_batch` from
+`shared_session_single`; it never counts the latter as a batched GPU kernel.
+Input/output shape, type, channel meaning and spatial sizes remain as in M14.1.
+The worker admits at most 16 requests and 8 Mi input-pixels total, with a
+conservative 256 MiB per-group decoded-payload estimate and an explicit 5–600 s
+process timeout. ONNX Runtime internal allocations and GPU memory are **not**
+claimed to be bounded by that host allocation estimate.
+
+**Execution-provider policy:** The manifest must explicitly name
+`CPUExecutionProvider`, `CUDAExecutionProvider`, or `DmlExecutionProvider`.
+There is no `auto` choice and no implicit GPU-to-CPU fallback. GPU runs disable
+CPU kernel assignment at session creation as well as runtime recovery, require
+the exact selected provider to be attached, and inspect actual ONNX kernel
+profiling events to establish that every observed node ran on that provider.
+A GPU run also executes an independent CPU reference, checks both per-frame
+maximum and mean absolute float32 errors, and fails if either tolerance is
+exceeded. The receipt includes provider execution counts and wall-clock
+measurements. CUDA's optional `gpu_mem_limit_mib` is an arena allocation hint,
+**not a guarantee of global VRAM isolation**; DirectML has no equivalent hint.
+No result is called physically GPU-qualified until the dedicated manual
+self-hosted device workflow passes on that device and driver.
+
+**Per-element segmentation:** `vision_sources` accepts an optional
+`element_masks` list, each `{ "element": "layer:portrait", "source":
+"vision:people-mask" }`. The source must be a segmentation probability profile
+and the element must name a real declared project layer. At graph evaluation,
+its probability alpha multiplies **only that isolated layer RGBA source**,
+leaving pixel RGB, unrelated layers, the original source and the `frame` source
+unchanged. Existing alpha/matte graph controls still govern subsequent
+compositing. In particular, this does **not** erase objects already composited
+into `frame`; build the graph from `layer:<id>` if the per-element mask should
+change its final output. Relative depth and model optical flow cannot be
+silently reinterpreted as alpha masks. Frame/asset changes retain M14.2's
+conservative preview-cache dependency invalidation.
+
+**Acceptance:** The normal `vision-m14.yml` matrix on Windows/Linux and Python
+3.11/3.13 runs static- and dynamic-batch synthetic ONNX models and flow pairs,
+and requires native tests without skips. The separate manual
+`vision-gpu-m14.yml` workflow requires a trusted physical GPU runner labelled
+`framerudiments-gpu`, selects exactly one GPU provider and publishes a numeric
+comparison receipt. CPU CI cannot be used as evidence of GPU support. Complete
+hardware/driver coverage, inference kernels unsupported by the strict provider,
+and model perceptual/semantic accuracy remain independently gated.

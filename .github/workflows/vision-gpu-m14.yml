@@ -1,0 +1,50 @@
+name: M14.3 explicit GPU ONNX provider and parity qualification
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Physical-device ONNX provider to qualify
+        required: true
+        type: choice
+        options:
+          - CUDAExecutionProvider
+          - DmlExecutionProvider
+permissions:
+  contents: read
+jobs:
+  gpu-parity:
+    # A dedicated, trusted physical GPU runner is required. This workflow is
+    # manual-only and cannot be passed by the ordinary CPU/software-EGL pool.
+    runs-on: [self-hosted, framerudiments-gpu]
+    timeout-minutes: 30
+    env:
+      FRAMERUDIMENTS_M14_GPU_PROVIDER: ${{ inputs.provider }}
+      FRAMERUDIMENTS_M14_GPU_EVIDENCE: m14-3-gpu-evidence
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install native CPU reference and exact synthetic ONNX generator
+        run: python -m pip install -e '.[dev]' 'onnx>=1.17,<2'
+      - name: Select one accelerator runtime without conflicting ONNX distributions
+        shell: python
+        run: |
+          import os, subprocess, sys
+          packages = {'CUDAExecutionProvider': 'onnxruntime-gpu>=1.20,<2',
+                      'DmlExecutionProvider': 'onnxruntime-directml>=1.20,<2'}
+          provider = os.environ['FRAMERUDIMENTS_M14_GPU_PROVIDER']
+          if provider not in packages:
+              raise SystemExit('Unsupported GPU provider')
+          subprocess.run([sys.executable, '-m', 'pip', 'install', packages[provider]], check=True)
+      - name: Verify the selected physical provider is installed
+        run: python -m framerudiments.vision_m14_cli providers
+      - name: Execute real GPU and independent CPU sessions, prove kernel assignment and compare pixels
+        run: python -m pytest -q -rs integration/test_vision_batch_gpu_m14_native.py
+      - name: Upload hardware qualification report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: m14-3-selected-device-parity-${{ inputs.provider }}
+          path: m14-3-gpu-evidence/
+          if-no-files-found: warn

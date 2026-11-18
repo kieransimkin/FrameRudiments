@@ -16,7 +16,7 @@ import re
 import shutil
 import secrets
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 from .vision_m14 import (
     RESULT_SCHEMA, TASKS, _hash, _postprocess,
@@ -163,7 +163,8 @@ class VisionGraphSources:
     """
 
     def __init__(self, project, config):
-        _object(config, ("schema", "cache_dir", "profiles", "sources", "max_cache_bytes"), "graph sources",
+        _object(config, ("schema", "cache_dir", "profiles", "sources", "max_cache_bytes",
+                         "element_masks"), "graph sources",
                 ("schema", "cache_dir", "profiles", "sources"))
         if config["schema"] != SCHEMA:
             raise ValueError("Unsupported M14.2 vision source schema")
@@ -227,6 +228,23 @@ class VisionGraphSources:
                 mapping[index] = spec
             self.sources[name] = (profile, missing, resample, mapping)
         self.source_ids = frozenset(self.sources)
+        self.element_masks = {}
+        masks = config.get("element_masks", [])
+        if not isinstance(masks, list) or len(masks) > MAX_SOURCES:
+            raise ValueError("M14.3 element masks require at most sixteen bindings")
+        known_layers = {"layer:" + layer["id"] for layer in getattr(project, "data", {}).get("layers", [])
+                        if isinstance(layer, dict) and isinstance(layer.get("id"), str)}
+        for row in masks:
+            _object(row, ("element", "source"), "element mask", ("element", "source"))
+            element, source = row["element"], row["source"]
+            if (not isinstance(element, str) or element not in known_layers or
+                    not isinstance(source, str) or source not in self.sources or
+                    element in self.element_masks):
+                raise ValueError("M14.3 element mask must bind one known layer to one vision source")
+            if self.sources[source][0].task != "segmentation":
+                raise ValueError("M14.3 element alpha mask requires a segmentation profile")
+            self.element_masks[element] = source
+        self.evidence["element_masks"] = dict(self.element_masks)
         self.last_used = {}
 
     def _identity(self, profile, spec):
@@ -348,6 +366,31 @@ class VisionGraphSources:
             method = (Image.Resampling.NEAREST if resample == "nearest" else Image.Resampling.BILINEAR)
             image = image.resize((self.project.width, self.project.height), resample=method)
         return image
+
+    def mask_elements(self, sources, frame):
+        """Mask *isolated graph layer sources*, not the already-composited frame.
+
+        This never mutates caller-owned RGBA surfaces, never interprets relative
+        depth/flow as alpha and preserves existing straight-colour values.
+        """
+        if not self.element_masks:
+            return sources
+        updated = dict(sources)
+        for element, prediction in self.element_masks.items():
+            original = updated.get(element)
+            if original is None:
+                original = Image.new("RGBA", (self.project.width, self.project.height))
+            if original.mode != "RGBA" or original.size != (self.project.width, self.project.height):
+                raise ValueError("M14.3 element requires a native-sized RGBA source")
+            matte = updated.get(prediction)
+            if matte is None:
+                matte = self.source(prediction, frame)
+            if matte.mode != "RGBA" or matte.size != original.size:
+                raise ValueError("M14.3 predicted matte size or format mismatch")
+            painted = original.copy()
+            painted.putalpha(ImageChops.multiply(original.getchannel("A"), matte.getchannel("A")))
+            updated[element] = painted
+        return updated
 
 
 def encode_graph_surface(estimate, profile):

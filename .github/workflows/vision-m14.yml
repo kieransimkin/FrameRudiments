@@ -5,11 +5,14 @@ on:
     paths:
       - 'src/framerudiments/vision_m14*.py'
       - 'src/framerudiments/vision_graph_m14.py'
+      - 'src/framerudiments/vision_batch_m14.py'
       - 'src/framerudiments/effect_graph_integration.py'
       - 'src/framerudiments/compositor.py'
       - 'src/framerudiments/project.py'
       - 'tests/test_vision_m14*.py'
       - 'tests/test_vision_graph*.py'
+      - 'tests/test_vision_batch_m14*.py'
+      - 'integration/test_vision_batch*_m14_native.py'
       - 'docs/vision-inference-m14.md'
       - '.github/workflows/vision-m14.yml'
       - 'pyproject.toml'
@@ -36,15 +39,16 @@ jobs:
       - name: Verify native ONNX Runtime CPU provider is installed
         run: python -c "import onnx, onnxruntime; assert 'CPUExecutionProvider' in onnxruntime.get_available_providers()"
       - name: Lint native inference implementation and tests
-        run: ruff check src/framerudiments/vision_m14.py src/framerudiments/vision_m14_cli.py src/framerudiments/vision_graph_m14.py src/framerudiments/effect_graph_integration.py tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py
+        run: ruff check src/framerudiments/vision_m14.py src/framerudiments/vision_m14_cli.py src/framerudiments/vision_graph_m14.py src/framerudiments/vision_batch_m14.py src/framerudiments/effect_graph_integration.py tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py tests/test_vision_batch_m14.py integration/test_vision_batch_m14_native.py integration/test_vision_batch_gpu_m14_native.py
       - name: Exercise all three actual ONNX operators and isolated CPU worker
-        run: python -m pytest -q -rs tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py
+        run: python -m pytest -q -rs tests/test_vision_m14.py tests/test_vision_m14_real.py tests/test_vision_graph_m14.py tests/test_vision_graph_integration_m14.py tests/test_vision_graph_compositor_m14.py tests/test_vision_batch_m14.py integration/test_vision_batch_m14_native.py
       - name: No skipped native qualification cases
         shell: python
         run: |
           import subprocess, sys
           result = subprocess.run([sys.executable, '-m', 'pytest', '-q', '-rs',
-                                   'tests/test_vision_m14_real.py'], capture_output=True, text=True)
+                                   'tests/test_vision_m14_real.py', 'integration/test_vision_batch_m14_native.py'],
+                                   capture_output=True, text=True)
           print(result.stdout[-20000:])
           assert result.returncode == 0 and 'skipped' not in result.stdout.lower()
       - name: Python source distribution smoke
