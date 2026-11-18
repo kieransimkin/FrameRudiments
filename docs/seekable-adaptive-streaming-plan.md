@@ -1,8 +1,8 @@
 # Seekable adaptive streaming preview and monotonic frame cache — implementation plan
 
-**Status:** S0–S5 implementation candidates; S6–S7 remain planned.
-S3 native integration and exact-head CI qualification remain open; see
-[adaptive rendering and its supported subset](preview-stream-s3.md).
+**Status:** S0–S6 implementation candidates; S7 remains planned.
+Exact-head CI, external-engine and physical-device qualification remain separate;
+see [S6 supported paths and verification limits](preview-stateful-seek-s6.md).
 **Owner:** FrameRudiments authoring/runtime.
 **Roadmap track:** M10.S (seekable, cached, quality-adaptive preview), alongside M10.2–M10.5;
 M11.1–M11.2 are prerequisites for *stateful* feedback seeking.
@@ -377,8 +377,8 @@ paused-only foreground resource yielding, generation-fenced cache upgrades,
 owned temporary-file cleanup and current-frame-only upgrade presentation.
 The parent exclusively owns cache admission; background timings never train
 the adaptive controller. UI opt-in preserves the existing timeline/audio clock.
-S5 below adds precise supported-section invalidation. S6 state reconstruction
-remains outstanding.
+S5 below adds precise supported-section invalidation; S6 adds verified state
+reconstruction with owned descendant cleanup.
 
 ### S5 implementation candidate — whole-section dependency invalidation
 
@@ -396,7 +396,22 @@ avoid full PNG recovery scans, while cold opens and ordinary reads retain the
 existing corruption checks. Monotonic client edit sequences, retiring-worker
 gates, invalidation receipts and immediate stale-image clearing cover the UI
 and transport. The native Q5 retention tests are a separate exact-head CI gate.
-Temporal propagation is modelled, not executed: stateful seek remains S6/M11.
+S6 below supplies native bounded-history reads and feedback prefix reconstruction.
+
+### S6 implementation candidate — verified prefix reconstruction
+
+The [S6 stateful seek contract](preview-stateful-seek-s6.md) enables native
+temporal shutters with their actual dependency range and feedback effects with
+bounded, authored-Q5 frame-zero replay. Every new prefix is independently reset
+and compared at every frame before cache admission, with zero RGBA8 tolerance.
+The separate receipt cache is not an opaque engine checkpoint. Unsupported or
+nonrepeatable resets, missing runtimes and exceeded budgets remain visibly
+`stateful_seek_unavailable`; no feedback-free fallback is labelled Q5.
+
+Foreground and refinement use isolated process scopes, runtime/input guards,
+latest-intent cancellation, parent-only generation-fenced admission and explicit
+replay UI progress. Native external parity, Windows/physical-device acceptance
+and broader S7 latency/memory profiling remain qualification gates.
 
 ## Test and performance matrix
 

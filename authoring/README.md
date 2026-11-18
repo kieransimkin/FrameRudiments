@@ -9,7 +9,8 @@ Full documentation: [docs/authoring-workspace.md](../docs/authoring-workspace.md
 Source assets stay hash-pinned and are never written from the browser. Use
 **Export project & sidecars** to create a new portable project bundle, then
 validate the result with the existing FrameRudiments `plan` / `preflight`
-commands. The preview intentionally does not replay GPU feedback engines.
+commands. The one-shot preview omits GPU feedback; the opt-in adaptive stream
+uses the verified S6 replay route below.
 
 ## Adaptive preview and paused Q5 refinement
 
@@ -21,7 +22,18 @@ cancels background work before foreground drawing resumes. The timeline/audio
 clock is never driven by this worker. See the [S4 worker contract and tests](../docs/preview-stream-s4.md).
 
 Q5 uses the authored quality settings, but remains preview evidence rather than
-production or perceptual approval. Sequential feedback still needs S6/M11.
+production or perceptual approval.
+
+## Verified temporal and feedback seeking
+
+S6 uses native bounded history for temporal shutters and an isolated authored-Q5
+prefix replay for Butterchurn/projectM. Each new feedback prefix is independently
+reset and compared pixel-for-pixel before presentation. The panel shows replay
+and verification progress separately from adaptive FPS. Missing runtimes,
+exceeded frame/time budgets or unequal reset output show **Stateful seek
+unavailable** and clear old pixels. A newer seek cancels the owned worker tree.
+Feedback qualification is scoped to the current stream; reopening revises its
+cache. See [S6 capabilities, budgets and qualification](../docs/preview-stateful-seek-s6.md).
 
 ## Section-aware draft edits
 

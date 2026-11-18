@@ -108,7 +108,10 @@ class NativePreviewRenderer:
             self.input_guard()
         if self.profile != profile_id:
             start = perf_counter()
-            view = render_project_view(self.project, profile_id)
+            # Native temporal shutters already reconstruct a bounded history.
+            # External feedback must go through the S6 EffectChain dispatcher.
+            view = render_project_view(self.project, profile_id,
+                                       allow_stateful=not bool(self.project.data.get('effects')))
             if self.compositor is not None:
                 self.compositor.close()
                 self.compositor = self.profile = None

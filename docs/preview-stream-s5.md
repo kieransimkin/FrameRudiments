@@ -87,10 +87,10 @@ Feedback reads propagate through downstream sections until a verified reset.
 Unknown reach invalidates conservatively across the timeline. Tests cover both
 halos and feedback/reset propagation.
 
-**This does not implement stateful seeking or checkpoint reconstruction.** The
-live adaptive renderer's existing eligibility checks still reject unsupported
-feedback/history paths. Verified reset boundaries can only be provided by a
-future engine adapter. S6/M11 owns native state restoration and its pixel tests.
+**S5 itself does not implement stateful seeking or checkpoint reconstruction.**
+[S6](preview-stateful-seek-s6.md) supplies the native bounded-history window and
+verified feedback prefix adapter. It does not claim a mid-project reset or an
+opaque checkpoint restore. Unknown engine paths continue to fail explicitly.
 
 ## Atomic storage and generation ownership
 

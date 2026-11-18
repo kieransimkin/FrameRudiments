@@ -182,19 +182,22 @@ All external shader/model/media sources must be pinned or versioned, constrained
 - **M10.3** Automatically generated parameter and DanceNotion control editors.
 - **M10.4** Transition previews and scrub-safe frame evaluation with quality/performance switch.
 - **M10.5** Round-trip JSON fixture and undo/redo tests.
-- **M10.S — seekable adaptive real-time streaming preview (S0–S2 candidates, S3–S7 planned).**
+- **M10.S — seekable adaptive real-time streaming preview (S0–S6 candidates, S7 planned).**
   [Dedicated S0–S7 implementation plan](seekable-adaptive-streaming-plan.md):
   [S0 clock/quality/telemetry contracts](preview-stream-s0-contract.md) and
   [S1 persistent monotonic frame storage](preview-frame-cache-s1.md) define
   authoritative timing, cache identities, generation-fenced quality upgrades,
-  quotas and recovery. [S2 seek transport](preview-stream-s2.md) now serves
-  opt-in Q0 frames from a coalesced queue over loopback SSE.
-  Future stages cover target-FPS hysteresis and fidelity ladders, latest-cursor
-  seeking, and full-quality refinement from the most recently stopped frame;
-  isolated full-quality refinement from the most recent stopped frame;
-  monotonic per-frame cache; whole-segment effect/pipeline invalidation and
-  transitive temporal dependencies. Stateless paths may ship first; M11.1–M11.2
-  checkpoint/replay is required for correct seeking with stateful feedback.
+  quotas and recovery. [S2 seek transport](preview-stream-s2.md) supplies the
+  coalesced queue and loopback SSE. [S3 adaptive fidelity](preview-stream-s3.md),
+  [S4 isolated Q5 refinement](preview-stream-s4.md) and
+  [S5 dependency invalidation](preview-stream-s5.md) provide target-FPS
+  hysteresis, latest-cursor seeking, monotonic upgrades and transitive temporal
+  dependencies. [S6 verified seeking](preview-stateful-seek-s6.md) adds native
+  bounded-history reconstruction and authored-Q5 feedback prefix replay with
+  independent reset/parity checks. It retains bounded verification receipts,
+  not serialized engine checkpoints. Exact-head native-engine/platform CI
+  qualification remains open; S7 covers broader profiling, galleries and
+  release readiness. M11.1–M11.2 retain the wider temporal-engine scope.
 - **Exit:** editor exports a valid project that matches CLI-rendered output.
 
 ### M11 — Temporal engine, media and CI showcases

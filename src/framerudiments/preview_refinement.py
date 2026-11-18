@@ -39,6 +39,7 @@ class RefinementSupervisor:
         self.state = 'waiting_for_stop'
         self.completed = self.skipped = self.cancelled = 0
         self.error_type = None
+        self.stateful = None
         self.last_report = 0.0
         self.thread = Thread(target=self._run, name='framerudiments-q5-supervisor', daemon=True)
         self.thread.start()
@@ -52,6 +53,7 @@ class RefinementSupervisor:
                     frame=self.candidate, profile='Q5', completed=self.completed, skipped=self.skipped,
                     cancellations=self.cancelled, error_type=self.error_type, process_isolated=True,
                     active=self.active, worker_alive=self.renderer_live,
+                    stateful=self.stateful,
                     policy='paused_only_foreground_priority', production_equivalent=False)
 
     def stop_at(self, frame):
@@ -82,7 +84,7 @@ class RefinementSupervisor:
         s = self.stream
         return (not s.closed and not s.playing and not s.foreground_active and s.pending is None
                 and not s.foreground_release_pending and s.foreground_cleanup_error is None
-                and not self.suspended and self.order is not None
+                and not self.suspended and self.order is not None and s.replay_revoked is None
                 and self.state not in ('complete', 'failed', 'quota_blocked', 'stale', 'cleanup_failed'))
 
     def _cancelled(self, epoch):
@@ -134,12 +136,25 @@ class RefinementSupervisor:
                         renderer = self.factory()  # Construct on the owning supervisor thread.
                         with s.condition:
                             self.renderer_live = True
-                    png = renderer(frame, lambda: self._cancelled(epoch))
+                    cancellable = getattr(renderer, 'render_cancellable', None)
+                    if callable(cancellable):
+                        def progress(status):
+                            with s.condition:
+                                if not self._cancelled(epoch):
+                                    self.stateful = dict(status)
+                                    self._report()
+                                    if frame == s.frame:
+                                        s.stateful = dict(status)
+                                        s._event('stateful-progress', frame=frame, stateful=s.stateful)
+                        png = cancellable(frame, 'Q5', lambda: self._cancelled(epoch), progress)
+                    else:
+                        png = renderer(frame, lambda: self._cancelled(epoch))
                     _verified_png(png, ticket.width, ticket.height)
                     with s.condition:
                         if self._cancelled(epoch):
                             raise RefinementCancelled('new stop or foreground priority')
                         s._verify_inputs()
+                        s._bind_replay_identity(renderer)
                         outcome = s.cache.publish(ticket, png, settings_sha256=s._settings(ticket))
                         if outcome in ('stale', 'quota_rejected'):
                             self.state = 'stale' if outcome == 'stale' else 'quota_blocked'
@@ -159,10 +174,22 @@ class RefinementSupervisor:
                         if epoch == self.epoch:
                             self.state = 'yielding'
                 except Exception as exc:
+                    from .preview_replay import StatefulSeekUnavailable
                     with s.condition:
+                        sticky = (isinstance(exc, StatefulSeekUnavailable) and exc.reason_code in {
+                            'replay_mismatch', 'runtime_identity_changed', 'input_identity_changed'})
+                        if not s.closed and sticky:
+                            s._replay_unavailable(exc.reason_code, s.frame)
                         # A superseded task must not poison a newer stop.
                         if epoch == self.epoch:
                             self.state, self.error_type = 'failed', type(exc).__name__
+                            if isinstance(exc, StatefulSeekUnavailable):
+                                self.stateful = {**(self.stateful or s.stateful), 'phase': 'unavailable',
+                                                 'requested_frame': frame, 'last_reason': exc.reason_code}
+                                if frame == s.frame and not sticky:
+                                    s._replay_unavailable(exc.reason_code, s.frame)
+                            elif getattr(renderer, 'stateful_replay', False) and frame == s.frame:
+                                s._replay_unavailable('worker_failed', frame)
                             self._report(force=True)
                 finally:
                     with s.condition:

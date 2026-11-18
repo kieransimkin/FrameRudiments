@@ -1,17 +1,18 @@
 # FrameRudiments
 
-**Streaming S0+S1 implementation candidates:** [frame/quality/telemetry contracts](docs/preview-stream-s0-contract.md)
-and a [persistent, monotonic preview-frame cache](docs/preview-frame-cache-s1.md)
-are available. SQLite-backed Q0–Q5 frame admissions are atomic, generation-fenced,
-quota-bounded and never downgrade a retained frame. The existing one-shot renderer
-is unchanged. **S2 adds opt-in [cached, seekable Q0 preview](docs/preview-stream-s2.md)**
-with latest-intent coalescing and SSE delivery; adaptive quality and background
-refinement remain future milestones.
+**Streaming S0–S6 implementation candidates:** opt-in local streaming now combines
+[adaptive native rendering](docs/preview-stream-s3.md), [paused Q5 refinement](docs/preview-stream-s4.md),
+[whole-section invalidation](docs/preview-stream-s5.md) and
+[verified temporal/feedback seeking](docs/preview-stateful-seek-s6.md).
+Native temporal shutters reconstruct bounded history; Butterchurn/projectM
+pipelines use authored Q5 with bounded frame-zero replay and independent exact
+pixel verification. Missing runtimes, exceeded budgets or nonrepeatable resets
+report `stateful_seek_unavailable`. Cached frames remain preview evidence.
 
-**Planned (not implemented):** [seekable, cache-backed adaptive streaming preview](docs/seekable-adaptive-streaming-plan.md),
-with stepped quality to a target FPS, a separate production-quality refinement
-worker starting at the latest stopped playhead, and whole-segment cache
-invalidation when effects or render dependencies change.
+The [implementation plan](docs/seekable-adaptive-streaming-plan.md) tracks the
+remaining S7 profiling and release qualification. The one-shot renderer and
+production pipeline retain their existing behavior; source/audio clocks are
+unchanged.
 
 M10.1 adds a [visual executable effect-graph node/port editor](docs/authoring-workspace.md)
 to the existing React timeline workspace. The editor preserves native timing,
@@ -777,7 +778,7 @@ stable releases pinned below or previous catalogue results.
 
 Use named [stem sources and alpha/luminance mattes](docs/stem-sources-and-masks.md), [weighted cross-stem motion](docs/multi-stem-modulation.md), [keyframed matte opacity](docs/keyframed-mattes.md), and [layer animation, polygon clips, displacement and intermediate GPU-stage injection](docs/phase3-compositing.md) within the existing source-clock compositor. These are presentation operations; calibrated spectral displays still require one verified Fourier source.
 
-The [local authoring workspace](docs/authoring-workspace.md) uses released React Timeline Sequence for real transport, editable LRC/word/cue/layer lanes and keyframes, routing graphs, presets, undo/redo and export-only drafts. Its PNG preview never edits canonical files and does not replay sequential feedback. Use encoded render/preflight for final approval.
+The [local authoring workspace](docs/authoring-workspace.md) uses released React Timeline Sequence for real transport, editable LRC/word/cue/layer lanes and keyframes, routing graphs, presets, undo/redo and export-only drafts. Its previews never edit canonical files. The one-shot PNG preview omits sequential feedback; **Adaptive cache preview** supports [S6 bounded, verified Q5 feedback replay](docs/preview-stateful-seek-s6.md) when the native engine passes exact prefix reconstruction. Use encoded render/preflight for final approval.
 
 For one feature-to-configuration map, see the [full compositor workflow](https://github.com/kieransimkin/DanceFlow/blob/main/docs/workflows/framerudiments-complete.md). The registry returned by `framerudiments renderers` is authoritative; older family counts in historical examples are contextual baselines.
 

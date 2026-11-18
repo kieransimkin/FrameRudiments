@@ -6,7 +6,7 @@ import readline from 'node:readline';
 import {fileURLToPath} from 'node:url';
 
 const lines = readline.createInterface({input: process.stdin, crlfDelay: Infinity});
-let browser, profile, page;
+let browser, profile, page, scopedProcess;
 const send = object => process.stdout.write(JSON.stringify(object) + '\n');
 try {
   for await (const line of lines) {
@@ -17,10 +17,23 @@ try {
         throw new Error('Butterchurn runtime versions differ from the package lock');
       const puppeteer = require('puppeteer-core');
       profile = await mkdtemp(path.join(message.profile_root || message.work, 'owned-headless-'));
-      browser = await puppeteer.launch({executablePath: message.browser, headless: true, userDataDir: profile,
-        protocolTimeout: 60000, timeout: 60000,
-        args: ['--enable-webgl', '--enable-unsafe-swiftshader', '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding']});
+      const browserArgs = ['--enable-webgl', '--enable-unsafe-swiftshader', '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding'];
+      if (process.env.FRAMERUDIMENTS_PREVIEW_PROCESS_SCOPE === '1') {
+        // Puppeteer's high-level launcher does not forward detached:false.
+        // Keep the browser in the S6 worker's owned process group/Windows Job
+        // using the pinned runtime's public lower-level launcher instead.
+        const {launch, CDP_WEBSOCKET_ENDPOINT_REGEX} = require('@puppeteer/browsers');
+        scopedProcess = launch({executablePath: message.browser, env: process.env,
+          args: puppeteer.defaultArgs({headless: true, userDataDir: profile,
+            args: [...browserArgs, '--remote-debugging-port=0']}),
+          detached: false, handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false});
+        const browserWSEndpoint = await scopedProcess.waitForLineOutput(CDP_WEBSOCKET_ENDPOINT_REGEX, 60000);
+        browser = await puppeteer.connect({browserWSEndpoint, protocolTimeout: 60000});
+      } else {
+        browser = await puppeteer.launch({executablePath: message.browser, headless: true, userDataDir: profile,
+          protocolTimeout: 60000, timeout: 60000, args: browserArgs});
+      }
       page = await browser.newPage();
       await page.setRequestInterception(true);
       page.on('request', request => request.url().startsWith('about:') || request.url().startsWith('data:')
@@ -62,12 +75,17 @@ try {
 } finally {
   lines.close();
   try {
-    if (browser) await browser.close();
+    let cleanupError;
+    try { if (browser) await browser.close(); } catch (error) { cleanupError = error; }
+    // Also owns launch/connect failures for which no Browser object exists.
+    try { if (scopedProcess) await scopedProcess.close(); } catch (error) { cleanupError ??= error; }
     // Only this freshly allocated profile is removed. Windows may briefly retain
     // file locks after browser.close() resolves; bounded fs retries handle that.
     if (profile) await rm(profile, {recursive: true, force: true, maxRetries: 15, retryDelay: 200});
+    if (cleanupError) throw cleanupError;
     send({ok: true, cleanup: {browser_closed: !browser || !browser.connected,
-      page_closed: !page || page.isClosed(), owned_profile_removed: true}});
+      page_closed: !page || page.isClosed(), owned_profile_removed: true,
+      ...(scopedProcess ? {owned_process_closed: true} : {})}});
   } catch (error) {
     send({ok: false, error: `Owned visualiser cleanup failed: ${error}`});
     process.exitCode = 1;

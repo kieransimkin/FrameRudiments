@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import {PresentationFence,previewFrame,validFrameUrl} from './streamAdaptive.ts';
 import {StoppedCursor,observeTimelinePlayback} from './streamRefinement.ts';
 import {invalidationSummary,invalidatesFrame,nextDraftRevision,sameDraftImage} from './streamInvalidation.ts';
+import {currentStatefulEvent,parseStateful,statefulSummary,type StatefulStatus} from './streamStateful.ts';
 
 type Props={project:Record<string,any>;sidecars:Record<string,unknown[]>;
   time:number;fps:number;duration:number};
@@ -11,7 +12,8 @@ type Metrics={profile:string;quality_floor:string;fresh_fps:number|null;
 type Refinement={enabled:boolean;state:string;anchor_frame:number|null;frame:number|null;
   completed:number;skipped:number;epoch:number;error_type?:string|null};
 type FrameEvent={cursor_seq:number;frame:number;url?:string;profile_id?:string;
-  image_sha256:string;cache_hit?:boolean;adaptive?:Metrics;origin?:string;refinement?:Refinement;type:string};
+  image_sha256:string;cache_hit?:boolean;adaptive?:Metrics;origin?:string;refinement?:Refinement;
+  stateful?:unknown;type:string};
 async function post(path:string,data:Record<string,unknown>,signal?:AbortSignal) {
   const result=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify(data),signal,credentials:'same-origin'});
@@ -31,6 +33,7 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
   const [displayed,setDisplayed]=useState<number|null>(null);
   const [refine,setRefine]=useState(true);
   const [refinement,setRefinement]=useState<Refinement|null>(null);
+  const [stateful,setStateful]=useState<StatefulStatus|null>(null);
   const playing=useRef(false);
   useEffect(()=>observeTimelinePlayback(document.querySelector('.fr-timeline'),
     active=>{playing.current=active;}),[]);
@@ -46,13 +49,14 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
     let fetching:AbortController|null=null,pictureUrl='',retryTimer:number|undefined;
     let restarting=false,pictureFrame:number|null=null;
     setPicture('');setPictureSource(null);setInvalidation('');
-    setDisplayed(null);setMetrics(null);setTier('');setRefinement(null);
+    setDisplayed(null);setMetrics(null);setTier('');setRefinement(null);setStateful(null);
     setStatus('Connecting adaptive stream…');
     const send=(frame:number,command='advance')=>{
       if(!token||disposed)return;
       if(command==='advance'&&(busy||frame===fence.frame))return;
       busy=true;fetching?.abort();decodeId++;
       const sequence=fence.request(frame);
+      setStateful(previous=>previous?{...previous,requested_frame:frame,phase:'idle',last_reason:null}:null);
       const now=performance.now(),interval=1000/targetRef.current;
       nextSendAt=command==='advance'?Math.max(now,nextSendAt+interval):now+interval;
       if(command==='seek'){
@@ -87,8 +91,11 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
         if(old)URL.revokeObjectURL(old);
         setTier(`${row.profile_id} · ${row.origin==='refinement'?'background refinement':row.cache_hit?'cache hit':'fresh render'}`);
         if(row.refinement)setRefinement(row.refinement);
+        const replay=parseStateful(row.stateful);
+        setStateful(replay);
         setMetrics(row.adaptive??null);
-        setStatus(row.adaptive?.target_unattainable?'At quality floor: target cannot be sustained':'Adaptive preview');
+        setStatus(replay?.mode==='verified_prefix_replay'?'Verified feedback preview':
+          row.adaptive?.target_unattainable?'At quality floor: target cannot be sustained':'Adaptive preview');
         requestAnimationFrame(()=>{
           if(disposed||serial!==decodeId||!fence.accepts(sequence,row.frame))return;
           // A decoded-image acknowledgement, not a physical-display measurement.
@@ -112,10 +119,27 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
         token=reply.session;fence=new PresentationFence(initial);
         stopped=new StoppedCursor(initial,performance.now());
         setRefinement(reply.refinement??null);
+        setStateful(parseStateful(reply.stateful));
         setInvalidation(invalidationSummary(reply.invalidation)??'');
         desired=lastObserved=previewFrame(timeRef.current,fps,duration);
         events=new EventSource('/api/stream/events?session='+encodeURIComponent(token)+'&after=0&continuous=1');
         events.addEventListener('frame-ready',receive);
+        for(const kind of ['stateful-progress','stateful-seek-unavailable'])events.addEventListener(kind,event=>{
+          if(disposed||!(event instanceof MessageEvent))return;
+          try{
+            const update=currentStatefulEvent(JSON.parse(event.data),fence);
+            if(!update)return;
+            setStateful(update);
+            if(update.phase==='unavailable'){
+              fetching?.abort();decodeId++;busy=false;
+              setPicture('');setPictureSource(null);setDisplayed(null);setTier('');
+              if(pictureUrl){URL.revokeObjectURL(pictureUrl);pictureUrl='';}pictureFrame=null;
+              setStatus('Stateful seek unavailable');
+            }else if(update.phase==='replaying'||update.phase==='verifying'){
+              setStatus('Reconstructing feedback history');
+            }
+          }catch{setStatus('Invalid stateful preview event');}
+        });
         events.addEventListener('cache-invalidated',event=>{
           if(disposed||!(event instanceof MessageEvent))return;
           try{
@@ -177,12 +201,18 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
     request.current?.(previewFrame(timeRef.current,fps,duration),'target_fps');
   };
   const desiredFrame=previewFrame(time,fps,duration);
+  const replaying=stateful?.enabled&&stateful.mode==='verified_prefix_replay';
+  const replayStatus=statefulSummary(stateful);
   return <div className="fr-stream-preview" role="region" aria-label="Adaptive cached streaming preview">
-    {picture&&sameDraftImage(pictureSource,project,sidecars,refine)?<img src={picture} alt={`Cached preview frame ${displayed}`}/>:<span>Rendering seek position…</span>}
+    {picture&&sameDraftImage(pictureSource,project,sidecars,refine)?<img src={picture} alt={`Cached preview frame ${displayed}`}/>:
+      <span>{stateful?.phase==='unavailable'?'Stateful seek unavailable':'Rendering seek position…'}</span>}
     <small role="status">{status} · {tier} · {displayed!==null&&displayed!==desiredFrame?'late frame':'current request'} · preview only</small>
     {invalidation&&<small role="status">{invalidation}</small>}
-    <small>Fresh render FPS {rate(metrics?.fresh_fps)} · acknowledged FPS {rate(metrics?.acknowledged_fps)} ·
-      p95 {rate(metrics?.render_ms_p95)} ms · floor {metrics?.quality_floor??'checking'}</small>
+    {replayStatus&&<small role="status">{replayStatus}</small>}
+    {replaying?<small>Feedback uses authored Q5. Replay and verification time is separate from the target FPS.
+      {' '}Acknowledged FPS {rate(metrics?.acknowledged_fps)}</small>:
+      <small>Fresh render FPS {rate(metrics?.fresh_fps)} · acknowledged FPS {rate(metrics?.acknowledged_fps)} ·
+        p95 {rate(metrics?.render_ms_p95)} ms · floor {metrics?.quality_floor??'checking'}</small>}
     <label><input type="checkbox" checked={refine} onChange={event=>setRefine(event.target.checked)}/>
       Refine paused frames at authored Q5</label>
     {refine&&<small role="status">Q5 refinement: {refinement?.state??'waiting'} ·

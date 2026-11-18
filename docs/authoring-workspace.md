@@ -72,23 +72,19 @@ editable timing contracts in `docs/timing-editing.md` of its upstream project.
   effects are not replayed in this interactive preview.** Use a real preflight
   and encoded render to approve those stages.
 
-**Proposed streaming preview (not yet implemented):** the
-[seekable adaptive streaming and monotonic frame cache plan](seekable-adaptive-streaming-plan.md)
-adds a user-set target FPS with stepped detail/effects/resolution, a dedicated
-full-fidelity worker anchored at the last stopped playback cursor, cache
-upgrades that never downgrade a retained frame, and **whole-section**
-invalidation after a segment's effects or rendering pipeline changes.
-Stateful feedback seeking requires M11 checkpoint/replay support; the current
-`/api/preview` behaviour remains unchanged.
+**Opt-in streaming implementation candidate:** enable Adaptive cache preview
+for [native quality adjustment](preview-stream-s3.md),
+[paused Q5 refinement](preview-stream-s4.md) and
+[whole-section invalidation](preview-stream-s5.md) over the same-origin SSE
+transport and monotonic PNG cache. The source timeline controls playback.
 
-**S0/S1 candidates:** [Section/quality/clock contracts](preview-stream-s0-contract.md)
-and the [monotonic persistent frame cache](preview-frame-cache-s1.md) are defined.
-The local server reports content-free latency via `GET /api/preview-telemetry`.
-S2 now wires the cache into opt-in seekable authoring previews through a
-[same-origin SSE transport](preview-stream-s2.md); legacy one-shot preview is
-unchanged. Only Q0 cached, downsampled frames are supported at this stage.
-Adaptive quality adjustment (S3), background Q5 refinement (S4), and fine-grained
-segment invalidation (S5) remain planned.
+[S6 temporal and feedback seeking](preview-stateful-seek-s6.md) uses native
+bounded-history shutters or an isolated, independently verified frame-zero
+feedback replay at authored Q5. The panel distinguishes reconstruction from
+verification and shows `stateful_seek_unavailable` when a runtime, reset or
+budget cannot provide verified output. Cached pixels remain preview evidence;
+production rendering and the one-shot `/api/preview` behavior are unchanged.
+See the [remaining implementation/qualification plan](seekable-adaptive-streaming-plan.md).
 
 Source lyric/cue timestamps are converted to/from the output excerpt's display
 ruler without modifying the approved source audio clock. Repeat cycles share

@@ -12,7 +12,7 @@ from pathlib import Path
 
 from .preview_stream_contract import _hex, canonical_digest, quality_profiles
 
-RENDERER_ABI = 'framerudiments.preview-s3-native-canvas.v1'
+RENDERER_ABI = 'framerudiments.preview-s6-verified-seek.v1'
 _PIXEL_STYLES = {
     'particles': {'padding': (4, 0, False), 'radius': (3, .5, False)},
     'bars': {'padding': (4, 0, False), 'gap': (2, 0, False)},
@@ -34,12 +34,12 @@ def require_stateless(document):
     if not isinstance(document, dict):
         raise ValueError('project document must be an object')
     if document.get('effects'):
-        raise ProfileUnsupported('Sequential Butterchurn/projectM effects require S6 checkpoint/replay')
+        raise ProfileUnsupported('Sequential Butterchurn/projectM effects require the S6 verified replay dispatcher')
     post = document.get('post_effects', {})
     if not isinstance(post, dict):
         raise ValueError('post_effects must be an object')
     if post.get('temporal'):
-        raise ProfileUnsupported('Historical temporal post effects require S6 checkpoint/replay')
+        raise ProfileUnsupported('Temporal post effects require S6 bounded-history admission')
     layers = document.get('layers', [])
     if not isinstance(layers, list) or any(not isinstance(row, dict) for row in layers):
         raise ValueError('layers must be an array of objects')
@@ -187,12 +187,24 @@ def _lower_canvas(document, width, height, source_width, source_height):
     document['width'], document['height'] = width, height
 
 
-def profile_document(project, profile_id):
+def profile_document(project, profile_id, *, allow_stateful=False):
     profiles = {p.id: p for p in quality_profiles(project)}
     if not isinstance(profile_id, str) or profile_id not in profiles:
         raise ValueError('unknown preview quality profile')
     profile = profiles[profile_id]
-    require_stateless(project.data)
+    if allow_stateful:
+        # S6 owns feedback replay. Keep the older direct-render admission
+        # deliberately strict unless its caller selects the S6 dispatcher.
+        admission = deepcopy(project.data)
+        admission.pop('effects', None)
+        post = admission.get('post_effects', {})
+        if isinstance(post, dict):
+            post.pop('temporal', None)
+        require_stateless(admission)
+        if project.data.get('effects') and profile.quality_rank != 5:
+            raise ProfileUnsupported('Feedback replay requires authored Q5 settings')
+    else:
+        require_stateless(project.data)
     document = deepcopy(project.data)
     if profile.quality_rank == 5:
         return document  # Authored settings, including explicitly disabled AA.
@@ -209,11 +221,11 @@ def profile_document(project, profile_id):
     return document
 
 
-def profile_capabilities(project):
+def profile_capabilities(project, *, allow_stateful=False):
     rows = []
     for profile in quality_profiles(project):
         try:
-            document = profile_document(project, profile.id)
+            document = profile_document(project, profile.id, allow_stateful=allow_stateful)
             rows.append({**asdict(profile), 'supported': True, 'reason': None,
                          'settings_sha256': canonical_digest({'abi': RENDERER_ABI, 'derived': document}),
                          'execution_status': 'eligible_requires_render', 'production_equivalent': False})
@@ -223,7 +235,7 @@ def profile_capabilities(project):
     return tuple(rows)
 
 
-def render_project_view(project, profile_id):
+def render_project_view(project, profile_id, *, allow_stateful=False):
     """Private view of a validated Project; keeps all original clock attributes.
 
     Preview sizes may be odd or <16: they are not H.264 encoder output projects.
@@ -231,7 +243,7 @@ def render_project_view(project, profile_id):
     """
     from .output_quality import OutputQuality
 
-    document = profile_document(project, profile_id)
+    document = profile_document(project, profile_id, allow_stateful=allow_stateful)
     profile = next(p for p in quality_profiles(project) if p.id == profile_id)
     view = copy(project)
     view.data = document

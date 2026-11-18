@@ -103,8 +103,10 @@ conservative whole-project identities.
 Errors expose their class, not source text, private paths or lyric contents.
 A render failure stops the sweep; a new stop can retry a healthy supervisor.
 A dead supervisor or cleanup failure requires a clean session restart. Stateful
-Butterchurn/projectM feedback and historical temporal paths remain refused by
-the S3 eligibility gate until S6/M11 checkpoint/replay support exists.
+[S6](preview-stateful-seek-s6.md) extends refinement to bounded-history temporal
+paths and verified feedback prefix replay. Feedback uses a separate scoped
+worker, pays the complete reconstruction cost and fails visibly when it cannot
+qualify the requested prefix. The S4 stateless worker remains unchanged.
 
 ## API and UI evidence
 

@@ -61,11 +61,11 @@ capability receipts explain the resulting floor. Minimum-size geometry can
 further restrict lower ranks. A native validation failure remains a failure,
 not permission to replace the scene with an unrelated simplified frame.
 
-Sequential Butterchurn/projectM, historical temporal post-effects, emitter and
-material layers are refused by adaptive admission until their independent-frame
-seeking path is qualified. Use the existing offline renderer for them. S6/M11
-checkpoint/replay work is still required; a missing temporal prefix is not Q5.
-No new shader or procedural approximation is claimed where none is implemented.
+[S6 temporal/feedback admission](preview-stateful-seek-s6.md) now adds native
+bounded-history temporal shutters at Q3–Q5 and independently verified feedback
+prefix replay at Q5. The direct S3 helper remains deliberately stateless unless
+the server selects the S6 dispatcher. Emitter/material layers remain unqualified
+for adaptive seeking. A missing temporal prefix is never labelled Q5.
 
 ## Controller and measurements
 
@@ -165,5 +165,7 @@ sidecars and Q5 byte parity. The existing CPU CI matrix collects it without
 skip-based success. Local synthetic checks are not a substitute for that gate,
 the complete React build, cross-platform tests or physical-GPU qualification.
 
-**Next:** S4 independent Q5 refinement from the latest stopped playhead, then
-S5 dependency-scoped whole-section invalidation and S6 temporal reconstruction.
+Later candidates add [S4 independent Q5 refinement](preview-stream-s4.md),
+[S5 whole-section invalidation](preview-stream-s5.md) and
+[S6 temporal reconstruction](preview-stateful-seek-s6.md). S7 profiling and
+release qualification remain in the implementation plan.

@@ -22,8 +22,10 @@ from PIL import Image, UnidentifiedImageError
 from .preview_frame_cache import PreviewFrameCache, _verified_png
 from .preview_dependencies import build_dependency_index, cache_namespace, implementation_fingerprint
 from .preview_segment_cache import SectionFrameCache
+from .preview_seek_support import seek_status, temporal_reach
 from .preview_adaptive import AdaptiveController
 from .preview_quality import RENDERER_ABI as ADAPTIVE_ABI, PinnedInputGuard, profile_capabilities
+from .preview_replay import StatefulSeekUnavailable
 from .preview_stream_contract import (
     _integer, canonical_digest, project_fingerprint, quality_profiles,
     requested_target_fps, section_segments,
@@ -55,13 +57,17 @@ class SeekStream:
     """Latest-intent queue with optional adaptive native rendering (S3)."""
 
     def __init__(self, cache, renderer, frame_count, target_fps=30, telemetry=None,
-                 *, capabilities=None, verifier=None, clock=monotonic, refinement_factory=None):
+                 *, capabilities=None, verifier=None, clock=monotonic, refinement_factory=None,
+                 stateful=None):
         _integer(frame_count, 'frame_count', 1, 10_000_000)
         _integer(target_fps, 'target_fps', 15, 120)
         self.cache, self.renderer = cache, renderer
         self.frame_count, self.target_fps = frame_count, target_fps
         self.telemetry, self.verifier, self.clock = telemetry, verifier, clock
         self.capabilities = capabilities
+        self.stateful = dict(stateful) if stateful is not None else seek_status({})
+        self.replay_revoked = None
+        self.replay_engine_identity = None
         self.invalidation = getattr(cache, 'last_revision', None)
         self.source_revoked = False
         self.controller = (AdaptiveController(target_fps, clock=clock, supported_ranks=[
@@ -101,10 +107,14 @@ class SeekStream:
     def _frame_data(self, item, *, hit, origin='foreground'):
         params = urlencode(dict(session=self.token, frame=item.frame,
                                 generation=item.generation, sha256=item.image_sha256))
+        stateful = (getattr(self.refinement, 'stateful', None) if origin == 'refinement' else None) or self.stateful
+        if stateful.get('enabled'):
+            stateful = {**stateful, 'phase': 'ready', 'requested_frame': item.frame, 'last_reason': None}
         return dict(frame=item.frame, generation=item.generation,
                     profile_id=item.profile_id, quality_rank=item.quality_rank,
                     width=item.width, height=item.height, cache_hit=hit,
                     production_equivalent=False, image_sha256=item.image_sha256, origin=origin,
+                    stateful=stateful,
                     refinement=self.refinement.snapshot() if self.refinement else None,
                     adaptive=self.controller.snapshot() if self.controller else None,
                     request_age_ms=max(0, (self.clock()-self.request_at)*1000),
@@ -118,6 +128,7 @@ class SeekStream:
                     adaptive_fps=self.controller is not None, production_equivalent=False,
                     adaptive=self.controller.snapshot() if self.controller else None,
                     capabilities=self.capabilities, invalidation=self.invalidation,
+                    stateful=self.stateful,
                     refinement=self.refinement.snapshot() if self.refinement else dict(enabled=False))
 
     def _settings(self, ticket):
@@ -142,6 +153,9 @@ class SeekStream:
         if self.verifier:
             try:
                 self.verifier()
+            except StatefulSeekUnavailable as exc:
+                self._replay_unavailable(exc.reason_code, self.frame)
+                raise ValueError('Stateful preview identity changed; reopen a verified project') from None
             except (ValueError, OSError):
                 self.source_revoked = True
                 self.pending = None
@@ -185,13 +199,19 @@ class SeekStream:
             if self.controller and (name in ('seek', 'play', 'pause', 'stop') or target_fps is not None):
                 self.controller.reset(name, target_fps=target_fps)
             self.pending = None
-            if self.refinement:
+            if self.refinement and self.replay_revoked is None:
                 if name in ('pause', 'stop'):
                     self.foreground_release_pending = True
                     self.refinement.stop_at(self.frame)
                 elif name in ('seek', 'play', 'advance'):
                     self.refinement.suspend()
             self._event('cursor', frame=self.frame, playing=self.playing)
+            if self.replay_revoked is not None:
+                self.stateful = {**self.stateful, 'phase': 'unavailable',
+                                 'requested_frame': self.frame, 'last_reason': self.replay_revoked}
+                self._event('stateful-seek-unavailable', frame=self.frame,
+                            reason=self.replay_revoked, stateful=self.stateful)
+                return self.status('stateful_seek_unavailable')
             cached = self.cache.get(self.frame)
             if cached is not None:
                 if self.controller:
@@ -272,7 +292,41 @@ class SeekStream:
         finally:
             close = getattr(self.renderer, 'close', None)
             if callable(close):
-                close()  # Release contexts on their creating thread.
+                try:
+                    close()  # Release contexts on their creating thread.
+                except Exception as exc:
+                    with self.condition:
+                        self.foreground_cleanup_error = type(exc).__name__
+                        self.condition.notify_all()
+
+    def _replay_unavailable(self, reason, frame):
+        """Called under condition; identity/parity failures revoke old pixels."""
+        self.stateful = {**self.stateful, 'phase': 'unavailable',
+                         'requested_frame': frame, 'last_reason': reason}
+        if reason in {'replay_mismatch', 'runtime_identity_changed', 'input_identity_changed'}:
+            if self.replay_revoked is None:
+                self.replay_revoked = reason
+                self.pending = None
+                if self.refinement:
+                    self.refinement.suspend()
+                self.cache.invalidate_all()
+                self.invalidation = getattr(self.cache, 'last_revision', None)
+                if self.invalidation is not None:
+                    self._event('cache-invalidated', invalidation=self.invalidation)
+        self._event('stateful-seek-unavailable', frame=frame, reason=reason, stateful=self.stateful)
+
+    def _bind_replay_identity(self, renderer):
+        """One engine/device identity for both producers in a qualification."""
+        if not getattr(renderer, 'stateful_replay', False):
+            return
+        status = getattr(renderer, 'stateful_status', {})
+        identity = status.get('engine_identity_sha256')
+        if (not isinstance(identity, str) or len(identity) != 64
+                or any(c not in '0123456789abcdef' for c in identity)):
+            raise StatefulSeekUnavailable('invalid_replay_result')
+        if self.replay_engine_identity is not None and identity != self.replay_engine_identity:
+            raise StatefulSeekUnavailable('runtime_identity_changed')
+        self.replay_engine_identity = identity
 
     def _release_foreground(self):
         """Called only by the foreground owner, including a cached pause."""
@@ -327,18 +381,38 @@ class SeekStream:
                     self.foreground_active = False
                     self.condition.notify_all()
                     return
+                if self.replay_revoked is not None:
+                    self.foreground_active = False
+                    self._replay_unavailable(self.replay_revoked, self.frame)
+                    self.condition.notify_all()
+                    continue
             started = self.clock()
             try:
                 ticket = self.cache.ticket(frame, profile_id)
                 if self.controller:
-                    image = self.renderer(frame, profile_id)
+                    cancellable = getattr(self.renderer, 'render_cancellable', None)
+                    if callable(cancellable):
+                        def cancelled():
+                            with self.condition:
+                                return (self.closed or self.cursor_seq != sequence or self.frame != frame
+                                        or self.replay_revoked is not None)
+                        def progress(status):
+                            with self.condition:
+                                if not cancelled():
+                                    self.stateful = dict(status)
+                                    self._event('stateful-progress', frame=frame, stateful=self.stateful)
+                        image = cancellable(frame, profile_id, cancelled, progress)
+                    else:
+                        image = self.renderer(frame, profile_id)
                     _verified_png(image, ticket.width, ticket.height)  # Never resize to fake a rank.
                 else:
                     image = q0_png(self.renderer(frame), (ticket.width, ticket.height))
                 with self.condition:
-                    if self.closed or self.cursor_seq != sequence or self.frame != frame:
+                    if (self.closed or self.cursor_seq != sequence or self.frame != frame
+                            or self.replay_revoked is not None):
                         continue
                     self._verify_inputs()
+                    self._bind_replay_identity(self.renderer)
                     outcome = self.cache.publish(ticket, image, settings_sha256=self._settings(ticket))
                     duration_ms, queue_ms = max(0, (self.clock()-started)*1000), max(0, (started-queued)*1000)
                     if outcome in ('stale', 'quota_rejected'):
@@ -346,7 +420,8 @@ class SeekStream:
                         continue
                     decision = (self.controller.observe(duration_ms, queue_ms=queue_ms,
                                 setup_ms=min(duration_ms, max(0, getattr(self.renderer, "last_setup_ms", 0))),
-                                epoch=epoch, profile_id=profile_id) if self.controller else None)
+                                epoch=epoch, profile_id=profile_id)
+                                if self.controller and not getattr(self.renderer, 'stateful_replay', False) else None)
                     if decision:
                         self._event('quality-changed', frame=frame, **decision)
                     cached = self.cache.get(frame)
@@ -357,8 +432,25 @@ class SeekStream:
                     if self.telemetry:
                         self.telemetry.record_render(render_ms=duration_ms, queue_ms=queue_ms)
             except Exception as exc:
+                from .preview_refinement_process import RefinementCancelled
+                from .preview_replay import StatefulSeekUnavailable
                 with self.condition:
+                    if getattr(self.renderer, 'cleanup_error', False):
+                        self.foreground_cleanup_error = 'ReplayCleanupError'
+                    if (not self.closed and isinstance(exc, StatefulSeekUnavailable)
+                            and exc.reason_code in {'replay_mismatch', 'runtime_identity_changed', 'input_identity_changed'}):
+                        self._replay_unavailable(exc.reason_code, self.frame)
+                        continue
                     if not self.closed and self.cursor_seq == sequence:
+                        if isinstance(exc, RefinementCancelled):
+                            continue
+                        if isinstance(exc, StatefulSeekUnavailable):
+                            self._replay_unavailable(exc.reason_code, frame)
+                            continue
+                        if getattr(self.renderer, 'stateful_replay', False):
+                            self._replay_unavailable('native_cleanup_failed' if self.foreground_cleanup_error
+                                                     else 'worker_failed', frame)
+                            continue
                         decision = (self.controller.allocation_failure(epoch=epoch, profile_id=profile_id)
                                     if self.controller and isinstance(exc, MemoryError) else None)
                         if decision:
@@ -385,7 +477,8 @@ class PreviewStreamAPI:
     """One active revision, bound to the preview server's validated project."""
 
     def __init__(self, project_file, validate_draft, render_one, *, telemetry=None,
-                 cache_root=None, project_loader=None, adaptive_renderer_factory=None, refinement_factory=None):
+                 cache_root=None, project_loader=None, adaptive_renderer_factory=None, refinement_factory=None,
+                 stateful_renderer_factory=None, stateful_guard_factory=None):
         self.path = Path(project_file).resolve()
         self.validate = validate_draft
         self.render = render_one
@@ -393,6 +486,8 @@ class PreviewStreamAPI:
         self.loader = project_loader
         self.adaptive_renderer_factory = adaptive_renderer_factory
         self.refinement_factory = refinement_factory
+        self.stateful_renderer_factory = stateful_renderer_factory
+        self.stateful_guard_factory = stateful_guard_factory
         self.root = Path(cache_root) if cache_root else (Path.home()/'.cache'/'framerudiments'/'stream-s2')
         self.lock = RLock()
         self.active = None
@@ -458,17 +553,34 @@ class PreviewStreamAPI:
         if adaptive and draft.get('render_quality') != original.data.get('render_quality'):
             from .output_quality import OutputQuality
             candidate.output_quality = OutputQuality(draft.get('render_quality'))
-        capabilities = profile_capabilities(candidate) if adaptive else None
+        capabilities = profile_capabilities(candidate, allow_stateful=True) if adaptive else None
         if capabilities is not None and not capabilities[5]['supported']:
             raise ValueError(capabilities[5]['reason'])
         abi = ADAPTIVE_ABI if adaptive else RENDERER_ABI
+        stateful = seek_status(draft) if adaptive else seek_status({})
+        feedback = adaptive and stateful['mode'] == 'verified_prefix_replay'
         project_hash = project_fingerprint(original, renderer_abi=abi)
         pipeline = canonical_digest(dict(renderer_abi=abi, draft=draft, sidecars=sidecars))
         guard = (PinnedInputGuard(getattr(original, 'base', self.path.parent), draft,
                                   getattr(original, 'inputs', ())) if adaptive else None)
+        if feedback:
+            from .preview_stateful_renderer import ExternalRuntimeGuard
+            runtime_guard = (self.stateful_guard_factory or ExternalRuntimeGuard)(draft)
+            input_guard = guard
+            def guard():
+                input_guard()
+                runtime_guard()
+        namespace = cache_namespace(self.path)
+        implementation = implementation_fingerprint() if adaptive else None
+        if feedback:
+            # An engine without serializable verified state must qualify again
+            # on a new stream/device. Retaining old pixels across that boundary
+            # would silently bypass S6 reset verification (notably projectM).
+            implementation = canonical_digest({'implementation': implementation,
+                'runtime': runtime_guard.digest, 'qualification': token_urlsafe(32)})
         manifest = (build_dependency_index(candidate, draft, sidecars,
-                    namespace=cache_namespace(self.path), renderer_abi=abi,
-                    implementation=implementation_fingerprint(), capabilities=capabilities)
+                    namespace=namespace, renderer_abi=abi, reach=temporal_reach(draft),
+                    implementation=implementation, capabilities=capabilities)
                     if adaptive else None)
         draft, sidecars = deepcopy(draft), deepcopy(sidecars)
         def renderer(n):
@@ -503,24 +615,37 @@ class PreviewStreamAPI:
                             renderer_abi=abi, segments=section_segments(original, project_hash=project_hash),
                             profiles=profiles, **limits)
             if adaptive:
-                from .preview_native_renderer import NativePreviewRenderer
-                factory = self.adaptive_renderer_factory or NativePreviewRenderer
-                renderer = factory(self.path, draft, sidecars, validate_draft=self.validate,
-                                   temp_parent=cache.root/'sessions', verifier=guard)
+                if feedback:
+                    from .preview_refinement_process import RefinementSpec
+                    from .preview_stateful_process import SpawnStatefulRenderer
+                    spec = RefinementSpec.from_snapshot(self.path, original.data, draft, sidecars,
+                                                        cache.root/'sessions')
+                    renderer = (self.stateful_renderer_factory or SpawnStatefulRenderer)(spec)
+                else:
+                    from .preview_native_renderer import NativePreviewRenderer
+                    factory = self.adaptive_renderer_factory or NativePreviewRenderer
+                    renderer = factory(self.path, draft, sidecars, validate_draft=self.validate,
+                                       temp_parent=cache.root/'sessions', verifier=guard)
             refinement_factory = None
             if refine:
                 from .preview_refinement_process import RefinementSpec, SpawnQ5Renderer
                 spec = RefinementSpec.from_snapshot(self.path, original.data, draft, sidecars,
                                                     cache.root/'sessions')
-                factory = self.refinement_factory or SpawnQ5Renderer
+                if feedback:
+                    from .preview_stateful_process import SpawnStatefulRenderer
+                    factory = self.stateful_renderer_factory or SpawnStatefulRenderer
+                else:
+                    factory = self.refinement_factory or SpawnQ5Renderer
                 def refinement_factory():
                     return factory(spec)
             stream = SeekStream(cache, renderer, original.frame_count, target_fps=max(15,target),
                                 telemetry=self.telemetry, capabilities=capabilities, verifier=guard,
-                                refinement_factory=refinement_factory)
+                                refinement_factory=refinement_factory, stateful=stateful)
             self.active = stream
             if stream.invalidation is not None:
                 stream.invalidation = {**stream.invalidation, 'cancelled_jobs': self._cancelled_jobs}
+                if feedback:
+                    stream.invalidation['qualification_reset'] = True
                 self._cancelled_jobs = 0
                 with stream.condition:
                     stream._event('cache-invalidated', invalidation=stream.invalidation)
