@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.34 — 18 November 2026
+**Version:** 1.35 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -271,7 +271,17 @@ All external shader/model/media sources must be pinned or versioned, constrained
   atomic no-overwrite publication. Existing project clocks remain unchanged.
   Exact-head Windows/Linux FFmpeg CI, native-project source integration and
   physical-device/perceptual acceptance remain separate gates.
-- **M11.5** CI-published side-by-side gallery: music-driven Kandi Boom ⇄ visualiser, mattes and spectral transitions.
+- **M11.5** CI-published Kandi Boom ⇄ visualiser, matte and spectral transition gallery.
+  Implementation candidate: [M11.5 character and native visualiser comparisons](m11-5-character-gallery.md).
+  Immutable Git-pinned real Kandi Boom screenshot captures are combined with
+  actual native synthetic-spectrum renderer output in three working effect-graph
+  transition paths. Each authored frame is checked against shuffled
+  random-access pixels, then exported through M11.4's verified rational
+  H.264 video adapter with checksummed frames, posters and source receipts.
+  These upstream stills are **not live rigged animation**; synthetic
+  spectrum values are **not music measurements**. True source-audio
+  synchronisation, animated FBX playback, deployed Pages and perceptual
+  approval remain explicit outstanding gates.
 - **Exit:** sequential vs nonsequential renders agree; CI publishes inspected media and metadata.
 
 ### M12–M15 — Optional production and ecosystem integrations

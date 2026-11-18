@@ -69,6 +69,14 @@ jobs:
         run: python scripts/generate_supersampling_gallery.py --output _site
       - name: Generate Butterchurn/projectM layer-routing demonstrations
         run: python scripts/generate_visualiser_routing_gallery.py --output _site
+      - name: Validate M11.5 native character gallery contracts
+        run: python -m pytest -q tests/test_m11_5_gallery.py
+      - name: Lint M11.5 gallery generator and regression tests
+        run: ruff check scripts/generate_m11_5_gallery.py tests/test_m11_5_gallery.py
+      - name: Build M11.5 authentic character / native transition gallery
+        run: python scripts/generate_m11_5_gallery.py --output _site
+      - name: Verify M11.5 published posters, frame receipts and videos
+        run: python scripts/generate_m11_5_gallery.py --verify _site/m11-5
       - name: Validate generated site and image count
         run: |
           python - <<'PY'
