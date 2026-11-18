@@ -1,5 +1,14 @@
 # FrameRudiments
 
+**M11.4 opt-in video adapters:** [exact presentation-PTS import and rational
+CFR output](docs/video-io-m11-4.md) allow checksum-pinned local video frame
+inspection/extraction (including VFR clips) and video-only MP4 encoding from
+ordered, checksum-pinned RGB PNG frames. Independent FFprobe frame-by-frame
+PTS and full-decode checks enforce output frame clocks including 30000/1001.
+No changes to native scheduling, integer-FPS project/audio clock or existing
+production H.264/AAC rendering. This is an implementation candidate; exact-head
+CI, full-project ingest, physical-device and perceptual acceptance remain open.
+
 **Streaming S0–S7 implementation candidates:** opt-in local streaming now combines
 [adaptive native rendering](docs/preview-stream-s3.md), [paused Q5 refinement](docs/preview-stream-s4.md),
 [whole-section invalidation](docs/preview-stream-s5.md) and

@@ -161,6 +161,15 @@ See [M11.3 native temporal effects](temporal-fx-m11-3.md) for parameters,
 ordered stages, limits, read-only plans and qualification.
 The existing same-frame effect graph continues to reject cycles.
 
+## Optional local video adapters (M11.4)
+
+The independent [M11.4 video adapters](video-io-m11-4.md) inspect checksum-pinned
+local input video by its exact decoded presentation timestamps and encode an
+ordered SHA-pinned RGB PNG manifest to video-only H.264 at a rational frame rate
+(such as `30000/1001`). These are CLI/Python adapter operations, **not** new
+`framerudiments.project.v1` fields. The project `fps` field stays an integer,
+and existing rendering, beat/source clock and H.264/AAC output are unaffected.
+
 ## Bitmap and sprite-backed Rudiment renderers
 
 All existing renderer names still select vectors. The 52 new `sprite-*` names

@@ -62,6 +62,28 @@ def main(argv=None):
     isf = commands.add_parser("inspect-isf", help="Read declared ISF shader inputs without running GLSL")
     isf.add_argument("shader", help="Local ISF fragment file")
     isf.add_argument("--expect-sha256", help="Require a matching SHA-256 for the entire file")
+    video = commands.add_parser("inspect-video", help="Inspect exact decoded video presentation times")
+    video.add_argument("source")
+    video.add_argument("--sha256", required=True, help="Required source video SHA-256")
+    video.add_argument("--ffprobe")
+    video.add_argument("--frames", action="store_true", help="Print all decoded frame times")
+    frame = commands.add_parser("extract-video-frame", help="Decode one pinned video frame to PNG")
+    frame.add_argument("source")
+    frame.add_argument("--sha256", required=True)
+    frame.add_argument("--output", required=True, help="A new PNG file")
+    moment = frame.add_mutually_exclusive_group(required=True)
+    moment.add_argument("--index", type=int, help="Zero-based decoded presentation ordinal")
+    moment.add_argument("--at", help="Exact rational seconds from first presentation")
+    frame.add_argument("--policy", choices=("floor", "ceil", "nearest"), default="floor")
+    frame.add_argument("--ffmpeg")
+    frame.add_argument("--ffprobe")
+    export = commands.add_parser("encode-video", help="Encode pinned RGB PNGs at exact rational FPS")
+    export.add_argument("manifest", help="Ordered, SHA-pinned frames JSON")
+    export.add_argument("--output", required=True, help="A new video-only MP4 file")
+    export.add_argument("--ffmpeg")
+    export.add_argument("--ffprobe")
+    export.add_argument("--preset", default="fast")
+    export.add_argument("--crf", type=int, default=20)
     demo = commands.add_parser("demo", help="Create a synthetic audio/image/recording project")
     demo.add_argument("directory")
     demo_views = demo.add_mutually_exclusive_group()
@@ -215,6 +237,25 @@ def main(argv=None):
 
             print(json.dumps(inspect_isf(args.shader, expected_sha256=args.expect_sha256),
                              indent=2, allow_nan=False))
+        elif args.command == "inspect-video":
+            from .video_adapters import VideoInput
+
+            video = VideoInput.open(args.source, sha256=args.sha256, ffprobe=args.ffprobe)
+            print(json.dumps(video.document(include_frames=args.frames), indent=2, allow_nan=False))
+        elif args.command == "extract-video-frame":
+            from .video_adapters import extract_png
+
+            result = extract_png(args.source, args.output, sha256=args.sha256,
+                                 index=args.index, time=args.at, policy=args.policy,
+                                 ffmpeg=args.ffmpeg, ffprobe=args.ffprobe)
+            print(json.dumps(result, sort_keys=True, allow_nan=False))
+        elif args.command == "encode-video":
+            from .video_adapters import encode_manifest
+
+            result = encode_manifest(args.manifest, args.output, ffmpeg=args.ffmpeg,
+                                     ffprobe=args.ffprobe, preset=args.preset, crf=args.crf)
+            print(json.dumps({"output": result["output"], "sha256": result["output_sha256"],
+                              "verified": result["verified"]}, sort_keys=True, allow_nan=False))
         elif args.command == "inspect-temporal":
             from .temporal_inspection import inspect_temporal, write_inspection
 

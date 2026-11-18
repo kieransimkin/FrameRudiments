@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.33 — 18 November 2026
+**Version:** 1.34 — 18 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -262,6 +262,15 @@ All external shader/model/media sources must be pinned or versioned, constrained
   reach are included; exact-head CI, full encoded qualification and physical-
   device/perceptual acceptance remain separate gates.
 - **M11.4** Video input/output adapters with rational timebase handling.
+  Implementation candidate: [exact decoded presentation-PTS import and rational
+  CFR MP4 export](video-io-m11-4.md). A read-only SHA-pinned local-video index
+  preserves VFR/B-frame presentation times as exact rationals and selects
+  frames with explicit floor/ceil/nearest and boundary policy. A pinned RGB
+  frame manifest encodes video-only H.264 with an explicit rational clock;
+  every output PTS and full decoded stream are independently checked before
+  atomic no-overwrite publication. Existing project clocks remain unchanged.
+  Exact-head Windows/Linux FFmpeg CI, native-project source integration and
+  physical-device/perceptual acceptance remain separate gates.
 - **M11.5** CI-published side-by-side gallery: music-driven Kandi Boom ⇄ visualiser, mattes and spectral transitions.
 - **Exit:** sequential vs nonsequential renders agree; CI publishes inspected media and metadata.
 
