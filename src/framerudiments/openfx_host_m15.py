@@ -16,7 +16,7 @@ from PIL import Image
 OK, FAILED, UNSUPPORTED, BAD_HANDLE, BAD_INDEX, BAD_VALUE, REPLY_DEFAULT = 0, 1, 5, 9, 10, 11, 14
 P = C.c_void_p
 S = C.c_char_p
-I = C.c_int
+C_INT = C.c_int
 D = C.c_double
 CP = C.CFUNCTYPE
 
@@ -26,26 +26,26 @@ class RectD(C.Structure):
 
 
 class Plugin(C.Structure):
-    _fields_ = [("pluginApi", S), ("apiVersion", I), ("pluginIdentifier", S),
+    _fields_ = [("pluginApi", S), ("apiVersion", C_INT), ("pluginIdentifier", S),
                 ("major", C.c_uint), ("minor", C.c_uint),
-                ("setHost", CP(None, P)), ("mainEntry", CP(I, S, P, P, P))]
+                ("setHost", CP(None, P)), ("mainEntry", CP(C_INT, S, P, P, P))]
 
 
 class Host(C.Structure):
-    _fields_ = [("host", P), ("fetchSuite", CP(P, P, S, I))]
+    _fields_ = [("host", P), ("fetchSuite", CP(P, P, S, C_INT))]
 
 
 # V1 ABI layout: four scalar setters, four array setters, four scalar getters,
 # four array getters, reset, dimension. No private layouts or Python API flags.
-_TYPES = [("Pointer", P), ("String", S), ("Double", D), ("Int", I)]
+_TYPES = [("Pointer", P), ("String", S), ("Double", D), ("Int", C_INT)]
 _PROP_FIELDS = (
-    [("propSet" + name, CP(I, P, S, I, typ)) for name, typ in _TYPES]
-    + [("propSet" + name + "N", CP(I, P, S, I, C.POINTER(typ))) for name, typ in _TYPES]
-    + [("propGet" + name, CP(I, P, S, I, C.POINTER(P if name == "String" else typ)))
+    [("propSet" + name, CP(C_INT, P, S, C_INT, typ)) for name, typ in _TYPES]
+    + [("propSet" + name + "N", CP(C_INT, P, S, C_INT, C.POINTER(typ))) for name, typ in _TYPES]
+    + [("propGet" + name, CP(C_INT, P, S, C_INT, C.POINTER(P if name == "String" else typ)))
        for name, typ in _TYPES]
-    + [("propGet" + name + "N", CP(I, P, S, I, C.POINTER(P if name == "String" else typ)))
+    + [("propGet" + name + "N", CP(C_INT, P, S, C_INT, C.POINTER(P if name == "String" else typ)))
        for name, typ in _TYPES]
-    + [("propReset", CP(I, P, S)), ("propGetDimension", CP(I, P, S, C.POINTER(I)))]
+    + [("propReset", CP(C_INT, P, S)), ("propGetDimension", CP(C_INT, P, S, C.POINTER(C_INT)))]
 )
 
 
@@ -54,19 +54,19 @@ class PropertySuite(C.Structure):
 
 
 _IMG_FIELDS = [
-    ("getPropertySet", CP(I, P, C.POINTER(P))),
-    ("getParamSet", CP(I, P, C.POINTER(P))),
-    ("clipDefine", CP(I, P, S, C.POINTER(P))),
-    ("clipGetHandle", CP(I, P, S, C.POINTER(P), C.POINTER(P))),
-    ("clipGetPropertySet", CP(I, P, C.POINTER(P))),
-    ("clipGetImage", CP(I, P, D, C.POINTER(RectD), C.POINTER(P))),
-    ("clipReleaseImage", CP(I, P)),
-    ("clipGetRegionOfDefinition", CP(I, P, D, C.POINTER(RectD))),
-    ("abort", CP(I, P)),
-    ("imageMemoryAlloc", CP(I, P, C.c_size_t, C.POINTER(P))),
-    ("imageMemoryFree", CP(I, P)),
-    ("imageMemoryLock", CP(I, P, C.POINTER(P))),
-    ("imageMemoryUnlock", CP(I, P)),
+    ("getPropertySet", CP(C_INT, P, C.POINTER(P))),
+    ("getParamSet", CP(C_INT, P, C.POINTER(P))),
+    ("clipDefine", CP(C_INT, P, S, C.POINTER(P))),
+    ("clipGetHandle", CP(C_INT, P, S, C.POINTER(P), C.POINTER(P))),
+    ("clipGetPropertySet", CP(C_INT, P, C.POINTER(P))),
+    ("clipGetImage", CP(C_INT, P, D, C.POINTER(RectD), C.POINTER(P))),
+    ("clipReleaseImage", CP(C_INT, P)),
+    ("clipGetRegionOfDefinition", CP(C_INT, P, D, C.POINTER(RectD))),
+    ("abort", CP(C_INT, P)),
+    ("imageMemoryAlloc", CP(C_INT, P, C.c_size_t, C.POINTER(P))),
+    ("imageMemoryFree", CP(C_INT, P)),
+    ("imageMemoryLock", CP(C_INT, P, C.POINTER(P))),
+    ("imageMemoryUnlock", CP(C_INT, P)),
 ]
 
 
@@ -139,7 +139,7 @@ class MinimalHost:
         })
         self.p_suite = PropertySuite(**self._property_callbacks())
         self.i_suite = ImageSuite(**self._image_callbacks())
-        self._fetch = CP(P, P, S, I)(self._fetch_suite)
+        self._fetch = CP(P, P, S, C_INT)(self._fetch_suite)
         self.host = Host(self.host_handle, self._fetch)
 
     def new(self, kind, initial=None):
@@ -368,13 +368,13 @@ def run_plugin(path, plugin_id, input_rgba, frame, fps):
     # older OpenFX binaries only use OfxPlugin::setHost after GetPlugin.
     if hasattr(native, "OfxSetHost"):
         native.OfxSetHost.argtypes = [C.POINTER(Host)]
-        native.OfxSetHost.restype = I
+        native.OfxSetHost.restype = C_INT
         if native.OfxSetHost(C.byref(context.host)) not in (OK, REPLY_DEFAULT):
             raise ValueError("OpenFX binary rejected the pre-discovery host")
-    native.OfxGetNumberOfPlugins.restype = I
+    native.OfxGetNumberOfPlugins.restype = C_INT
     native.OfxGetNumberOfPlugins.argtypes = []
     native.OfxGetPlugin.restype = C.POINTER(Plugin)
-    native.OfxGetPlugin.argtypes = [I]
+    native.OfxGetPlugin.argtypes = [C_INT]
     count = native.OfxGetNumberOfPlugins()
     if not 1 <= count <= 32:
         raise ValueError("OpenFX binary plugin count outside supported range")

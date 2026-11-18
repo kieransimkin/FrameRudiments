@@ -118,6 +118,13 @@ jobs:
           python integration/qualify_openfx_m15.py --output _site/m15-3
           test -s _site/m15-3/index.html && test -s _site/m15-3/qualification.json
           test "$(find _site/m15-3 -name 'reference-*.png' | wc -l)" -eq 4
+      - name: Publish native M15.4 OpenUSD geometry and float AOV gallery
+        run: |
+          python -m pip install -e '.[openusd,colour_aov]'
+          python -m pytest -q tests/test_usd_m15.py
+          python integration/qualify_usd_m15.py --output _site/m15-4
+          test -s _site/m15-4/index.html && test -s _site/m15-4/qualification.json
+          test "$(find _site/m15-4 -name 'frame-*.exr' | wc -l)" -eq 3
       - name: Validate generated site and image count
         run: |
           python - <<'PY'

@@ -1,0 +1,45 @@
+name: M15.4 OpenUSD native scene and EXR/AOV qualification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/framerudiments/usd_m15*.py'
+      - 'tests/test_usd_m15.py'
+      - 'integration/qualify_usd_m15.py'
+      - 'docs/usd-m15.md'
+      - 'docs/m15-integration-plan.md'
+      - '.github/workflows/usd-m15.yml'
+      - 'pyproject.toml'
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  native-usd:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+        python: ['3.11', '3.13']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install actual OpenUSD and M12 OpenEXR codecs
+        run: python -m pip install -e '.[dev,openusd,colour_aov]'
+      - name: Pin the required OpenUSD runtime and reject native dependency skips
+        run: python -c "import pxr.Usd, OpenEXR; assert pxr.Usd.GetVersion() >= (26, 11) and hasattr(OpenEXR, 'File')"
+      - name: Lint and exercise non-native boundary contracts
+        run: |
+          ruff check src/framerudiments/usd_m15.py src/framerudiments/usd_m15_cli.py tests/test_usd_m15.py integration/qualify_usd_m15.py
+          python -m pytest -q tests/test_usd_m15.py
+      - name: Real pxr scene, sample-frame, material and EXR roundtrip qualification
+        run: python integration/qualify_usd_m15.py --output usd-qual-${{ matrix.python }}
+      - uses: actions/upload-artifact@v6
+        with:
+          name: openusd-m15-${{ matrix.os }}-${{ matrix.python }}
+          path: usd-qual-${{ matrix.python }}/
+          if-no-files-found: error

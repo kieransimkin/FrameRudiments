@@ -60,13 +60,26 @@ Reference: [M15.2 ingest and finite live capture contract](gstreamer-m15-2.md).
 
 Reference: [M15.3 OpenFX host and acceptance contract](openfx-m15.md).
 
-## M15.4 — OpenUSD / Hydra and interchange
+## M15.4 — OpenUSD / Hydra and interchange (implementation candidate)
 
-- Optional pinned local USD scene import; strict external asset references,
-  materials, camera matrices, scale and frame-time semantics.
-- Map supported geometry/AOVs to M12 without converting model-predicted depth
-  into native geometry. Unsupported prims and shading are explicit diagnostics.
-- Hydra rendering requires dedicated native/driver parity and licensing checks.
+- [x] Read trusted, SHA-256-pinned single-layer ASCII USD in an optional
+  time-limited native `usd-core` worker; reject external `@...@` assets, sublayers,
+  payloads, variant arcs and unsupported prims and materials, without modifying
+  the main compositor or project clock.
+- [x] Resolve time-sampled triangle meshes through actual USD XformCache,
+  support Y/Z stage up-axis and explicit metres-per-unit, read perspective
+  camera transforms/optics and constant UsdPreviewSurface/displayColor materials.
+- [x] Deterministic CPU raster in the M12 unassociated scene-linear float32
+  buffer contract; independent positive camera-space depth in **metres**,
+  camera-space facet normals and alpha, with exact EXR readback and receipts.
+- [x] Cross-platform native USD/OpenEXR CI with three time-sampled frames and
+  a CI-generated visual gallery; no auto-downloads during scene processing.
+- [ ] Hydra delegate/device rendering, texture networks, subdivision, skeletal
+  animation, partial near-plane clipping, independent OpenUSD cross-vendor
+  parity and licensing acceptance remain explicit separate gates. Capability
+  inspection must not silently advertise a renderer.
+
+Reference: [M15.4 OpenUSD scene and AOV contract](usd-m15.md).
 
 ## M15.5 — Live transport, WebGPU/Vulkan and control protocols
 
