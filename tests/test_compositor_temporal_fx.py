@@ -4,7 +4,6 @@ Uses the checked-in test_compositor_temporal.project_factory, with actual
 checksum-pinned WAV/sprite sources and a real native DanceRudiments clock.
 """
 from copy import deepcopy
-from fractions import Fraction
 import json
 
 import pytest

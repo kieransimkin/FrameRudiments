@@ -2,7 +2,6 @@
 from dataclasses import dataclass
 from fractions import Fraction
 from types import SimpleNamespace
-import itertools
 import json
 
 import pytest
@@ -47,7 +46,8 @@ def test_empty_unknown_and_malformed_are_rejected():
                 {'motion_echoes':{'count':12,'delay_frames':10}},
                 {'slit_scan':{'reverse':1}},
                 {'motion_echoes':{},'modulations':[{'target':'temporal_fx.slit_scan.strength'}]}):
-        with pytest.raises(ValueError): fx(doc)
+        with pytest.raises(ValueError):
+            fx(doc)
 
 
 def test_exact_repeat_cuts_off_history_without_clamp_leak():
@@ -190,9 +190,11 @@ def test_conservative_invalidation_bounds_include_temporal_and_remap():
 def test_invalid_or_missing_tap_fails_closed():
     owner=fx({'motion_echoes':{'count':2}})
     plan=owner.plan(3)
-    with pytest.raises(ValueError): owner.apply({},plan,SimpleNamespace(source_seconds=3))
-    with pytest.raises(ValueError): owner.apply({k:Image.new('RGBA',owner.size) for k in plan.source_frames},
-                    plan,SimpleNamespace(source_seconds=3))
+    with pytest.raises(ValueError):
+        owner.apply({},plan,SimpleNamespace(source_seconds=3))
+    with pytest.raises(ValueError):
+        owner.apply({k:Image.new('RGBA', owner.size) for k in plan.source_frames},
+                    plan, SimpleNamespace(source_seconds=3))
 
 
 def test_resource_budget_rejects_wide_frames_pre_render():
