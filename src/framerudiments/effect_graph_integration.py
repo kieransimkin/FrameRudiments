@@ -61,11 +61,23 @@ def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str
     if frame.mode != 'RGBA':
         raise ValueError('Effect graph requires a composited RGBA frame')
     sources = {'frame': frame, **surfaces}
+    # An M11 native subframe has a higher temporary render FPS. Its model
+    # prediction is defined on the encoded-frame clock, not the subframe index.
+    # The explicit preview quality is copied only into private preview views.
+    vision_frame, vision_quality = context.frame, None
+    if vision_sources is not None:
+        factor = getattr(getattr(vision_sources, 'project', None), '_time_sampling_factor', 1)
+        if type(factor) is not int or factor < 1:
+            raise ValueError('Invalid native temporal prediction sample factor')
+        vision_frame = context.frame // factor
+        vision_quality = getattr(getattr(vision_sources, 'project', None), '_vision_preview_quality', None)
     for source_id in graph.source_ids:
         if source_id.startswith('vision:'):
             if vision_sources is None or source_id not in vision_sources.source_ids:
                 raise ValueError(f'Unknown vision graph source: {source_id}')
-            sources[source_id] = vision_sources.source(source_id, context.frame)
+            sources[source_id] = (vision_sources.source(source_id, vision_frame)
+                                  if vision_quality is None else
+                                  vision_sources.source(source_id, vision_frame, quality=vision_quality))
             continue
         # Valid source IDs may legitimately have no ink on this frame. Keep
         # the source identity and its transparent alpha rather than raising.
@@ -74,7 +86,9 @@ def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str
     if vision_sources is not None and getattr(vision_sources, 'element_masks', None):
         # M14.3 masks affect only declared isolated graph inputs. They do NOT
         # retrospectively remove pixels already present in `frame`.
-        sources = vision_sources.mask_elements(sources, context.frame)
+        sources = (vision_sources.mask_elements(sources, vision_frame)
+                   if vision_quality is None else
+                   vision_sources.mask_elements(sources, vision_frame, quality=vision_quality))
     values = controls.values(context, graph) if controls is not None else {}
     if getattr(graph, 'layer_style_ids', ()):
         report = {}

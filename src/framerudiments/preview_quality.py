@@ -214,6 +214,10 @@ def profile_document(project, profile_id, *, allow_stateful=False):
             raise ProfileUnsupported('Feedback replay requires authored Q5 settings')
     else:
         require_stateless(project.data)
+    if project.data.get('vision_sources'):
+        post = project.data.get('post_effects', {})
+        if project.data.get('effects') or post.get('feedback') is not None:
+            raise ProfileUnsupported('M14.5 vision preview does not qualify stateful visualiser feedback')
     document = deepcopy(project.data)
     if profile.quality_rank == 5:
         return document  # Authored settings, including explicitly disabled AA.
@@ -222,6 +226,12 @@ def profile_document(project, profile_id, *, allow_stateful=False):
     quality['antialias_passes'] = min(quality.get('antialias_passes', 3),
                                      1 if profile.quality_rank <= 2 else 2 if profile.quality_rank == 3 else 3)
     if profile.quality_rank < 3:
+        # Reduced-canvas prediction inputs must declare their pixel mapping.
+        # Without this gate, the adaptive controller would offer an unusable
+        # Q0/Q1/Q2 profile and repeatedly fail at compositor construction.
+        sources = document.get('vision_sources', {}).get('sources', [])
+        if any(row.get('resample', 'none') == 'none' for row in sources):
+            raise ProfileUnsupported('Reduced prediction preview requires an explicit resample rule')
         _lower_canvas(document, profile.output_width, profile.output_height, project.width, project.height)
         quality['antialias_radius'] = max(.25, min(3, quality.get('antialias_radius', .75) *
                                             min(profile.output_width / project.width,

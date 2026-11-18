@@ -431,8 +431,9 @@ class Compositor:
         if "vision_sources" in project.data:
             if self.effect_graph is None:
                 raise ValueError("M14.2 vision_sources requires an effect_graph")
-            if project.output_quality.vector_scale != 1 or project.output_quality.time_samples != 1:
-                raise ValueError("M14.2 vision_sources requires render_quality spatial_scale and temporal_samples 1")
+            # M14.5: prediction requests remain on the authored encoded-frame
+            # clock even when the native shutter owns a higher-FPS compositor.
+            # The M14.2 model and source-size checks still apply to every view.
             from .vision_graph_m14 import VisionGraphSources
             self.vision_graph = VisionGraphSources(project, project.data["vision_sources"])
         validate_graph_sources(self.effect_graph, targets,

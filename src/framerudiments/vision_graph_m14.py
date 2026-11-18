@@ -322,10 +322,18 @@ class VisionGraphSources:
         # stale cached prediction, even if the Compositor instance is retained.
         if inspect_request(spec.manifest) != spec:
             raise ValueError("M14.2 source model or image changed after preparation")
+        cancelled = getattr(self.project, "_vision_preview_cancelled", None)
+        from .vision_m14 import VisionCancelled
+
+        if cancelled is not None and cancelled():
+            raise VisionCancelled("Superseded prediction request")
         key = self._identity(profile, spec)
         folder = self.cache / key
         if folder.exists() or folder.is_symlink():
-            return self._load(folder, profile, spec, key)
+            result = self._load(folder, profile, spec, key)
+            if cancelled is not None and cancelled():
+                raise VisionCancelled("Superseded prediction request")
+            return result
         self.cache.mkdir(parents=True, exist_ok=True)
         if self.cache.is_symlink() or self.cache.resolve() != self.cache:
             raise ValueError("M14.2 cache root changed while opening")
@@ -337,13 +345,21 @@ class VisionGraphSources:
             raise ValueError("M14.2 content-addressed cache quota exceeded; prune old entries")
         staged = self.cache / (".stage-" + secrets.token_hex(12))
         try:
-            infer(spec.manifest, staged)
+            if cancelled is None:
+                infer(spec.manifest, staged)
+            else:
+                infer(spec.manifest, staged, cancelled=cancelled)
+            if cancelled is not None and cancelled():
+                raise VisionCancelled("Superseded prediction request")
             self._load_unsealed(staged, spec)
             if used + sum(p.stat().st_size for p in staged.iterdir()) > self.max_cache_bytes:
                 raise ValueError("M14.2 cache quota exceeded by the completed inference")
             (staged / "cache.json").write_text(json.dumps(
                 {"schema": CACHE_SCHEMA, "key": key,
                  "receipt_sha256": _hash(staged / "receipt.json")}, sort_keys=True) + "\n", "utf-8")
+            # A superseded request must never publish its partial prediction.
+            if cancelled is not None and cancelled():
+                raise VisionCancelled("Superseded prediction request")
             # Refuse cache overwrites; a racing producer may finish first.
             if folder.exists():
                 return self._load(folder, profile, spec, key)
@@ -427,7 +443,7 @@ class VisionGraphSources:
             image = image.resize((self.project.width, self.project.height), resample=method)
         return image
 
-    def mask_elements(self, sources, frame):
+    def mask_elements(self, sources, frame, *, quality=None):
         """Mask *isolated graph layer sources*, not the already-composited frame.
 
         This never mutates caller-owned RGBA surfaces, never interprets relative
@@ -444,7 +460,7 @@ class VisionGraphSources:
                 raise ValueError("M14.3 element requires a native-sized RGBA source")
             matte = updated.get(prediction)
             if matte is None:
-                matte = self.source(prediction, frame)
+                matte = self.source(prediction, frame, quality=quality)
             if matte.mode != "RGBA" or matte.size != original.size:
                 raise ValueError("M14.3 predicted matte size or format mismatch")
             painted = original.copy()

@@ -48,6 +48,7 @@ class NativePreviewRenderer:
         self.owner = self.project = self.compositor = self.profile = self.temporary = None
         self.closed = False
         self.last_setup_ms = 0
+        self.last_vision = None  # M14.5 content-free last preview prediction receipt
         self.input_guard = None
         self._feedback_resume = None
         self._feedback_failure = None
@@ -171,6 +172,10 @@ class NativePreviewRenderer:
             # External feedback uses the separate S6 EffectChain dispatcher.
             view = render_project_view(self.project, profile_id,
                                        allow_stateful=not bool(self.project.data.get('effects')))
+            if 'vision_sources' in view.data:
+                # This private attribute is carried into native subframe views.
+                # Production Project objects never acquire a preview quality.
+                view._vision_preview_quality = int(profile_id[1])
             if self.compositor is not None:
                 self.compositor.close()
                 self.compositor = self.profile = None
@@ -201,6 +206,27 @@ class NativePreviewRenderer:
                 progress(dict(self.stateful_status))
 
         try:
+            vision = getattr(self.compositor, 'vision_graph', None)
+            self.last_vision = None
+            if vision is not None:
+                from .vision_live_m14 import prepare_live_frame
+                from .vision_m14 import VisionCancelled
+                # SeekStream's latest-sequence fence is the authority. The
+                # cancellable ONNX worker may not publish a stale cache seal.
+                self.compositor.project._vision_preview_cancelled = cancelled
+                if progress is not None:
+                    progress({'mode': 'vision_prediction', 'phase': 'preparing',
+                              'frame': frame, 'profile_id': profile_id})
+                try:
+                    self.last_vision = prepare_live_frame(vision, frame, profile_id,
+                                                          cancelled=cancelled)
+                except VisionCancelled as exc:
+                    raise RefinementCancelled('superseded native prediction') from exc
+                if progress is not None:
+                    progress({'mode': 'vision_prediction', 'phase': 'ready',
+                              'frame': frame, 'profile_id': profile_id,
+                              'verified_predictions': self.last_vision['verified_predictions'],
+                              'reused_taps': self.last_vision['reused_taps']})
             if feedback:
                 image, _ = self.compositor.frame(frame, apply_quality=True,
                                                   cancelled=cancelled, progress=report)
@@ -225,6 +251,9 @@ class NativePreviewRenderer:
             finally:
                 self.compositor = self.profile = None
             raise
+        finally:
+            if self.compositor is not None:
+                self.compositor.project.__dict__.pop('_vision_preview_cancelled', None)
         if cancelled():
             raise RefinementCancelled('superseded native preview')
         view = self.compositor.project

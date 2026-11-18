@@ -37,6 +37,8 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
   const [refine,setRefine]=useState(true);
   const [refinement,setRefinement]=useState<Refinement|null>(null);
   const [stateful,setStateful]=useState<StatefulStatus|null>(null);
+  const [vision,setVision]=useState<{frame:number;profile_id:string;phase:string;
+    verified_predictions?:number;reused_taps?:number}|null>(null);
   const [qualification,setQualification]=useState<QualificationSummary|null>(null);
   const [observationSource,setObservationSource]=useState<typeof pictureSource>(null);
   const [observationError,setObservationError]=useState('');
@@ -62,6 +64,7 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
     let restarting=false,pictureFrame:number|null=null;
     setPicture('');setPictureSource(null);setInvalidation('');
     setDisplayed(null);setMetrics(null);setTier('');setRefinement(null);setStateful(null);
+    setVision(null);
     setQualification(null);setObservationSource(null);setObservationError('');setAcceptedTarget(null);
     setCanDownload(false);setDownloading(false);setDownloadStatus('');
     setStatus('Connecting adaptive stream…');
@@ -96,6 +99,7 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
       if(!token||disposed)return;
       if(command==='advance'&&(busy||frame===fence.frame))return;
       busy=true;fetching?.abort();decodeId++;
+      setVision(null);
       const sequence=fence.request(frame);
       const epoch=observationEpoch;
       setStateful(previous=>previous?{...previous,requested_frame:frame,phase:'idle',last_reason:null}:null);
@@ -212,10 +216,22 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
             }
           }catch{setStatus('Invalid stateful preview event');}
         });
+        events.addEventListener('vision-progress',event=>{
+          if(disposed||!(event instanceof MessageEvent))return;
+          try{
+            const row=JSON.parse(event.data);
+            if(!fence.accepts(row.cursor_seq,row.frame))return;
+            const value=row.vision;
+            if(value?.frame!==row.frame||!/^Q[0-5]$/.test(value.profile_id)||
+               !['preparing','ready'].includes(value.phase))return;
+            setVision(value);
+          }catch{/* Reject malformed or stale prediction telemetry without changing playback. */}
+        });
         events.addEventListener('cache-invalidated',event=>{
           if(disposed||!(event instanceof MessageEvent))return;
           try{
             const receipt=JSON.parse(event.data).invalidation;
+            setVision(null);
             setInvalidation(invalidationSummary(receipt)??'');
             // A response sampled before invalidation must not repopulate old cache coverage.
             observationEpoch=observations.open(token);observing?.abort();exporting?.abort();
@@ -299,6 +315,10 @@ export function StreamPreview({project,sidecars,time,fps,duration}:Props){
       {invalidation&&<small role="status">{invalidation}</small>}
       {replayStatus&&<small role="status">{replayStatus}</small>}
       <form className="fr-stream-target" onSubmit={event=>{event.preventDefault();if(draftTarget!==null)changeFPS(draftTarget);}}>
+      {vision&&<small role="status">Model-estimated vision · {vision.profile_id} ·
+        {vision.phase==='preparing'?' preparing pinned inputs':
+         ` ${vision.verified_predictions??0} verified predictions, ${vision.reused_taps??0} reused taps`}
+      </small>}
         <label>Target FPS<input type="number" min="15" max="120" step="1" value={targetDraft}
           aria-invalid={draftTarget===null} onChange={event=>setTargetDraft(event.target.value)}/></label>
         <button type="submit" disabled={draftTarget===null||draftTarget===acceptedTarget}>Apply</button>

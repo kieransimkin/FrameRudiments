@@ -79,6 +79,7 @@ class SeekStream:
         self.events = deque(maxlen=128)
         self.event_seq = 0
         self.cursor_seq = -1
+        self.vision = None  # M14.5 explicitly Q-tagged progress, never stateful status
         self.frame = self.last_stop = 0
         self.playing = False
         self.pending = None
@@ -119,6 +120,8 @@ class SeekStream:
                     width=item.width, height=item.height, cache_hit=hit,
                     production_equivalent=False, image_sha256=item.image_sha256, origin=origin,
                     stateful=stateful,
+                    vision=(self.vision if origin != 'refinement' and self.vision is not None
+                            and self.vision['frame'] == item.frame else None),
                     refinement=self.refinement.snapshot() if self.refinement else None,
                     adaptive=self.controller.snapshot() if self.controller else None,
                     request_age_ms=max(0, (self.clock()-self.request_at)*1000),
@@ -132,7 +135,7 @@ class SeekStream:
                     adaptive_fps=self.controller is not None, production_equivalent=False,
                     adaptive=self.controller.snapshot() if self.controller else None,
                     capabilities=self.capabilities, invalidation=self.invalidation,
-                    stateful=self.stateful,
+                    stateful=self.stateful, vision=self.vision,
                     qualification=self.observations.snapshot(refresh=refresh_qualification),
                     refinement=self.refinement.snapshot() if self.refinement else dict(enabled=False))
 
@@ -200,6 +203,7 @@ class SeekStream:
                 received_at=received_at, coalesced=self.pending is not None, target_fps=target_fps,
                 profile=self.controller.profile_id if self.controller else 'Q0')
             self.cursor_seq = sequence
+            self.vision = None  # Retire obsolete prediction status at a new cursor epoch.
             self.request_at = self.clock()
             if frame is not None:
                 self.frame = frame
@@ -423,8 +427,18 @@ class SeekStream:
                         def progress(status):
                             with self.condition:
                                 if not cancelled():
-                                    self.stateful = dict(status)
-                                    self._event('stateful-progress', frame=frame, stateful=self.stateful)
+                                    if (isinstance(status, dict) and
+                                            status.get('mode') == 'vision_prediction' and
+                                            status.get('frame') == frame and
+                                            status.get('profile_id') == profile_id):
+                                        # Emit only allowlisted, content-free counts.
+                                        self.vision = {k: status[k] for k in
+                                            ('mode', 'phase', 'frame', 'profile_id',
+                                             'verified_predictions', 'reused_taps') if k in status}
+                                        self._event('vision-progress', frame=frame, vision=self.vision)
+                                    else:
+                                        self.stateful = dict(status)
+                                        self._event('stateful-progress', frame=frame, stateful=self.stateful)
                         image = cancellable(frame, profile_id, cancelled, progress)
                     else:
                         image = self.renderer(frame, profile_id)

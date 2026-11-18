@@ -11,6 +11,7 @@ import hashlib
 import json
 import math
 from pathlib import Path, PurePosixPath, PureWindowsPath
+from time import monotonic
 import re
 import shutil
 import subprocess
@@ -300,7 +301,47 @@ def _worker(spec_path, stage):
     (stage / "receipt.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
-def infer(manifest, output):
+class VisionCancelled(RuntimeError):
+    """A superseding preview request cancelled its isolated inference worker."""
+
+
+def _run_worker(command, *, timeout, cancelled):
+    """Interruptible opt-in worker: kill and reap before exposing an error.
+
+    The normal offline inference path retains its original subprocess.run call.
+    Preview hosts poll the revision fence at most every 100 ms instead of
+    waiting for an entire ONNX model deadline after a seek or edit.
+    """
+    if cancelled is None:
+        return subprocess.run(command, check=False, capture_output=True,
+                              text=True, timeout=timeout)
+    if not callable(cancelled):
+        raise ValueError("Vision preview cancellation must be callable")
+    if cancelled():
+        raise VisionCancelled("Superseded prediction request")
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    deadline = monotonic() + timeout
+    try:
+        while True:
+            if cancelled():
+                raise VisionCancelled("Superseded prediction request")
+            remaining = deadline - monotonic()
+            if remaining <= 0:
+                raise TimeoutError("M14 inference exceeded the declared worker deadline")
+            try:
+                stdout, stderr = process.communicate(timeout=min(0.1, remaining))
+                if cancelled():
+                    raise VisionCancelled("Superseded prediction request")
+                return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+            except subprocess.TimeoutExpired:
+                continue
+    finally:
+        if process.poll() is None:
+            process.kill()
+        process.communicate()
+
+
+def infer(manifest, output, *, cancelled=None):
     """Time-limited subprocess; new-directory publication after independent checks."""
     import numpy as np
 
@@ -311,9 +352,9 @@ def infer(manifest, output):
     staging = Path(tempfile.mkdtemp(prefix=f".{target.name}-", dir=target.parent))
     try:
         try:
-            child = subprocess.run([sys.executable, "-m", "framerudiments.vision_m14", "--worker",
-                                    str(spec.manifest), str(staging)], check=False,
-                                   capture_output=True, text=True, timeout=spec.timeout_seconds)
+            child = _run_worker([sys.executable, "-m", "framerudiments.vision_m14", "--worker",
+                                 str(spec.manifest), str(staging)],
+                                timeout=spec.timeout_seconds, cancelled=cancelled)
         except subprocess.TimeoutExpired as exc:
             raise TimeoutError("M14 inference exceeded the declared worker deadline") from exc
         if child.returncode:
