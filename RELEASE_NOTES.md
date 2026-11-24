@@ -1,4 +1,4 @@
-# FrameRudiments 0.4.39 — keyboard and note-highway visualisers
+# FrameRudiments 0.4.39 â€” keyboard and note-highway visualisers
 
 - Add source-bound note intervals and native piano-roll, causal rising history
   and explicitly mapped perspective note-highway layers. Keep physical key-up
@@ -10,11 +10,13 @@
 - Share ordinary composition, effects, per-layer caches, native Q0/Q5 previews
   and actual spawned refinement. Verify repeated input pins without duplicating
   a prepared plan when a compositor reopens.
+- Qualify seek-storm sample admission under both normal and catastrophic service
+  time, retaining valid profile-window reset semantics.
 - Add reproducible silent 60 fps native demonstrations, exact uncached pixel
   comparison, legal two-chunk/resume proof, required native JACK qualification,
   packaged source checks and a first-party research shortlist for later views.
 
-# FrameRudiments 0.4.38 — reliable layer-cache releases
+# FrameRudiments 0.4.38 â€” reliable layer-cache releases
 
 - Retain the independent composited-layer cache and exact native pixel/output
   contracts introduced in 0.4.37.
@@ -25,7 +27,7 @@
   from the served quality; an adaptive downgrade must not look like a lost frame.
 - Preserve the immutable 0.4.37 source/tag; this is the subsequent patch version.
 
-# FrameRudiments 0.4.37 — separate composited-layer caches
+# FrameRudiments 0.4.37 â€” separate composited-layer caches
 
 - Keep early localhost HTTP rejection replies readable on Windows with bounded
   staged transport closure; preserve origin and native-admission checks.
@@ -47,7 +49,7 @@
 - Add real native call-count, pixel, cache reopen, process handoff and encoded
   parity regressions, plus an actual 60 fps gallery and host-scoped measurements.
 
-# FrameRudiments 0.4.36 — finite source-clocked MIDI controls
+# FrameRudiments 0.4.36 â€” finite source-clocked MIDI controls
 
 - Add opt-in MIDI 1.0 CC 0..119 and 14-bit pitchbend capture with explicit API,
   exact input name, native numeric endpoints and bounded queues/polls. Use only
@@ -66,7 +68,7 @@
   demonstration. Physical controllers and cross-platform pixel parity remain
   separate acceptance, as do remaining M15.5 LAN and GPU-device phases.
 
-# FrameRudiments 0.4.35 — bounded CI setup and source-clocked OSC takes
+# FrameRudiments 0.4.35 â€” bounded CI setup and source-clocked OSC takes
 
 - Give native visualiser and software-EGL preview CI a bounded 50-minute
   package step within 75 minutes. Bound TERM-to-KILL cleanup and derive budget
@@ -83,9 +85,9 @@
 
 M15.5 remains in progress. MIDI, bundles/timetags, authenticated LAN transport,
 NDI/Spout/Syphon, Vulkan/WebGPU hardware and perceptual quality retain separate
-acceptance gates, as do the existing M9–M15 additions.
+acceptance gates, as do the existing M9â€“M15 additions.
 
-# FrameRudiments 0.4.34 — qualify the current upgrade source
+# FrameRudiments 0.4.34 â€” qualify the current upgrade source
 
 - Restore preview qualification on the shipping cancellable native renderer.
   Injected service/allocation pressure and GPU observations now exercise that
@@ -110,7 +112,7 @@ acceptance gates, as do the existing M9–M15 additions.
   the maintained temporary-directory runner. Retain safe feedback-state
   traceback checks across Python's mapping implementations.
 
-The following M9–M15 source additions remain subject to their documented native,
+The following M9â€“M15 source additions remain subject to their documented native,
 device, licence and perceptual acceptance boundaries. This release does not
 assert physical AMD/Intel, capture-device, RTSP or third-party plugin acceptance.
 
@@ -302,7 +304,7 @@ assert physical AMD/Intel, capture-device, RTSP or third-party plugin acceptance
 
 # FrameRudiments M9.3 development candidate (unreleased)
 
-- Add explicitly bounded 1–4-pass GL Transitions chains. All shaders require
+- Add explicitly bounded 1â€“4-pass GL Transitions chains. All shaders require
   verified local SHA-256 pins and share the native progress/time uniforms.
 - Two input uploads and one final readback regardless of pass count. Preflight
   pixel payload bytes and the GPU budget before texture allocation.
@@ -312,7 +314,7 @@ assert physical AMD/Intel, capture-device, RTSP or third-party plugin acceptance
 - Repair Windows CI FFmpeg fetch by pinning an existing 8.1 release asset
   and the published SHA-256 digest from its GitHub release metadata.
 
-# Unreleased — M9.2 candidate (not a published release)
+# Unreleased â€” M9.2 candidate (not a published release)
 
 - Add a SHA-256-pinned, trusted-only GL Transitions graph style,
   native progress/time bindings and single-pass ModernGL RGBA8 execution.
@@ -444,7 +446,7 @@ assert physical AMD/Intel, capture-device, RTSP or third-party plugin acceptance
   report a machine-readable rejection reason.
 - Add a bounded confidence-weighted GPU chroma edge-decontamination pipeline,
   using retained foreground neighbours rather than relabelling feather or
-  despill. Radius 0.5–12 is GPU eligible; larger valid CPU radii remain explicit
+  despill. Radius 0.5â€“12 is GPU eligible; larger valid CPU radii remain explicit
   auto fallbacks and strict-GPU rejections.
 - Exercise real-driver parity on Windows' native NVIDIA standalone context and
   the mandatory Linux Mesa/EGL CI route, including mixed-island transfer counts.
@@ -736,7 +738,7 @@ Generated explanatory diagram; not a benchmark or rendered campaign frame.
 ## High-detail, palette-controlled visualiser output
 
 - Butterchurn stages accept bounded `mesh_width` and `mesh_height` values. The
-  existing 64×48 mesh remains the default; projects can request additional
+  existing 64Ã—48 mesh remains the default; projects can request additional
   spatial detail without changing their encoded dimensions or frame rate.
 - Any Butterchurn or projectM stage can apply `output_palette_grade` after the
   engine output and before the next stage or clean routing overlay. Two to

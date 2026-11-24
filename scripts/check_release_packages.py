@@ -34,6 +34,7 @@ REQUIRED_SOURCE = (
     "integration/qualify_midi_controls_m15.py", "integration/qualify_osc_controls_m15.py",
     "tests/test_midi_controls_m15.py", "docs/midi-controls-m15.md",
     "integration/qualify_note_visualisers.py", "tests/test_note_visualisers.py", "tests/test_note_preview.py",
+    "tests/test_preview_adaptive_stream.py",
     "docs/note-visualisers.md", "docs/note-visualiser-research.md", "docs/media/note-visualisers-native.png",
     "integration/qualify_layer_cache.py", "docs/layer-frame-cache.md", "docs/media/layer-cache-native.png",
     "tests/test_layer_frame_cache.py", "tests/test_preview_native_project.py", "tests/test_preview_refinement_native.py",
