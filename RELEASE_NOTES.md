@@ -1,3 +1,14 @@
+# FrameRudiments 0.4.38 — reliable layer-cache releases
+
+- Retain the independent composited-layer cache and exact native pixel/output
+  contracts introduced in 0.4.37.
+- Pin Windows CI to Gyan's versioned FFmpeg 9.0.1 shared archive and its published
+  SHA-256. The previous rotating autobuild release has disappeared upstream.
+  Preserve download retries, checksum verification and existing job budgets.
+- Qualify real native Q0 and Q5 cache coverage deterministically. Count Q5 entries
+  from the served quality; an adaptive downgrade must not look like a lost frame.
+- Preserve the immutable 0.4.37 source/tag; this is the subsequent patch version.
+
 # FrameRudiments 0.4.37 — separate composited-layer caches
 
 - Keep early localhost HTTP rejection replies readable on Windows with bounded

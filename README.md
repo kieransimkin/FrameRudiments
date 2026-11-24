@@ -2,7 +2,7 @@
 
 **Beat-synchronised visualisation, compositing and video rendering — driven by real DanceRudiments motion and source-pinned StemLab timing.**
 
-0.4.37 adds [separate native layer caches](docs/layer-frame-cache.md):
+0.4.38 adds [separate native layer caches](docs/layer-frame-cache.md):
 reuse unchanged rasters after edits, across preview/Q5 owners and ordinary renders.
 Keep an explicit persistent cache with `--layer-cache DIRECTORY`.
 [Actual native cache comparison](https://kieransimkin.github.io/FrameRudiments/layer-cache/).

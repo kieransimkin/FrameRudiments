@@ -1,6 +1,6 @@
 # Separate caches for composited layers
 
-FrameRudiments 0.4.37 retains each native layer's raster separately. Editing one
+FrameRudiments 0.4.38 retains each native layer's raster separately. Editing one
 sprite's position, size or opacity gives that layer new cache keys; it does not
 flush the other layers. A new render or preview owner can reuse the unchanged
 pixels, including a foreground-to-Q5 handoff.
