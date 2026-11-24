@@ -50,9 +50,13 @@ def test_actual_source_audio_rate_and_two_video_tracks(tmp_path):
     d['tracks'].append({'id': 'A1', 'kind': 'audio', 'items': [
         {'type': 'clip', 'id': 'tone', 'name': 'Test tone',
          'source': {'uri': 'demo.wav', 'sha256': sha},
-         'source_fps': [16000, 1], 'source_start_frame': 0, 'duration_frames': 200},
+         'source_fps': [16000, 1], 'source_start_frame': 0, 'duration_frames': 201},
     ]})
     a = to_otio(d)
+    # 201/60 seconds is exactly 53,600 samples at 16 kHz. A 200-frame
+    # timeline span would end between samples and must remain inadmissible.
+    assert a.tracks[1][0].source_range.duration.value == 53600
+    assert a.tracks[1][0].source_range.duration.rate == 16000
     restored = from_otio(_decoded(_encoded(a)))
     assert restored == validate(d)
     target = tmp_path / 'example.otio'

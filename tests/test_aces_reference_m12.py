@@ -2,7 +2,6 @@
 
 import hashlib
 import os
-from types import SimpleNamespace
 
 import numpy as np
 import pytest

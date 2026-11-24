@@ -357,7 +357,8 @@ def test_retained_exception_traceback_has_no_scheduler_owned_partial_payload_con
             frames.append(traceback.tb_frame.f_locals)
         traceback = traceback.tb_next
     assert frames and all(row['ring'] == row['pending'] == {} for row in frames)
-    assert all(not {'history', 'value', 'state', 'completed', 'candidates', 'committed'} & row.keys() for row in frames)
+    assert all({'history', 'value', 'state', 'completed', 'candidates', 'committed'}.isdisjoint(row)
+               for row in frames)
     assert replay.checkpoint() is saved
 
 

@@ -63,12 +63,19 @@ def test_unknown_vision_source_rejected_at_project_compositor_admission(tmp_path
         Compositor(project)
 
 
-def test_graph_estimate_requires_single_sample_quality(tmp_path):
+def test_graph_estimate_accepts_exact_temporal_samples(monkeypatch, tmp_path):
+    monkeypatch.setattr("framerudiments.vision_graph_m14.infer", mocked_infer)
     project = prepare(tmp_path)
     data = deepcopy(project.data)
     data["render_quality"] = {"enabled": True, "spatial_scale": 1, "temporal_samples": 2}
-    with pytest.raises(ValueError, match="render_quality"):
-        Compositor(Project(data, tmp_path))
+    comp = Compositor(Project(data, tmp_path))
+    try:
+        image, _ = comp.frame(0)
+        assert image.mode == "RGB" and image.size == (16, 16)
+        assert image.getpixel((0, 0)) == (128, 128, 128)
+        assert comp.frame(0)[0].tobytes() == image.tobytes()
+    finally:
+        comp.close()
 
 
 def test_bad_vision_source_rejected_before_native_pixels(tmp_path, monkeypatch):

@@ -9,9 +9,18 @@ elif [[ $# -ne 0 ]]; then
   exit 2
 fi
 
+# FFmpeg is in Ubuntu's official universe component. Some hosted images omit
+# that component; a successful index refresh alone does not make it available.
+if [[ -r /etc/os-release ]]; then
+  . /etc/os-release
+  if [[ "${ID:-}" == "ubuntu" ]]; then
+    sudo timeout --signal=TERM 120s add-apt-repository --yes --no-update universe
+  fi
+fi
+
 for attempt in 1 2 3; do
   echo "Installing CI render dependencies (attempt $attempt/3)"
-  if sudo timeout --signal=TERM 300s env DEBIAN_FRONTEND=noninteractive apt-get update -qq \
+  if sudo timeout --signal=TERM 300s env DEBIAN_FRONTEND=noninteractive apt-get update -qq -o APT::Update::Error-Mode=any \
     && sudo timeout --signal=TERM 600s env DEBIAN_FRONTEND=noninteractive \
       apt-get install -y "${packages[@]}"; then
     exit 0

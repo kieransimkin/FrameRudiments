@@ -5,6 +5,7 @@ Both suites still run on the real GPU CI runner and must not be skipped.
 """
 
 from pathlib import Path
+import re
 from shlex import split as shell_split
 
 
@@ -48,8 +49,11 @@ def test_gpu_mesh_and_projectm_run_in_separate_xvfb_processes():
         assert "-m pytest" not in section
     assert "integration/test_music_spatial_gpu.py" in mesh
     assert "integration/test_fire_volume_gpu.py" in mesh
-    assert "--ignore=integration/test_music_spatial_gpu.py" in legacy
-    assert "--ignore=integration/test_fire_volume_gpu.py" in legacy
+    mesh_inputs = set(re.findall(r"integration/test_\w+\.py", mesh))
+    legacy_inputs = set(re.findall(r"integration/test_\w+\.py", legacy))
+    assert mesh_inputs.isdisjoint(legacy_inputs)
+    assert {"integration/test_visualisers_gpu.py", "integration/test_preview_stateful_gpu.py",
+            "integration/test_preset_analysis.py", "integration/test_released_preset_analysis.py"} <= legacy_inputs
     assert "--junitxml=gpu-mesh-results.xml" in mesh
     assert "--junitxml=gpu-results.xml" in legacy
     assert "gpu-mesh-results.xml" in verification
@@ -68,3 +72,21 @@ def test_gpu_acceptance_artifact_keeps_both_logs():
         "gpu-console.log",
     ):
         assert path in artifact
+
+
+def test_release_cpu_gate_matches_the_validated_native_dependency_boundary():
+    workflow = CI.read_text(encoding="utf-8")
+    release = CI.with_name("release.yml").read_text(encoding="utf-8")
+    cpu = workflow.split("  render-tests:\n", 1)[1].split("  effect-graph-parity:\n", 1)[0]
+    def excluded(text):
+        return set(re.findall(r"--ignore=(tests/test_[\w]+\.py)", text))
+    assert excluded(cpu) == excluded(release)
+    assert "tests/test_gpu_spatial_aov_m12.py" in excluded(cpu)
+    native = CI.with_name("colour-aov-m12.yml").read_text(encoding="utf-8")
+    assert "tests/test_gpu_spatial_aov_m12.py" in native
+    assert 'FRAMERUDIMENTS_REQUIRE_GPU_AOV' in native
+    for text in (cpu, release):
+        assert ".[dev,colour_aov,timeline_otio,vision]" in text
+        assert "'onnx>=1.17,<2'" in text
+        assert "scripts/Invoke-Tests.ps1 -Python python -q" in text
+        assert "assert not r.findall('.//skipped')" in text

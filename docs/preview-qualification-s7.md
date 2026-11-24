@@ -134,6 +134,22 @@ its source inputs remain unchanged.
 
 Four native scenarios cover:
 
+![Actual authored-quality native frame from the qualification fixture](media/preview-qualification-native-q5.png)
+
+Actual native PNG from the generated, pinned fixture. It documents the pixel
+comparison input; the receipt supplies the queue, timing and cleanup evidence.
+A recording of this still would add no proof of the concurrent test.
+
+The harness instruments `NativePreviewRenderer.render_cancellable`, the entry
+point used by adaptive streams. Pressure and GPU observations must wrap that
+call rather than an unused convenience method. The obsolete-result scenario
+also uses a bounded, explicitly injected post-render barrier: it waits until a
+real PNG exists, queues newer cursor commands, then releases the PNG to the
+shipping stream's publication fence. This proves discarded completed work
+without assuming that an active worker has already produced a result. The
+barrier is always released on command failure and is not a production clock,
+renderer or performance measurement.
+
 1. Cold/warm random seeks, latest-intent work, manual target changes and a local
    edit with independent Q5 cache retention.
 2. An explicitly injected 70 ms foreground delay, actual adaptive downgrade,

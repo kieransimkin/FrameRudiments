@@ -15,6 +15,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   native-usd:
     strategy:
@@ -31,7 +34,7 @@ jobs:
       - name: Install actual OpenUSD and M12 OpenEXR codecs
         run: python -m pip install -e '.[dev,openusd,colour_aov]'
       - name: Pin the required OpenUSD runtime and reject native dependency skips
-        run: python -c "import pxr.Usd, OpenEXR; assert pxr.Usd.GetVersion() >= (26, 11) and hasattr(OpenEXR, 'File')"
+        run: python -c "import pxr.Usd, OpenEXR; print('OpenUSD:', pxr.Usd.GetVersion()); assert pxr.Usd.GetVersion() >= (0, 26, 11) and hasattr(OpenEXR, 'File')"
       - name: Lint and exercise non-native boundary contracts
         run: |
           ruff check src/framerudiments/usd_m15.py src/framerudiments/usd_m15_cli.py tests/test_usd_m15.py integration/qualify_usd_m15.py

@@ -16,6 +16,9 @@ on:
 
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   native-otio:
@@ -44,7 +47,7 @@ jobs:
         run: |
           python scripts/generate_timeline_gallery_audio.py --output m13-evidence
           python scripts/generate_m13_timeline_example.py --site m13-evidence
-          python scripts/generate_m13_timeline_example.py --verify m13-evidence
+          python scripts/generate_m13_timeline_example.py --site m13-evidence --verify
           framerudiments-timeline validate m13-evidence/example.timeline.json --verify-sources
           framerudiments-timeline import m13-evidence/example.otio --output m13-evidence/from-otio.json
           framerudiments-timeline validate m13-evidence/from-otio.json --verify-sources
