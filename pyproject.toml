@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "framerudiments"
-version = "0.4.34"
+version = "0.4.35"
 description = "Deterministic Shorts and lyric visualisers using DanceRudiments and StemLab evidence."
 requires-python = ">=3.11"
 readme = "README.md"
@@ -36,6 +36,7 @@ framerudiments-timeline = "framerudiments.timeline_otio_cli:main"
 framerudiments-gstreamer = "framerudiments.gstreamer_m15_cli:main"
 framerudiments-openfx = "framerudiments.openfx_m15_cli:main"
 framerudiments-usd = "framerudiments.usd_m15_cli:main"
+framerudiments-osc = "framerudiments.osc_m15_cli:main"
 framerudiments-vision = "framerudiments.vision_m14_cli:main"
 
 [tool.setuptools.packages.find]

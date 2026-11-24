@@ -425,6 +425,11 @@ class Compositor:
             EffectGraphControls(project, self.effect_graph, project.data.get("effect_graph_controls", []), self.context)
             if self.effect_graph is not None else None
         )
+        if getattr(project, "osc_control_take_ref", None) is not None:
+            from .osc_control_take_m15 import RecordedOSCControls
+
+            self.effect_graph_controls = RecordedOSCControls(
+                project, self.effect_graph, self.effect_graph_controls)
         # M14.2 opt-in cached ONNX estimates are external pinned graph sources,
         # not native geometry buffers. Legacy rendering never imports ONNX.
         self.vision_graph = None
@@ -841,7 +846,10 @@ class Compositor:
 
     def evidence(self):
         virtual = getattr(self, "_temporal_virtual", None)
+        controls = (virtual or self).effect_graph_controls
         return dict(
+            **({"osc_controls": controls.osc_evidence}
+               if controls is not None and hasattr(controls, "osc_evidence") else {}),
             **({'feedback': {'contract': self.feedback_contract(), 'state': self.feedback_snapshot()}}
                if self.post_pipeline.feedback is not None else {}),
             **({'temporal_fx': {'contract': self.temporal_fx_contract(),

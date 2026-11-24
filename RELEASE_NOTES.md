@@ -1,3 +1,22 @@
+# FrameRudiments 0.4.35 — bounded CI setup and source-clocked OSC takes
+
+- Give native visualiser and software-EGL preview CI a bounded 50-minute
+  package step within 75 minutes. Bound TERM-to-KILL cleanup and derive budget
+  regressions from the actual installer. Keep native GPU/no-skip gates required.
+- Add opt-in IPv4 loopback OSC int32/float32 capture through existing typed
+  numeric graph targets. One owned bounded socket follows native encoded frame,
+  source time and continuous beat positions and closes on context exit.
+- Freeze finite takes after the final frame and receiver closure. Hash-pin
+  network-free replay through ordinary projects, preflight, render and input
+  checks. Validate source/clock/graph identity, release expired controls to their
+  native base and preserve deterministic random access and temporal sampling.
+- Add inspect/validate CLI, real UDP rejection/ownership tests, Windows/Linux
+  qualification and an independently decoded native 60 fps demonstration.
+
+M15.5 remains in progress. MIDI, bundles/timetags, authenticated LAN transport,
+NDI/Spout/Syphon, Vulkan/WebGPU hardware and perceptual quality retain separate
+acceptance gates, as do the existing M9–M15 additions.
+
 # FrameRudiments 0.4.34 — qualify the current upgrade source
 
 - Restore preview qualification on the shipping cancellable native renderer.

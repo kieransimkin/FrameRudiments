@@ -2,6 +2,11 @@
 
 **Beat-synchronised visualisation, compositing and video rendering — driven by real DanceRudiments motion and source-pinned StemLab timing.**
 
+Experimental 0.4.35: [capture finite OSC numeric takes and replay them through
+the native source-clocked compositor](docs/osc-controls-m15.md), including an
+[actual 60 fps demonstration](https://kieransimkin.github.io/FrameRudiments/m15-5/).
+Ordinary rendering remains network-free.
+
 Create procedural music visuals, character composites, animated typography, particles, fractals, spatial effects and transitions. Preview the same render pipeline on the [CI-generated demo site](https://kieransimkin.github.io/FrameRudiments/).
 
 [**Explore all visualisers**](https://kieransimkin.github.io/FrameRudiments/) · [**Interactive timeline viewer**](https://kieransimkin.github.io/FrameRudiments/timeline/) · [**Character ⇄ visualiser showcase**](https://kieransimkin.github.io/FrameRudiments/m11-5/) · [**Source**](https://github.com/kieransimkin/FrameRudiments) · [**Documentation**](docs/project-format.md)

@@ -83,6 +83,19 @@ Reference: [M15.4 OpenUSD scene and AOV contract](usd-m15.md).
 
 ## M15.5 — Live transport, WebGPU/Vulkan and control protocols
 
+- [x] First bounded control increment: explicitly configured IPv4 loopback OSC
+  int32/float32 capture, native numeric graph bindings, source-frame leases,
+  closed finite takes and hash-pinned network-free replay.
+- [x] Native compositor integration preserves encoded/source/continuous-beat
+  identity and holds controls across native temporal subframes. Real UDP,
+  packet rejection, closure, input-pin and native render/decode qualification.
+Required qualification uses exact-source CI and immutable 0.4.35 publication.
+LAN, MIDI, bundled OSC/timetags and the transport/device work below remain
+separate increments. The workflow run and release receipts establish delivery.
+
+Reference: [M15.5 OSC capture and replay contract](osc-controls-m15.md).
+
+
 - Transport profiles for explicit, consented local-network endpoints (GStreamer,
   NDI, Spout, Syphon), with bounded buffers, monotonic clocks and disconnect tests.
 - Vulkan/WebGPU adapter capability plans with shader parity against CPU/Mesa

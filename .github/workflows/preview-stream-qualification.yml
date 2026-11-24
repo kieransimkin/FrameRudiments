@@ -69,7 +69,8 @@ jobs:
   native-gpu:
     name: Native preview GPU graph (software EGL)
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # Keep the shared installer ceiling separate from the 15-minute GPU profile.
+    timeout-minutes: 75
     env:
       LIBGL_ALWAYS_SOFTWARE: '1'
       MESA_GL_VERSION_OVERRIDE: '3.3'
@@ -83,9 +84,9 @@ jobs:
         run: |
           python -c "from pathlib import Path; import tempfile; p=Path('.tmp'); p.mkdir(exist_ok=True); t=Path(tempfile.mkdtemp(dir=p)); f=t/'probe'; f.write_bytes(b'preview'); assert f.read_bytes()==b'preview'; f.rename(t/'renamed'); (t/'renamed').unlink(); t.rmdir()"
       - name: Native GPU dependencies
-        run: |
-          bash scripts/install_ci_render_dependencies.sh --gpu
-          python -m pip install -e '.[dev,gpu]'
+        timeout-minutes: 50
+        run: bash scripts/install_ci_render_dependencies.sh --gpu
+      - run: python -m pip install -e '.[dev,gpu]'
       - name: Generate strict native GPU seek and resource gallery
         run: >-
           python scripts/profile_preview_stream.py

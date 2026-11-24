@@ -107,6 +107,16 @@ jobs:
           --junitxml=test-results.xml
       - name: No skipped rendering checks
         run: python -c "import xml.etree.ElementTree as E; r=E.parse('test-results.xml'); assert not r.findall('.//skipped')"
+      - name: Qualify real OSC capture and native 60 fps replay
+        if: matrix.python == '3.13'
+        run: python integration/qualify_osc_controls_m15.py --output osc-controls-qualification
+      - name: Upload native OSC replay evidence
+        if: matrix.python == '3.13'
+        uses: actions/upload-artifact@v6
+        with:
+          name: osc-controls-${{ matrix.os }}
+          path: osc-controls-qualification/
+          if-no-files-found: error
       - name: Qualify native temporal scheduling and independent encoded output
         if: matrix.python == '3.13'
         run: python integration/qualify_temporal_schedule_m11_1.py --output temporal-schedule-qualification
