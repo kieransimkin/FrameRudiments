@@ -1,7 +1,8 @@
 """M10.3 live HTTP framing, atomic rejection and native preview admission."""
 from copy import deepcopy
-from http.client import HTTPConnection
+from http.client import HTTPConnection, HTTPResponse
 import json
+import socket
 
 import pytest
 
@@ -52,6 +53,32 @@ def test_native_catalog_and_parameter_edit_bind_their_exact_full_snapshots(loopb
 def test_native_editing_requires_exact_same_origin_before_preparing_project(loopback, endpoint, origin):
     code, reply, _ = loopback.request(endpoint, {'project': loopback.draft(), 'node': 'fork-a'}, origin=origin)
     assert code == 403 and reply['code'] == 'request_invalid'
+    assert not loopback.owned.exists()
+
+
+@pytest.mark.parametrize('endpoint', [CATALOG, EDIT])
+def test_early_origin_rejection_is_complete_before_body_upload(loopback, endpoint):
+    # Real split TCP upload: the rejected body has not arrived when 403 is sent.
+    payload = json.dumps({'project': loopback.draft(), 'node': 'fork-a'}).encode()
+    headers = (f'POST {endpoint} HTTP/1.1\r\nHost: 127.0.0.1:{loopback.port}\r\n'
+               'Origin: https://foreign.example\r\nContent-Type: application/json\r\n'
+               f'Content-Length: {len(payload)}\r\nConnection: close\r\n\r\n').encode()
+    connection = socket.create_connection(('127.0.0.1', loopback.port), timeout=5)
+    response = None
+    try:
+        connection.sendall(headers)
+        response = HTTPResponse(connection)
+        response.begin()
+        assert response.status == 403 and response.getheader('Connection') == 'close'
+        assert json.loads(response.read())['code'] == 'request_invalid'
+        # An in-flight body is discarded only after the complete rejection.
+        connection.sendall(payload)
+        connection.shutdown(socket.SHUT_WR)
+        assert connection.recv(1) == b''
+    finally:
+        if response is not None:
+            response.close()
+        connection.close()
     assert not loopback.owned.exists()
 
 

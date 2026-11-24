@@ -1,5 +1,7 @@
 # FrameRudiments 0.4.37 — separate composited-layer caches
 
+- Keep early localhost HTTP rejection replies readable on Windows with bounded
+  staged transport closure; preserve origin and native-admission checks.
 - Retain independent bounded raw RGBA rasters for sprites, native rudiments,
   deterministic emitters/materials, text and lyric art. Keys cover each layer's
   own configuration, pinned dependencies, native sample/clock, raster quality

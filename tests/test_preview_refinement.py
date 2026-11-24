@@ -38,6 +38,20 @@ def wait_for(predicate, seconds=5):
     raise AssertionError('condition did not complete')
 
 
+def wait_complete(stream, seconds=30):
+    # These are durable multi-frame correctness proofs, not latency benchmarks.
+    # Windows CI can spend seconds in filesystem flushes. Keep other timing
+    # assertions strict, fail immediately on a terminal error, and retain state.
+    until = monotonic() + seconds
+    with stream.condition:
+        while stream.refinement.state != 'complete':
+            snapshot = stream.refinement.snapshot()
+            assert snapshot['state'] not in ('failed', 'quota_blocked', 'cleanup_failed', 'stale', 'closed'), snapshot
+            remaining = until - monotonic()
+            assert remaining > 0, snapshot
+            stream.condition.wait(min(.05, remaining))
+
+
 def store(tmp_path, total=12, quota=4*1024**2):
     p = project()
     segments = (Segment('a', 0, 4, 'a'*64), Segment('b', 4, 8, 'a'*64),
@@ -106,7 +120,7 @@ def test_pause_refines_anchor_first_and_q5_never_downgrades(tmp_path):
     stream, cache, created, _ = make_stream(tmp_path)
     try:
         stream.command('pause', sequence=1, frame=5)
-        wait_for(lambda: stream.refinement.state == 'complete')
+        wait_complete(stream)
         assert created[0].calls == [5, 6, 7, 4, 8, 9, 10, 11, 3, 2, 1, 0]
         assert stream.last_stop == 5
         assert all(cache.get(n).profile_id == 'Q5' for n in range(12))
@@ -132,11 +146,11 @@ def test_best_cached_anchor_is_skipped_and_work_is_not_repeated(tmp_path):
     cache.publish(ticket, png(frame=5), settings_sha256=stream._settings(ticket))
     try:
         stream.command('pause', sequence=1, frame=5)
-        wait_for(lambda: stream.refinement.state == 'complete')
+        wait_complete(stream)
         assert created[0].calls[0] == 6 and 5 not in created[0].calls
         calls = len(created[0].calls)
         stream.command('stop', sequence=2, frame=5)
-        wait_for(lambda: stream.refinement.state == 'complete')
+        wait_complete(stream)
         assert stream.refinement.skipped == 12
         assert len(created[0].calls) == calls
     finally:
@@ -174,7 +188,7 @@ def test_1000_stops_collapse_to_latest_priority_epoch(tmp_path):
             for i in range(2, 1002):
                 stream.command('pause', sequence=i, frame=i % 12)
         bg.hold = False
-        wait_for(lambda: stream.refinement.state == 'complete')
+        wait_complete(stream)
         assert stream.last_stop == 1001 % 12
         assert bg.calls[1] == 1001 % 12
         assert stream.refinement.epoch == 1001
@@ -353,7 +367,7 @@ def test_cached_pause_releases_foreground_context_before_background_starts(tmp_p
         wait_for(lambda: cache.get(5) is not None)
         stream.command('pause', sequence=2, frame=5)  # Cache hit: no foreground render needed.
         try:
-            wait_for(lambda: stream.refinement.state == 'complete')
+            wait_complete(stream)
         except AssertionError:
             pytest.fail(f"Cached-pause handoff did not complete: {stream.status()}; lifecycle={lifecycle}")
         assert [name for name, _ in lifecycle] == ['render', 'release']
@@ -388,7 +402,7 @@ def test_api_constructs_background_only_after_stop_and_closes_revision(tmp_path)
         wait_for(lambda: stream.cache.get(3) is not None)
         assert not created
         api.command({'session': reply['session'], 'sequence': 1, 'command': 'pause', 'frame': 3})
-        wait_for(lambda: stream.refinement.state == 'complete')
+        wait_complete(stream)
         assert snapshots[0].draft_json == json.dumps(TestProject.data, ensure_ascii=False, allow_nan=False)
         assert stream.refinement.skipped == 1  # Q5 foreground already completed the anchor.
         assert stream.cache.get(4).profile_id == 'Q5'
