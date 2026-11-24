@@ -171,3 +171,12 @@ def test_edit_one_arrangement_preserves_a_separate_keyboard_cache(source, tmp_pa
     with Compositor(Project(changed, source.base), layer_cache=False) as owner:
         assert owner.frame(30)[0].tobytes() == actual
     cache.close()
+
+
+@pytest.mark.parametrize("view", ["arrangement", "pitch-wheel"])
+def test_non_keyboard_views_admit_full_midi_pitch_range(source, view):
+    pin = write_notes(source, [interval(key=0), interval(key=127)])
+    with Compositor(project_with(source, pin, view, labels=False)) as owner:
+        owner.frame(30)
+        assert owner.frame_reports()["notes"]["active_keys"] == [0, 127]
+        assert owner.layers[0].evidence["selected_notes"] == 2

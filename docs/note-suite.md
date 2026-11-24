@@ -27,7 +27,9 @@ fingering/score mapping.
 
 Common fields include `file`, integer-pixel `bounds`, optional `tracks` (0..127),
 `channels` (1..16), `note_range`, `colour_by: "track" | "channel"`, `palette`,
-`panel`, `opacity`, `lookahead_seconds` and `history_seconds`. Bounds retain
+`panel`, `opacity`, `lookahead_seconds` and `history_seconds`. New non-piano
+views default to the full 0..127 MIDI pitch range; the piano retains 21..108.
+Bounds retain
 native preview normalization. Durations remain seconds rather than frames.
 Named new views default to `labels: true` and require the explicit pinned project
 `font`. `score` and `note-impacts` default to no text. Set `labels: false` when a
