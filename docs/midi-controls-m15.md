@@ -76,6 +76,8 @@ endpoints, including reversed ranges. Integer targets require integer endpoints
 and use exact rational half-up rounding. Native ranges and cross-property
 constraints still apply; an invalid combined sample is rejected atomically.
 
+Version 0.4.39 adds a separate [note timeline and keyboard/highway visualisers](note-visualisers.md), with note-on/off, sustain and optional SMF import. The following exclusions describe this numeric-control receiver only.
+
 Unknown controls and unsupported messages are counted. Notes, SysEx,
 clock/transport, paired 14-bit CC, RPN/NRPN, SMF files and MIDI 2.0 are not
 implemented. These limits are deliberate; no unsupported message changes time.

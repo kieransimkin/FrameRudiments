@@ -7,6 +7,11 @@ reuse unchanged rasters after edits, across preview/Q5 owners and ordinary rende
 Keep an explicit persistent cache with `--layer-cache DIRECTORY`.
 [Actual native cache comparison](https://kieransimkin.github.io/FrameRudiments/layer-cache/).
 
+New 0.4.39: [bottom piano keyboard, falling/rising notes and a perspective note highway](docs/note-visualisers.md),
+with pinned MIDI intervals, optional `.mid` import and qualified note capture.
+[Actual 60 fps note demonstrations](https://kieransimkin.github.io/FrameRudiments/note-visualisers/)
+· [Research and next views](docs/note-visualiser-research.md).
+
 Experimental 0.4.36: [capture MIDI CC/pitchbend as finite source-clocked takes](docs/midi-controls-m15.md)
 and replay through the ordinary compositor, alongside the released [OSC route](docs/osc-controls-m15.md).
 Native MIDI capture uses an explicitly selected input on qualified Python 3.11/3.12 hosts;

@@ -121,3 +121,24 @@ Reference: [MIDI contract, actual frame and native demonstration](midi-controls-
 exact input/output pins; reproducible generated fixtures; explicit unsupported
 capabilities; no background processes surviving the owner; per-adapter CI; no
 claimed hardware/codec or perceptual success without measured results.
+
+
+## Note-performance visualisers — 0.4.39 increment
+
+The next authorised increment adds a source-bound note timeline, a bottom piano
+keyboard with falling or causal rising blocks, and a perspective note highway.
+MIDI CC/pitchbend controls keep their existing contract; a separate note capture
+owner reuses the same qualified input lifecycle. SMF conversion retains native
+tempo changes with an explicit offset. Notes share ordinary composition,
+per-layer cache, native quality profiles and spawned Q5 replay.
+
+Acceptance is owned by exact-source CI, the native note qualifier and matching
+immutable package publication. Required checks include real RtMidi/JACK note
+capture, key-up/sustain distinction, independent wire vectors, tempo/seek
+behaviour, selective cache reuse, exact decoded reference parity and legal
+chunk/resume output. Physical-controller acceptance remains a separate result.
+
+[Actual native views and input contract](note-visualisers.md) · [Research shortlist](note-visualiser-research.md).
+Drum lanes, pitch-class wheels, horizontal rolls and authored string/fretboards
+remain proposed follow-ups; this increment does not close the separate network,
+GPU, transport or physical-device phases of M15.5.

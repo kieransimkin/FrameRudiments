@@ -1,3 +1,19 @@
+# FrameRudiments 0.4.39 — keyboard and note-highway visualisers
+
+- Add source-bound note intervals and native piano-roll, causal rising history
+  and explicitly mapped perspective note-highway layers. Keep physical key-up
+  separate from sustain-aware sounding duration, including chords, repeated
+  pitches, channel/track identity and velocity.
+- Capture notes through the existing explicitly owned qualified RtMidi input;
+  import synchronous PPQN SMF 0/1 through the optional Mido notes extra with an
+  explicit authored offset and native tempo changes. Replay opens no devices.
+- Share ordinary composition, effects, per-layer caches, native Q0/Q5 previews
+  and actual spawned refinement. Verify repeated input pins without duplicating
+  a prepared plan when a compositor reopens.
+- Add reproducible silent 60 fps native demonstrations, exact uncached pixel
+  comparison, legal two-chunk/resume proof, required native JACK qualification,
+  packaged source checks and a first-party research shortlist for later views.
+
 # FrameRudiments 0.4.38 — reliable layer-cache releases
 
 - Retain the independent composited-layer cache and exact native pixel/output

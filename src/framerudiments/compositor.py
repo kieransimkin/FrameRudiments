@@ -27,6 +27,7 @@ from .visualiser_routing import VisualiserLayerRouting
 from .layer_masks import LayerMasks
 from .layer_animation import LayerAnimations
 from .layer_displacement import LayerDisplacement
+from .note_renderers import NoteLayer
 
 
 _CREATE_EFFECT_GRAPH_BACKEND = object()
@@ -331,6 +332,8 @@ class Compositor:
             if cfg.get("type") == "emitter"
             else NaturalMaterialLayer(project, cfg, self.context)
             if cfg.get("type") == "material"
+            else NoteLayer(project, cfg)
+            if cfg.get("type") == "notes"
             else Sprite(project, cfg)
             for cfg in project.data.get("layers", [])
         ]
@@ -875,7 +878,7 @@ class Compositor:
         reports = {
             layer.id: layer.frame_report
             for layer in self.layers
-            if isinstance(layer, (RudimentLayer, ParticleEmitter, NaturalMaterialLayer))
+            if isinstance(layer, (RudimentLayer, ParticleEmitter, NaturalMaterialLayer, NoteLayer))
             and layer.frame_report is not None
         }
         if self.word_indicator and self.word_indicator.frame_report is not None:
@@ -962,6 +965,8 @@ class Compositor:
             }} if self.effect_graph is not None else {}),
             motions={x.id: x.motion.evidence for x in [*self.layers, *self.lyric_art.values()] if x.motion},
             rudiment_renderers={x.id: x.evidence for x in self.layers if isinstance(x, RudimentLayer)},
+            **({'note_layers': {x.id: x.evidence for x in self.layers if isinstance(x, NoteLayer)}}
+               if any(isinstance(x, NoteLayer) for x in self.layers) else {}),
             **(
                 {
                     "natural_materials": {

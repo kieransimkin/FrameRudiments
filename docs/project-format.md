@@ -279,3 +279,12 @@ still target other numeric properties. Capture uses an explicit API/port on a
 qualified Python 3.11/3.12 host, with bounded CC/pitchbend mappings, source-frame
 leases and exact cleanup. See the [MIDI contract, actual frame comparison and
 60 fps native demonstration](midi-controls-m15.md).
+
+
+## MIDI note layers
+
+A `type: "notes"` layer consumes a hash-pinned finite note timeline through `file`.
+Its `view` is `piano-roll` or `note-highway`; normalized timing and MIDI values
+survive viewport quality changes. The keyboard can use falling lookahead or
+causal rising history. See the [note contract, actual native image and video](note-visualisers.md)
+for layer fields, explicit highway maps, note/CC64 semantics, SMF import and owned capture.

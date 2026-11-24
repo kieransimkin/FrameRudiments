@@ -51,7 +51,7 @@ def require_stateless(document):
     if not isinstance(layers, list) or any(not isinstance(row, dict) for row in layers):
         raise ValueError('layers must be an array of objects')
     for layer in layers:
-        if layer.get('type', 'sprite') not in {'sprite', 'bars', 'rudiment'}:
+        if layer.get('type', 'sprite') not in {'sprite', 'bars', 'rudiment', 'notes'}:
             raise ProfileUnsupported('This layer has not qualified for independent-frame adaptive seeking')
 
 
@@ -158,6 +158,11 @@ def _lower_canvas(document, width, height, source_width, source_height):
         if binding.get('property') not in _NORMALIZED_CONTROLS:
             raise ProfileUnsupported('Pixel-valued or structural controls require full size')
     for layer in document.get('layers', []):
+        if layer.get('type') == 'notes':
+            # Geometry is normalized within the declared viewport. Timing,
+            # MIDI keys, lane assignment and velocity stay unchanged.
+            layer['bounds'] = _bounds(layer['bounds'], sx, sy)
+            continue
         if layer.get('type', 'sprite') in {'sprite', 'bars'}:
             _sprite(layer, sx, sy)
             continue

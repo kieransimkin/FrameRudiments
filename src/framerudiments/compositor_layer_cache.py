@@ -53,7 +53,14 @@ class LayerSurfaces:
                 row for row in data['layers'] if row['id'] == layer.id)
             dep = dict(geometry=geometry, config=cfg)
             kind = cfg.get('type', 'sprite')
-            if kind in ('sprite', 'bars'):
+            if kind == 'notes':
+                # Note intervals read their own pinned timeline and seconds. They
+                # do not consume lyrics, musical phase, another layer or PCM.
+                if cfg.get('labels'):
+                    dep['font'] = data.get('font')
+                if 'cue_labels' in cfg:
+                    dep['cues'] = p.cues
+            elif kind in ('sprite', 'bars'):
                 dynamic = any(k in cfg for k in ('motion', 'atlas', 'start_seconds', 'end_seconds', 'cue_labels'))
                 if dynamic:
                     dep['timing'] = timing
@@ -140,7 +147,11 @@ class LayerSurfaces:
         stamp = 'static' if key in self.static else asdict(ctx)
         if key.startswith('layer:') and reporter is not None:
             cfg = getattr(reporter, 'cfg', {})
-            if cfg.get('type', 'sprite') in ('sprite', 'bars'):
+            if cfg.get('type') == 'notes':
+                stamp = dict(output_seconds=ctx.output_seconds,
+                             source_seconds=ctx.source_seconds,
+                             cue=ctx.cue if 'cue_labels' in cfg else None)
+            elif cfg.get('type', 'sprite') in ('sprite', 'bars'):
                 stamp = ('static' if key in self.static else
                          dict(frame=ctx.frame, source_seconds=ctx.source_seconds, beat=ctx.beat,
                               cue=ctx.cue if 'cue_labels' in cfg else None))
