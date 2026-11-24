@@ -1,6 +1,6 @@
 """Pinned finite note intervals on the existing continuous output clock."""
 
-from bisect import bisect_right
+from bisect import bisect_left, bisect_right
 from copy import deepcopy
 from dataclasses import asdict, dataclass
 import json
@@ -140,6 +140,12 @@ class NoteTimeline:
                 mid = (left + right) // 2
                 stack.extend(((node * 2 + 1, mid, right), (node * 2, left, mid)))
         return tuple(result)
+
+    def onsets(self, low, high):
+        """Return note-on instants in the closed query window, including zero-length hits."""
+        low = number(low, "Note onset window start")
+        high = number(high, "Note onset window end", minimum=low)
+        return self.notes[bisect_left(self.starts, low) : bisect_right(self.starts, high)]
 
     def active(self, seconds):
         return tuple(

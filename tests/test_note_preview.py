@@ -11,9 +11,31 @@ import pytest
 
 
 @pytest.mark.parametrize(
-    "view,direction", [("piano-roll", "falling"), ("piano-roll", "rising"), ("note-highway", "falling")]
+    "view,direction",
+    [
+        ("piano-roll", "falling"),
+        ("piano-roll", "rising"),
+        ("note-highway", "falling"),
+        ("arrangement", "falling"),
+        ("arrangement-overview", "falling"),
+        *[
+            (v, "falling")
+            for v in (
+                "drum-lanes",
+                "pad-grid",
+                "pitch-wheel",
+                "fretboard",
+                "tablature",
+                "score",
+                "note-impacts",
+            )
+        ],
+    ],
 )
 def test_notes_survive_native_quality_views_and_real_spawned_cache(tmp_path, view, direction):
+    overview = view == "arrangement-overview"
+    if overview:
+        view = "arrangement"
     path, data = fixture(tmp_path)
     notes = NoteTimeline.from_notes(
         Project(data, tmp_path),
@@ -24,7 +46,23 @@ def test_notes_survive_native_quality_views_and_real_spawned_cache(tmp_path, vie
         provenance={"kind": "native preview fixture"},
     )
     pin = notes.write(tmp_path / "notes.json")
-    settings = {"note_range": [60, 72]} if view == "piano-roll" else {"note_map": {"60": 0, "64": 3}}
+    settings = (
+        {"note_range": [60, 72]}
+        if view == "piano-roll"
+        else ({"note_map": {"60": 0, "64": 3}} if view == "note-highway" else {"labels": False})
+    )
+    if view in ("drum-lanes", "pad-grid", "fretboard", "tablature", "score"):
+        from test_note_suite import settings as authored_settings
+
+        settings.update(authored_settings(Project(data, tmp_path), pin, view))
+        if "drums" in settings:
+            settings["drums"]["pads"][0]["keys"] = [60, 64]
+        if "fretboard" in settings:
+            settings["fretboard"]["positions"].append({"note_index": 1, "string": 1, "fret": 4})
+        if "score" in settings:
+            settings["score"]["glyphs"].append({"page": 0, "note_indices": [1], "bounds": [50, 10, 70, 40]})
+    if overview:
+        settings["arrangement"] = {"time_mode": "overview"}
     data["layers"].append(
         dict(
             id="notes",

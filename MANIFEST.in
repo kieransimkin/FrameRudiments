@@ -5,7 +5,7 @@ include examples/isf-tint.fs
 recursive-include examples gl-transition-*.glsl
 
 recursive-include integration *.py *.mjs
-recursive-include integration/fixtures *.json
+recursive-include integration/fixtures *.json *.png *.md *.txt
 
 # The cross-language graph qualifier exercises the real authoring source.
 include authoring/package.json authoring/tsconfig.json authoring/index.html authoring/vite.config.ts

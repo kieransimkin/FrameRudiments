@@ -1,3 +1,22 @@
+# FrameRudiments 0.4.40 — arrangement-first note suite
+
+- Add horizontal scrolling and whole-programme arrangement views with named
+  parts, track/channel selectors, pitch/duration bars and the source playhead.
+- Add authored drum lanes/pads, a voicing-preserving pitch wheel, explicit
+  string/fret/capo views and scrolling tablature, reviewed score-image highlights
+  and source-onset particles through the existing native emitter.
+- Keep all new views on the immutable note timeline, shared source clock,
+  independent layer caches, Q0/Q5 and spawned native refinements. Admit score
+  pages as ordinary pinned inputs; reject stale/ambiguous authored mappings.
+- Bound overview/page raster retention, wheel ripples and event/particle pools;
+  retain zero-duration attacks and FPS-independent source-time particle seeds.
+- Add actual VexFlow-engraved original score fixtures, focused native tests,
+  encoded cache/reference and staging qualification, twelve 60 fps gallery
+  presentations and an illustrated contract guide. Existing keyboard/highway,
+  capture/tempo/sustain and particle behaviour retain their regression checks.
+- These additions do not infer instruments, chords, fingering or notation and
+  do not establish physical-device, physical-phone or attended musical approval.
+
 # FrameRudiments 0.4.39 â€” keyboard and note-highway visualisers
 
 - Add source-bound note intervals and native piano-roll, causal rising history

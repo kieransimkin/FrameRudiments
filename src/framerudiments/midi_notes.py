@@ -220,9 +220,14 @@ def import_midi_notes(project, reference, *, offset_seconds):
     if not 1 <= len(midi.tracks) <= 128:
         raise ValueError("MIDI track budget exceeded")
     events = []
+    track_names = {}
     for track, messages in enumerate(midi.tracks):
         ticks = 0
         for index, message in enumerate(messages):
+            if message.type == "track_name" and str(track) not in track_names:
+                name = "".join(c if c.isprintable() else " " for c in message.name).strip()[:80]
+                if name:
+                    track_names[str(track)] = name
             ticks += integer(message.time, "MIDI delta ticks")
             events.append((ticks, track, index, message))
             if len(events) > MAX_EVENTS:
@@ -265,6 +270,7 @@ def import_midi_notes(project, reference, *, offset_seconds):
             "smf_sha256": ref["sha256"],
             "parser": "mido " + mido.version.__version__,
             "smf_type": midi.type,
+            "track_names": track_names,
             "ticks_per_quarter": midi.ticks_per_beat,
             "offset_seconds": offset,
             "alignment": "explicit authored offset; not inferred from audio",

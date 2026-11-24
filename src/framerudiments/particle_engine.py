@@ -588,9 +588,10 @@ class ParticleEmitter:
                     values.append((j + event_index * 1024 + 512, event))
         return values
 
-    def _particle(self, birth_frame, ordinal, cue, style, now):
-        rng = random.Random(_hash_seed(style["seed"], birth_frame, ordinal))
-        when = birth_frame / self.project.fps
+    def _particle(self, birth_frame, ordinal, cue, style, now, *, birth_seconds=None, event_identity=None):
+        seed_identity = birth_frame if event_identity is None else event_identity
+        rng = random.Random(_hash_seed(style["seed"], seed_identity, ordinal))
+        when = birth_frame / self.project.fps if birth_seconds is None else birth_seconds
         age = now - when
         if age < -1e-8:
             return None
@@ -625,7 +626,8 @@ class ParticleEmitter:
         fade_out = style["fade_out"]
         if fade_in:
             # An event that lands exactly on a frame must already be visible.
-            alpha *= min(1, (fraction + 0.5 / (self.project.fps * lifetime)) / fade_in)
+            half_step = 0.5 / (self.project.fps * lifetime) if birth_seconds is None else 0
+            alpha *= min(1, (fraction + half_step) / fade_in)
         if fade_out:
             alpha *= min(1, (1 - fraction) / fade_out)
         if style["pulse_frequency"]:
@@ -667,19 +669,21 @@ class ParticleEmitter:
         output.putalpha(ImageChops.lighter(old.getchannel("A"), weight))
         canvas.paste(output, (x0, y0))
 
-    def _stamp(self, image, info, style):
+    def _stamp(self, image, info, style, *, viewport_size=None, raster_scale=None):
+        viewport_size = self.size if viewport_size is None else viewport_size
+        raster = self.raster_scale if raster_scale is None else raster_scale
         x, y, size, angle, alpha, rgb, *extra = info
         if alpha <= 0:
             return
-        cx = round(x * (self.size[0] - 1))
-        cy = round(y * (self.size[1] - 1))
+        cx = round(x * (viewport_size[0] - 1))
+        cy = round(y * (viewport_size[1] - 1))
         shape = style["shape"]
         softness = round(style["softness"] * 100)
         reference_diameter = max(3, min(256, size * 2))
         reference_height = max(2, min(256, round(reference_diameter * style["stretch"])))
-        diameter = max(1, round(reference_diameter * self.raster_scale))
+        diameter = max(1, min(2048, round(reference_diameter * raster)))
         width = diameter
-        height = max(1, round(reference_height * self.raster_scale))
+        height = max(1, min(2048, round(reference_height * raster)))
         mask = _shape_mask(shape, diameter, softness)
         if height != diameter:
             mask = mask.resize((width, height), Image.Resampling.LANCZOS)
@@ -709,7 +713,7 @@ class ParticleEmitter:
         additive = style["blend"] == "add"
         if style["trail"]:
             theta = math.radians(style["direction"])
-            distance = style["trail"] * size * 2 * self.raster_scale
+            distance = style["trail"] * size * 2 * raster
             # Multiple fading copies extend behind the main motion vector.
             for j in (3, 2, 1):
                 echo = alpha_scaled(tile, (0.25 / j))
@@ -719,6 +723,38 @@ class ParticleEmitter:
                 )
                 self._composite(image, echo, shifted, additive=additive)
         self._composite(image, tile, pos, additive=additive)
+
+    def draw_event_burst(self, canvas, *, seconds, event_id, now, count, point, colour=None,
+                         max_active=MAX_ACTIVE, raster_scale=1):
+        """Paint a source-time event with the existing analytic particle/stamp pipeline.
+
+        The caller owns the clock and stable event identity. This method opens no
+        inputs and creates no mutable simulation. Existing frame emission is unchanged.
+        """
+        seconds = number(seconds, "Particle event second", minimum=0, maximum=float(self.project.duration))
+        now = number(now, "Particle event sample second")
+        identity = integer(event_id, "Particle event identity", maximum=2**31-1)
+        count = integer(count, "Particle event count", maximum=512)
+        maximum = integer(max_active, "Particle event active budget", maximum=MAX_ACTIVE)
+        if not isinstance(point, (tuple,list)) or len(point) != 2:
+            raise ValueError("Particle event needs a normalized point")
+        style = dict(self.base)
+        style["emitter_x"], style["emitter_y"] = (number(v,"Particle event point",minimum=0,maximum=1) for v in point)
+        if colour is not None:
+            if not isinstance(colour,tuple) or len(colour) != 4 or any(type(c) is not int or not 0<=c<=255 for c in colour):
+                raise ValueError("Particle event colour needs four RGBA bytes")
+            style["colour"] = style["secondary_colour"] = colour
+        scale = number(raster_scale,"Particle event raster scale",minimum=.001,maximum=1024)
+        drawn = 0
+        for ordinal in range(count):
+            info = self._particle(0,ordinal,None,style,now,birth_seconds=seconds,event_identity=identity)
+            if info is None:
+                continue
+            if drawn >= maximum:
+                break
+            self._stamp(canvas,info,style,viewport_size=canvas.size,raster_scale=scale)
+            drawn += 1
+        return dict(active=drawn,identity=identity,source_seconds=seconds)
 
     def draw(self, canvas, ctx):
         self.frame_report = None

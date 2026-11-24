@@ -139,6 +139,20 @@ behaviour, selective cache reuse, exact decoded reference parity and legal
 chunk/resume output. Physical-controller acceptance remains a separate result.
 
 [Actual native views and input contract](note-visualisers.md) · [Research shortlist](note-visualiser-research.md).
-Drum lanes, pitch-class wheels, horizontal rolls and authored string/fretboards
-remain proposed follow-ups; this increment does not close the separate network,
-GPU, transport or physical-device phases of M15.5.
+
+## Arrangement-first note suite — 0.4.40 increment
+
+- [x] Horizontal labelled track/channel parts, scrolling and overview modes.
+- [x] Authored drum lanes and pad matrix, retaining zero-length note-on hits.
+- [x] Pitch-class wheel with exact retained voicing and no inferred chord labels.
+- [x] Source-bound authored string/fret/capo mapping and scrolling tablature.
+- [x] Reviewed pinned-score pages and occurrence/glyph highlighting; actual
+  VexFlow 5.11.0 engraving in the original synthetic demonstration.
+- [x] Source note-on particles through the shared native emitter engine.
+- [x] Native quality/seek/cache/worker checks, encoded reference parity and pinned
+  score staging; original native MIDI and chunk/resume qualification retained.
+
+[Actual arrangement and suite images, videos and contracts](note-suite.md).
+Acceptance still requires the exact-source mandatory CI and immutable matching
+release/registry verification. These source increments do not close separate
+network, GPU, transport or physical-device phases of M15.5.
