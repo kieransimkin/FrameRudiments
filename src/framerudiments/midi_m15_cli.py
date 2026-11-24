@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .io import sha256
 from .midi_notes import import_midi_notes
+from .note_view_dispatch import SETTINGS
 
 from .effect_graph import EffectGraph
 from .midi_control_take_m15 import MIDIControlTake
@@ -62,7 +63,7 @@ def main(argv=None):
     else:
         result = capabilities()
         result['note_visualisers'] = {'schema': 'framerudiments.note-timeline.v1',
-            'views': ['piano-roll (falling or causal rising)', 'note-highway (explicit lanes)'],
+            'views': ['piano-roll (falling or causal rising)', 'note-highway (explicit lanes)', *SETTINGS],
             'capture': 'MIDINoteCapture; same qualified MIDI input ownership',
             'messages': ['note-on/off', 'velocity-zero off', 'CC64 sustain', 'CC120/123 panic/release'],
             'smf': 'Optional notes extra; type 0/1, PPQN and native tempo map',

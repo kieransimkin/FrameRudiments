@@ -1,0 +1,146 @@
+{
+  "schema": "framerudiments.authored-score-fixture.v1",
+  "engraver": "VexFlow 5.11.0",
+  "engraver_source": "https://github.com/vexflow/vexflow",
+  "licence": "MIT; bundled Bravura font SIL Open Font License 1.1",
+  "font": "Bundled Bravura",
+  "authorship": "Original C-major two-bar demonstration; spellings and quarter durations explicitly authored; silent soundtrack",
+  "pages": [
+    {
+      "image": "page-1.png",
+      "sha256": "7e82e6dbfbec162c680c7e74441876b18a4406fedeec7fa002fed6250fbc9abb",
+      "start_seconds": 0,
+      "end_seconds": 2,
+      "glyphs": [
+        {
+          "bounds": [
+            103.63998413085938,
+            81,
+            123.43997192382812,
+            129
+          ],
+          "authored": {
+            "track": 3,
+            "key": 72,
+            "start_seconds": 0,
+            "spelling": "c/5",
+            "duration": "q"
+          }
+        },
+        {
+          "bounds": [
+            285.1899871826172,
+            76,
+            304.98997497558594,
+            124
+          ],
+          "authored": {
+            "track": 3,
+            "key": 74,
+            "start_seconds": 0.5,
+            "spelling": "d/5",
+            "duration": "q"
+          }
+        },
+        {
+          "bounds": [
+            466.739990234375,
+            71,
+            486.53997802734375,
+            119
+          ],
+          "authored": {
+            "track": 3,
+            "key": 76,
+            "start_seconds": 1,
+            "spelling": "e/5",
+            "duration": "q"
+          }
+        },
+        {
+          "bounds": [
+            648.2899932861328,
+            61,
+            668.0899810791016,
+            109
+          ],
+          "authored": {
+            "track": 3,
+            "key": 79,
+            "start_seconds": 1.5,
+            "spelling": "g/5",
+            "duration": "q"
+          }
+        }
+      ]
+    },
+    {
+      "image": "page-2.png",
+      "sha256": "18e0688bc0293edef639acedd0dc76a044dc080774f52ae720f145b1b585c2ca",
+      "start_seconds": 2,
+      "end_seconds": 4,
+      "glyphs": [
+        {
+          "bounds": [
+            103.63998413085938,
+            66,
+            123.43997192382812,
+            114
+          ],
+          "authored": {
+            "track": 3,
+            "key": 77,
+            "start_seconds": 2,
+            "spelling": "f/5",
+            "duration": "q"
+          }
+        },
+        {
+          "bounds": [
+            285.1899871826172,
+            71,
+            304.98997497558594,
+            119
+          ],
+          "authored": {
+            "track": 3,
+            "key": 76,
+            "start_seconds": 2.5,
+            "spelling": "e/5",
+            "duration": "q"
+          }
+        },
+        {
+          "bounds": [
+            466.739990234375,
+            76,
+            486.53997802734375,
+            124
+          ],
+          "authored": {
+            "track": 3,
+            "key": 74,
+            "start_seconds": 3,
+            "spelling": "d/5",
+            "duration": "q"
+          }
+        },
+        {
+          "bounds": [
+            648.2899932861328,
+            81,
+            668.0899810791016,
+            129
+          ],
+          "authored": {
+            "track": 3,
+            "key": 72,
+            "start_seconds": 3.5,
+            "spelling": "c/5",
+            "duration": "q"
+          }
+        }
+      ]
+    }
+  ]
+}

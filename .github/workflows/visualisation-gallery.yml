@@ -158,6 +158,16 @@ jobs:
             cp "_note_visualisers_proof/$view/video.mp4" "_site/note-visualisers/$view/video.mp4"
           done
           test -s _note_visualisers_proof/native-ownership.json
+      - name: Publish arrangement-first native note suite
+        run: |
+          python integration/qualify_note_suite.py --output _note_suite_proof
+          mkdir -p _site/note-suite
+          cp _note_suite_proof/index.html _note_suite_proof/comparison.png _note_suite_proof/qualification.json _site/note-suite/
+          cp _note_suite_proof/*-poster.png _site/note-suite/
+          for view in arrangement-scroll arrangement-overview drum-lanes pad-grid pitch-wheel fretboard tablature score note-impacts piano-roll rising-notes note-highway; do
+            mkdir -p "_site/note-suite/$view"
+            cp "_note_suite_proof/$view/video.mp4" "_site/note-suite/$view/video.mp4"
+          done
       - name: Validate generated site and image count
         run: |
           python - <<'PY'

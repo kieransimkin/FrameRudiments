@@ -54,6 +54,7 @@ class LayerSurfaces:
             dep = dict(geometry=geometry, config=cfg)
             kind = cfg.get('type', 'sprite')
             if kind == 'notes':
+                dep['config'] = getattr(layer, 'cache_config', cfg)
                 # Note intervals read their own pinned timeline and seconds. They
                 # do not consume lyrics, musical phase, another layer or PCM.
                 if cfg.get('labels'):

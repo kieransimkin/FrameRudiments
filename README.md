@@ -2,6 +2,12 @@
 
 **Beat-synchronised visualisation, compositing and video rendering — driven by real DanceRudiments motion and source-pinned StemLab timing.**
 
+New 0.4.40: [scrolling and overview arrangements, drums/pads, pitch wheel,
+authored fretboard/tab, reviewed score highlights and note-triggered particles](docs/note-suite.md).
+[Watch all twelve native 60 fps presentations](https://kieransimkin.github.io/FrameRudiments/note-suite/).
+
+[![Actual five-part arrangement overview](docs/media/arrangement-overview-native.png)](https://kieransimkin.github.io/FrameRudiments/note-suite/)
+
 0.4.38 adds [separate native layer caches](docs/layer-frame-cache.md):
 reuse unchanged rasters after edits, across preview/Q5 owners and ordinary renders.
 Keep an explicit persistent cache with `--layer-cache DIRECTORY`.
@@ -10,7 +16,7 @@ Keep an explicit persistent cache with `--layer-cache DIRECTORY`.
 New 0.4.39: [bottom piano keyboard, falling/rising notes and a perspective note highway](docs/note-visualisers.md),
 with pinned MIDI intervals, optional `.mid` import and qualified note capture.
 [Actual 60 fps note demonstrations](https://kieransimkin.github.io/FrameRudiments/note-visualisers/)
-· [Research and next views](docs/note-visualiser-research.md).
+· [Research and implemented views](docs/note-visualiser-research.md).
 
 Experimental 0.4.36: [capture MIDI CC/pitchbend as finite source-clocked takes](docs/midi-controls-m15.md)
 and replay through the ordinary compositor, alongside the released [OSC route](docs/osc-controls-m15.md).

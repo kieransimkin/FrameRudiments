@@ -179,3 +179,10 @@ chunks, including decoded seam verification. Render ownership is recorded from
 a measured estimate before encoding; these bounded examples stay in the active
 invocation. Real virtual-port transport, physical hardware, browser playback and
 physical display cadence remain distinct acceptance results.
+
+## Arrangement and related views (0.4.40)
+
+The shared timeline now also drives the [arrangement-first note suite](note-suite.md):
+scroll/overview parts, drums/pads, pitch wheel, authored fretboard/tab, reviewed
+score pages and shared native note particles. That guide includes actual images,
+60 fps videos, mappings and per-layer cache/preview acceptance.

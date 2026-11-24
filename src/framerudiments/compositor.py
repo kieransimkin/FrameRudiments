@@ -332,7 +332,7 @@ class Compositor:
             if cfg.get("type") == "emitter"
             else NaturalMaterialLayer(project, cfg, self.context)
             if cfg.get("type") == "material"
-            else NoteLayer(project, cfg)
+            else NoteLayer(project, cfg, self.context)
             if cfg.get("type") == "notes"
             else Sprite(project, cfg)
             for cfg in project.data.get("layers", [])
@@ -900,7 +900,7 @@ class Compositor:
         if virtual is not None:
             virtual.close()
         for layer in self.layers:
-            if isinstance(layer, (NaturalMaterialLayer, ParticleEmitter)):
+            if isinstance(layer, (NaturalMaterialLayer, ParticleEmitter, NoteLayer)):
                 layer.close()
         # Method-level lru_cache instances retain ``self`` and Pillow font
         # objects. Clear them explicitly so a staged Windows font can be

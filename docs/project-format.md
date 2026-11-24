@@ -284,7 +284,13 @@ leases and exact cleanup. See the [MIDI contract, actual frame comparison and
 ## MIDI note layers
 
 A `type: "notes"` layer consumes a hash-pinned finite note timeline through `file`.
-Its `view` is `piano-roll` or `note-highway`; normalized timing and MIDI values
+Its `view` includes `piano-roll`, `note-highway`, `arrangement`, `drum-lanes`,
+`pad-grid`, `pitch-wheel`, `fretboard`, `tablature`, `score` and `note-impacts`;
+normalized timing and MIDI values
 survive viewport quality changes. The keyboard can use falling lookahead or
 causal rising history. See the [note contract, actual native image and video](note-visualisers.md)
 for layer fields, explicit highway maps, note/CC64 semantics, SMF import and owned capture.
+
+The [arrangement and note suite](note-suite.md) defines track filters, named
+parts, authored pad/fret/glyph mappings and bounded note-on particles, with
+actual native screenshots and 60 fps demonstrations.
