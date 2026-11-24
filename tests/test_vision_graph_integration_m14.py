@@ -53,3 +53,18 @@ def test_missing_valid_layer_remains_transparent():
     result = evaluate_effect_graph(graph, None, SimpleNamespace(frame=1),
                                    Image.new("RGBA", (16, 16)), {})
     assert result.getbbox() is None
+
+
+def test_legacy_graph_does_not_require_a_prediction_clock():
+    graph = DummyGraph({"frame"})
+    original = Image.new("RGBA", (16, 16), (23, 40, 80, 255))
+    assert evaluate_effect_graph(graph, None, None, original, {}).tobytes() == original.tobytes()
+
+
+def test_vision_source_without_context_fails_before_prediction():
+    graph = DummyGraph({"vision:foreground"})
+    provider = SimpleNamespace(source_ids={"vision:foreground"},
+                               source=lambda *_: pytest.fail("Prediction started without a source clock"))
+    with pytest.raises(ValueError, match="encoded-frame context"):
+        evaluate_effect_graph(graph, None, None, Image.new("RGBA", (16, 16)), {},
+                              vision_sources=provider)

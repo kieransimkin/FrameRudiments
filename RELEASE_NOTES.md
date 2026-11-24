@@ -17,6 +17,11 @@
   separate ONNX CPU and physical-provider qualification lanes and no-skip gates.
 - Cancel superseded pull-request qualification runs without cancelling main
   or release validation, so obsolete revisions do not occupy runner capacity.
+- Preserve context-free legacy graph calls while requiring an explicit frame
+  context for opt-in vision inputs. Exercise the required native CPU libraries
+  in both PR and release lanes, align their qualified GPU boundaries, and use
+  the maintained temporary-directory runner. Retain safe feedback-state
+  traceback checks across Python's mapping implementations.
 
 The following M9–M15 source additions remain subject to their documented native,
 device, licence and perceptual acceptance boundaries. This release does not

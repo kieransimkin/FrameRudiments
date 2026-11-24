@@ -64,8 +64,10 @@ def evaluate_effect_graph(graph, controls, context, frame, surfaces: Mapping[str
     # An M11 native subframe has a higher temporary render FPS. Its model
     # prediction is defined on the encoded-frame clock, not the subframe index.
     # The explicit preview quality is copied only into private preview views.
-    vision_frame, vision_quality = context.frame, None
+    vision_frame, vision_quality = None, None
     if vision_sources is not None:
+        if context is None:
+            raise ValueError('Vision sources require an encoded-frame context')
         factor = getattr(getattr(vision_sources, 'project', None), '_time_sampling_factor', 1)
         if type(factor) is not int or factor < 1:
             raise ValueError('Invalid native temporal prediction sample factor')

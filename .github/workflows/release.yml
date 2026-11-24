@@ -43,7 +43,7 @@ jobs:
           subprocess.run(['git','merge-base','--is-ancestor','HEAD','origin/main'],check=True)
           PY
       - run: bash scripts/install_ci_render_dependencies.sh
-      - run: python -m pip install -e '.[dev]'
+      - run: python -m pip install -e '.[dev,colour_aov,timeline_otio,vision]' 'onnx>=1.17,<2'
       - run: ruff check .
       - name: Render regression suite
         env:
@@ -52,7 +52,7 @@ jobs:
         run: |
           # Required real-GPU coverage runs in validate's EGL-qualified effect-graph job.
           # Keep this build job's CPU gate aligned with the no-skip CPU matrix in ci.yml.
-          python -m pytest -q \
+          pwsh -NoLogo -NoProfile -File scripts/Invoke-Tests.ps1 -Python python -q \
             --ignore=tests/test_effect_graph_gpu_parity.py \
             --ignore=tests/test_effect_graph_gpu_spectral.py \
             --ignore=tests/test_effect_graph_gpu_transport.py \
@@ -61,6 +61,10 @@ jobs:
             --ignore=tests/test_effect_graph_gpu_resident_m87_egl.py \
             --ignore=tests/test_effect_graph_gpu_kernels.py \
             --ignore=tests/test_effect_graph_gpu_spatial_egl.py \
+            --ignore=tests/test_gl_transitions_egl.py \
+            --ignore=tests/test_gl_multipass_egl.py \
+            --ignore=tests/test_gl_goldens_egl.py \
+            --ignore=tests/test_gpu_spatial_aov_m12.py \
             --junitxml=test-results.xml
           python -c "import xml.etree.ElementTree as E; r=E.parse('test-results.xml'); assert not r.findall('.//skipped')"
       - run: python -m build && python -m twine check --strict dist/*
