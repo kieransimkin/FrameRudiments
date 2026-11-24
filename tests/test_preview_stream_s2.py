@@ -1,5 +1,5 @@
 """S2 non-GPU regression: latest cursor wins, URI pins and loopback SSE."""
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import ThreadingHTTPServer
 from io import BytesIO
 from threading import Event, Thread
 from time import monotonic
@@ -11,10 +11,11 @@ import json
 from PIL import Image
 import pytest
 
+from test_authoring_preview import author
 from framerudiments.preview_frame_cache import PreviewFrameCache
 from framerudiments.preview_stream_contract import QualityProfile, Segment
 from framerudiments.preview_stream_s2 import (
-    PreviewStreamAPI, SeekStream, get_route, post_route,
+    PreviewStreamAPI, SeekStream,
 )
 
 
@@ -110,25 +111,11 @@ def test_loopback_sse_content_pin_origin_and_close(tmp_path):
     api = PreviewStreamAPI(tmp_path/'project.json', lambda _orig, _draft:None,
                            render, cache_root=tmp_path/'cache',
                            project_loader=lambda _path:TestProject())
-    class Handler(BaseHTTPRequestHandler):
+    # Exercise the production response/close path: its bounded rejection linger
+    # prevents a Windows reset from erasing the expected origin-denial403.
+    class Handler(author.AuthoringHandler):
         def log_message(self, *_args):
             pass
-        def _origin_ok(self):
-            return self.headers.get('Origin') == f'http://127.0.0.1:{self.server.server_port}'
-        def _send(self, status, data, mime):
-            self.send_response(status)
-            self.send_header('Content-Type', mime)
-            self.send_header('Content-Length', str(len(data)))
-            self.end_headers()
-            self.wfile.write(data)
-        def _json(self, status, body):
-            self._send(status, json.dumps(body).encode(), 'application/json')
-        def do_GET(self):
-            if not get_route(self):
-                self._json(404, {})
-        def do_POST(self):
-            if not post_route(self):
-                self._json(404, {})
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
     server.stream_api = api
     worker = Thread(target=server.serve_forever, daemon=True)

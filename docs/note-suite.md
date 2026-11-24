@@ -10,7 +10,8 @@ retained as authored metadata; no instrument classifier is involved.
 
 *Actual native output from an original, silent, authored five-part MIDI fixture.
 [Play the arrangement overview and scrolling demonstration at 60 fps](https://kieransimkin.github.io/FrameRudiments/note-suite/).
-The gallery also demonstrates every view below. These are encoded renderer
+The gallery also demonstrates every view below. Its players reserve a separate
+control band below the picture, keeping all arrangement rows visible on phones. These are encoded renderer
 outputs, rather than interface mockups or recordings of a physical performance.*
 
 ## Shared input and composition
