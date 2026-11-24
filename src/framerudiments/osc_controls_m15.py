@@ -28,7 +28,7 @@ def capabilities():
 class OSCControlCapture:
     """Only the caller's existing native transport supplies media frame positions."""
     def __init__(self, project, bindings, *, peer, bind=('127.0.0.1', 0), lease_frames=60):
-        if project.data.get('osc_control_take') is not None:
+        if any(key in project.data for key in ('osc_control_take', 'midi_control_take')):
             raise ValueError('Capture the source project before attaching an OSC take')
         self.project = project
         self.graph = EffectGraph(project.effect_graph_spec) if project.effect_graph_spec else None

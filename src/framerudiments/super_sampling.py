@@ -227,6 +227,8 @@ def _virtual_project(original, factor):
     virtual._time_sampling_factor = factor
     if getattr(original, "osc_control_take_ref", None) is not None:
         virtual._osc_control_source_project = getattr(original, "_osc_control_source_project", original)
+    if getattr(original, "midi_control_take_ref", None) is not None:
+        virtual._midi_control_source_project = getattr(original, "_midi_control_source_project", original)
     _interpolate_native_motion(virtual.data.get("layers", []))
     _interpolate_native_motion(virtual.data.get("word_indicator", {}))
     _interpolate_native_motion(virtual.data.get("post_effects", {}))

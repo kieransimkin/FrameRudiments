@@ -90,10 +90,24 @@ Reference: [M15.4 OpenUSD scene and AOV contract](usd-m15.md).
   identity and holds controls across native temporal subframes. Real UDP,
   packet rejection, closure, input-pin and native render/decode qualification.
 Required qualification uses exact-source CI and immutable 0.4.35 publication.
-LAN, MIDI, bundled OSC/timetags and the transport/device work below remain
-separate increments. The workflow run and release receipts establish delivery.
+LAN, bundled OSC/timetags and the transport/device work below remain
+separate increments. The MIDI increment is recorded below. The workflow run and release receipts establish delivery.
 
 Reference: [M15.5 OSC capture and replay contract](osc-controls-m15.md).
+
+- [x] Next control milestone (0.4.36): explicit MIDI CC/pitchbend capture,
+  native numeric mapping and source-frame leases, closed finite hash-pinned
+  takes and ordinary device-free replay using the shared numeric take engine.
+- [x] Capture host admission uses official Python 3.11/3.12 native binaries;
+  metadata inspection and replay stay native-import-free on Python 3.13+.
+- [x] Required native RtMidi/JACK virtual-port CI, exact close/delete and owned
+  dummy-server cleanup, native 60 fps exports/full decode and Windows binary
+  inspection. Physical-controller acceptance remains separate.
+
+MIDI delivery requires exact-source checks and immutable 0.4.36 publication;
+the release and qualification receipts establish the completed software state.
+This does not complete all M15.5 network/device phases.
+Reference: [MIDI contract, actual frame and native demonstration](midi-controls-m15.md).
 
 
 - Transport profiles for explicit, consented local-network endpoints (GStreamer,

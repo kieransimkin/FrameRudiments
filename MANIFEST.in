@@ -16,6 +16,6 @@ recursive-include authoring/integration *.ts
 prune models
 prune visualiser-analysis
 
-recursive-include scripts *.py *.ps1
+recursive-include scripts *.py *.ps1 *.sh
 recursive-include src/framerudiments/sprite_assets *.png *.json
 recursive-include src/framerudiments/fire_assets *.png *.json *.md

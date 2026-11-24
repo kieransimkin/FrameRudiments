@@ -2,10 +2,11 @@
 
 **Beat-synchronised visualisation, compositing and video rendering — driven by real DanceRudiments motion and source-pinned StemLab timing.**
 
-Experimental 0.4.35: [capture finite OSC numeric takes and replay them through
-the native source-clocked compositor](docs/osc-controls-m15.md), including an
-[actual 60 fps demonstration](https://kieransimkin.github.io/FrameRudiments/m15-5/).
-Ordinary rendering remains network-free.
+Experimental 0.4.36: [capture MIDI CC/pitchbend as finite source-clocked takes](docs/midi-controls-m15.md)
+and replay through the ordinary compositor, alongside the released [OSC route](docs/osc-controls-m15.md).
+Native MIDI capture uses an explicitly selected input on qualified Python 3.11/3.12 hosts;
+ordinary rendering, including Python 3.13, opens no MIDI input or network socket.
+[Actual 60 fps MIDI demonstration](https://kieransimkin.github.io/FrameRudiments/m15-5-midi/).
 
 Create procedural music visuals, character composites, animated typography, particles, fractals, spatial effects and transitions. Preview the same render pipeline on the [CI-generated demo site](https://kieransimkin.github.io/FrameRudiments/).
 

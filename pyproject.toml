@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "framerudiments"
-version = "0.4.35"
+version = "0.4.36"
 description = "Deterministic Shorts and lyric visualisers using DanceRudiments and StemLab evidence."
 requires-python = ">=3.11"
 readme = "README.md"
@@ -13,6 +13,7 @@ authors = [{name = "Kieran Simkin"}]
 dependencies = ["Pillow>=10", "dancerudiments>=0.3.0,<0.4"]
 
 [project.optional-dependencies]
+midi = ["python-rtmidi==1.5.8; python_version < '3.13'"]
 projectm = ["glfw==2.10.2", "PyOpenGL==3.1.10", "numpy>=1.26"]
 gpu = ["moderngl>=5.11,<6", "numpy>=1.26"]
 materials = ["numpy>=1.26"]
@@ -37,6 +38,7 @@ framerudiments-gstreamer = "framerudiments.gstreamer_m15_cli:main"
 framerudiments-openfx = "framerudiments.openfx_m15_cli:main"
 framerudiments-usd = "framerudiments.usd_m15_cli:main"
 framerudiments-osc = "framerudiments.osc_m15_cli:main"
+framerudiments-midi = "framerudiments.midi_m15_cli:main"
 framerudiments-vision = "framerudiments.vision_m14_cli:main"
 
 [tool.setuptools.packages.find]

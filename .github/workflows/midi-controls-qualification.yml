@@ -1,0 +1,57 @@
+name: Native MIDI controls qualification
+on:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  midi-loopback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install bounded native render and JACK dummy dependencies
+        timeout-minutes: 50
+        run: bash scripts/install_ci_render_dependencies.sh --midi
+      - name: Install official MIDI binary and source tooling
+        run: python -m pip install --only-binary python-rtmidi -e '.[dev,midi]'
+      - name: Verify focused MIDI and released OSC compatibility
+        run: >-
+          pwsh -NoLogo -NoProfile -File scripts/Invoke-Tests.ps1 -Python python -q
+          tests/test_midi_controls_m15.py tests/test_osc_controls_m15.py --junitxml=midi-tests.xml
+      - name: Require all MIDI/OSC cases and native port qualification
+        run: |
+          python -c "import xml.etree.ElementTree as E; assert not E.parse('midi-tests.xml').findall('.//skipped')"
+          python integration/qualify_midi_controls_m15.py --output midi-controls-qualification
+      - name: Retain native MIDI take, render and cleanup evidence
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: midi-controls-native-${{ matrix.python }}
+          path: |
+            midi-controls-qualification/
+            midi-tests.xml
+          if-no-files-found: error
+  midi-windows-binary:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install --only-binary python-rtmidi -e '.[midi]'
+      - name: Check actual native binary and selected Windows API without opening a port
+        run: >-
+          python -c "import rtmidi; assert rtmidi.API_WINDOWS_MM in rtmidi.get_compiled_api();
+          from framerudiments.midi_protocol_m15 import input_ports;
+          result=input_ports('windows-mm'); assert result['connected'] is False; print(result)"

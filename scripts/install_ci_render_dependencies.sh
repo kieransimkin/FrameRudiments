@@ -4,8 +4,10 @@ set -euo pipefail
 packages=(ffmpeg fonts-dejavu-core)
 if [[ "${1:-}" == "--gpu" ]]; then
   packages+=(libgl1-mesa-dev libgl1-mesa-dri libegl1 libglfw3 xvfb xauth ninja-build)
+elif [[ "${1:-}" == "--midi" ]]; then
+  packages+=(jackd2)
 elif [[ $# -ne 0 ]]; then
-  echo "usage: $0 [--gpu]" >&2
+  echo "usage: $0 [--gpu|--midi]" >&2
   exit 2
 fi
 
