@@ -13,6 +13,10 @@
 - Replace a superseded single-sample vision test with an actual deterministic
   compositor check for the temporal sampling supported by the current source.
 - Remove an unused test import which blocked the full platform CI matrices.
+- Route the complete visualiser suites to their GLX host while retaining the
+  separate ONNX CPU and physical-provider qualification lanes and no-skip gates.
+- Cancel superseded pull-request qualification runs without cancelling main
+  or release validation, so obsolete revisions do not occupy runner capacity.
 
 The following M9–M15 source additions remain subject to their documented native,
 device, licence and perceptual acceptance boundaries. This release does not

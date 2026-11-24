@@ -20,7 +20,7 @@ and cross-vendor acceptance remain pending.
 
 ## Upgrade qualification continuation
 
-The 0.4.34 candidate reconciles the newer M9–M15 source with release checks:
+Version 0.4.34 reconciles the newer M9–M15 source with release checks:
 native cancellable-preview instrumentation, deterministic obsolete-result
 qualification, sample-aligned OTIO audio, supported temporal vision sampling
 and the actual three-part OpenUSD runtime version. It also repairs the OTIO

@@ -7,6 +7,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   patch-contract:
     name: Verified git-apply patch
@@ -192,11 +195,16 @@ jobs:
             integration/test_fire_volume_gpu.py \
             --junitxml=gpu-mesh-results.xml 2>&1 | tee gpu-mesh-console.log
       - name: Butterchurn, projectM, profiling and encoded QA (fresh GLX session)
+        # ONNX CPU and physical-provider tests have independent native lanes.
+        # Collect the complete visualiser suites here and keep no-skip strict.
         shell: bash
         run: |
           set -euo pipefail
           xvfb-run -a pwsh -NoLogo -NoProfile -File scripts/Invoke-Tests.ps1 -Python python -vv -s \
-            integration --ignore=integration/test_music_spatial_gpu.py --ignore=integration/test_fire_volume_gpu.py \
+            integration/test_visualisers_gpu.py \
+            integration/test_preview_stateful_gpu.py \
+            integration/test_preset_analysis.py \
+            integration/test_released_preset_analysis.py \
             --junitxml=gpu-results.xml 2>&1 | tee gpu-console.log
       - name: Verify both GPU suites ran without skipped tests
         run: |
