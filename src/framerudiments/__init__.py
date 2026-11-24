@@ -1,11 +1,13 @@
 """Offline frame composition on a traceable musical clock."""
 
-__version__ = "0.4.38"
+__version__ = "0.4.39"
 
 from .project import Project
 from .render import render, preflight
 from .compositor import Compositor
 from .layer_frame_cache import LayerFrameCache
+from .note_timeline import NoteTimeline
+from .midi_notes import MIDINoteCapture, import_midi_notes
 from .natural_materials import NaturalMaterial
 from .fire_renderer import FireRenderer
 from .fractals import (
@@ -30,6 +32,9 @@ __all__ = [
     "Project",
     "Compositor",
     "LayerFrameCache",
+    "NoteTimeline",
+    "MIDINoteCapture",
+    "import_midi_notes",
     "render",
     "preflight",
     "__version__",

@@ -262,7 +262,12 @@ class Project:
 
     def ref(self, data):
         result = file_ref(data, self.base)
-        self.inputs.append(result)
+        # Reopening a compositor must not change a prepared/resumable plan.
+        # file_ref still verifies the bytes on every admission, even for a pin
+        # already present in this immutable programme's input ledger.
+        if not any(ref['path'] == result['path'] and ref['sha256'] == result['sha256']
+                   for ref in self.inputs):
+            self.inputs.append(result)
         return result
 
     def ledger(self, events):

@@ -78,16 +78,16 @@ def counted(compositor):
     return calls
 
 
-def decoded(video, ffmpeg, ffprobe):
+def decoded(video, ffmpeg, ffprobe, *, frames=240, min_unique=180):
     stream = next(s for s in probe(video, ffprobe, count=True)['streams'] if s['codec_type'] == 'video')
     assert stream['r_frame_rate'] == stream['avg_frame_rate'] == '60/1'
-    assert int(stream['nb_read_frames']) == 240
+    assert int(stream['nb_read_frames']) == frames
     rows = subprocess.check_output([ffmpeg, '-v', 'error', '-i', str(video),
         '-map', '0:v:0', '-f', 'framehash', '-hash', 'sha256', '-'], encoding='utf-8')
     hashes = [line.rsplit(',', 1)[1].strip() for line in rows.splitlines() if line and not line.startswith('#')]
-    assert len(hashes) == 240 and len(set(hashes)) >= 180
+    assert len(hashes) == frames and len(set(hashes)) >= min_unique
     assert all(a != b for a, b in zip(hashes, hashes[1:]))
-    return rows, dict(frames=240, fps='60/1', unique_frames=len(set(hashes)),
+    return rows, dict(frames=frames, fps='60/1', unique_frames=len(set(hashes)),
                      adjacent_duplicates=0, sha256=sha256(video.read_bytes()).hexdigest())
 
 
@@ -235,7 +235,7 @@ Only the star's size, position and opacity change. The trace and particle layers
 <img src="comparison.png" alt="Actual original and edited compositor frames with measured per-layer native redraw counts">
 <p>During 32 checked edited frames, native redraws were star 32, trace 0 and sparks 0. A fresh cache owner then reused all three layers. These counters come from actual native calls, not a UI simulation.</p>
 <p>The independent final-frame cache and all source/quality/generation checks remain in place. Masks, animations and graph effects recompose from the cached raw layers. Timings are specific to the measured host, not a universal frame-rate claim.</p>
-<p><a href="qualification.json">Native calls, pixel proofs and timing measurements</a> · <a href="edited-framehash.txt">Full decoded edited frame hashes</a> · <a href="https://github.com/kieransimkin/FrameRudiments/blob/main/docs/layer-frame-cache.md">Cache guide</a> · <a href="../">Gallery</a></p>
+<p><a href="qualification.json">Native calls, pixel proofs and timing measurements</a> ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· <a href="edited-framehash.txt">Full decoded edited frame hashes</a> ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· <a href="https://github.com/kieransimkin/FrameRudiments/blob/main/docs/layer-frame-cache.md">Cache guide</a> ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â· <a href="../">Gallery</a></p>
 <script>
 document.querySelectorAll('button.picture').forEach(function(button){
 button.addEventListener('click',function(){var video=document.getElementById(button.dataset.video);if(video.paused){video.play()}else{video.pause()}});

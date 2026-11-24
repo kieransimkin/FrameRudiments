@@ -147,6 +147,17 @@ jobs:
           python integration/qualify_midi_controls_m15.py --output _site/m15-5-midi
           test -s _site/m15-5-midi/index.html && test -s _site/m15-5-midi/render/video.mp4
           test -s _site/m15-5-midi/native-ownership.json
+      - name: Publish native note keyboard and highway demonstration
+        run: |
+          python integration/qualify_note_visualisers.py --native-midi --output _note_visualisers_proof
+          mkdir -p _site/note-visualisers
+          cp _note_visualisers_proof/index.html _note_visualisers_proof/comparison.png _note_visualisers_proof/qualification.json _site/note-visualisers/
+          cp _note_visualisers_proof/*-poster.png _site/note-visualisers/
+          for view in piano-roll rising-notes note-highway; do
+            mkdir -p "_site/note-visualisers/$view"
+            cp "_note_visualisers_proof/$view/video.mp4" "_site/note-visualisers/$view/video.mp4"
+          done
+          test -s _note_visualisers_proof/native-ownership.json
       - name: Validate generated site and image count
         run: |
           python - <<'PY'

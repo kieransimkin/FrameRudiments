@@ -138,17 +138,20 @@ def test_context_cleanup_runs_on_worker_and_closed_frame_is_never_published(tmp_
     assert cache.get(4) is None
 
 
-def test_rapid_adaptive_seek_series_discards_outdated_samples(tmp_path):
+@pytest.mark.parametrize("service_ms", [1, 300])
+def test_rapid_adaptive_seek_series_discards_outdated_samples(tmp_path, service_ms):
     cache, p = store(tmp_path)
     started, release = Event(), Event()
     calls = []
+    clock = Clock()
     def render(n, tier):
         calls.append(n)
         if n == 1:
             started.set()
             assert release.wait(3)
+        clock.advance(service_ms)
         return png((640, 360), n)
-    stream = SeekStream(cache, render, 1001, capabilities=profile_capabilities(p))
+    stream = SeekStream(cache, render, 1001, capabilities=profile_capabilities(p), clock=clock)
     try:
         stream.command('seek', sequence=1, frame=1)
         assert started.wait(2)
@@ -157,7 +160,15 @@ def test_rapid_adaptive_seek_series_discards_outdated_samples(tmp_path):
         release.set()
         assert ready(stream, 1001)['frame'] == 0
         assert calls == [1, 0]
-        assert stream.controller.snapshot()['samples'] == 1
+        snapshot = stream.controller.snapshot()
+        # A valid catastrophic sample changes profile and clears that profile's
+        # timing window. Lifetime acceptance still counts exactly one current
+        # frame; the superseded frame must never train the controller.
+        assert snapshot['fresh_rendered'] == 1
+        assert snapshot['stale_samples'] == 0
+        assert snapshot['samples'] == (0 if service_ms >= 250 else 1)
+        assert snapshot['profile'] == ('Q4' if service_ms >= 250 else 'Q5')
+        assert cache.get(0).quality_rank == 5
         assert cache.get(1) is None
     finally:
         release.set()

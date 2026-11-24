@@ -24,11 +24,13 @@ jobs:
       - name: Verify focused MIDI and released OSC compatibility
         run: >-
           pwsh -NoLogo -NoProfile -File scripts/Invoke-Tests.ps1 -Python python -q
-          tests/test_midi_controls_m15.py tests/test_osc_controls_m15.py --junitxml=midi-tests.xml
+          tests/test_midi_controls_m15.py tests/test_osc_controls_m15.py
+          tests/test_note_visualisers.py tests/test_note_preview.py --junitxml=midi-tests.xml
       - name: Require all MIDI/OSC cases and native port qualification
         run: |
           python -c "import xml.etree.ElementTree as E; assert not E.parse('midi-tests.xml').findall('.//skipped')"
           python integration/qualify_midi_controls_m15.py --output midi-controls-qualification
+          python integration/qualify_note_visualisers.py --native-midi --output note-visualisers-qualification
       - name: Retain native MIDI take, render and cleanup evidence
         if: always()
         uses: actions/upload-artifact@v6
@@ -36,6 +38,7 @@ jobs:
           name: midi-controls-native-${{ matrix.python }}
           path: |
             midi-controls-qualification/
+            note-visualisers-qualification/
             midi-tests.xml
           if-no-files-found: error
   midi-windows-binary:
