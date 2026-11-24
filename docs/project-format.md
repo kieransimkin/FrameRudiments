@@ -267,3 +267,15 @@ complete closed numeric OSC take. It requires effect_graph, joins the canonical
 input ledger and validates the source audio/slice/repeats, clock, FPS, graph and
 native bindings before replay. It opens no connection. See the
 [OSC contract, actual frame comparison and 60 fps demo](osc-controls-m15.md).
+
+
+## Optional captured MIDI controls (0.4.36)
+
+The optional `midi_control_take: {path, sha256}` pins a closed finite numeric
+MIDI take and requires `effect_graph`. It joins the ordinary input ledger and
+replays without importing MIDI or opening a port, including on Python 3.13.
+Use one recorded take per project: MIDI or OSC. Native motion bindings can
+still target other numeric properties. Capture uses an explicit API/port on a
+qualified Python 3.11/3.12 host, with bounded CC/pitchbend mappings, source-frame
+leases and exact cleanup. See the [MIDI contract, actual frame comparison and
+60 fps native demonstration](midi-controls-m15.md).

@@ -46,6 +46,7 @@ class Project:
                 "effect_graph",
                 "effect_graph_controls",
                 "osc_control_take",
+                "midi_control_take",
                 "effect_graph_backend",
                 "vision_sources",
                 "stemlab_loop",
@@ -246,6 +247,13 @@ class Project:
             parser = parse_cue if Path(ref["path"]).suffix.lower() == ".cue" else parse_lrc
             events = parser(ref["path"]) if parser is parse_cue else parser(ref["path"], lyrics=False)
             self.cues = self.ledger(events)
+        if 'osc_control_take' in data and 'midi_control_take' in data:
+            raise ValueError('Attach one finite control take per project: OSC or MIDI')
+        self.midi_control_take_ref = None
+        if 'midi_control_take' in data:
+            from .midi_control_take_m15 import prepare_take_reference as prepare_midi_take
+
+            self.midi_control_take_ref = prepare_midi_take(self, data['midi_control_take'])
         self.osc_control_take_ref = None
         if "osc_control_take" in data:
             from .osc_control_take_m15 import prepare_take_reference
@@ -344,6 +352,7 @@ class Project:
             **({"effect_graph_backend": self.data["effect_graph_backend"]}
                if "effect_graph_backend" in self.data else {}),
             **({"osc_control_take": self.osc_control_take_ref} if self.osc_control_take_ref else {}),
+            **({"midi_control_take": self.midi_control_take_ref} if self.midi_control_take_ref else {}),
             render_quality=self.output_quality.evidence,
             **(
                 {"visualiser_routing": self.data["visualiser_routing"]}

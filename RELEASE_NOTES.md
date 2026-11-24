@@ -1,3 +1,22 @@
+# FrameRudiments 0.4.36 — finite source-clocked MIDI controls
+
+- Add opt-in MIDI 1.0 CC 0..119 and 14-bit pitchbend capture with explicit API,
+  exact input name, native numeric endpoints and bounded queues/polls. Use only
+  the existing media owner's source frames, source seconds and continuous beat.
+- Close/delete the owned native input before freezing finite hash-pinned takes.
+  Replay through ordinary projects, plan, preflight, render and input checks;
+  preserve lease expiry, random seek and native fractional shutter clocks.
+- Share finite numeric take validation, source pins, replay and atomic storage
+  with the released OSC route, retaining its v1 schema and exact pinned bytes.
+- Keep inspection metadata-only. Use optional official Python 3.11/3.12 RtMidi
+  binaries for capture; reject unqualified 3.13+ native entry before import.
+  Ordinary 3.13 replay has no MIDI dependency. A local 3.13 source build failed
+  native import, so automatic source builds are not a supported capture route.
+- Add required native JACK virtual-port qualification with an owned dummy
+  server, Windows native binary/closed inspection and a full-decoded 60 fps
+  demonstration. Physical controllers and cross-platform pixel parity remain
+  separate acceptance, as do remaining M15.5 LAN and GPU-device phases.
+
 # FrameRudiments 0.4.35 — bounded CI setup and source-clocked OSC takes
 
 - Give native visualiser and software-EGL preview CI a bounded 50-minute

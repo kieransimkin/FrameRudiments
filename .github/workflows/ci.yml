@@ -143,6 +143,9 @@ jobs:
       - run: python -m build
       - run: python -m twine check --strict dist/*
 
+  midi-controls-qualification:
+    uses: ./.github/workflows/midi-controls-qualification.yml
+
   effect-graph-parity:
     uses: ./.github/workflows/effect-graph-gpu.yml
 

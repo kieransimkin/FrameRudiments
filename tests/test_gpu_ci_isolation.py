@@ -97,6 +97,7 @@ def test_release_cpu_gate_matches_the_validated_native_dependency_boundary():
 @pytest.mark.parametrize(("workflow_name", "job", "step"), [
     ("ci.yml", "visualiser-acceptance", "Native and headless rendering dependencies"),
     ("preview-stream-qualification.yml", "native-gpu", "Native GPU dependencies"),
+    ("midi-controls-qualification.yml", "midi-loopback", "Install bounded native render and JACK dummy dependencies"),
 ])
 def test_visualiser_setup_ceiling_covers_bounded_installer(workflow_name, job, step):
     """Archive retries must not consume the GPU qualification job's test budget."""
