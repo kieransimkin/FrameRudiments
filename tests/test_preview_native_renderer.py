@@ -44,8 +44,9 @@ def native_doubles(monkeypatch, tmp_path):
             return 2 + n / 30
     instances, samples = [], []
     class Compositor:
-        def __init__(self, project):
+        def __init__(self, project, *, layer_cache):
             self.project, self.closed = project, False
+            self.layer_cache = layer_cache
             instances.append(self)
         def frame(self, n, apply_quality=True):
             assert not self.closed and apply_quality is True
@@ -76,6 +77,8 @@ def test_compositor_receives_reduced_canvas_and_preserves_frame_clock(native_dou
                 assert image.size == size and image.getpixel((0, 0)) == (frame, 2, 3, 255)
             assert fixture.samples[-1] == (frame, *size, 60, 1+(frame/60)%1, 2+frame/30)
         assert len(fixture.instances) == 3  # Same-tier arbitrary seeks reuse the native compositor.
+        assert renderer.layer_cache is not None
+        assert all(c.layer_cache is renderer.layer_cache for c in fixture.instances)
         assert all(c.closed for c in fixture.instances[:-1])
         assert renderer.project.data == before
         assert fixture.document == before

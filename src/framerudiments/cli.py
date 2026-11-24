@@ -314,13 +314,14 @@ def main(argv=None):
                 if args.command == "render"
                 else {"max_frames": args.max_frames}
             )
+            if args.layer_cache is not None:
+                extra['layer_cache'] = args.layer_cache
             result = runner(
                 args.project,
                 args.output,
                 ffmpeg=args.ffmpeg,
                 ffprobe=args.ffprobe,
                 progress_interval_seconds=args.progress_seconds,
-                layer_cache=args.layer_cache,
                 **extra,
             )
             print(json.dumps({"state": result["state"], "frames": result["frames"], "output": args.output}))
