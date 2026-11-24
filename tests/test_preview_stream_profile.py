@@ -41,14 +41,14 @@ def test_native_profile_exercises_stream_refinement_edit_quota_and_private_artif
         return path, data
     monkeypatch.setattr(profile, 'fixture', private_metadata_fixture)
     if slow_first_frame:
-        original_render = profile.MeasuredNativeRenderer.__call__
+        original_render = profile.MeasuredNativeRenderer.render_cancellable
         def delayed_first_frame(renderer, *args, **kwargs):
             result = original_render(renderer, *args, **kwargs)
             if not getattr(renderer, '_test_first_frame_delayed', False):
                 renderer._test_first_frame_delayed = True
                 sleep(.3)
             return result
-        monkeypatch.setattr(profile.MeasuredNativeRenderer, '__call__', delayed_first_frame)
+        monkeypatch.setattr(profile.MeasuredNativeRenderer, 'render_cancellable', delayed_first_frame)
     output = tmp_path/'qualification'
     report = profile.run_profile(output, preset='smoke', max_seconds=120)
     assert report['status'] == 'passed'

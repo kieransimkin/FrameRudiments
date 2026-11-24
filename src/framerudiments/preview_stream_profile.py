@@ -21,6 +21,7 @@ import random
 import shutil
 import subprocess
 import tempfile
+from threading import Event
 from time import monotonic, process_time, sleep
 import wave
 
@@ -190,14 +191,15 @@ class MeasuredNativeRenderer(NativePreviewRenderer):
         self.delay_ms = delay_ms
         self.allocation_failures = allocation_failures
         self.gpu_observations = []
+        self.result_gate = None
 
-    def __call__(self, frame, profile_id):
+    def render_cancellable(self, frame, profile_id, cancelled, progress=None):
         if self.allocation_failures:
             self.allocation_failures -= 1
             raise MemoryError('injected qualification allocation pressure')
         if self.delay_ms:
             sleep(self.delay_ms/1000)
-        png = super().__call__(frame, profile_id)
+        png = super().render_cancellable(frame, profile_id, cancelled, progress)
         gpu = self.compositor.effect_graph_gpu
         if gpu is not None:
             transport = {k: v for k, v in gpu.last_transport.items()
@@ -213,6 +215,13 @@ class MeasuredNativeRenderer(NativePreviewRenderer):
             if len(self.gpu_observations) == 128:
                 self.gpu_observations.pop(0)
             self.gpu_observations.append(observation)
+        gate = self.result_gate
+        if gate is not None and gate[0] == frame:
+            # Qualification-only delivery pressure: the real native PNG exists,
+            # but its stream publication waits for newer cursor commands.
+            gate[1].set()
+            if not gate[2].wait(10):
+                raise ProfileFailure('inflight_result_gate_deadline_exceeded')
         return png
 
 
@@ -318,14 +327,20 @@ class NativeRun:
         return self.receive(self.request_sequence, frames[-1], started, 'latest_intent_burst')
 
     def inflight_burst(self, frames):
-        """Supersede a confirmed active native render, then its pending cursor."""
+        """Supersede a real completed PNG before its queued publication."""
         self.request_sequence += 1
         started = monotonic()
-        self.stream.command('seek', sequence=self.request_sequence, frame=frames[0])
-        _wait(self.stream, lambda: self.stream.foreground_active, self.deadline)
-        for frame in frames[1:]:
-            self.request_sequence += 1
-            self.stream.command('seek', sequence=self.request_sequence, frame=frame)
+        ready, release = Event(), Event()
+        self.stream.renderer.result_gate = (frames[0], ready, release)
+        try:
+            self.stream.command('seek', sequence=self.request_sequence, frame=frames[0])
+            _wait(self.stream, ready.is_set, self.deadline)
+            for frame in frames[1:]:
+                self.request_sequence += 1
+                self.stream.command('seek', sequence=self.request_sequence, frame=frame)
+        finally:
+            release.set()
+            self.stream.renderer.result_gate = None
         return self.receive(self.request_sequence, frames[-1], started, 'inflight_latest_intent_burst')
 
     def paused_q5(self, frame):

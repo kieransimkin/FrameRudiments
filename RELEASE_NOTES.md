@@ -1,4 +1,24 @@
-# FrameRudiments M11.3 native temporal effects candidate (unreleased)
+# FrameRudiments 0.4.34 — qualify the current upgrade source
+
+- Restore preview qualification on the shipping cancellable native renderer.
+  Injected service/allocation pressure and GPU observations now exercise that
+  entry point. A bounded, explicitly injected post-render barrier makes the
+  obsolete-result case reproducible without racing native execution.
+- Correct the OpenUSD native version gate to compare its actual three-part
+  `(0, year, month)` API version. Preserve the required native dependency and
+  EXR checks.
+- Use an exactly sample-aligned 16 kHz audio fixture for the 60 fps OTIO
+  roundtrip, and verify its 53,600-sample duration. Fractional source-frame
+  durations still fail admission.
+- Replace a superseded single-sample vision test with an actual deterministic
+  compositor check for the temporal sampling supported by the current source.
+- Remove an unused test import which blocked the full platform CI matrices.
+
+The following M9–M15 source additions remain subject to their documented native,
+device, licence and perceptual acceptance boundaries. This release does not
+assert physical AMD/Intel, capture-device, RTSP or third-party plugin acceptance.
+
+# FrameRudiments M11.3 native temporal effects candidate
 
 - Add opt-in `post_effects.temporal_fx` with deterministic rational time remap,
   bounded motion echoes, observed native-frame directional blur and x/y slit scan.
