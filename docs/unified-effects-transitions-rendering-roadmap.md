@@ -1,6 +1,6 @@
 # FrameRudiments unified effect graph, transitions and rendering adapters — implementation roadmap
 
-**Version:** 1.41 — 18 November 2026
+**Version:** 1.42 — 24 November 2026
 
 M8.8 shipped in 0.4.21. The M8.9 spatial warp increment adds seven GPU warp modes
 in 0.4.26 with CPU reference comparisons and a required Mesa/EGL parity gate.
@@ -17,6 +17,21 @@ and cross-vendor acceptance remain pending.
 **Owner:** FrameRudiments / DanceFlow ecosystem.
 **Baseline:** `framerudiments.project.v1`, `effect_graph`, `effect_graph_controls`, existing compositor and native DanceRudiment modulation.
 **Related:** [effect-graph-implementation-plan.md](effect-graph-implementation-plan.md), [effect-graph-design.md](effect-graph-design.md), [effect-graph-matte-amendment.md](effect-graph-matte-amendment.md), [effect-graph-phase-v11.md](effect-graph-phase-v11.md), [project-format.md](project-format.md), [scoped-post-effects.md](scoped-post-effects.md).
+
+## Upgrade qualification continuation
+
+The 0.4.34 candidate reconciles the newer M9–M15 source with release checks:
+native cancellable-preview instrumentation, deterministic obsolete-result
+qualification, sample-aligned OTIO audio, supported temporal vision sampling
+and the actual three-part OpenUSD runtime version. It also repairs the OTIO
+verification CLI invocation and enables Ubuntu's official FFmpeg component in
+the hosted dependency installer. See [preview qualification](preview-qualification-s7.md)
+and [PR #52](https://github.com/kieransimkin/FrameRudiments/pull/52).
+
+Full platform and native-adapter CI, package admission, installed-wheel smoke,
+immutable release and registry readback remain separate gates. M15.5 remains
+the next implementation phase; physical-device, third-party-plugin and
+cross-vendor acceptance is not inferred from these repairs.
 
 ## Scope, principles and non-goals
 
