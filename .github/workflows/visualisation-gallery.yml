@@ -130,6 +130,13 @@ jobs:
           python integration/qualify_osc_controls_m15.py --output _site/m15-5
           test -s _site/m15-5/index.html && test -s _site/m15-5/render/video.mp4
           test -s _site/m15-5/qualification.json
+      - name: Qualify native per-layer reuse and encoded output parity
+        run: |
+          python integration/qualify_layer_cache.py --output _layer_cache_proof
+          mkdir -p _site/layer-cache/base _site/layer-cache/edited
+          cp _layer_cache_proof/index.html _layer_cache_proof/comparison.png _layer_cache_proof/base-poster.png _layer_cache_proof/edited-poster.png _layer_cache_proof/qualification.json _layer_cache_proof/edited-framehash.txt _site/layer-cache/
+          cp _layer_cache_proof/base/video.mp4 _site/layer-cache/base/video.mp4
+          cp _layer_cache_proof/edited/video.mp4 _site/layer-cache/edited/video.mp4
       - name: Select the qualified optional MIDI capture interpreter
         uses: actions/setup-python@v7
         with:

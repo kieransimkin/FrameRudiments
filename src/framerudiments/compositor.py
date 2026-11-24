@@ -296,7 +296,8 @@ class Sprite:
 
 class Compositor:
     def __init__(self, project, *, scene=None, renderers=None,
-                 _shared_effect_graph_gpu=_CREATE_EFFECT_GRAPH_BACKEND):
+                 _shared_effect_graph_gpu=_CREATE_EFFECT_GRAPH_BACKEND,
+                 layer_cache=None, _cache_native_renderers=None):
         post = project.data.get('post_effects', {})
         if isinstance(post, dict) and 'feedback' in post and (scene is not None or renderers is not None):
             raise ValueError('Native feedback requires declarative sources; custom scene/renderers have no checkpoint identity')
@@ -489,6 +490,17 @@ class Compositor:
                 project.data["visualiser_routing"], element_order, self.background.size
             )
         self._route_parts = []
+        self._cache_native_renderers = (renderers is None if _cache_native_renderers is None
+                                        else _cache_native_renderers)
+        self.layer_surfaces = None
+        if layer_cache is not False:
+            from .compositor_layer_cache import LayerSurfaces
+            try:
+                self.layer_surfaces = LayerSurfaces(self, layer_cache,
+                    native_renderers=self._cache_native_renderers)
+            except BaseException:
+                self.close()
+                raise
 
     def context(self, frame):
         p = self.project
@@ -547,7 +559,11 @@ class Compositor:
         pipeline.begin()
         self._route_parts = []
         mask_surfaces = {}
-        background = pipeline.apply_element(self.background.copy(), "background", ctx)
+        background = self.background.copy()
+        if self.layer_surfaces is not None:
+            background, _ = self.layer_surfaces.draw("background", ctx,
+                lambda canvas: canvas.paste(self.background))
+        background = pipeline.apply_element(background, "background", ctx)
         mask_surfaces["background"] = background
         self._capture_route("background", background)
         # Background is a graph provider; later compositing must not mutate it.
@@ -576,8 +592,11 @@ class Compositor:
                     raise ValueError("Custom scene hook must return frame-sized RGBA")
 
         def paint(key, render):
-            scratch = Image.new("RGBA", self.background.size)
-            bounds = render(scratch)
+            if self.layer_surfaces is not None:
+                scratch, bounds = self.layer_surfaces.draw(key, ctx, render)
+            else:
+                scratch = Image.new("RGBA", self.background.size)
+                bounds = render(scratch)
             if not bounds:
                 return None
             scratch = pipeline.apply_element(scratch, key, ctx)
@@ -733,6 +752,21 @@ class Compositor:
         session.restore(checkpoint, expected_sha256=expected_sha256)
 
     def frame(self, frame, *, apply_quality=True, cancelled=None, progress=None):
+        surfaces = self.layer_surfaces
+        if surfaces is None:
+            return self._uncached_frame(frame, apply_quality=apply_quality,
+                                        cancelled=cancelled, progress=progress)
+        outer = surfaces.begin()
+        try:
+            result = self._uncached_frame(frame, apply_quality=apply_quality,
+                                          cancelled=cancelled, progress=progress)
+        except BaseException:
+            surfaces.finish(False, outer)
+            raise
+        surfaces.finish(True, outer)
+        return result
+
+    def _uncached_frame(self, frame, *, apply_quality=True, cancelled=None, progress=None):
         if self.post_pipeline.feedback is not None:
             from .compositor_feedback import render_feedback_frame
             return render_feedback_frame(self, frame, apply_quality=apply_quality,
@@ -763,12 +797,17 @@ class Compositor:
             matte.alpha_composite(self._frame_with_post_effects(ctx))
             return self._final_output(matte.convert("RGB"), ctx, apply_quality)
         image = self.background.copy()
+        if self.layer_surfaces is not None:
+            image, _ = self.layer_surfaces.draw("background", ctx,
+                lambda canvas: canvas.paste(self.background))
         if self.scene:
             image = self.scene(image, ctx)
             if image.size != self.background.size or image.mode != "RGBA":
                 raise ValueError("Custom scene hook must return frame-sized RGBA")
         for layer in self.layers:
-            bounds = layer.draw(image, ctx)
+            bounds = (self.layer_surfaces.direct(image, f"layer:{layer.id}", ctx,
+                        lambda canvas, layer=layer: layer.draw(canvas, ctx))
+                      if self.layer_surfaces is not None else layer.draw(image, ctx))
             if bounds:
                 previous = self.extents.get(layer.id, bounds)
                 self.extents[layer.id] = [
@@ -778,13 +817,18 @@ class Compositor:
                     max(bounds[3], previous[3]),
                 ]
         text_bounds = []
-        for text, style in self.identity:
-            text_bounds.extend(style.draw(image, text))
+        for index, (text, style) in enumerate(self.identity):
+            boxes = (self.layer_surfaces.direct(image, f"identity:{index}", ctx,
+                        lambda canvas, text=text, style=style: style.draw(canvas, text), canvas_dependent=True)
+                     if self.layer_surfaces is not None else style.draw(image, text))
+            text_bounds.extend(boxes)
         if self.caption:
             text = ctx.lyric["text"] if ctx.lyric else ""
             art_layer = self.lyric_art.get(text)
             if art_layer:
-                bounds = art_layer.draw(image, ctx)
+                bounds = (self.layer_surfaces.direct(image, "lyric-art:"+art_layer.id.rsplit("-", 1)[-1],
+                            ctx, lambda canvas: art_layer.draw(canvas, ctx))
+                          if self.layer_surfaces is not None else art_layer.draw(image, ctx))
                 if bounds:
                     text_bounds.append(bounds)
             elif self.caption.mode == "neighbours":
@@ -797,15 +841,33 @@ class Compositor:
                     )
                 )
             if not art_layer or self.word_indicator:
-                text_bounds.extend(self._caption_draw(image, text, ctx))
+                boxes = (self.layer_surfaces.direct(image, "caption", ctx,
+                            lambda canvas: self._caption_draw(canvas, text, ctx), canvas_dependent=True)
+                         if self.layer_surfaces is not None else self._caption_draw(image, text, ctx))
+                text_bounds.extend(boxes)
             if self.word_indicator:
-                self.word_indicator.draw(image, ctx)
+                if self.layer_surfaces is not None:
+                    self.layer_surfaces.direct(image, "word-indicator", ctx,
+                        lambda canvas: self.word_indicator.draw(canvas, ctx), canvas_dependent=True)
+                else:
+                    self.word_indicator.draw(image, ctx)
             if self.word_caption and self.words:
-                text_bounds.extend(self._word_caption_draw(image, ctx))
+                boxes = (self.layer_surfaces.direct(image, "word-caption", ctx,
+                            lambda canvas: self._word_caption_draw(canvas, ctx), canvas_dependent=True)
+                         if self.layer_surfaces is not None else self._word_caption_draw(image, ctx))
+                text_bounds.extend(boxes)
             self.text_states.setdefault(text, dict(first_frame=frame, bounds=text_bounds))
         elif self.word_caption and self.words:
-            self._word_caption_draw(image, ctx)
+            if self.layer_surfaces is not None:
+                self.layer_surfaces.direct(image, "word-caption", ctx,
+                    lambda canvas: self._word_caption_draw(canvas, ctx), canvas_dependent=True)
+            else:
+                self._word_caption_draw(image, ctx)
         return self._final_output(image.convert("RGB"), ctx, apply_quality)
+
+    def layer_cache_stats(self):
+        return (self.layer_surfaces.cache.stats() if self.layer_surfaces is not None else
+                deepcopy(getattr(self, '_closed_layer_cache_stats', None)))
 
     def frame_reports(self):
         if hasattr(self, "_supersampled_reports"):
@@ -847,6 +909,13 @@ class Compositor:
         from .super_sampling import _ScaledText
 
         _ScaledText.layout.cache_clear()
+        if self.layer_surfaces is not None:
+            try:
+                self._closed_layer_cache_stats = self.layer_surfaces.cache.stats()
+                self._closed_layer_cache_stats['scope'] = 'before compositor resource close'
+            finally:
+                self.layer_surfaces.close()
+                self.layer_surfaces = None
         gc.collect()
 
     def evidence(self):

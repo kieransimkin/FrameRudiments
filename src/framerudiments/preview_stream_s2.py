@@ -136,6 +136,7 @@ class SeekStream:
                     adaptive=self.controller.snapshot() if self.controller else None,
                     capabilities=self.capabilities, invalidation=self.invalidation,
                     stateful=self.stateful, vision=self.vision,
+                    layer_cache=getattr(self.renderer, 'last_layer_cache', None),
                     qualification=self.observations.snapshot(refresh=refresh_qualification),
                     refinement=self.refinement.snapshot() if self.refinement else dict(enabled=False))
 

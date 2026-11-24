@@ -123,6 +123,11 @@ def main(argv=None):
             default=10.0,
             help="Seconds between atomic progress heartbeats (default: 10)",
         )
+        layer_mode = item.add_mutually_exclusive_group()
+        layer_mode.add_argument('--layer-cache', metavar='DIRECTORY',
+                                help='Persistent per-layer pixels, reusable across project edits')
+        layer_mode.add_argument('--no-layer-cache', dest='layer_cache', action='store_const', const=False,
+                                help='Disable per-layer pixel reuse for comparison')
         if name == "preflight":
             item.add_argument(
                 "--max-frames",
@@ -315,6 +320,7 @@ def main(argv=None):
                 ffmpeg=args.ffmpeg,
                 ffprobe=args.ffprobe,
                 progress_interval_seconds=args.progress_seconds,
+                layer_cache=args.layer_cache,
                 **extra,
             )
             print(json.dumps({"state": result["state"], "frames": result["frames"], "output": args.output}))

@@ -69,3 +69,29 @@ def test_spawned_native_refinement_preserves_pinned_sidecars_and_rejects_edits(t
         renderer.close()
     assert cue.read_bytes() == before
     assert not list((tmp_path/'refinement').iterdir())
+
+
+@pytest.mark.parametrize('graph', [False, True])
+def test_real_q5_child_reuses_foreground_layer_pixels(tmp_path, graph):
+    from framerudiments.preview_native_renderer import NativePreviewRenderer
+    path, data = fixture(tmp_path, graph=graph)
+    parent = tmp_path/'sessions'
+    foreground = NativePreviewRenderer(path, data, {}, validate_draft=lambda a,b: None,
+                                       temp_parent=parent)
+    try:
+        expected = foreground(31, 'Q5')
+        assert foreground.last_layer_cache['persistent']
+        foreground_cache = foreground.last_layer_cache
+    finally:
+        foreground.close()
+    worker = SpawnQ5Renderer(RefinementSpec.from_snapshot(path, data, data, {}, parent))
+    try:
+        assert worker(31, lambda: False) == expected
+        receipt = worker.last_layer_cache
+        assert receipt['persistent'] and not receipt['truncated']
+        assert receipt['layers']['layer:square']['hits'] > 0
+        assert receipt['implementation_sha256'] == foreground_cache['implementation_sha256'], (receipt, foreground_cache)
+        assert receipt['layers']['layer:square']['writes'] == 0, (receipt, foreground_cache)
+    finally:
+        worker.close()
+    assert worker.process is None and not list(parent.iterdir())
