@@ -125,6 +125,11 @@ jobs:
           python integration/qualify_usd_m15.py --output _site/m15-4
           test -s _site/m15-4/index.html && test -s _site/m15-4/qualification.json
           test "$(find _site/m15-4 -name 'frame-*.exr' | wc -l)" -eq 3
+      - name: Publish native M15.5 OSC capture and replay demonstration
+        run: |
+          python integration/qualify_osc_controls_m15.py --output _site/m15-5
+          test -s _site/m15-5/index.html && test -s _site/m15-5/render/video.mp4
+          test -s _site/m15-5/qualification.json
       - name: Validate generated site and image count
         run: |
           python - <<'PY'

@@ -45,6 +45,7 @@ class Project:
                 "post_effects",
                 "effect_graph",
                 "effect_graph_controls",
+                "osc_control_take",
                 "effect_graph_backend",
                 "vision_sources",
                 "stemlab_loop",
@@ -245,6 +246,11 @@ class Project:
             parser = parse_cue if Path(ref["path"]).suffix.lower() == ".cue" else parse_lrc
             events = parser(ref["path"]) if parser is parse_cue else parser(ref["path"], lyrics=False)
             self.cues = self.ledger(events)
+        self.osc_control_take_ref = None
+        if "osc_control_take" in data:
+            from .osc_control_take_m15 import prepare_take_reference
+
+            self.osc_control_take_ref = prepare_take_reference(self, data["osc_control_take"])
 
     def ref(self, data):
         result = file_ref(data, self.base)
@@ -337,6 +343,7 @@ class Project:
             ),
             **({"effect_graph_backend": self.data["effect_graph_backend"]}
                if "effect_graph_backend" in self.data else {}),
+            **({"osc_control_take": self.osc_control_take_ref} if self.osc_control_take_ref else {}),
             render_quality=self.output_quality.evidence,
             **(
                 {"visualiser_routing": self.data["visualiser_routing"]}

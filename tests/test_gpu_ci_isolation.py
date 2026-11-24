@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 from shlex import split as shell_split
 
+import pytest
+
 
 CI = Path(__file__).resolve().parents[1] / ".github/workflows/ci.yml"
 
@@ -90,3 +92,26 @@ def test_release_cpu_gate_matches_the_validated_native_dependency_boundary():
         assert "'onnx>=1.17,<2'" in text
         assert "scripts/Invoke-Tests.ps1 -Python python -q" in text
         assert "assert not r.findall('.//skipped')" in text
+
+
+@pytest.mark.parametrize(("workflow_name", "job", "step"), [
+    ("ci.yml", "visualiser-acceptance", "Native and headless rendering dependencies"),
+    ("preview-stream-qualification.yml", "native-gpu", "Native GPU dependencies"),
+])
+def test_visualiser_setup_ceiling_covers_bounded_installer(workflow_name, job, step):
+    """Archive retries must not consume the GPU qualification job's test budget."""
+    installer = (CI.parents[2] / "scripts/install_ci_render_dependencies.sh").read_text(encoding="utf-8")
+    caps = re.findall(r"timeout --signal=TERM --kill-after=(\d+)s (\d+)s", installer)
+    assert len(caps) == installer.count("sudo timeout") == 3, "Review every native setup command bound"
+    repo, update, install = [(int(cap) + int(grace)) for grace, cap in caps]
+    loop = re.search(r"for attempt in ([\d ]+); do", installer)
+    attempts = [int(value) for value in loop.group(1).split()]
+    assert attempts == list(range(1, len(attempts) + 1))
+    backoff = int(re.search(r"sleep \$\(\(attempt \* (\d+)\)\)", installer).group(1))
+    setup_max_seconds = repo + len(attempts) * (update + install) + sum(attempts[:-1]) * backoff
+    gpu_job = CI.with_name(workflow_name).read_text(encoding="utf-8").split(f"  {job}:\n", 1)[1]
+    job_minutes = int(re.search(r"^    timeout-minutes: (\d+)$", gpu_job, re.MULTILINE).group(1))
+    setup_step = gpu_job.split(f"      - name: {step}\n", 1)[1]
+    setup_minutes = int(re.search(r"^        timeout-minutes: (\d+)$", setup_step, re.MULTILINE).group(1))
+    assert setup_minutes * 60 >= setup_max_seconds
+    assert job_minutes >= setup_minutes + 25, "Keep native builds and both no-skip GPU suites inside the job budget"

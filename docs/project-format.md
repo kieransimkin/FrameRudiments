@@ -258,3 +258,12 @@ input. The separate `feedback_plan` and CLI `feedback` fields describe the
 encoded frames reconstructed from a reset or retained checkpoint. Final output
 quality follows the recurrence, while stored feedback history stays before that
 finishing pass.
+
+
+## Optional captured OSC controls (0.4.35)
+
+The optional osc_control_take field is a normal path/SHA-256 file reference to a
+complete closed numeric OSC take. It requires effect_graph, joins the canonical
+input ledger and validates the source audio/slice/repeats, clock, FPS, graph and
+native bindings before replay. It opens no connection. See the
+[OSC contract, actual frame comparison and 60 fps demo](osc-controls-m15.md).

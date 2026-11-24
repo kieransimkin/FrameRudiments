@@ -352,7 +352,10 @@ def test_cached_pause_releases_foreground_context_before_background_starts(tmp_p
         stream.command('play', sequence=1, frame=5)
         wait_for(lambda: cache.get(5) is not None)
         stream.command('pause', sequence=2, frame=5)  # Cache hit: no foreground render needed.
-        wait_for(lambda: stream.refinement.state == 'complete')
+        try:
+            wait_for(lambda: stream.refinement.state == 'complete')
+        except AssertionError:
+            pytest.fail(f"Cached-pause handoff did not complete: {stream.status()}; lifecycle={lifecycle}")
         assert [name for name, _ in lifecycle] == ['render', 'release']
         assert lifecycle[0][1] == lifecycle[1][1] != get_ident()
         assert cache.get(5).profile_id == 'Q5'
