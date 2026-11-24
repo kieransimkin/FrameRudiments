@@ -71,7 +71,7 @@ framerudiments plan ./my-demo/project.json --output ./plan.json
 framerudiments render ./my-demo/project.json --output ./render-output
 ```
 
-For local development, clone the repository and `python -m pip install -e '.[dev]'`. See [project format](docs/project-format.md), [compositing and effects](docs/effect-graph-design.md), [M11 video I/O](docs/video-io-m11-4.md) and the [implementation roadmap](docs/unified-effects-transitions-rendering-roadmap.md).
+For local development, clone the repository and `python -m pip install -e '.[dev]'`. Native CI uses [separate setup and qualification budgets](docs/ci-setup-budget.md). See [project format](docs/project-format.md), [compositing and effects](docs/effect-graph-design.md), [M11 video I/O](docs/video-io-m11-4.md) and the [implementation roadmap](docs/unified-effects-transitions-rendering-roadmap.md).
 
 ## Rendering architecture
 

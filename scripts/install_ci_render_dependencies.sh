@@ -14,15 +14,17 @@ fi
 if [[ -r /etc/os-release ]]; then
   . /etc/os-release
   if [[ "${ID:-}" == "ubuntu" ]]; then
-    sudo timeout --signal=TERM 120s add-apt-repository --yes --no-update universe
+    sudo timeout --signal=TERM --kill-after=15s 120s add-apt-repository --yes --no-update universe
   fi
 fi
 
+setup_started_seconds=$SECONDS
 for attempt in 1 2 3; do
   echo "Installing CI render dependencies (attempt $attempt/3)"
-  if sudo timeout --signal=TERM 300s env DEBIAN_FRONTEND=noninteractive apt-get update -qq -o APT::Update::Error-Mode=any \
-    && sudo timeout --signal=TERM 600s env DEBIAN_FRONTEND=noninteractive \
+  if sudo timeout --signal=TERM --kill-after=15s 300s env DEBIAN_FRONTEND=noninteractive apt-get update -qq -o APT::Update::Error-Mode=any \
+    && sudo timeout --signal=TERM --kill-after=15s 600s env DEBIAN_FRONTEND=noninteractive \
       apt-get install -y "${packages[@]}"; then
+    echo "CI render dependencies installed on attempt $attempt in $((SECONDS - setup_started_seconds))s"
     exit 0
   fi
   if [[ $attempt -lt 3 ]]; then

@@ -141,7 +141,9 @@ jobs:
 
   visualiser-acceptance:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    # Setup may use three bounded archive-download attempts; reserve 25 minutes
+    # after its own ceiling for native builds and the unchanged no-skip suites.
+    timeout-minutes: 75
     env:
       POWERSHELL_TELEMETRY_OPTOUT: '1'
       PYTHONFAULTHANDLER: '1'
@@ -169,6 +171,7 @@ jobs:
           JS
           node --test integration/butterchurn_cleanup.test.mjs
       - name: Native and headless rendering dependencies
+        timeout-minutes: 50
         run: |
           bash scripts/install_ci_render_dependencies.sh --gpu
           echo 'FRAMERUDIMENTS_TEST_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf' >> "$GITHUB_ENV"
