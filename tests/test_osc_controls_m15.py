@@ -397,3 +397,17 @@ def test_duplicate_json_and_oversize_reference_rejected(source):
     data["osc_control_take"] = {"path": path.name, "sha256": "a" * 64}
     with pytest.raises(ValueError, match="budget"):
         Project(data, source.base)
+
+
+def test_reformatted_take_receipt_and_reexport_preserve_actual_pinned_bytes(source):
+    take, _ = capture_take(source)
+    raw = json.dumps(take.document(), indent=2).encode("utf-8")
+    path = source.base / "formatted-take.json"
+    path.write_bytes(raw)
+    pin = {"path": str(path), "sha256": sha256(raw).hexdigest()}
+    loaded = OSCControlTake.load(pin, source, EffectGraph(source.effect_graph_spec))
+    assert loaded.evidence["take_sha256"] == pin["sha256"]
+    assert loaded.values_at(30) == {("gain", "opacity"): .75}
+    exported = source.base / "exported-take.json"
+    assert loaded.write(exported)["sha256"] == pin["sha256"]
+    assert exported.read_bytes() == raw

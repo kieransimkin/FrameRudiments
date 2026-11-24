@@ -201,7 +201,12 @@ class OSCControlTake:
             raw = stream.read(MAX_TAKE_BYTES + 1)
         if len(raw) > MAX_TAKE_BYTES or hashlib.sha256(raw).hexdigest() != reference['sha256']:
             raise ValueError('OSC take bytes differ from the pin or exceed the byte budget')
-        return cls(parse_json(raw.decode('utf-8-sig')), project, graph)
+        take = cls(parse_json(raw.decode('utf-8-sig')), project, graph)
+        # Keep evidence and a subsequent write bound to the exact validated file,
+        # including legal JSON whitespace, rather than a canonical re-encoding.
+        take._bytes = raw
+        take.sha256 = reference['sha256']
+        return take
 
 
 def prepare_take_reference(project, value):
