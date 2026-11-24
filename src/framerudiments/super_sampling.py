@@ -348,8 +348,13 @@ def temporal_compositor(compositor):
             scene_adapter = None
         # The outer compositor owns the context and pool. The virtual clock
         # changes when we sample, but both renderers use the same canvas.
+        cache_options = {}
+        if hasattr(compositor, 'layer_surfaces'):
+            cache_options = dict(layer_cache=(compositor.layer_surfaces.cache
+                                 if compositor.layer_surfaces is not None else False),
+                                 _cache_native_renderers=compositor._cache_native_renderers)
         virtual = Compositor(project, scene=scene_adapter, renderers=compositor.renderers,
-                             _shared_effect_graph_gpu=compositor.effect_graph_gpu)
+                             _shared_effect_graph_gpu=compositor.effect_graph_gpu, **cache_options)
         compositor._temporal_virtual = virtual
     return virtual
 

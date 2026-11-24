@@ -2,6 +2,11 @@
 
 **Beat-synchronised visualisation, compositing and video rendering — driven by real DanceRudiments motion and source-pinned StemLab timing.**
 
+0.4.37 adds [separate native layer caches](docs/layer-frame-cache.md):
+reuse unchanged rasters after edits, across preview/Q5 owners and ordinary renders.
+Keep an explicit persistent cache with `--layer-cache DIRECTORY`.
+[Actual native cache comparison](https://kieransimkin.github.io/FrameRudiments/layer-cache/).
+
 Experimental 0.4.36: [capture MIDI CC/pitchbend as finite source-clocked takes](docs/midi-controls-m15.md)
 and replay through the ordinary compositor, alongside the released [OSC route](docs/osc-controls-m15.md).
 Native MIDI capture uses an explicitly selected input on qualified Python 3.11/3.12 hosts;

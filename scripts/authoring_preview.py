@@ -15,6 +15,7 @@ import json
 import mimetypes
 from pathlib import Path
 import re
+import socket
 import wave
 from tempfile import TemporaryDirectory
 from threading import BoundedSemaphore
@@ -262,8 +263,35 @@ class AuthoringHandler(BaseHTTPRequestHandler):
     session_data = None
     server_version = "FrameRudimentsAuthoring/1"
 
+    def finish(self):
+        try:
+            super().finish()  # Flush the complete reply before transport cleanup.
+        finally:
+            if getattr(self, '_rejected_post', False):
+                # RFC 9112 section 9.6: unread upload bytes can otherwise reset
+                # the connection and erase an early rejection on Windows.
+                # Discard only after replying; never parse or admit that body.
+                deadline = perf_counter_ns() + 250_000_000
+                remaining = MAX_BODY
+                try:
+                    self.connection.shutdown(socket.SHUT_WR)
+                    while remaining:
+                        wait = (deadline - perf_counter_ns()) / 1e9
+                        if wait <= 0:
+                            break
+                        self.connection.settimeout(wait)
+                        part = self.connection.recv(min(65536, remaining))
+                        if not part:
+                            break
+                        remaining -= len(part)
+                except OSError:
+                    pass  # The peer closed/reset, or the bounded linger expired.
+
     def _send(self, status, data, mime):
         self.send_response(status)
+        if getattr(self, 'command', None) == 'POST' and status >= 400:
+            self._rejected_post = self.close_connection = True
+            self.send_header('Connection', 'close')
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(len(data)))
         self.send_header("Cache-Control", "no-store")

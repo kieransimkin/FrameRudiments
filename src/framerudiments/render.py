@@ -1,6 +1,7 @@
 """Shared render runner, cleanup, evidence and representative encoded stills."""
 
 from pathlib import Path
+from os import PathLike
 import subprocess
 import json
 import hashlib
@@ -208,7 +209,20 @@ def extract_encoded_checkpoints(ffmpeg, video, directory, frames, *, batch_size=
             (directory / f"checkpoint-{i:08}.png").rename(directory / f"encoded-{frame:08}.png")
 
 
-def _prepare(project, output, ffmpeg, ffprobe, scene, renderers, *, resume=False, input_cache=None):
+def _validate_layer_cache_location(layer_cache, output):
+    if layer_cache is None or layer_cache is False:
+        return
+    from .layer_frame_cache import LayerFrameCache
+    location = layer_cache.root if isinstance(layer_cache, LayerFrameCache) else layer_cache
+    if isinstance(location, (str, PathLike)):
+        cache_path, output_path = Path(location).resolve(), Path(output).resolve()
+        if (cache_path == output_path or output_path in cache_path.parents
+                or cache_path in output_path.parents):
+            raise ValueError('Layer cache must be separate from render output')
+
+
+def _prepare(project, output, ffmpeg, ffprobe, scene, renderers, *, resume=False, input_cache=None,
+             layer_cache=None):
     project = Project.load(project) if not isinstance(project, Project) else project
     ffmpeg, ffprobe = encoding.binaries(ffmpeg, ffprobe)
     project.verify_inputs()
@@ -220,7 +234,9 @@ def _prepare(project, output, ffmpeg, ffprobe, scene, renderers, *, resume=False
     source_probe = encoding.validate_audio(project, ffprobe)
     # Cached references must be installed before any compositor dependency is
     # opened, otherwise fonts and imagery can still read from final storage.
-    compositor = Compositor(project, scene=scene, renderers=renderers)
+    _validate_layer_cache_location(layer_cache, output)
+    cache_options = {'layer_cache': layer_cache} if layer_cache is not None else {}
+    compositor = Compositor(project, scene=scene, renderers=renderers, **cache_options)
     # Include dependencies registered during compositor setup in the plan.
     canonical_plan["inputs"].extend(deepcopy(project.inputs[initial_input_count:]))
     output = Path(output).resolve()
@@ -264,6 +280,7 @@ def preflight(
     renderers=None,
     max_frames=None,
     progress_interval_seconds=10.0,
+    layer_cache=None,
 ):
     p = Project.load(project) if not isinstance(project, Project) else project
     if max_frames is None:
@@ -272,7 +289,8 @@ def preflight(
         raise ValueError(f"Preflight max_frames must be an integer in [1,{p.frame_count}]")
     else:
         frame_count = max_frames
-    p, out, ffmpeg, ffprobe, compositor = _prepare(p, output, ffmpeg, ffprobe, scene, renderers)
+    p, out, ffmpeg, ffprobe, compositor = _prepare(p, output, ffmpeg, ffprobe, scene, renderers,
+                                                layer_cache=layer_cache)
     selected = {frame for frame in checkpoints(p) if frame < frame_count}
     selected.add(frame_count - 1)
     scope = dict(
@@ -340,6 +358,7 @@ def preflight(
             p.summary(),
             preflight_scope=scope,
             composition=compositor.evidence(),
+            layer_cache=getattr(compositor, "layer_cache_stats", lambda: None)(),
             full_frame_effects=effects.evidence() if effects else None,
             analysis_sidecar=_sidecar(out),
             state=(
@@ -389,12 +408,14 @@ def render(
     progress_interval_seconds=10.0,
     work_cache=None,
     reserve_bytes=None,
+    layer_cache=None,
 ):
     """Render a project, chunking videos longer than 30 seconds by default."""
     cache = None
     cache_active = False
     active_output = Path(output).resolve()
     try:
+        _validate_layer_cache_location(layer_cache, output)
         prepared = Project.load(project) if not isinstance(project, Project) else project
         use_chunks = should_chunk(prepared) if chunked is None else chunked
         if type(use_chunks) is not bool:
@@ -431,6 +452,7 @@ def render(
                 min_free_bytes=min_free_bytes,
                 progress_interval_seconds=progress_interval_seconds,
                 input_cache=cache.inputs if cache else None,
+                layer_cache=layer_cache,
             )
         else:
             result = _render_single(
@@ -444,6 +466,7 @@ def render(
                 crf=crf,
                 progress_interval_seconds=progress_interval_seconds,
                 input_cache=cache.inputs if cache else None,
+                layer_cache=layer_cache,
             )
         if cache:
             result = cache.promote(result)
@@ -489,9 +512,11 @@ def _render_single(
     crf=20,
     progress_interval_seconds=10.0,
     input_cache=None,
+    layer_cache=None,
 ):
     p, out, ffmpeg, ffprobe, compositor = _prepare(
-        project, output, ffmpeg, ffprobe, scene, renderers, input_cache=input_cache
+        project, output, ffmpeg, ffprobe, scene, renderers, input_cache=input_cache,
+        layer_cache=layer_cache
     )
     candidate, final = out / "candidate.mp4", out / "video.mp4"
     cmd = encoding.command(p, candidate, ffmpeg, preset=preset, crf=crf)
@@ -587,6 +612,7 @@ def _render_single(
             render_mode="single-pass",
             input_cache=getattr(p, "input_cache_evidence", None),
             composition=compositor.evidence(),
+            layer_cache=getattr(compositor, "layer_cache_stats", lambda: None)(),
             full_frame_effects=effects.evidence() if effects else None,
             analysis_sidecar=_sidecar(out),
             verification=verified,
@@ -810,6 +836,7 @@ def _render_chunked(
     min_free_bytes=536870912,
     progress_interval_seconds=10.0,
     input_cache=None,
+    layer_cache=None,
 ):
     if type(min_free_bytes) is not int or min_free_bytes < 0:
         raise ValueError("min_free_bytes must be a nonnegative integer")
@@ -822,6 +849,7 @@ def _render_chunked(
         renderers,
         resume=resume,
         input_cache=input_cache,
+        layer_cache=layer_cache,
     )
     plan = plan_chunks(p, target_seconds=chunk_seconds)
     plan_path = out / "chunk-plan.json"
@@ -1064,6 +1092,7 @@ def _render_chunked(
             ],
             replayed_frames=replayed,
             composition=compositor.evidence(),
+            layer_cache=getattr(compositor, "layer_cache_stats", lambda: None)(),
             full_frame_effects=effects.evidence() if effects else None,
             analysis_sidecars=analysis_sidecars,
             seam_verification=seams,

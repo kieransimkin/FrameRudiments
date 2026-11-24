@@ -59,7 +59,8 @@ def _q5_worker(connection, spec, directory):
                 raise ValueError('Refinement snapshot changed')
 
         renderer = NativePreviewRenderer(spec.project_file, draft, sidecars, validate_draft=validate,
-                                         temp_parent=Path(directory)/'native')
+                                         temp_parent=Path(directory)/'native',
+                                         layer_cache_root=Path(spec.temp_parent).parent/'layer-cache-v1')
         while True:
             frame = connection.recv()
             if frame is None:
@@ -74,8 +75,15 @@ def _q5_worker(connection, spec, directory):
             temporary = Path(directory)/'result.tmp'
             temporary.write_bytes(png)
             temporary.replace(Path(directory)/'result.png')
+            stats = renderer.last_layer_cache or {}
+            layers = stats.get('layers', {})
+            # Keep the pipe receipt small even for large native layer stacks.
+            cache_receipt = dict(schema=stats.get('schema'), persistent=stats.get('persistent'),
+                implementation_sha256=stats.get('implementation_sha256'),
+                layer_count=len(layers), truncated=len(layers) > 16,
+                layers={name: layers[name] for name in sorted(layers)[:16]})
             connection.send({'ok': True, 'frame': frame, 'bytes': len(png),
-                             'sha256': sha256(png).hexdigest()})
+                             'sha256': sha256(png).hexdigest(), 'layer_cache': cache_receipt})
     except (EOFError, BrokenPipeError):
         pass
     except BaseException as exc:
@@ -108,6 +116,7 @@ class SpawnQ5Renderer:
         self.owner = get_ident()
         self.process = self.connection = self.directory = None
         self.last_pid = None
+        self.last_layer_cache = None
 
     def _owner(self):
         if get_ident() != self.owner:
@@ -170,6 +179,7 @@ class SpawnQ5Renderer:
                 raise RefinementWorkerError('Q5 result checksum mismatch')
             if cancelled():
                 raise RefinementCancelled('superseded refinement')
+            self.last_layer_cache = reply.get('layer_cache')
             return png
         except BaseException:
             self.close()

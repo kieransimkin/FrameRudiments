@@ -40,11 +40,15 @@ class NativePreviewRenderer:
     At most one quality-specific compositor exists. A quality change closes it
     and constructs a new, correctly sized view; it never rescales final pixels.
     """
-    def __init__(self, project_file, draft, sidecars, *, validate_draft, temp_parent, verifier=None):
+    def __init__(self, project_file, draft, sidecars, *, validate_draft, temp_parent, verifier=None,
+                 layer_cache_root=None):
         self.path = Path(project_file)
         self.draft, self.sidecars = deepcopy(draft), deepcopy(sidecars)
         self.validate, self.verifier = validate_draft, verifier
         self.temp_parent = Path(temp_parent)
+        self.layer_cache_root = (Path(layer_cache_root) if layer_cache_root is not None else
+                                 self.temp_parent.parent/'layer-cache-v1')
+        self.layer_cache = self.last_layer_cache = None
         self.owner = self.project = self.compositor = self.profile = self.temporary = None
         self.closed = False
         self.last_setup_ms = 0
@@ -98,6 +102,9 @@ class NativePreviewRenderer:
             self.project = Project(document, original.base)
             self.project.verify_inputs()
             self.input_guard = PinnedInputGuard(original.base, document, self.project.inputs)
+            from .layer_frame_cache import LayerFrameCache
+            from .preview_dependencies import cache_namespace
+            self.layer_cache = LayerFrameCache(self.layer_cache_root/cache_namespace(self.path))
         except BaseException:
             self.project = self.input_guard = None
             self.temporary.cleanup()
@@ -139,6 +146,26 @@ class NativePreviewRenderer:
             raise
 
     def render_cancellable(self, frame, profile_id, cancelled, progress=None):
+        # Keep staged layer pixels private until the existing source verifier
+        # accepts the entire native result. Q5 workers use the same disk keys.
+        cache = self.layer_cache
+        if cache is not None:
+            cache._begin()
+        try:
+            result = self._render_cancellable(frame, profile_id, cancelled, progress)
+        except BaseException:
+            if cache is not None:
+                cache._finish(False)
+            raise
+        else:
+            if cache is not None:
+                cache._finish(True)
+            return result
+        finally:
+            if self.layer_cache is not None:
+                self.last_layer_cache = self.layer_cache.stats()
+
+    def _render_cancellable(self, frame, profile_id, cancelled, progress=None):
         """Reconstruct native feedback cooperatively on the owning worker.
 
         Existing independent/shutter frames keep their ordinary rendering path.
@@ -179,7 +206,7 @@ class NativePreviewRenderer:
             if self.compositor is not None:
                 self.compositor.close()
                 self.compositor = self.profile = None
-            self.compositor = Compositor(view)
+            self.compositor = Compositor(view, layer_cache=self.layer_cache)
             self.profile = profile_id
             if self._feedback_resume is not None:
                 saved_profile, checkpoint, expected = self._feedback_resume
@@ -311,6 +338,8 @@ class NativePreviewRenderer:
         finally:
             self.compositor = None
             self._feedback_resume = None
+            if self.layer_cache is not None:
+                self.layer_cache.close()
             if self.temporary is not None:
                 self.temporary.cleanup()
                 self.temporary = None

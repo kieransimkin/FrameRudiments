@@ -33,6 +33,8 @@ REQUIRED_SOURCE = (
     "authoring/src/authoringExport.ts",
     "integration/qualify_midi_controls_m15.py", "integration/qualify_osc_controls_m15.py",
     "tests/test_midi_controls_m15.py", "docs/midi-controls-m15.md",
+    "integration/qualify_layer_cache.py", "docs/layer-frame-cache.md", "docs/media/layer-cache-native.png",
+    "tests/test_layer_frame_cache.py", "tests/test_preview_native_project.py", "tests/test_preview_refinement_native.py",
     "integration/qualify_temporal_schedule_m11_1.py", "integration/fixtures/temporal_schedule_m11_1.json",
     "integration/qualify_feedback_history_m11_2.py", "integration/fixtures/feedback_history_m11_2.json",
     "authoring/integration/graphRoundtrip.ts", "authoring/src/graphEditor.ts", "authoring/src/archive.ts",

@@ -1,3 +1,25 @@
+# FrameRudiments 0.4.37 — separate composited-layer caches
+
+- Keep early localhost HTTP rejection replies readable on Windows with bounded
+  staged transport closure; preserve origin and native-admission checks.
+- Retain independent bounded raw RGBA rasters for sprites, native rudiments,
+  deterministic emitters/materials, text and lyric art. Keys cover each layer's
+  own configuration, pinned dependencies, native sample/clock, raster quality
+  and imported implementation. A one-layer edit preserves unrelated rasters.
+- Reapply masks, displacement, animation, routing and the graph in their native
+  order. Preserve legacy canvas-dependent text blending and real metadata.
+- Share persistent keys across adaptive preview revisions, quality views and
+  real spawned Q5 workers. Add explicit CLI/API cache selection for preflight,
+  complete/chunked render and resume, plus an uncached reference route.
+- Store cropped tiles under shared RAM/disk quotas. Fence pending publication
+  after source validation, verify pixel/PNG/report hashes, and recover corrupt
+  or missing raw entries as misses. Keep the durable final-frame cache intact.
+- Use a persistent WAL/NORMAL index for disposable working pixels, avoiding
+  per-layer durability stalls. A power failure may discard recent raw entries;
+  no cached bytes bypass native input or encoded output checks.
+- Add real native call-count, pixel, cache reopen, process handoff and encoded
+  parity regressions, plus an actual 60 fps gallery and host-scoped measurements.
+
 # FrameRudiments 0.4.36 — finite source-clocked MIDI controls
 
 - Add opt-in MIDI 1.0 CC 0..119 and 14-bit pitchbend capture with explicit API,
