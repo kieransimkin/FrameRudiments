@@ -160,22 +160,32 @@ def test_export_matches_live_native_session_without_disclosing_content(loopback)
     assert len(text.encode('utf-8')) < 1024 * 1024
 
 
-def test_status_has_summary_and_export_observes_current_cursor_and_target(loopback):
+@pytest.mark.parametrize('second_rank', [0, 5])
+def test_status_has_summary_and_export_observes_current_cursor_and_target(loopback, second_rank):
     opened = loopback.open()
     token = opened['session']
     _, first, _ = loopback.export(token)
     code, status, _ = loopback.request('/api/stream/status?' + urlencode({'session': token}))
     assert code == 200 and status['qualification']['schema'] == SCHEMA
     assert not {'identity', 'segments', 'transitions', 'invalidations'} & set(status['qualification'])
+    # Native service time may have selected a lower adaptive tier. Exercise
+    # both real plans deterministically; Q5 coverage must follow served pixels.
+    stream = loopback.api.get(token)
+    with stream.condition:
+        stream.controller.rank = second_rank
     code, _, _ = loopback.request('/api/stream/control', {
         'session': token, 'command': 'target_fps', 'sequence': 1, 'frame': 17, 'target_fps': 57})
     assert code == 200
-    wait_ready(loopback.api.get(token), 1)
+    ready = wait_ready(stream, 1)
+    assert ready['quality_rank'] == second_rank
     code, latest, _ = loopback.export(token)
     assert code == 200 and latest['frame'] == 17 and latest['cursor_seq'] == 1
     assert latest['qualification']['target_fps'] == 57
     assert latest['qualification']['sample_sequence'] >= first['qualification']['sample_sequence']
-    assert latest['qualification']['cache']['q5_frames'] == 2
+    assert first['qualification']['cache']['frames'] == 1
+    assert latest['qualification']['cache']['frames'] == 2
+    expected_q5 = first['qualification']['cache']['q5_frames'] + (ready['quality_rank'] == 5)
+    assert latest['qualification']['cache']['q5_frames'] == expected_q5
 
 
 def test_export_keeps_browser_ack_evidence_distinct_from_client_injected_labels(loopback):
